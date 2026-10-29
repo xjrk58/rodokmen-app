@@ -46,8 +46,12 @@ _Avoid_: individual, ancestor (as a type), relative
 A Person born within the last 100 years with no recorded death, or a Person with neither birth nor death recorded.
 _Avoid_: alive, private person
 
+**Name**:
+One form of a Person's name as it was used or recorded, such as a birth name, married name, Latin or German form, or nickname. Each Person has one primary Name.
+_Avoid_: alias, spelling
+
 **Family**:
-Two partners and their children, recorded as one unit. A Person can be a child in one Family and a partner in several.
+Two partners and their children, recorded as one unit. A Person can be a partner in several Families, and a child in more than one when there is a birth Family and an adoptive or foster Family.
 _Avoid_: couple, household, marriage (as the record)
 
 **Event**:
@@ -65,7 +69,7 @@ A register book or other document that records facts about people, such as a par
 _Avoid_: register (on its own), record, document
 
 **Citation**:
-A pointer to one entry in a Source: the page or frame, a transcription of the entry and a private image of the page.
+A pointer to one entry in a Source: the page or frame, a transcription of the entry, a private image of the page, and a confidence from very low to very high.
 _Avoid_: source (for a single entry), reference, footnote
 
 **Family account**:
@@ -91,6 +95,14 @@ _Avoid_: location, village (as a type name), obec
 **House**:
 A homestead in a Place, known over time by its sequence of house numbers (čp.). People are born, live and die in Houses.
 _Avoid_: address, building, číslo popisné (as the thing itself)
+
+**Parish**:
+A church district whose priest kept the registers for the Places in it. A Place can belong to different Parishes over time.
+_Avoid_: farnost (in English text), church
+
+**Estate**:
+A manorial domain (panství) that Places belonged to until 1848, recorded with its periods.
+_Avoid_: manor, dominion, Herrschaft (in English text)
 
 **Municipality**:
 Today's administrative unit (obec) that a Place lies in. It is used to find the archive that holds the Place's registers.
