@@ -22,6 +22,8 @@ Plain HTML, CSS and ES modules in `app/`, with Leaflet 1.9 copied into `app/vend
 ### Archive lookup = point in district polygon, then district → archive
 The archive regions follow the districts of 1960–2000, which match today's districts closely enough. The build script names each district polygon from the municipality points inside it, simplifies the polygons, and writes `app/data/districts.geojson`. `app/data/archives.json` maps district names to archives. Lookup is a point-in-polygon test in the browser. The near-border hint is the distance from the point to the nearest edge whose neighbouring district belongs to another archive. A per-parish table was considered and rejected for now: no open dataset of parishes exists, and the district rule is right for most places.
 
+The polygons follow today's districts, but 15 Municipalities moved district in 2021 while the municipality list still has their earlier district. The build writes these into a `municipalityOverrides` section of `archives.json`, and the lookup uses the earlier district's archive for them, with today's archive as "also check". Only three answers actually change: Harrachov, Študlov and Valašské Příkazy.
+
 ### Reference data pipeline
 `app/scripts/build-data.mjs` (Node 22, mapshaper) reads the RÚIAN-derived district polygons and the 6,258-row municipality list. It writes `app/data/districts.geojson` (target ~300 KB), `app/data/municipalities.json` (name, normalized name, district, lat, lon) and `app/data/country.geojson`. The script fails if any polygon gets no name, if any district has no archive, or if any municipality falls outside every polygon. The generated files are committed, so the site needs no build.
 
@@ -48,3 +50,5 @@ Playwright with headless Chromium runs in CI on every push. It covers load, sear
 ## Open Questions
 
 - Do the Semily district registers sit in SOA Zámrsk or SOA Litoměřice, and the Brno city parishes in MZA or the Brno city archive? This changes data only.
+- Task 5.1 result: not yet recorded. The CENIA WMS services could not be reached from the build environment, so no EPSG:3857 tile has been requested yet. Both overlays ship behind `enabled` flags in `app/data/layers.json` (on by default); "Check map layers" on a phone, plus an alignment check, decides which stay on. Record the outcome here.
+- Which register viewers support a search by place? No place-search URL pattern could be verified, so every `placeSearchUrl` in `archives.json` is `null` and "Open scans" opens the viewer's start page. The OldMapsOnline link (`https://www.oldmapsonline.org/en/<name>`) is likewise unverified.

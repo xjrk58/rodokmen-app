@@ -1,0 +1,78 @@
+# Publishes app/ as the GitHub Pages preview on every push to main
+# (https://xjrk58.github.io/rodokmen-app/). Needs Settings > Pages >
+# Source: GitHub Actions. The app later moves to its own domain (ADR 0007).
+name: Pages preview
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # The service worker's precache version must match the files, or open
+      # apps would not be offered the new version.
+      - name: Check the version stamp
+        run: node app/scripts/stamp-version.mjs --check
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude node_modules --exclude tests --exclude scripts --exclude .cache \
+            --exclude test-results --exclude playwright-report \
+            --exclude package.json --exclude 'tsconfig*.json' --exclude playwright.config.js \
+            --exclude '*.d.ts' \
+            app/ _site/
+          touch _site/.nojekyll
+          find _site -type f | sort
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: The preview answers
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url || format('https://{0}.github.io/{1}/', github.repository_owner, github.event.repository.name) }}
+        run: |
+          for path in "" index.html app.js sw.js manifest.webmanifest data/archives.json data/districts.geojson data/municipalities.json; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --retry 5 --retry-delay 10 --retry-all-errors "${PAGE_URL}${path}")
+            echo "${code} ${PAGE_URL}${path}"
+            [ "$code" = 200 ] || exit 1
+          done

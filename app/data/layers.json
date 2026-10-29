@@ -1,0 +1,41 @@
+{
+  "$comment": "Map layers and historical map viewers. Overlays are WMS services requested in Web Mercator (EPSG:3857); set enabled to false for a service that does not deliver aligned images (task 5.1 of add-map-core). Viewer URLs may contain {name} for the Municipality name.",
+  "base": {
+    "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
+    "maxZoom": 19
+  },
+  "overlays": [
+    {
+      "id": "survey2",
+      "enabled": true,
+      "type": "wms",
+      "url": "https://geoportal.gov.cz/ArcGIS/services/CENIA/cenia_rt_II_vojenske_mapovani/MapServer/WMSServer",
+      "layers": "0",
+      "format": "image/png",
+      "transparent": true,
+      "version": "1.3.0",
+      "crs": "EPSG:3857",
+      "opacity": 0.7,
+      "attribution": "2. vojenské mapování © CENIA"
+    },
+    {
+      "id": "survey3",
+      "enabled": true,
+      "type": "wms",
+      "url": "https://geoportal.gov.cz/ArcGIS/services/CENIA/cenia_rt_III_vojenske_mapovani/MapServer/WMSServer",
+      "layers": "0",
+      "format": "image/png",
+      "transparent": true,
+      "version": "1.3.0",
+      "crs": "EPSG:3857",
+      "opacity": 0.7,
+      "attribution": "3. vojenské mapování © CENIA"
+    }
+  ],
+  "viewers": [
+    { "id": "cuzk", "url": "https://ags.cuzk.cz/archiv/" },
+    { "id": "oldmaps", "url": "https://www.oldmapsonline.org/en/{name}" },
+    { "id": "arcanum", "url": "https://maps.arcanum.com/en/" }
+  ]
+}
