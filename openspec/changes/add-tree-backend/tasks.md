@@ -14,8 +14,9 @@
 
 ## 3. Database
 
-- [ ] 3.1 Create Kysely migrations for all Tree tables with UUIDv7 keys, `version` columns and PostGIS points; verify by migrating an empty database in a Testcontainers test
-- [ ] 3.2 Load an invented fixture tree (about 200 Persons over 6 generations, renumbered Houses, a parish change, an adoption); verify the House renumbering and parish-period scenarios against it
+- [x] 3.1 Create Kysely migrations for all Tree tables with UUIDv7 keys, `version` columns and PostGIS points; verify by migrating an empty database in a Testcontainers test
+  - Note: Testcontainers cannot pull images in the build sandbox, so `server/test/migrations.test.ts` creates an empty throwaway database on the PostgreSQL given by `TEST_DATABASE_URL` (a `postgis/postgis` service container in CI) and migrates it from nothing; every test run creates and drops its own databases.
+- [x] 3.2 Load an invented fixture tree (about 200 Persons over 6 generations, renumbered Houses, a parish change, an adoption); verify the House renumbering and parish-period scenarios against it
 
 ## 4. Read API
 

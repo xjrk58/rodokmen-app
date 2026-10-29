@@ -1,0 +1,265 @@
+import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
+
+/** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
+export type Day = string;
+type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
+type CreatedAt = ColumnType<Date, Date | string | undefined, never>;
+/** geography(Point, 4326): written with ST_MakePoint, read through ST_X / ST_Y. */
+type Geography = ColumnType<unknown, unknown, unknown>;
+
+interface RecordColumns {
+  id: Generated<string>;
+  version: Generated<number>;
+  created_at: CreatedAt;
+  updated_at: Generated<Date>;
+}
+
+interface PeriodColumns {
+  period_from: string | null;
+  period_to: string | null;
+  valid_from: Generated<Day>;
+  valid_to: Generated<Day>;
+}
+
+export interface PersonTable extends RecordColumns {
+  sex: Generated<'female' | 'male' | 'unknown'>;
+}
+
+export interface NameTable extends RecordColumns {
+  person_id: string;
+  given: Generated<string>;
+  surname: Generated<string>;
+  type: 'birth' | 'married' | 'latin' | 'german' | 'nickname' | 'other';
+  as_found: string;
+  is_primary: Generated<boolean>;
+  sort_order: Generated<number>;
+  search_text: ColumnType<string, never, never>;
+}
+
+export interface FamilyTable extends RecordColumns {
+  partner1_id: string | null;
+  partner2_id: string | null;
+}
+
+export interface FamilyChildTable extends RecordColumns {
+  family_id: string;
+  child_id: string;
+  link_type: 'birth' | 'adoptive' | 'foster' | 'step';
+  sort_order: Generated<number>;
+}
+
+export interface PlaceTable extends RecordColumns {
+  type: Generated<'village' | 'town' | 'hamlet' | 'other'>;
+  location: Geography | null;
+  municipality_code: string | null;
+  municipality_name: string | null;
+}
+
+export interface PlaceNameTable extends RecordColumns, PeriodColumns {
+  place_id: string;
+  name: string;
+  language: 'cs' | 'de' | 'la';
+  is_primary: Generated<boolean>;
+  search_text: ColumnType<string, never, never>;
+}
+
+export interface HouseTable extends RecordColumns {
+  place_id: string;
+  location: Geography | null;
+  note: string | null;
+}
+
+export interface HouseNumberTable extends RecordColumns, PeriodColumns {
+  house_id: string;
+  number: string;
+}
+
+export interface ParishTable extends RecordColumns {
+  name: string;
+  seat_place_id: string | null;
+}
+
+export interface PlaceParishTable extends RecordColumns, PeriodColumns {
+  place_id: string;
+  parish_id: string;
+}
+
+export interface EstateTable extends RecordColumns {
+  name: string;
+}
+
+export interface PlaceEstateTable extends RecordColumns, PeriodColumns {
+  place_id: string;
+  estate_id: string;
+}
+
+export interface EventTable extends RecordColumns {
+  type: 'birth' | 'baptism' | 'marriage' | 'death' | 'burial' | 'residence' | 'census' | 'other';
+  type_detail: string | null;
+  date: string | null;
+  date_earliest: Day | null;
+  date_latest: Day | null;
+  place_id: string | null;
+  house_id: string | null;
+  description: string | null;
+}
+
+export interface EventRoleTable extends RecordColumns {
+  event_id: string;
+  person_id: string;
+  role: 'child' | 'father' | 'mother' | 'partner' | 'godparent' | 'witness' | 'priest' | 'deceased' | 'informant' | 'other';
+  role_detail: string | null;
+  sort_order: Generated<number>;
+}
+
+export interface SourceTable extends RecordColumns {
+  type: 'parish_register' | 'census' | 'land_book' | 'family_account' | 'other';
+  title: string;
+  repository: string | null;
+  reference: string | null;
+  url: string | null;
+  account_given_by: string | null;
+  account_given_by_person_id: string | null;
+  account_given_on: string | null;
+}
+
+export interface CitationTable extends RecordColumns {
+  source_id: string;
+  page: string | null;
+  transcription: string;
+  read_on: Day;
+  confidence: 'very_low' | 'low' | 'normal' | 'high' | 'very_high';
+  note: string | null;
+}
+
+export interface EventCitationTable extends RecordColumns {
+  event_id: string;
+  citation_id: string;
+}
+
+export interface NameCitationTable extends RecordColumns {
+  name_id: string;
+  citation_id: string;
+}
+
+export interface ImageTable extends RecordColumns {
+  kind: 'page' | 'photo' | 'portrait';
+  citation_id: string | null;
+  storage_key: string;
+  content_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic' | 'image/heif';
+  byte_size: number;
+  width: number | null;
+  height: number | null;
+  sha256: string;
+  caption: string | null;
+}
+
+export interface ImagePersonTable extends RecordColumns {
+  image_id: string;
+  person_id: string;
+}
+
+export type MemberRole = 'contributor' | 'editor' | 'owner';
+
+export interface AccountTable {
+  id: Generated<string>;
+  version: Generated<number>;
+  email: string;
+  display_name: string;
+  language: 'cs' | 'en';
+  role: Generated<MemberRole>;
+  disabled_at: Timestamp | null;
+  invited_by: string | null;
+  last_seen_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: Generated<Date>;
+}
+
+export interface SessionTable {
+  id: Generated<string>;
+  token_hash: Buffer;
+  account_id: string;
+  method: 'passkey' | 'email_link' | 'invitation';
+  user_agent: string | null;
+  created_at: CreatedAt;
+  last_seen_at: Timestamp;
+  expires_at: Timestamp;
+  ended_at: Timestamp | null;
+}
+
+export interface PasskeyTable {
+  id: Generated<string>;
+  account_id: string;
+  credential_id: string;
+  public_key: Buffer;
+  counter: ColumnType<number, number | undefined, number>;
+  transports: ColumnType<string[], string[] | undefined, string[]>;
+  device_type: string;
+  backed_up: Generated<boolean>;
+  name: string;
+  created_at: CreatedAt;
+  last_used_at: Timestamp | null;
+}
+
+export interface WebauthnChallengeTable {
+  id: Generated<string>;
+  challenge: string;
+  purpose: 'registration' | 'authentication';
+  account_id: string | null;
+  created_at: CreatedAt;
+  expires_at: Timestamp;
+}
+
+export interface InvitationTable {
+  id: Generated<string>;
+  token_hash: Buffer;
+  email: string;
+  language: 'cs' | 'en';
+  invited_by: string;
+  created_at: CreatedAt;
+  expires_at: Timestamp;
+  accepted_at: Timestamp | null;
+  accepted_account_id: string | null;
+  revoked_at: Timestamp | null;
+}
+
+export interface SignInLinkTable {
+  id: Generated<string>;
+  token_hash: Buffer;
+  account_id: string;
+  created_at: CreatedAt;
+  expires_at: Timestamp;
+  used_at: Timestamp | null;
+}
+
+export interface Database {
+  person: PersonTable;
+  name: NameTable;
+  family: FamilyTable;
+  family_child: FamilyChildTable;
+  place: PlaceTable;
+  place_name: PlaceNameTable;
+  house: HouseTable;
+  house_number: HouseNumberTable;
+  parish: ParishTable;
+  place_parish: PlaceParishTable;
+  estate: EstateTable;
+  place_estate: PlaceEstateTable;
+  event: EventTable;
+  event_role: EventRoleTable;
+  source: SourceTable;
+  citation: CitationTable;
+  event_citation: EventCitationTable;
+  name_citation: NameCitationTable;
+  image: ImageTable;
+  image_person: ImagePersonTable;
+  account: AccountTable;
+  session: SessionTable;
+  passkey: PasskeyTable;
+  webauthn_challenge: WebauthnChallengeTable;
+  invitation: InvitationTable;
+  sign_in_link: SignInLinkTable;
+}
+
+export type Account = Selectable<AccountTable>;
+export type NewEvent = Insertable<EventTable>;
