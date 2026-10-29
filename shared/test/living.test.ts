@@ -38,6 +38,25 @@ describe('Living rule', () => {
     expect(isLiving({ birthDates: ['1900/..', '1901'], deathRecorded: false }, TODAY)).toBe(false);
   });
 
+  it('on 29 February the cutoff is 1 March of a common year, as JavaScript dates have it', () => {
+    const leapDay = new Date('2000-02-29T12:00:00Z');
+    expect(livingCutoff(leapDay)).toBe('1900-03-01');
+    expect(isLiving({ birthDates: ['1900-02-28'], deathRecorded: false }, leapDay)).toBe(false);
+    expect(isLiving({ birthDates: ['1900-03-01'], deathRecorded: false }, leapDay)).toBe(true);
+    expect(isLiving({ birthDates: ['1900-02'], deathRecorded: false }, leapDay)).toBe(false);
+  });
+
+  it('a recorded death decides without reading the birth dates', () => {
+    expect(isLiving({ birthDates: ['not a date'], deathRecorded: true }, TODAY)).toBe(false);
+    expect(() => isLiving({ birthDates: ['not a date'], deathRecorded: false }, TODAY)).toThrow(/EDTF subset/);
+  });
+
+  it('compares days as calendar days, also past the year 9999', () => {
+    // "about 9999" could be as late as 10001-12-31: in the future, so it cannot rule Living out.
+    // (Before the proved core, the ISO strings were compared and "10001-…" sorted before "1926-…".)
+    expect(isLiving({ birthDates: ['9999~'], deathRecorded: false }, TODAY)).toBe(true);
+  });
+
   it('collects facts from Events by type and Role', () => {
     const facts = livingFactsFromEvents([
       { type: 'baptism', role: 'child', date: '1801-03-12' },
