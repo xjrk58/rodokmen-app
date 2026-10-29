@@ -2,3 +2,8 @@ packages:
   - app
   - server
   - shared
+
+overrides:
+  # lemmascript's optional `lsc claimcheck` (an LLM round-trip) is not used; it would add the
+  # Anthropic, Bedrock and Vertex SDKs to the lockfile. lsc loads it only for that command.
+  lemmascript>lemmascript-claimcheck: '-'
