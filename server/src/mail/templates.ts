@@ -55,7 +55,7 @@ export function invitationEmail(e: InvitationEmail): MailMessage {
       ],
       button: { label: 'Přijmout pozvánku', url: e.link },
       outro: [
-        'Po otevření si zvolíte, jak se vám má zobrazovat jméno, a jazyk. Potom si do telefonu uložíte přístupový klíč (passkey), takže žádné heslo nepotřebujete.',
+        'Po otevření si zvolíte jméno, které uvidí ostatní, a jazyk. Potom si do telefonu uložíte přístupový klíč (passkey), takže žádné heslo nepotřebujete.',
         `Pokud odkaz vypršel, požádejte o novou pozvánku správce Rodokmenu (${e.inviterName}). Pokud jste pozvánku nečekali, e-mail klidně ignorujte.`,
       ],
       signature: 'Rodokmen',
@@ -103,7 +103,7 @@ export function signInLinkEmail(e: SignInLinkEmail): MailMessage {
   }
   return render(e.to, {
     subject: 'Sign in to Rodokmen',
-    intro: [`Hello ${e.displayName},`, `someone (most likely you) asked to sign in to Rodokmen. Sign in with this link. It is valid for ${e.minutes} minutes and works only once.`],
+    intro: [`Hello ${e.displayName},`, `Someone (most likely you) asked to sign in to Rodokmen. Sign in with this link. It is valid for ${e.minutes} minutes and works only once.`],
     button: { label: 'Sign in', url: e.link },
     outro: [
       'Once you are signed in, you can save a passkey on this device, so next time you sign in without email.',

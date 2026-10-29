@@ -1,0 +1,15 @@
+Subject: Pozvánka do Rodokmenu
+
+Dobrý den,
+
+Petr Dvořák vás zve do Rodokmenu, společného rodokmenu naší rodiny s mapou míst, odkud naši předkové pocházeli.
+
+Pozvánku přijmete tímto odkazem. Platí 7 dní a dá se použít jen jednou.
+
+https://rodokmen.example/auth/invite#token=EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+
+Po otevření si zvolíte jméno, které uvidí ostatní, a jazyk. Potom si do telefonu uložíte přístupový klíč (passkey), takže žádné heslo nepotřebujete.
+
+Pokud odkaz vypršel, požádejte o novou pozvánku správce Rodokmenu (Petr Dvořák). Pokud jste pozvánku nečekali, e-mail klidně ignorujte.
+
+Rodokmen

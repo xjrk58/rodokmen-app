@@ -5,7 +5,7 @@
 const STRINGS = {
   cs: {
     switchTo: 'English',
-    name: 'Jak se vám má zobrazovat jméno',
+    name: 'Jméno, které uvidí ostatní',
     language: 'Jazyk',
     accept: 'Přijmout pozvánku',
     checking: 'Ověřuji odkaz…',

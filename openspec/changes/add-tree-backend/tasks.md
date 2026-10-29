@@ -29,11 +29,12 @@
 
 ## 5. Accounts
 
-- [ ] 5.1 Implement invitations (Owner only, single use, 7 days); verify the accept and expired scenarios
-- [ ] 5.2 Implement passkey registration and sign-in; verify with a virtual WebAuthn authenticator in Playwright
-- [ ] 5.3 Implement emailed sign-in links (15 minutes, single use, stored hashed); verify the new-phone scenario with a captured email
-- [ ] 5.4 Implement roles, the single-Owner rule, sessions list and disabling; verify the promote and disable scenarios
-- [ ] 5.5 Write invitation and sign-in emails in Czech and English; verify each language renders in a snapshot test
+- [x] 5.1 Implement invitations (Owner only, single use, 7 days); verify the accept and expired scenarios
+- [x] 5.2 Implement passkey registration and sign-in; verify with a virtual WebAuthn authenticator in Playwright
+  - Note: the sign-in screens (invitation, emailed link, passkey) are minimal server pages under `/auth/` (`server/public/auth/`), because `app/` has no sign-in screens yet; they can move into the app later without API changes.
+- [x] 5.3 Implement emailed sign-in links (15 minutes, single use, stored hashed); verify the new-phone scenario with a captured email
+- [x] 5.4 Implement roles, the single-Owner rule, sessions list and disabling; verify the promote and disable scenarios
+- [x] 5.5 Write invitation and sign-in emails in Czech and English; verify each language renders in a snapshot test
 
 ## 6. Hosting and deploys
 
