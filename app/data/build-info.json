@@ -1,0 +1,129 @@
+{
+  "sources": {
+    "districts": {
+      "url": "https://raw.githubusercontent.com/siwekm/czech-geojson/master/okresy.json",
+      "file": "okresy.json",
+      "description": "District (okres) polygons derived from RÚIAN, without properties",
+      "sha256": "1a603304358463115cd886c614d9213fc2459ce7b8648d2d852290aebb6fb977",
+      "bytes": 19749188
+    },
+    "municipalities": {
+      "url": "https://raw.githubusercontent.com/33bcdd/souradnice-mest/master/souradnice.csv",
+      "file": "souradnice.csv",
+      "description": "Municipalities with district and coordinates",
+      "sha256": "2f1c168540e3544d8de2070e937cb39e6650c3c196372371d36f5518ec62a051",
+      "bytes": 537772,
+      "rows": 6259
+    }
+  },
+  "simplify": {
+    "keep": "2%",
+    "precision": 0.0001
+  },
+  "counts": {
+    "districts": 77,
+    "municipalities": 6258
+  },
+  "excluded": [
+    {
+      "code": "539996",
+      "name": "Brdy (vojenský újezd)",
+      "reason": "military area abolished on 1 January 2016"
+    }
+  ],
+  "reassigned": {
+    "note": "Listed under one district in the municipality list but inside the polygon of another (district boundaries changed in 2021). The app shows the polygon district; municipalityOverrides in archives.json keeps the archive of the listed district.",
+    "municipalities": [
+      {
+        "code": "585131",
+        "name": "Březová",
+        "listedDistrict": "Zlín",
+        "polygonDistrict": "Uherské Hradiště"
+      },
+      {
+        "code": "553506",
+        "name": "Bukovec",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "566080",
+        "name": "Čečovice",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "599301",
+        "name": "Černíky",
+        "listedDistrict": "Nymburk",
+        "polygonDistrict": "Kolín"
+      },
+      {
+        "code": "566098",
+        "name": "Černovice",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "577081",
+        "name": "Harrachov",
+        "listedDistrict": "Semily",
+        "polygonDistrict": "Jablonec nad Nisou"
+      },
+      {
+        "code": "553654",
+        "name": "Holýšov",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "553662",
+        "name": "Horní Kamenice",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "553841",
+        "name": "Kvíčovice",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "570354",
+        "name": "Lužany",
+        "listedDistrict": "Hradec Králové",
+        "polygonDistrict": "Náchod"
+      },
+      {
+        "code": "554022",
+        "name": "Neuměř",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "566101",
+        "name": "Štichov",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      },
+      {
+        "code": "544931",
+        "name": "Študlov",
+        "listedDistrict": "Vsetín",
+        "polygonDistrict": "Zlín"
+      },
+      {
+        "code": "545112",
+        "name": "Valašské Příkazy",
+        "listedDistrict": "Vsetín",
+        "polygonDistrict": "Zlín"
+      },
+      {
+        "code": "566071",
+        "name": "Všekary",
+        "listedDistrict": "Domažlice",
+        "polygonDistrict": "Plzeň-jih"
+      }
+    ]
+  }
+}

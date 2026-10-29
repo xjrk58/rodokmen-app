@@ -1,0 +1,44 @@
+# Checks every archive portal URL in app/data/archives.json once a week and
+# fails, naming the archive and URL, when one stops answering. The app itself
+# is not changed. Run it by hand with "broken_url_test" to see it fail.
+name: Archive portal links
+
+on:
+  schedule:
+    - cron: '23 6 * * 1' # Mondays, 06:23 UTC
+  workflow_dispatch:
+    inputs:
+      broken_url_test:
+        description: Add a deliberately broken URL (the run must fail)
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - app/data/archives.json
+      - app/scripts/check-links.mjs
+      - .github/workflows/archive-links.yml
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Check portal URLs
+        env:
+          BROKEN_URL_TEST: ${{ inputs.broken_url_test || false }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ "$BROKEN_URL_TEST" = true ]; then
+            set -- --extra "Deliberately broken (test run)=https://github.com/${REPOSITORY}/this-page-does-not-exist"
+          fi
+          node app/scripts/check-links.mjs "$@"

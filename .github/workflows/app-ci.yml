@@ -1,0 +1,58 @@
+# Type-checks the map app and runs its unit and Playwright tests on every push.
+name: App CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6 # version from packageManager in package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      # No lockfile is committed yet (it is regenerated when app/ and server/
+      # are integrated); switch to --frozen-lockfile once it is.
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Chromium for Playwright
+        working-directory: app
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Type-check (tsc --noEmit)
+        working-directory: app
+        run: pnpm run typecheck
+
+      - name: Unit tests
+        working-directory: app
+        run: pnpm run test:unit
+
+      - name: Playwright tests
+        working-directory: app
+        run: pnpm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            app/playwright-report/
+            app/test-results/
+          retention-days: 7

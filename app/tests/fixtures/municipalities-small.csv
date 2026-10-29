@@ -1,0 +1,4 @@
+Obec,Kód obce,Okres,Kód okresu,Kraj,Kód kraje,PSČ,Latitude,Longitude
+Testov,900001,Alfa,CZ9991,Kraj A,CZ999,10000,49.5,15.5
+Vzorov,900002,Alfa,CZ9991,Kraj A,CZ999,10000,49.6,15.6
+Příkladov,900003,Beta,CZ9992,Kraj A,CZ999,10000,49.7,15.7
