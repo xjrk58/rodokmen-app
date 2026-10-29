@@ -34,6 +34,26 @@ const CONTRACT_TEXT = /^([a-z0-9][a-z0-9-]*): (\S.*)$/;
 const PROOF_LINE = /^\s*\/\/@ (verify|requires|ensures|invariant|decreases)\b/;
 const TRUST_MARKER = /^\s*\/\/@ (assume|havoc|extern|autohavoc|impure)\b\s*(.*?)\s*$/;
 
+// Shapes that lemmascript 0.6.5 translates wrongly or not at all (listed in docs/verification.md).
+const KNOWN_ISSUES = [
+  `**Unsound: swapped comparison.** When a narrowed optional is the right operand of \`<\`, \`<=\`, \`>\` or \`>=\`, the
+  Dafny puts it on the left. In code: \`best === null || x < best\` becomes \`best < x\`. In a spec:
+  \`xs[i] !== null ==> k <= xs[i]\` becomes \`xs[i] <= k\`, so a false property can verify. Keep optionals out of
+  verified comparisons, or write the optional on the left (\`best > x\`).`,
+  `**Cross-file contracts lose their helpers.** A call into another file becomes an axiom carrying the callee's
+  contract, but functions that contract mentions (from the callee's own file, or named only in \`//@\` lines)
+  are not emitted, and Dafny reports an unresolved identifier. Keep a verified call graph in one file, or
+  give cross-file callees contracts that mention only their parameters.`,
+  `**Constant objects.** \`as const\` objects are not emitted, and \`Record<Union, number>\` constants get string keys
+  (a Dafny type error). Pass such constants in as parameters.`,
+  `**Disjunctive narrowing in specs.** \`a === null || a.f === null ==> P\` does not narrow \`a\`; write
+  \`a === null ==> P\` and \`a !== null && a.f === null ==> P\`.`,
+  `**Calls in \`?:\` branches** are lifted out and run unconditionally in the model. That is harmless for pure,
+  total functions (at worst a proof fails), but their \`requires\` must hold on both branches.`,
+  `**Regular expressions** cannot be extracted: put \`//@ skip\` before a regex constant.`,
+  `**\`lsc regen\`** does not batch: give it the file (\`pnpm --filter @rodokmen/shared verify:regen src/x.ts\`).`,
+];
+
 const problems = [];
 const problem = (msg) => problems.push(msg);
 const rel = (p) => relative(ROOT, p).split('\\').join('/');
@@ -316,10 +336,16 @@ out.push('');
 out.push('Every proof above also trusts:');
 out.push('');
 out.push('- LemmaScript\'s translation of TypeScript to Dafny (`lemmascript` as pinned in the package; a tech preview).');
-out.push('  Read the generated `.dfy.gen` when writing a proof; see the known issues in ADR 0009.');
+out.push('  Read the generated `.dfy.gen` when writing a proof, and avoid the known issues below.');
 out.push('- Dafny and its Z3 solver (the version pinned in `.github/workflows/verify.yml`).');
 out.push('- The model: `number` is a mathematical integer (no floating point, no overflow), strings are sequences of');
 out.push('  Unicode scalars, and the proofs say nothing about code outside the `//@ verify` functions.');
+out.push('');
+out.push('## Known LemmaScript issues');
+out.push('');
+out.push('Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and check the `.dfy.gen` when unsure.');
+out.push('');
+for (const issue of KNOWN_ISSUES) out.push(`- ${issue}`);
 out.push('');
 
 const text = `${out.join('\n')}`;
