@@ -1,0 +1,76 @@
+{
+  "$comment": "Archives that hold the parish registers of the Czech lands, by district (okres) as in 1960-2000. Edit only this file to change an archive, its districts or its portal. District names must match app/data/districts.geojson; scripts/build-data.mjs fails if a district has no archive. placeSearchUrl is a URL with {name} for the Municipality name, or null where no place-search pattern has been verified. color is the tint of the archive regions layer.",
+  "archives": [
+    {
+      "id": "soa-praha",
+      "name": "SOA Praha",
+      "portal": { "name": "eBadatelna", "url": "https://ebadatelna.soapraha.cz/" },
+      "placeSearchUrl": null,
+      "color": "#2a78d6",
+      "districts": ["Benešov", "Beroun", "Kladno", "Kolín", "Kutná Hora", "Mělník", "Mladá Boleslav", "Nymburk", "Praha-východ", "Praha-západ", "Příbram", "Rakovník"]
+    },
+    {
+      "id": "ahmp",
+      "name": "Archiv hlavního města Prahy",
+      "shortName": "Archiv hl. m. Prahy",
+      "portal": { "name": "Praga Publica", "url": "https://katalog.ahmp.cz/pragapublica/" },
+      "placeSearchUrl": null,
+      "color": "#eb6834",
+      "districts": ["Praha"]
+    },
+    {
+      "id": "soa-trebon",
+      "name": "SOA Třeboň",
+      "portal": { "name": "Digitální archiv", "url": "https://digi.ceskearchivy.cz/" },
+      "placeSearchUrl": null,
+      "color": "#1baf7a",
+      "districts": ["České Budějovice", "Český Krumlov", "Jindřichův Hradec", "Pelhřimov", "Písek", "Prachatice", "Strakonice", "Tábor"]
+    },
+    {
+      "id": "soa-plzen",
+      "name": "SOA Plzeň",
+      "portal": { "name": "Porta fontium", "url": "https://www.portafontium.eu/" },
+      "placeSearchUrl": null,
+      "color": "#008300",
+      "districts": ["Domažlice", "Cheb", "Karlovy Vary", "Klatovy", "Plzeň-jih", "Plzeň-město", "Plzeň-sever", "Rokycany", "Sokolov", "Tachov"]
+    },
+    {
+      "id": "soa-litomerice",
+      "name": "SOA Litoměřice",
+      "portal": { "name": "Vademecum", "url": "https://vademecum.soalitomerice.cz/vademecum/" },
+      "placeSearchUrl": null,
+      "color": "#e87ba4",
+      "districts": ["Česká Lípa", "Děčín", "Chomutov", "Jablonec nad Nisou", "Liberec", "Litoměřice", "Louny", "Most", "Teplice", "Ústí nad Labem"]
+    },
+    {
+      "id": "soa-zamrsk",
+      "name": "SOA Zámrsk",
+      "portal": { "name": "ARON", "url": "https://aron.vychodoceskearchivy.cz/" },
+      "placeSearchUrl": null,
+      "color": "#eda100",
+      "districts": ["Havlíčkův Brod", "Hradec Králové", "Chrudim", "Jičín", "Náchod", "Pardubice", "Rychnov nad Kněžnou", "Semily", "Svitavy", "Trutnov", "Ústí nad Orlicí"]
+    },
+    {
+      "id": "mza-brno",
+      "name": "MZA Brno",
+      "portal": { "name": "Acta Publica", "url": "https://www.mza.cz/actapublica/" },
+      "placeSearchUrl": null,
+      "color": "#6250d6",
+      "districts": ["Blansko", "Brno-město", "Brno-venkov", "Břeclav", "Hodonín", "Jihlava", "Kroměříž", "Prostějov", "Třebíč", "Uherské Hradiště", "Vyškov", "Zlín", "Znojmo", "Žďár nad Sázavou"]
+    },
+    {
+      "id": "za-opava",
+      "name": "Zemský archiv Opava",
+      "portal": { "name": "Digitální archiv", "url": "https://digi.archives.cz/da/" },
+      "placeSearchUrl": null,
+      "color": "#e34948",
+      "districts": ["Bruntál", "Frýdek-Místek", "Jeseník", "Karviná", "Nový Jičín", "Olomouc", "Opava", "Ostrava-město", "Přerov", "Šumperk", "Vsetín"]
+    }
+  ],
+  "jewishRegisters": {
+    "id": "narodni-archiv",
+    "name": "Národní archiv",
+    "portal": { "name": "Vademecum", "url": "https://vademecum.nacr.cz/vademecum/" },
+    "placeSearchUrl": null
+  }
+}
