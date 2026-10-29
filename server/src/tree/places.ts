@@ -30,7 +30,7 @@ export async function searchPlaces(db: Db, q: { q?: string | undefined; limit: n
   let query = basePlaceQuery(db);
   if (q.q) {
     const needle = `%${foldForSearch(q.q).replace(/[\\%_]/g, '\\$&')}%`;
-    query = query.where((eb) => eb.exists(eb.selectFrom('place_name as any').select(sql`1`.as('x')).whereRef('any.place_id', '=', 'p.id').where('any.search_text', 'like', needle)));
+    query = query.where((eb) => eb.exists(eb.selectFrom('place_name as any').select(sql`1`.as('x')).whereRef('any.place_id', '=', 'p.id').where('any.search_text', 'like', sql<string>`rdk_fold(${needle})`)));
   }
   const rows = await query.orderBy('pn.name').orderBy('p.id').limit(q.limit).offset(q.offset).execute();
   return rows.map(placeSummary);

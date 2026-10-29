@@ -43,7 +43,7 @@ function sourceSummary(s: Pick<SourceTable, 'type' | 'title' | 'repository' | 'r
 
 export async function searchSources(db: Db, q: { q?: string | undefined; type?: SourceSummary['type'] | undefined; limit: number; offset: number }): Promise<SourceSummary[]> {
   let query = db.selectFrom('source').selectAll();
-  if (q.q) query = query.where(sql<boolean>`rdk_fold(title) like ${`%${foldForSearch(q.q).replace(/[\\%_]/g, '\\$&')}%`}`);
+  if (q.q) query = query.where(sql<boolean>`rdk_fold(title) like rdk_fold(${`%${foldForSearch(q.q).replace(/[\\%_]/g, '\\$&')}%`})`);
   if (q.type) query = query.where('type', '=', q.type);
   const rows = await query.orderBy('title').orderBy('id').limit(q.limit).offset(q.offset).execute();
   return rows.map(sourceSummary);

@@ -64,9 +64,10 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
         'n.person_id',
         'n.as_found',
         'n.is_primary',
-        sql<number>`similarity(n.search_text, ${folded})`.as('score'),
+        sql<number>`similarity(n.search_text, rdk_fold(${folded}))`.as('score'),
       ])
-      .where(sql<boolean>`n.search_text like all(${sql.val(patterns)}::text[])`);
+      // rdk_fold, the fold behind search_text, also folds the query: both sides match by definition.
+      .where(sql<boolean>`n.search_text like all(array(select rdk_fold(p) from unnest(${sql.val(patterns)}::text[]) p))`);
     const best = db
       .selectFrom(matches.as('m'))
       .distinctOn('m.person_id')
