@@ -48,3 +48,5 @@ Playwright with headless Chromium runs in CI on every push. It covers load, sear
 ## Open Questions
 
 - Do the Semily district registers sit in SOA Zámrsk or SOA Litoměřice, and the Brno city parishes in MZA or the Brno city archive? This changes data only.
+- Task 5.1 result: not yet recorded. The CENIA WMS services could not be reached from the build environment, so no EPSG:3857 tile has been requested yet. Both overlays ship behind `enabled` flags in `app/data/layers.json` (on by default); "Check map layers" on a phone, plus an alignment check, decides which stay on. Record the outcome here.
+- Which register viewers support a search by place? No place-search URL pattern could be verified, so every `placeSearchUrl` in `archives.json` is `null` and "Open scans" opens the viewer's start page. The OldMapsOnline link (`https://www.oldmapsonline.org/en/<name>`) is likewise unverified.
