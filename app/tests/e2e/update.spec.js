@@ -72,3 +72,42 @@ test('a new deploy shows "New version, reload" and updates only when tapped', as
     await app.remove();
   }
 });
+
+test('with two tabs open, "New version, reload" works in the second tab too', async ({ page, context }) => {
+  const app = await copyApp();
+  const server = await serve(app.dir);
+  try {
+    await deploy(app.dir, 'test-1');
+    await page.goto(server.url);
+    await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
+    await waitForServiceWorker(page);
+    const second = await context.newPage();
+    await second.goto(server.url);
+    await expect(second.locator('body')).toHaveAttribute('data-ready', 'true');
+
+    await deploy(app.dir, 'test-2');
+    await page.evaluate(async () => {
+      await (await navigator.serviceWorker.getRegistration())?.update();
+    });
+    const prompt = (/** @type {import('@playwright/test').Page} */ p) => p.getByRole('button', { name: 'New version, reload' });
+    await expect(prompt(page)).toBeVisible();
+    await expect(prompt(second)).toBeVisible();
+
+    // The first tab activates the new version; the second keeps its prompt until tapped.
+    const firstReloaded = page.waitForEvent('load');
+    await prompt(page).click();
+    await firstReloaded;
+    await expect(prompt(second)).toBeVisible();
+
+    const secondReloaded = second.waitForEvent('load', { timeout: 10_000 });
+    await prompt(second).click();
+    await secondReloaded;
+    await expect(second.locator('body')).toHaveAttribute('data-ready', 'true');
+    await expect(second.locator('#update-toast')).toBeHidden();
+    await second.locator('#settings-button').click();
+    await expect(second.locator('#app-version')).toHaveText('Version test-2');
+  } finally {
+    await server.close();
+    await app.remove();
+  }
+});

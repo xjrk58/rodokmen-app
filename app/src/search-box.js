@@ -53,6 +53,8 @@ export class SearchBox {
     const query = this.input.value;
     this.clear.hidden = query === '';
     if (!query.trim()) {
+      // An emptied box offers nothing: Enter must not open the previous query's first result.
+      this.results = [];
       this.close();
       return;
     }
