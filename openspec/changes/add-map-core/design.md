@@ -22,6 +22,8 @@ Plain HTML, CSS and ES modules in `app/`, with Leaflet 1.9 copied into `app/vend
 ### Archive lookup = point in district polygon, then district → archive
 The archive regions follow the districts of 1960–2000, which match today's districts closely enough. The build script names each district polygon from the municipality points inside it, simplifies the polygons, and writes `app/data/districts.geojson`. `app/data/archives.json` maps district names to archives. Lookup is a point-in-polygon test in the browser. The near-border hint is the distance from the point to the nearest edge whose neighbouring district belongs to another archive. A per-parish table was considered and rejected for now: no open dataset of parishes exists, and the district rule is right for most places.
 
+The polygons follow today's districts, but 15 Municipalities moved district in 2021 while the municipality list still has their earlier district. The build writes these into a `municipalityOverrides` section of `archives.json`, and the lookup uses the earlier district's archive for them, with today's archive as "also check". Only three answers actually change: Harrachov, Študlov and Valašské Příkazy.
+
 ### Reference data pipeline
 `app/scripts/build-data.mjs` (Node 22, mapshaper) reads the RÚIAN-derived district polygons and the 6,258-row municipality list. It writes `app/data/districts.geojson` (target ~300 KB), `app/data/municipalities.json` (name, normalized name, district, lat, lon) and `app/data/country.geojson`. The script fails if any polygon gets no name, if any district has no archive, or if any municipality falls outside every polygon. The generated files are committed, so the site needs no build.
 

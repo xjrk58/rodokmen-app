@@ -25,6 +25,13 @@ The system SHALL assign every location inside the Czech Republic to exactly one 
 - **WHEN** the reader asks for a location outside the Czech Republic
 - **THEN** the system says that no archive lookup is available there and offers no archive link
 
+### Requirement: Older districts win where districts moved
+For a Municipality that moved to another district in 2021, the system SHALL answer with the archive of its earlier district, because registers are filed by the older regions. When that differs from the archive of today's district, it SHALL name today's archive as "also check".
+
+#### Scenario: Harrachov
+- **WHEN** the reader opens the place sheet for Harrachov
+- **THEN** the system answers SOA Zámrsk and adds "also check SOA Litoměřice"
+
 ### Requirement: Link to the register viewer
 For the archive it finds, the system SHALL show the archive's name and a link that opens the archive's online register viewer in a new browser context. Where the viewer supports a search by place, the link SHALL open that search for the Municipality's name.
 
