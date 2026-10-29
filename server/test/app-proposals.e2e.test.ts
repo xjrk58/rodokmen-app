@@ -36,7 +36,9 @@ async function freePort(): Promise<number> {
 }
 
 async function photo(text: string): Promise<Buffer> {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600"><rect width="100%" height="100%" fill="#e9dfc7"/><text x="80" y="200" font-size="64" fill="#3b2f1e">${text}</text></svg>`;
+  // An invented "register page": ruled lines of scribbles under a heading.
+  const lines = Array.from({ length: 22 }, (_, i) => `<path d="M90 ${300 + i * 56} q 120 -18 240 0 t 240 0 t 240 0 t 240 0" stroke="#4a3b28" stroke-width="5" fill="none"/>`).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600"><rect width="100%" height="100%" fill="#e9dfc7"/><rect x="40" y="40" width="1120" height="1520" fill="none" stroke="#8a7350" stroke-width="8"/><text x="90" y="200" font-size="72" fill="#3b2f1e">${text}</text>${lines}</svg>`;
   return sharp(Buffer.from(svg)).jpeg().toBuffer();
 }
 
@@ -148,7 +150,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     expect(await page.getByTestId('agent-badge').count()).toBe(0);
     if (SCREENSHOT) {
       await mkdir(SCREENSHOT.replace(/\/[^/]+$/, ''), { recursive: true });
-      await page.screenshot({ path: SCREENSHOT });
+      await page.screenshot({ path: SCREENSHOT, scale: 'css' });
     }
     await first.getByTestId('accept').click();
     await expect.poll(() => cards.count()).toBe(2);
