@@ -1,0 +1,50 @@
+name: server-ci
+
+# Builds and tests the whole pnpm workspace (app, server, shared) against PostgreSQL with
+# PostGIS, checks types, and fails when the OpenAPI description and the routes disagree.
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: rodokmen
+          POSTGRES_PASSWORD: rodokmen
+          POSTGRES_DB: rodokmen_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rodokmen -d rodokmen_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      # The tests create and drop their own databases through this role.
+      TEST_DATABASE_URL: postgres://rodokmen:rodokmen@localhost:5432/rodokmen_ci
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Chromium for the Playwright tests
+        run: pnpm --filter @rodokmen/server exec playwright install --with-deps chromium
+      - run: pnpm build
+      - run: pnpm typecheck
+      - name: OpenAPI description matches the routes
+        run: pnpm --filter @rodokmen/server run openapi:check
+      - run: pnpm test
+      - name: Deploy switch logic (fake docker)
+        run: bash deploy/scripts/deploy.test.sh

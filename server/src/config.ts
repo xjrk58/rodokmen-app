@@ -30,6 +30,8 @@ const Env = z
     SMTP_SECURE: bool.optional(),
     SMTP_USER: z.string().optional(),
     SMTP_PASSWORD: z.string().optional(),
+    /** Development only: accept a self-signed certificate from a local SMTP server. Ignored in production. */
+    SMTP_INSECURE_TLS: bool.optional(),
     /** Where alerts go: the Owner's address. */
     ALERT_EMAIL: z.string().optional(),
 
@@ -74,7 +76,7 @@ export interface Config {
   mail: {
     transport: 'outbox' | 'smtp';
     from: string;
-    smtp: { host: string; port: number; secure: boolean; user: string | undefined; password: string | undefined } | undefined;
+    smtp: { host: string; port: number; secure: boolean; user: string | undefined; password: string | undefined; insecureTls: boolean } | undefined;
     alertEmail: string | undefined;
   };
   s3: {
@@ -114,7 +116,14 @@ export function loadConfig(source: Record<string, string | undefined> = process.
       transport: e.MAIL_TRANSPORT ?? 'outbox',
       from: e.MAIL_FROM,
       smtp: e.SMTP_HOST
-        ? { host: e.SMTP_HOST, port: e.SMTP_PORT ?? (e.SMTP_SECURE ? 465 : 587), secure: e.SMTP_SECURE ?? false, user: e.SMTP_USER, password: e.SMTP_PASSWORD }
+        ? {
+            host: e.SMTP_HOST,
+            port: e.SMTP_PORT ?? (e.SMTP_SECURE ? 465 : 587),
+            secure: e.SMTP_SECURE ?? false,
+            user: e.SMTP_USER,
+            password: e.SMTP_PASSWORD,
+            insecureTls: e.NODE_ENV !== 'production' && e.SMTP_INSECURE_TLS === true,
+          }
         : undefined,
       alertEmail: e.ALERT_EMAIL,
     },

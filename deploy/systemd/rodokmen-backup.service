@@ -1,0 +1,14 @@
+# Nightly Backup: /etc/systemd/system/rodokmen-backup.service
+# The job writes its result to the backup_status volume; the watchdog alerts the Owner when a
+# run failed or none succeeded for 26 hours.
+[Unit]
+Description=Rodokmen nightly Backup (pg_dump + images into restic)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/rodokmen
+ExecStart=/usr/bin/docker compose --env-file .env --env-file state/images.env --profile jobs run --rm backup
+TimeoutStartSec=3h
+Nice=10

@@ -1,0 +1,11 @@
+# /etc/systemd/system/rodokmen-backup.timer — every night at 02:30 Europe/Prague.
+[Unit]
+Description=Run the Rodokmen Backup every night
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Europe/Prague
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

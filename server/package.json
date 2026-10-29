@@ -2,7 +2,24 @@
   "name": "@rodokmen/server",
   "version": "0.1.0",
   "private": true,
+  "description": "Rodokmen Tree backend: read API, member accounts and operations",
   "type": "module",
+  "main": "dist/main.js",
+  "files": [
+    "dist",
+    "public",
+    "openapi.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "node dist/main.js",
+    "dev": "tsx watch --conditions=@rodokmen/source src/main.ts",
+    "cli": "tsx --conditions=@rodokmen/source src/cli.ts",
+    "openapi": "tsx --conditions=@rodokmen/source src/cli.ts openapi write",
+    "openapi:check": "tsx --conditions=@rodokmen/source src/cli.ts openapi check"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1159.0",
     "@aws-sdk/s3-request-presigner": "^3.1159.0",
@@ -24,21 +41,11 @@
     "@types/node": "^22.20.5",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
+    "@types/smtp-server": "^3.5.13",
     "playwright": "1.63.0",
+    "smtp-server": "^3.21.3",
     "tsx": "^4.23.15",
     "typescript": "7.0.2",
     "vitest": "^4.1.12"
-  },
-  "description": "Rodokmen Tree backend: read API, member accounts and operations",
-  "main": "dist/main.js",
-  "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
-    "start": "node dist/main.js",
-    "dev": "tsx watch --conditions=@rodokmen/source src/main.ts",
-    "cli": "tsx --conditions=@rodokmen/source src/cli.ts",
-    "openapi": "tsx --conditions=@rodokmen/source src/cli.ts openapi write",
-    "openapi:check": "tsx --conditions=@rodokmen/source src/cli.ts openapi check"
   }
 }

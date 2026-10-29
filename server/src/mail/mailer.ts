@@ -42,6 +42,8 @@ export class SmtpMailer implements Mailer {
   constructor(
     private readonly from: string,
     smtp: NonNullable<Config['mail']['smtp']>,
+    /** For tests against a local server with a self-signed certificate only. */
+    tls?: { rejectUnauthorized: boolean },
   ) {
     this.transport = nodemailer.createTransport({
       host: smtp.host,
@@ -50,6 +52,7 @@ export class SmtpMailer implements Mailer {
       // Without implicit TLS, insist on STARTTLS: sign-in links must not travel in clear text.
       requireTLS: !smtp.secure,
       auth: smtp.user ? { user: smtp.user, pass: smtp.password ?? '' } : undefined,
+      tls,
       connectionTimeout: 15_000,
       greetingTimeout: 10_000,
       socketTimeout: 20_000,
@@ -64,7 +67,7 @@ export class SmtpMailer implements Mailer {
 export function createMailer(config: Config, log?: (line: string) => void): Mailer {
   if (config.mail.transport === 'smtp') {
     if (!config.mail.smtp) throw new Error('MAIL_TRANSPORT=smtp needs SMTP_HOST');
-    return new SmtpMailer(config.mail.from, config.mail.smtp);
+    return new SmtpMailer(config.mail.from, config.mail.smtp, config.mail.smtp.insecureTls ? { rejectUnauthorized: false } : undefined);
   }
   return new OutboxMailer(config.env === 'development' ? log : undefined);
 }

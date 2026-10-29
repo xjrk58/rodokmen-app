@@ -1,0 +1,75 @@
+name: backup-restore-test
+
+# Monthly restore test (operations spec): restores the latest Backup from the second provider
+# into a throwaway PostGIS container, checks that the record counts match production at Backup
+# time and that every image is there, and emails the Owner if not.
+#
+# To see it fail on purpose, run it by hand with "empty_table" set (for example "person").
+#
+# Secrets (environment "backups"): RESTIC_REPOSITORY, RESTIC_PASSWORD, BACKUP_S3_ACCESS_KEY_ID,
+# BACKUP_S3_SECRET_ACCESS_KEY, and for the alert: SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER,
+# SMTP_PASSWORD, MAIL_FROM, ALERT_EMAIL. See deploy/README.md.
+on:
+  schedule:
+    - cron: '17 4 3 * *'
+  workflow_dispatch:
+    inputs:
+      empty_table:
+        description: Deliberately empty this table in the scratch restore (the test must then fail)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: backups
+    services:
+      scratch:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: restore
+          POSTGRES_PASSWORD: restore
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U restore"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      RESTIC_REPOSITORY: ${{ secrets.RESTIC_REPOSITORY }}
+      RESTIC_PASSWORD: ${{ secrets.RESTIC_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+      PGHOST: localhost
+      PGUSER: restore
+      PGPASSWORD: restore
+      SCRATCH_DB: rodokmen_restore
+      EMPTY_TABLE: ${{ inputs.empty_table }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install restic and the PostgreSQL 16 client
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q restic postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: Restore the latest Backup and compare record counts
+        run: deploy/backup/restore-check.sh
+      - name: Alert the Owner
+        if: failure()
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+        run: |
+          deploy/backup/send-alert.sh "Monthly restore test failed" \
+            "The restore test of the latest Backup failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}${EMPTY_TABLE:+ (table $EMPTY_TABLE was emptied on purpose)}"

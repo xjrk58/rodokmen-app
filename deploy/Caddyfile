@@ -1,0 +1,25 @@
+# One domain over HTTPS (ADR 0007). Caddy gets and renews the certificate itself and
+# redirects plain HTTP to HTTPS on the same path.
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	# api-blue and api-green both answer to "api" on the internal network; during a deploy
+	# both may run, afterwards only the healthy one. Retry briefly while they switch.
+	reverse_proxy {$UPSTREAM:api:3000} {
+		lb_try_duration 10s
+		lb_try_interval 250ms
+		fail_duration 5s
+	}
+}
