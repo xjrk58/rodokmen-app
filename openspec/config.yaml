@@ -6,7 +6,7 @@ context: |
   Recorded decisions live in docs/adr/; artifacts must not contradict them without saying so.
   This repo (rodokmen-app) is public: never put family data, real people's names or real research notes in it; examples use invented people.
   The map app is mobile-first and must work on Android Chrome; its UI ships in Czech and English.
-  The backend for the Tree is not chosen yet; changes that need it must say so instead of assuming one.
+  The Tree backend is built from scratch and self-hosted on an EU server (ADR 0004); its stack is not settled yet, so changes must not assume one.
 
 rules:
   proposal:
