@@ -1,0 +1,79 @@
+// Shared JSDoc types for the map app. This module has no runtime content.
+
+/**
+ * @typedef {object} Portal
+ * @property {string} name name of the online register viewer
+ * @property {string} url its start page
+ */
+
+/**
+ * An archive that holds parish registers, from app/data/archives.json.
+ * @typedef {object} Archive
+ * @property {string} id
+ * @property {string} name
+ * @property {string} [shortName]
+ * @property {Portal} portal
+ * @property {string | null} placeSearchUrl URL with {name} for a search by place, or null
+ * @property {string} color tint of the archive regions layer
+ * @property {string[]} districts
+ */
+
+/**
+ * @typedef {object} JewishRegisters
+ * @property {string} id
+ * @property {string} name
+ * @property {Portal} portal
+ * @property {string | null} placeSearchUrl
+ */
+
+/**
+ * @typedef {object} ArchiveData
+ * @property {Archive[]} archives
+ * @property {JewishRegisters} jewishRegisters
+ */
+
+/**
+ * A Municipality from app/data/municipalities.json.
+ * @typedef {object} Municipality
+ * @property {string} code
+ * @property {string} name
+ * @property {string} norm name folded by normalize()
+ * @property {string} district
+ * @property {number} lat
+ * @property {number} lon
+ */
+
+/** @typedef {{ name: string, code: string }} DistrictProperties */
+/** @typedef {import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon, DistrictProperties>} DistrictCollection */
+/** @typedef {import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon>} CountryCollection */
+
+/**
+ * A historical map overlay from app/data/layers.json.
+ * @typedef {object} OverlayConfig
+ * @property {string} id
+ * @property {boolean} enabled
+ * @property {'wms'} type
+ * @property {string} url
+ * @property {string} layers
+ * @property {string} format
+ * @property {boolean} transparent
+ * @property {string} version
+ * @property {'EPSG:3857'} crs
+ * @property {number} opacity default opacity, 0 to 1
+ * @property {string} attribution
+ */
+
+/**
+ * @typedef {object} ViewerLink
+ * @property {string} id
+ * @property {string} url URL, may contain {name} for the Municipality name
+ */
+
+/**
+ * @typedef {object} LayersConfig
+ * @property {{ url: string, attribution: string, maxZoom: number }} base
+ * @property {OverlayConfig[]} overlays
+ * @property {ViewerLink[]} viewers
+ */
+
+export {};
