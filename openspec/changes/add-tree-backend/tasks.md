@@ -7,9 +7,10 @@
 
 ## 2. Shared model
 
-- [ ] 2.1 Write Zod schemas in `shared/` for Person, Name, Family (with child link types), Event, Role, Place, House, Parish, Estate, Municipality link, Source, Citation and image metadata; verify with unit tests of valid and invalid examples
-- [ ] 2.2 Write the EDTF-subset parser with `earliest` and `latest`; verify the table of examples in the tree-model spec
-- [ ] 2.3 Write the Living rule as a pure function; verify the spec scenarios (no dates, born 1920, born 1950)
+- [x] 2.1 Write Zod schemas in `shared/` for Person, Name, Family (with child link types), Event, Role, Place, House, Parish, Estate, Municipality link, Source, Citation and image metadata; verify with unit tests of valid and invalid examples
+- [x] 2.2 Write the EDTF-subset parser with `earliest` and `latest`; verify the table of examples in the tree-model spec
+  - Note: the tree-model spec lists the forms but has no table of earliest/latest values. The table now lives in `shared/src/edtf.ts` ("about" widens by 2 years / 1 month / 7 days; "uncertain" keeps the range) and `shared/test/edtf.test.ts` checks every row.
+- [x] 2.3 Write the Living rule as a pure function; verify the spec scenarios (no dates, born 1920, born 1950)
 
 ## 3. Database
 
