@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import fastifyStatic from '@fastify/static';
 import type { FastifyInstance } from 'fastify';
+import { publicScope } from '../auth/plugin.js';
 
 /** server/public, whether running from src/ (tsx) or dist/ (built). */
 export const PUBLIC_DIR = fileURLToPath(new URL('../../public/', import.meta.url));
@@ -15,6 +16,8 @@ const PAGE_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-s
  * same origin as the API (ADR 0007). The app may be absent in a server-only checkout.
  */
 export async function pageRoutes(app: FastifyInstance, options: { appDir: string | undefined; log: (msg: string) => void }) {
+  // Pages and files are public; what they show comes from the API, which is not.
+  publicScope(app);
   const authHtml = readFileSync(`${PUBLIC_DIR}auth/index.html`, 'utf8');
 
   await app.register(fastifyStatic, {
