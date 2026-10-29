@@ -1,0 +1,17 @@
+{
+  "$comment": "Type-checks the Node scripts, the tests and the Playwright config.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "target": "ES2023",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["scripts/**/*.mjs", "scripts/**/*.d.ts", "tests/**/*.mjs", "tests/**/*.js", "playwright.config.js"]
+}
