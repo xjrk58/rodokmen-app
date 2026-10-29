@@ -8,7 +8,8 @@ context: |
   The map app is mobile-first and must work on Android Chrome; its UI ships in Czech and English.
   The Tree backend is built from scratch (ADR 0004): TypeScript on Node, one PostgreSQL + PostGIS database (ADR 0005), current state plus a log of accepted Proposals (ADR 0006).
   One public monorepo with app/, server/ and shared/; the PWA is the only interface; app and API share one domain on an EU VPS (ADR 0007).
-  rodokmen-data is a nightly one-way Export, never edited by hand (ADR 0008).
+  The nightly one-way Export goes to the private rodokmen-export repo and is never edited by hand (ADR 0008, 0010).
+  The private rodokmen-data repo is the Owner's earlier Vault: imported once (add-vault-import), then a read-only archive (ADR 0010).
 
 rules:
   proposal:

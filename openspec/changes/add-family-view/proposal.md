@@ -12,6 +12,7 @@ With the Tree on the server and Proposals flowing in, Members need to see their 
 - Pedigree of up to 6 generations, and a descendants list.
 - Family on the map: pins for Events, a year slider, a person's life path, and a "Family here" section in the place sheet.
 - The last-loaded family data stays available offline.
+- Unrelated people (from `add-vault-import`) are hidden by default in search, lists, pedigree and pins.
 
 Out of scope: Proposal forms and the review queue (`add-proposals-and-review`); charts beyond pedigree and descendants; printing; public sharing of any view.
 

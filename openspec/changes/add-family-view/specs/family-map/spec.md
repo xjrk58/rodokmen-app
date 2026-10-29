@@ -13,6 +13,13 @@ For signed-in Members, the map SHALL show a pin for every Place or House with Ev
 - **WHEN** a Member zooms from the whole country into one district
 - **THEN** grouped pins split into one pin per Place or House
 
+### Requirement: Family pins show the family
+Family pins SHALL count only Relatives and Possible relatives by default, with a map setting to include Unrelated people.
+
+#### Scenario: Busy village
+- **WHEN** a village has Events of 3 Relatives and 400 Unrelated people
+- **THEN** its pin shows the 3 Relatives until the Member includes Unrelated people
+
 ### Requirement: Year slider
 The map SHALL offer a year range from 1600 to 1950 that limits the pins to Events in that range, and a play control that steps through the decades.
 

@@ -24,6 +24,13 @@ Members SHALL be able to search Persons by any Name, ignoring case and diacritic
 - **WHEN** a Member types "dvorakova"
 - **THEN** Persons named Dvořáková appear with their life years
 
+### Requirement: Unrelated people hidden by default
+Search, the people list and the pedigree SHALL show Relatives and Possible relatives by default, with a switch to include Unrelated people. Possible relatives SHALL be marked as such wherever they appear.
+
+#### Scenario: Village index entries
+- **WHEN** a Member searches a surname shared by family members and unrelated villagers
+- **THEN** only Relatives and Possible relatives are listed until the Member switches on Unrelated people
+
 ### Requirement: Person page
 The person page SHALL show all Names, the Events the Person took part in with their Role, Place or House and date, the Families as partner and as child, and each Citation with its confidence and images. It SHALL offer "Propose a change" and the record's history.
 

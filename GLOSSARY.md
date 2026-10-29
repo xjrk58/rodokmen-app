@@ -42,6 +42,26 @@ _Avoid_: vault, database, graph, family tree file
 An individual who lived or lives, with everything the Tree knows about them.
 _Avoid_: individual, ancestor (as a type), relative
 
+**Family root**:
+A Person the Owner marks as a starting point of the family, such as the couple a research effort descends from.
+_Avoid_: root, proband, home person
+
+**Relative**:
+A Person linked to a Family root through parent, child or partner links, each supported by a Citation of normal or higher confidence.
+_Avoid_: family member, blood relative
+
+**Possible relative**:
+A Person linked to a Family root only through at least one link whose Citations are all of low or very low confidence.
+_Avoid_: maybe-relative, candidate
+
+**Unrelated person**:
+A Person in the Tree with no link to any Family root, kept because they appear in the family's Places, Houses or registers, for example as a godparent or a neighbour.
+_Avoid_: stranger, non-relative, nepříbuzný (in English text)
+
+**Label**:
+A free word or short phrase a Member attaches to a Person to group them, such as a family line.
+_Avoid_: tag, category
+
 **Living person**:
 A Person born within the last 100 years with no recorded death, or a Person with neither birth nor death recorded.
 _Avoid_: alive, private person
@@ -77,6 +97,14 @@ A Source that records what a relative remembers or was told, with who said it an
 _Avoid_: oral source, hearsay, family memory
 
 ## Copies of the Tree
+
+**Vault**:
+The Owner's earlier Markdown notes in the private `rodokmen-data` repo, written before the Tree existed. It is imported once and then kept as a read-only archive.
+_Avoid_: the Tree (for the Vault), Obsidian repo, data repo
+
+**Import batch**:
+The set of Proposals one run of the Vault importer submits together. The Owner may accept a whole Import batch at once.
+_Avoid_: import, bulk proposal
 
 **Export**:
 A copy of the Tree that leaves the server, as GEDCOM or Markdown. In an Export, Living people keep only their name, sex, relationships and birth year.
