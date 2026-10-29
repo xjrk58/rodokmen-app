@@ -111,6 +111,8 @@ export function createMap(container, data) {
   else map.fitBounds(country.getBounds(), { paddingTopLeft: [8, 62], paddingBottomRight: [8, 8] });
 
   const writeHash = () => {
+    // The work panel owns the address while it is open (#work/…).
+    if (location.hash.startsWith('#work')) return;
     const c = map.getCenter();
     history.replaceState(null, '', `#map=${Number(map.getZoom().toFixed(2))}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}`);
   };
