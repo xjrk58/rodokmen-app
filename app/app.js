@@ -11,6 +11,7 @@ import { PlaceSheet } from './src/place-sheet.js';
 import { SearchBox } from './src/search-box.js';
 import { Settings } from './src/settings.js';
 import { registerServiceWorker } from './src/sw-client.js';
+import { WorkPanel } from './src/work.js';
 
 /**
  * @template {HTMLElement} T
@@ -104,6 +105,16 @@ async function main() {
     search.refresh();
     layers.render();
     settings.render();
+  });
+
+  new WorkPanel({
+    panel: byId('work'),
+    body: byId('work-body'),
+    nav: byId('work-nav'),
+    close: /** @type {HTMLButtonElement} */ (byId('work-close')),
+    button: /** @type {HTMLButtonElement} */ (byId('work-button')),
+    badge: byId('work-badge'),
+    toast: byId('drafts-toast'),
   });
 
   document.body.dataset.ready = 'true';

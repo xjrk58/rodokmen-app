@@ -22,7 +22,7 @@ interface Body {
 
 function render(to: string, body: Body): MailMessage {
   const text = [...body.intro, body.button.url, ...body.outro, body.signature].join('\n\n') + '\n';
-  const p = (t: string) => `<p style="margin:0 0 16px">${escapeHtml(t)}</p>`;
+  const p = (t: string) => `<p style="margin:0 0 16px${t.includes('\n') ? ';white-space:pre-line' : ''}">${escapeHtml(t)}</p>`;
   const html = [
     '<!doctype html>',
     `<html><body style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.5;color:#1f2933;max-width:560px;margin:0 auto;padding:24px">`,
@@ -126,4 +126,92 @@ export function alertEmail(e: AlertEmail): MailMessage {
   const text = `${e.subject}\n\n${e.details}\n\nServer: ${e.origin}\nSee deploy/README.md, "When an alert arrives".\n`;
   const html = `<!doctype html><html><body style="font-family:system-ui,sans-serif"><h2>${escapeHtml(e.subject)}</h2><pre style="white-space:pre-wrap">${escapeHtml(e.details)}</pre><p>Server: ${escapeHtml(e.origin)}<br>See deploy/README.md, "When an alert arrives".</p></body></html>`;
   return { to: e.to, subject, text, html };
+}
+
+export interface OutcomeEmail {
+  to: string;
+  language: UiLanguage;
+  displayName: string;
+  accepted: boolean;
+  editorName: string;
+  note: string | null;
+  /** The Proposal's changes, one readable sentence each. */
+  changes: string[];
+  link: string;
+}
+
+const MAX_LISTED_CHANGES = 8;
+
+function listed(changes: string[], more: (n: number) => string): string[] {
+  const shown = changes.slice(0, MAX_LISTED_CHANGES).map((c) => `• ${c}`);
+  if (changes.length > MAX_LISTED_CHANGES) shown.push(more(changes.length - MAX_LISTED_CHANGES));
+  return [shown.join('\n')];
+}
+
+/** The outcome of a Proposal for its author, in the author's language (notifications spec). */
+export function outcomeEmail(e: OutcomeEmail): MailMessage {
+  if (e.language === 'cs') {
+    return render(e.to, {
+      subject: e.accepted ? 'Váš návrh byl přijat' : 'Váš návrh nebyl přijat',
+      intro: [
+        `Dobrý den, ${e.displayName},`,
+        e.accepted ? `${e.editorName} přijal(a) váš návrh do Rodokmenu. Změny teď vidí všichni členové.` : `${e.editorName} váš návrh do Rodokmenu nepřijal(a). Ve stromu se nic nezměnilo.`,
+        ...(e.note ? [`Poznámka: ${e.note}`] : []),
+        ...listed(e.changes, (n) => `… a ${n} dalších změn`),
+      ],
+      button: { label: 'Otevřít návrh', url: e.link },
+      outro: ['Tyto e-maily můžete vypnout v Rodokmenu v Nastavení.'],
+      signature: 'Rodokmen',
+    });
+  }
+  return render(e.to, {
+    subject: e.accepted ? 'Your Proposal was accepted' : 'Your Proposal was not accepted',
+    intro: [
+      `Hello ${e.displayName},`,
+      e.accepted ? `${e.editorName} accepted your Proposal to Rodokmen. Every Member now sees the changes.` : `${e.editorName} did not accept your Proposal to Rodokmen. Nothing in the Tree changed.`,
+      ...(e.note ? [`Note: ${e.note}`] : []),
+      ...listed(e.changes, (n) => `… and ${n} more changes`),
+    ],
+    button: { label: 'Open the Proposal', url: e.link },
+    outro: ['You can turn these emails off in Rodokmen, under Settings.'],
+    signature: 'Rodokmen',
+  });
+}
+
+export interface DigestEmail {
+  to: string;
+  language: UiLanguage;
+  displayName: string;
+  /** Pending Proposals grouped by author, oldest first. */
+  groups: Array<{ author: string; isAgent: boolean; items: Array<{ submittedAt: Date; summary: string; changes: number; link: string }> }>;
+  queueLink: string;
+}
+
+const dayFormat = (language: UiLanguage, d: Date) => new Intl.DateTimeFormat(language === 'cs' ? 'cs-CZ' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Prague' }).format(d);
+
+/** The daily list of Proposals waiting for review, for one Editor. */
+export function digestEmail(e: DigestEmail): MailMessage {
+  const total = e.groups.reduce((n, g) => n + g.items.length, 0);
+  const cs = e.language === 'cs';
+  const groups = e.groups.map((g) => {
+    const who = g.isAgent ? `${g.author} (${cs ? 'agent' : 'Agent'})` : g.author;
+    const lines = g.items.map((i) => `• ${dayFormat(e.language, i.submittedAt)}: ${i.summary}${i.changes > 1 ? (cs ? ` (změn: ${i.changes})` : ` (${i.changes} changes)`) : ''}\n  ${i.link}`);
+    return `${who}\n${lines.join('\n')}`;
+  });
+  if (cs) {
+    return render(e.to, {
+      subject: `Rodokmen: návrhy ke kontrole (${total})`,
+      intro: [`Dobrý den, ${e.displayName},`, `ke kontrole čeká návrhů: ${total}.`, ...groups],
+      button: { label: 'Otevřít frontu ke kontrole', url: e.queueLink },
+      outro: ['Tento přehled chodí editorům jednou denně v 18:00, jen když něco čeká.'],
+      signature: 'Rodokmen',
+    });
+  }
+  return render(e.to, {
+    subject: `Rodokmen: ${total} Proposal${total === 1 ? '' : 's'} to review`,
+    intro: [`Hello ${e.displayName},`, `${total} Proposal${total === 1 ? ' is' : 's are'} waiting for review.`, ...groups],
+    button: { label: 'Open the review queue', url: e.queueLink },
+    outro: ['Editors get this summary once a day at 18:00, only when something is waiting.'],
+    signature: 'Rodokmen',
+  });
 }

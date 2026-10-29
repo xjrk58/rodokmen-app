@@ -325,6 +325,8 @@ export const CitationDetail = CitationRecord.safeExtend({
 
 export const ImageQuery = z.object({ kind: ImageKind.optional() });
 
+export const ImageLinkQuery = z.object({ full: z.enum(['true', 'false']).optional().describe('true: the original file instead of the display copy') });
+
 export const IdParams = z.object({ id: Id });
 
 export const Health = z

@@ -17,6 +17,7 @@ export const HTTP_ERROR_NAMES: Record<number, string> = {
   404: 'Not Found',
   409: 'Conflict',
   410: 'Gone',
+  413: 'Content Too Large',
   415: 'Unsupported Media Type',
   429: 'Too Many Requests',
   500: 'Internal Server Error',
