@@ -6,13 +6,13 @@ Anyone researching a Czech ancestor first needs to know which archive holds the 
 
 ## What Changes
 
-- A mobile-first map of the Czech lands, installable as a PWA, hosted on GitHub Pages from this repo.
+- A mobile-first map of the Czech lands, installable as a PWA, built in `app/` and previewed on GitHub Pages until it moves to its own domain (ADR 0007).
 - Search for any Municipality by name, ignoring diacritics.
 - A place sheet for any point or Municipality: the archive that holds its registers, a button to that archive's online viewer, and a hint when an archive border is near.
 - Historical map overlays (2nd and 3rd military surveys) if the public map services work in the map's projection; links to other historical map viewers either way.
 - Archive regions drawn on the map.
 - The app shell and reference data work offline after one online visit.
-- Public reference data in `data/`: district boundaries named and assigned to archives, the Municipality gazetteer, and the archive list with portal links. A weekly job checks the portal links.
+- Public reference data in `app/data/`: district boundaries named and assigned to archives, the Municipality gazetteer, and the archive list with portal links. A weekly job checks the portal links.
 
 Out of scope: anything about people, the Tree, logins or Proposals (a later change, once the backend is chosen); village-level places below Municipality and German names (a later gazetteer change); parish layers.
 
@@ -29,7 +29,7 @@ Out of scope: anything about people, the Tree, logins or Proposals (a later chan
 
 ## Impact
 
-- New static web app in this repo (HTML, CSS, ES modules, vendored Leaflet), deployed by a GitHub Pages workflow.
-- New public data files under `data/`, built by scripts from public sources (RÚIAN-derived district polygons, the 33bcdd/souradnice-mest municipality list).
+- New static web app in `app/` (HTML, CSS, TypeScript-checked ES modules, vendored Leaflet), deployed as a preview by a GitHub Pages workflow.
+- New public data files under `app/data/`, built by scripts from public sources (RÚIAN-derived district polygons, the 33bcdd/souradnice-mest municipality list).
 - Runtime dependencies on external services: OpenStreetMap tiles, CENIA map services, and the archive portals the app links to.
 - Supersedes the map sections of `SPEC.md`.

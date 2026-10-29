@@ -43,8 +43,20 @@ An individual who lived or lives, with everything the Tree knows about them.
 _Avoid_: individual, ancestor (as a type), relative
 
 **Living person**:
-A Person born within the last 100 years with no recorded death.
+A Person born within the last 100 years with no recorded death, or a Person with neither birth nor death recorded.
 _Avoid_: alive, private person
+
+**Family**:
+Two partners and their children, recorded as one unit. A Person can be a child in one Family and a partner in several.
+_Avoid_: couple, household, marriage (as the record)
+
+**Event**:
+A dated happening in people's lives, such as a birth, baptism, marriage, death, burial, residence or census entry, with its Place or House and its Citations.
+_Avoid_: fact, milestone, record
+
+**Role**:
+The part a Person plays in an Event: child, father, mother, godparent, witness or priest.
+_Avoid_: relation, participant type
 
 ## Evidence
 
@@ -59,6 +71,16 @@ _Avoid_: source (for a single entry), reference, footnote
 **Family account**:
 A Source that records what a relative remembers or was told, with who said it and when.
 _Avoid_: oral source, hearsay, family memory
+
+## Copies of the Tree
+
+**Export**:
+A copy of the Tree that leaves the server, as GEDCOM or Markdown. In an Export, Living people keep only their name, sex, relationships and birth year.
+_Avoid_: dump, download
+
+**Backup**:
+A complete, encrypted copy of the server's data, kept only for recovery and never reduced.
+_Avoid_: export, snapshot
 
 ## Places
 

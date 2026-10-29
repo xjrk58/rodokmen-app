@@ -7,7 +7,7 @@ Decide which archive holds the parish registers for any location in the Czech la
 ## ADDED Requirements
 
 ### Requirement: Archive by district
-The system SHALL assign every location inside the Czech Republic to exactly one register-holding archive, based on the district (okres) the location lies in, using the archive regions listed in `data/archives.json`.
+The system SHALL assign every location inside the Czech Republic to exactly one register-holding archive, based on the district (okres) the location lies in, using the archive regions listed in `app/data/archives.json`.
 
 #### Scenario: Location in an East Bohemian district
 - **WHEN** the reader asks for the archive of a location in the Pardubice district
@@ -47,7 +47,7 @@ For every location in the Czech lands, the system SHALL also point to the Nation
 - **THEN** the sheet includes a secondary link to the National Archives for Jewish registers
 
 ### Requirement: Archive list is data, not code
-Archive names, regions and portal URLs SHALL live only in `data/archives.json`, and a scheduled check SHALL report any portal URL that stops answering.
+Archive names, regions and portal URLs SHALL live only in `app/data/archives.json`, and a scheduled check SHALL report any portal URL that stops answering.
 
 #### Scenario: Portal moves
 - **WHEN** an archive portal URL returns an error on the weekly check

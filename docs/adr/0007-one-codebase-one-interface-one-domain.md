@@ -1,0 +1,3 @@
+# One TypeScript codebase, one interface, one domain
+
+The backend and the map app are written in TypeScript and live together in the public rodokmen-app repo (`app/`, `server/`, `shared/`), sharing the data model and its validation. The repo never holds family data. The PWA is the only interface: Members map, read, propose and review there, and there is no separate admin site. App and API are served from one domain on our own VPS, because passkeys and secure login cookies need one stable origin; GitHub Pages only hosts previews of the map. This replaces the draft plan of a Pages-hosted app reading a private Git repo with a personal token.

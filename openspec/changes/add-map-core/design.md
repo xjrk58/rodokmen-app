@@ -2,7 +2,7 @@
 
 ## Context
 
-The repo holds only planning documents so far. The map must run as a static site on GitHub Pages and work on Android Chrome. It has no server of its own: everything it knows about archives and Municipalities ships as public data files. The Tree and its backend are not chosen yet (see proposal.md, out of scope), so nothing here may depend on them.
+The repo holds only planning documents so far. It becomes a TypeScript monorepo with `app/`, `server/` and `shared/` (ADR 0007); this change touches only `app/`. The map runs as static files: previewed on GitHub Pages now, served from the VPS domain later. It needs no server: everything it knows about archives and Municipalities ships as public data files. The Tree backend comes in later changes (see proposal.md, out of scope), so nothing here may depend on it.
 
 ## Goals / Non-Goals
 
@@ -17,22 +17,22 @@ The repo holds only planning documents so far. The map must run as a static site
 ## Decisions
 
 ### Static ES modules with vendored Leaflet, no build step
-Plain HTML, CSS and ES modules, with Leaflet 1.9 copied into `vendor/`. Agents and humans can edit any file and reload, and GitHub Pages serves the repo as is. A framework (React, Svelte) was considered and rejected: the app has few screens, and a build chain adds upkeep for little gain at this size.
+Plain HTML, CSS and ES modules in `app/`, with Leaflet 1.9 copied into `app/vendor/`. Type safety comes from TypeScript checking JSDoc-annotated JavaScript (`tsc --noEmit` in CI), so the same domain types can later be shared from `shared/` without a bundler. Agents and humans can edit any file and reload, and any static host serves `app/` as is. A framework (React, Svelte) was considered and rejected for now: the map has few screens. The family view and review queue may revisit this when they arrive.
 
 ### Archive lookup = point in district polygon, then district → archive
-The archive regions follow the districts of 1960–2000, which match today's districts closely enough. The build script names each district polygon from the municipality points inside it, simplifies the polygons, and writes `data/districts.geojson`. `data/archives.json` maps district names to archives. Lookup is a point-in-polygon test in the browser. The near-border hint is the distance from the point to the nearest edge whose neighbouring district belongs to another archive. A per-parish table was considered and rejected for now: no open dataset of parishes exists, and the district rule is right for most places.
+The archive regions follow the districts of 1960–2000, which match today's districts closely enough. The build script names each district polygon from the municipality points inside it, simplifies the polygons, and writes `app/data/districts.geojson`. `app/data/archives.json` maps district names to archives. Lookup is a point-in-polygon test in the browser. The near-border hint is the distance from the point to the nearest edge whose neighbouring district belongs to another archive. A per-parish table was considered and rejected for now: no open dataset of parishes exists, and the district rule is right for most places.
 
 ### Reference data pipeline
-`scripts/build-data.mjs` (Node 22, mapshaper) reads the RÚIAN-derived district polygons and the 6,258-row municipality list. It writes `data/districts.geojson` (target ~300 KB), `data/municipalities.json` (name, normalized name, district, lat, lon) and `data/country.geojson`. The script fails if any polygon gets no name, if any district has no archive, or if any municipality falls outside every polygon. The generated files are committed, so the site needs no build.
+`app/scripts/build-data.mjs` (Node 22, mapshaper) reads the RÚIAN-derived district polygons and the 6,258-row municipality list. It writes `app/data/districts.geojson` (target ~300 KB), `app/data/municipalities.json` (name, normalized name, district, lat, lon) and `app/data/country.geojson`. The script fails if any polygon gets no name, if any district has no archive, or if any municipality falls outside every polygon. The generated files are committed, so the site needs no build.
 
 ### Historical overlays: test the projection first
 The CENIA metadata lists only S-JTSK (EPSG:5514) for the 2nd military survey service. Task 5.1 therefore requests one Web Mercator (EPSG:3857) tile from each CENIA WMS before any overlay work starts. If a service answers correctly in 3857, it becomes a Leaflet WMS overlay. If it does not, the overlay is dropped and only the links remain (see the historical-maps spec). A separate S-JTSK map view through Proj4Leaflet stays a later option.
 
 ### Service worker
-The service worker precaches the shell and `data/` under a release version and serves them cache-first. Tiles get their own runtime cache, capped at 2,000 entries with least-recently-used eviction. A new worker waits until the reader taps "New version, reload".
+The service worker precaches the shell and `app/data/` under a release version and serves them cache-first. Tiles get their own runtime cache, capped at 2,000 entries with least-recently-used eviction. A new worker waits until the reader taps "New version, reload".
 
 ### Internationalisation
-Strings live in `i18n/cs.json` and `i18n/en.json`. The language comes from `navigator.language`, falls back to English, and the reader's choice is kept in localStorage.
+Strings live in `app/i18n/cs.json` and `app/i18n/en.json`. The language comes from `navigator.language`, falls back to English, and the reader's choice is kept in localStorage.
 
 ### Tests
 Playwright with headless Chromium runs in CI on every push. It covers load, search ("zdar" → Žďár nad Sázavou), archive answers for the tricky districts, the place sheet, and an offline reload. The data script has its own checks (above).
