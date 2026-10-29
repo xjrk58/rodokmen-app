@@ -7,11 +7,18 @@ Bring the Owner's Vault into the Tree once, faithfully and reviewably, without i
 ## ADDED Requirements
 
 ### Requirement: Importer reads the Vault format
-The importer SHALL read a Vault laid out as the earlier spec defined: `people/`, `houses/`, `places/`, `parishes/`, `registers/`, `sources/` and `attachments/`, with one Markdown note per record, YAML frontmatter and `[[id]]` links. It SHALL ignore `log/`, `plans/`, `data/` and any folder it doesn't know, and say so in its report.
+The importer SHALL read a Vault laid out as the earlier spec defined: `people/`, `houses/`, `places/`, `parishes/`, `registers/`, `sources/` and `attachments/`, with one Markdown note per record, YAML frontmatter and `[[id]]` links. It SHALL ignore `data/` and any folder it doesn't know, and say so in its report.
 
 #### Scenario: Unknown folder
-- **WHEN** the Vault contains a folder `plans/`
+- **WHEN** the Vault contains a folder `data/`
 - **THEN** the importer skips it and the report lists it as not imported
+
+### Requirement: Research logs and plans become Research leads
+Each note in `plans/` SHALL become an open Research lead. Each search a `log/` note records SHALL become a search record on a Research lead, found or not found as the log says. Lead text keeps the note's wording, and the lead links the Persons and Places the note links.
+
+#### Scenario: Negative search in a log
+- **WHEN** a log note says registers N 1784–1820 pages 1–60 were searched for a baptism and nothing was found
+- **THEN** a Research lead exists, closed as not found, with that search record
 
 ### Requirement: Dry run before anything is submitted
 The importer SHALL offer a dry run that submits nothing. It reports how many records of each kind would be created and the planned Proposals. It also lists every field or value it can't map, every link to a missing note, every date that is not valid EDTF, and every image it can't read.

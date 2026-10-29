@@ -9,6 +9,8 @@ context: |
   The Tree backend is built from scratch (ADR 0004): TypeScript on Node, one PostgreSQL + PostGIS database (ADR 0005), current state plus a log of accepted Proposals (ADR 0006).
   One public monorepo with app/, server/ and shared/; the PWA is the only interface; app and API share one domain on an EU VPS (ADR 0007).
   The nightly one-way Export goes to the private rodokmen-export repo and is never edited by hand (ADR 0008, 0010).
+  Scan reading sends scans to the Anthropic API only when the Owner switches it on (ADR 0011).
+  For signed-in Members the app's home screen is the tree around a Focus Person; the map is a tab, and the home screen for visitors who aren't signed in.
   The private rodokmen-data repo is the Owner's earlier Vault: imported once (add-vault-import), then a read-only archive (ADR 0010).
 
 rules:

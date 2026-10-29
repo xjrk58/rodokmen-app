@@ -21,8 +21,11 @@ Preact (about 4 KB) with htm template literals runs as plain ES modules, so ther
 ### Local cache
 The app keeps loaded records in IndexedDB, keyed by id and version. The person page renders from cache first and refreshes when online. A small "as of" label shows the cache time. Nothing is cached for someone who is not signed in, and signing out clears the cache.
 
-### Pedigree layout
-The pedigree is a horizontal SVG tree, sized to show 4 generations at phone width and scrolled sideways for 5 and 6. Fan charts were considered and rejected: their labels become unreadable on a phone.
+### Tree home and layout
+The tree is the default route for signed-in Members (`#person-<id>`, else the remembered focus, else the Member's own Person, else a Family root). The map route stays the default without sign-in. The tree is an SVG hourglass drawn from one API request that returns the focus Person's ancestors and descendants with partners, to the depth asked for. Layout runs in the browser: ancestors as a binary tree above the focus, descendants grouped by Family below, partners on the same row. It's sized so 3 up and 2 down fit at phone width, with pan and pinch-zoom for more. Refocusing animates the move, so the Member keeps their bearings. Fan charts were considered and rejected: their labels become unreadable on a phone.
+
+### The Member's own Person
+`account.person_id` links a Member to a Person and is set by the Owner only. The link is shown to that Member alone. It's a link to a Living person, so it is never part of an Export.
 
 ### Map layers
 Family pins come from the map query (bounding box plus year range) and use Leaflet marker clustering. The year slider debounces its requests. The life path is a polyline in date order.

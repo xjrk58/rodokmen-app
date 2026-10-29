@@ -18,9 +18,10 @@
 
 ## 3. Importer
 
-- [ ] 3.1 Create an invented fixture Vault in `server/test/fixtures/vault/` covering every note type, a broken link, a bad date, an unknown folder, scans, a PDF and a DOC; verify the fixture contains no real names by the repo guard
+- [ ] 3.1 Create an invented fixture Vault in `server/test/fixtures/vault/` covering every note type including `plans/` and `log/`, a broken link, a bad date, an unknown folder, scans, a PDF and a DOC; verify the fixture contains no real names by the repo guard
 - [ ] 3.2 Write the reader (frontmatter, `[[links]]`, EDTF check, unknown folders); verify the unknown-folder and broken-link scenarios
 - [ ] 3.3 Write the mapper per the design table, including the Vault provenance Source, confidence carry-over and tag rules; verify the baptism-entry, fact-from-body, probable-Person, line-tag and transcription scenarios
+- [ ] 3.3a Map `plans/` to open Research leads and `log/` searches to search records; verify the negative-search-in-a-log scenario
 - [ ] 3.4 Write the dry run report (counts, planned Proposals, unmapped fields, broken links, bad dates, unreadable files, Living and relation differences); verify the nothing-submitted and Vault-says-Living scenarios
 - [ ] 3.5 Write the submitter: Agent token, uploads, DOC to PDF with LibreOffice, one Import batch per run; verify the family-document and batch-in-the-queue scenarios against a test server
 - [ ] 3.6 Keep the id map with note hashes and submit only new or changed notes on a re-run; verify the second-run scenario

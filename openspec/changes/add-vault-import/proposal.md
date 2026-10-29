@@ -18,8 +18,9 @@ Most of the family research so far lives in the Owner's Vault: about 4,100 Perso
   - Family roots, and a computed relation to the family (Relative, Possible relative, Unrelated person), replacing the Vault's `nepribuzny` / `mozny-pribuzny` tags
   - search and the map can leave Unrelated people out
 - After import day, the Vault becomes a read-only archive, and Agents contribute through the API.
+- The Vault's `plans/` become open Research leads, and its `log/` searches become search records.
 
-Out of scope: research logs and plans from the Vault (they stay in the archive); syncing in both directions; importing from other genealogy programs (GEDCOM import is a later change); any AI interpretation of prose during import.
+Out of scope: syncing in both directions; importing from other genealogy programs (GEDCOM import is a later change); any AI interpretation of prose during import.
 
 ## Capabilities
 
@@ -39,5 +40,5 @@ These capabilities come from `add-tree-backend` and `add-proposals-and-review`, 
 - New command in `server/` (`vault-import`), a client of the public API, plus an invented fixture Vault for tests. The real Vault never enters this repo.
 - Schema additions: notes columns, a Person label table, a Family root flag, a stored relation status recomputed after each accepted Proposal, Import batch and batch order on Proposals, and Source documents.
 - Review queue screen: batch view and "Accept batch".
-- Depends on `add-agent-access` (Agent tokens). `add-family-view` hides Unrelated people by default.
+- Depends on `add-agent-access` (Agent tokens) and `add-research-leads` (for `plans/` and `log/`). `add-family-view` hides Unrelated people by default.
 - `rodokmen-data` becomes read-only, and the Export target moves to `rodokmen-export` (ADR 0010).

@@ -37,6 +37,8 @@ The Vault follows the draft spec's vault format: YAML frontmatter, `[[id]]` link
 | `tags` | Labels, except `obec/…`, `nepribuzny`, `mozny-pribuzny`, `import/…` |
 | body | research notes; for Source notes also the transcription |
 | `living`, `aliases` | not imported (Living is computed); aliases go into the id map |
+| `plans/<id>` | open Research lead with the note's text and links |
+| `log/<id>` searches | search records on Research leads (found or not found) |
 
 ### Proposal order and batch-scoped references
 The importer topologically orders its Proposals. Places, Houses, Parishes and registers come first. Then Source notes, in date order, so a Person is created by the earliest entry that names them. Then one Proposal per Person for facts no Source note covers. A Proposal may reference a record created earlier in the batch by a batch reference `{batch, proposal, tempId}`. The server stores the dependency and resolves the reference when the earlier Proposal is accepted. That only works if acceptance follows dependency order, so the review rule enforces it. Waves that wait for acceptance were considered; they would make the Owner run the importer five times.

@@ -92,6 +92,22 @@ _Avoid_: register (on its own), record, document
 A pointer to one entry in a Source: the page or frame, a transcription of the entry, a private image of the page, and a confidence from very low to very high.
 _Avoid_: source (for a single entry), reference, footnote
 
+**Research lead**:
+A written next step in the research: a question, where to look and why, and what came of it. A Research lead states no fact about the family.
+_Avoid_: task, todo, plan, hint
+
+**Search record**:
+What one attempt on a Research lead looked at (which Source, years and pages, when, by whom) and what it found, including nothing.
+_Avoid_: log entry, negative result
+
+**Reading**:
+The server's machine transcription of a scan into entries, which a Member checks before anything is proposed.
+_Avoid_: OCR, AI import, recognition
+
+**Focus Person**:
+The Person the tree is centred on at the moment.
+_Avoid_: root, home person, selected person
+
 **Family account**:
 A Source that records what a relative remembers or was told, with who said it and when.
 _Avoid_: oral source, hearsay, family memory
