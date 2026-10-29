@@ -11,6 +11,8 @@
 //   - a //@ contract line does not have that form, or names a requirement that does not exist;
 //   - a //@ contract line sits in a file that no LemmaScript-files.txt lists, or on a function
 //     that lsc does not verify (in a file with //@ verify, the function lacks //@ verify);
+//   - a file has //@ verify, requires, ensures, invariant or decreases lines but no
+//     LemmaScript-files.txt lists it (so CI would never prove them);
 //   - with --check: docs/verification.md is not what this script would write.
 //
 // It writes docs/verification.md: requirement -> function -> file, and everything the proofs
@@ -29,6 +31,7 @@ const OUTPUT = 'docs/verification.md';
 const CODE = /\.(ts|tsx|mts|js|mjs)$/;
 const CONTRACT_LINE = /^\s*\/\/@ contract\s+(.*?)\s*$/;
 const CONTRACT_TEXT = /^([a-z0-9][a-z0-9-]*): (\S.*)$/;
+const PROOF_LINE = /^\s*\/\/@ (verify|requires|ensures|invariant|decreases)\b/;
 const TRUST_MARKER = /^\s*\/\/@ (assume|havoc|extern|autohavoc|impure)\b\s*(.*?)\s*$/;
 
 const problems = [];
@@ -163,6 +166,10 @@ for (const [file, lines] of sources) {
     const m = CONTRACT_LINE.exec(line);
     if (m) contractLines.push({ file, line: i + 1, text: m[1] });
   });
+}
+for (const [file, lines] of sources) {
+  const at = lines.findIndex((l) => PROOF_LINE.test(l));
+  if (at >= 0 && !verifiedFiles.has(file)) problem(`${file}:${at + 1}: has //@ proof annotations but no LemmaScript-files.txt lists it`);
 }
 for (const c of contractLines) {
   const where = `${c.file}:${c.line}`;
