@@ -7,7 +7,8 @@ import type { Clock } from '../tree/summaries.js';
  * - a nightly Backup failed (one alert per failed run), or none has succeeded for 26 hours
  *   (the job did not run or hung).
  * The watchdog runs next to the API on the VPS and checks the public URL, so it notices
- * Caddy, certificate and API failures alike.
+ * Caddy, certificate and API failures alike. An alert counts as given only once it has been
+ * sent: if sending fails (the mail service is down), the next tick tries again.
  */
 export const HEALTH_ALERT_AFTER_MS = 5 * 60_000;
 export const BACKUP_MAX_AGE_MS = 26 * 3_600_000;
@@ -41,9 +42,12 @@ export class Watchdog {
     this.startedAt = o.clock.now();
   }
 
+  /** One round of checks. Throws if an alert could not be sent, after running every check. */
   async tick(): Promise<void> {
-    await this.tickHealth();
-    if (this.o.readBackupStatus) await this.tickBackup();
+    const failed: unknown[] = [];
+    await this.tickHealth().catch((error: unknown) => failed.push(error));
+    if (this.o.readBackupStatus) await this.tickBackup().catch((error: unknown) => failed.push(error));
+    if (failed.length) throw new AggregateError(failed, 'an alert could not be sent; it is tried again on the next tick');
   }
 
   private async tickHealth(): Promise<void> {
@@ -66,11 +70,11 @@ export class Watchdog {
     this.lastFailure = result.detail;
     const failingFor = now.getTime() - this.failingSince.getTime();
     if (!this.healthAlerted && failingFor >= (this.o.healthAlertAfterMs ?? HEALTH_ALERT_AFTER_MS)) {
-      this.healthAlerted = true;
       await this.o.alert(
         `Health check failing for ${Math.round(failingFor / 60_000)} minutes`,
         `The health check has failed since ${this.failingSince.toISOString()}.\nLast answer: ${this.lastFailure}`,
       );
+      this.healthAlerted = true;
     }
   }
 
@@ -85,8 +89,8 @@ export class Watchdog {
     }
     const once = async (key: string, subject: string, details: string) => {
       if (this.backupAlerts.has(key)) return;
-      this.backupAlerts.add(key);
       await this.o.alert(subject, details);
+      this.backupAlerts.add(key);
     };
     if (status === null) {
       if (now.getTime() - this.startedAt.getTime() >= maxAge) await once('missing', 'No Backup recorded', `No Backup has reported since the watchdog started at ${this.startedAt.toISOString()}.`);
