@@ -4,12 +4,15 @@ name: App CI
 on:
   push:
   pull_request:
+  workflow_call:
 
 permissions:
   contents: read
 
 concurrency:
-  group: app-ci-${{ github.ref }}
+  # github.workflow is the caller's name when deploy.yml calls this, so the deploy's run
+  # never cancels (or is cancelled by) the regular push run.
+  group: app-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -29,7 +32,7 @@ jobs:
       # No lockfile is committed yet (it is regenerated when app/ and server/
       # are integrated); switch to --frozen-lockfile once it is.
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Chromium for Playwright
         working-directory: app
