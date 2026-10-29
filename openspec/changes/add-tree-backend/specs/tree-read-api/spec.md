@@ -7,7 +7,7 @@ Let the app and Agents read the Tree through one documented API, with queries sh
 ## ADDED Requirements
 
 ### Requirement: Members and Agents only
-Every API request except the health check SHALL require a signed-in Member or a valid Agent token.
+Every API request except the health check and the sign-in steps (invitation, emailed link, passkey) SHALL require a signed-in Member or a valid Agent token.
 
 #### Scenario: Anonymous request
 - **WHEN** a request without a session or token asks for a Person

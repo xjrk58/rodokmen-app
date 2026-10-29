@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/coverage
+**/test-results
+**/playwright-report
+**/.cache
+.git
+.github
+.claude
+docs
+openspec
+deploy
+.env
+.env.*
+**/.env

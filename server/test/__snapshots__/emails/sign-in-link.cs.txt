@@ -1,0 +1,13 @@
+Subject: Přihlášení do Rodokmenu
+
+Dobrý den,
+
+někdo (nejspíš vy, Jana) požádal o přihlášení do Rodokmenu. Přihlásíte se tímto odkazem. Platí 15 minut a dá se použít jen jednou.
+
+https://rodokmen.example/auth/link#token=EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+
+Po přihlášení si můžete na tomto zařízení uložit přístupový klíč (passkey). Příště se pak přihlásíte bez e-mailu.
+
+Pokud jste o přihlášení nežádali, e-mail ignorujte. Bez tohoto odkazu se nikdo nepřihlásí.
+
+Rodokmen

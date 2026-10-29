@@ -1,0 +1,123 @@
+import { readFile } from 'node:fs/promises';
+import type { Clock } from '../tree/summaries.js';
+
+/**
+ * Alerts for the Owner (operations spec, "Health and alerts"):
+ * - the health check has failed for more than 5 minutes (one alert, and one on recovery);
+ * - a nightly Backup failed (one alert per failed run), or none has succeeded for 26 hours
+ *   (the job did not run or hung).
+ * The watchdog runs next to the API on the VPS and checks the public URL, so it notices
+ * Caddy, certificate and API failures alike.
+ */
+export const HEALTH_ALERT_AFTER_MS = 5 * 60_000;
+export const BACKUP_MAX_AGE_MS = 26 * 3_600_000;
+
+/** Written by deploy/backup/backup.sh at the end of every run, successful or not. */
+export interface BackupStatus {
+  ok: boolean;
+  startedAt: string;
+  finishedAt: string;
+  snapshot?: string | null;
+  error?: string | null;
+}
+
+export interface WatchdogOptions {
+  checkHealth: () => Promise<{ ok: boolean; detail: string }>;
+  readBackupStatus?: () => Promise<BackupStatus | null>;
+  alert: (subject: string, details: string) => Promise<void>;
+  clock: Clock;
+  healthAlertAfterMs?: number;
+  backupMaxAgeMs?: number;
+}
+
+export class Watchdog {
+  private failingSince: Date | null = null;
+  private lastFailure = '';
+  private healthAlerted = false;
+  private readonly startedAt: Date;
+  private readonly backupAlerts = new Set<string>();
+
+  constructor(private readonly o: WatchdogOptions) {
+    this.startedAt = o.clock.now();
+  }
+
+  async tick(): Promise<void> {
+    await this.tickHealth();
+    if (this.o.readBackupStatus) await this.tickBackup();
+  }
+
+  private async tickHealth(): Promise<void> {
+    const now = this.o.clock.now();
+    let result: { ok: boolean; detail: string };
+    try {
+      result = await this.o.checkHealth();
+    } catch (error) {
+      result = { ok: false, detail: (error as Error).message };
+    }
+    if (result.ok) {
+      if (this.healthAlerted) {
+        await this.o.alert('Health check recovered', `The health check passes again since ${now.toISOString()}.\nIt had been failing since ${this.failingSince?.toISOString()}.`);
+      }
+      this.failingSince = null;
+      this.healthAlerted = false;
+      return;
+    }
+    this.failingSince ??= now;
+    this.lastFailure = result.detail;
+    const failingFor = now.getTime() - this.failingSince.getTime();
+    if (!this.healthAlerted && failingFor >= (this.o.healthAlertAfterMs ?? HEALTH_ALERT_AFTER_MS)) {
+      this.healthAlerted = true;
+      await this.o.alert(
+        `Health check failing for ${Math.round(failingFor / 60_000)} minutes`,
+        `The health check has failed since ${this.failingSince.toISOString()}.\nLast answer: ${this.lastFailure}`,
+      );
+    }
+  }
+
+  private async tickBackup(): Promise<void> {
+    const now = this.o.clock.now();
+    const maxAge = this.o.backupMaxAgeMs ?? BACKUP_MAX_AGE_MS;
+    let status: BackupStatus | null;
+    try {
+      status = await this.o.readBackupStatus!();
+    } catch (error) {
+      status = { ok: false, startedAt: '', finishedAt: '', error: `status unreadable: ${(error as Error).message}` };
+    }
+    const once = async (key: string, subject: string, details: string) => {
+      if (this.backupAlerts.has(key)) return;
+      this.backupAlerts.add(key);
+      await this.o.alert(subject, details);
+    };
+    if (status === null) {
+      if (now.getTime() - this.startedAt.getTime() >= maxAge) await once('missing', 'No Backup recorded', `No Backup has reported since the watchdog started at ${this.startedAt.toISOString()}.`);
+      return;
+    }
+    if (!status.ok) {
+      await once(`failed:${status.finishedAt}`, 'Nightly Backup failed', `The Backup started at ${status.startedAt} failed at ${status.finishedAt}.\n${status.error ?? ''}`);
+      return;
+    }
+    const age = now.getTime() - new Date(status.finishedAt).getTime();
+    if (age >= maxAge) await once(`stale:${status.finishedAt}`, 'Nightly Backup missing', `The last successful Backup finished at ${status.finishedAt}, ${Math.round(age / 3_600_000)} hours ago.`);
+  }
+}
+
+export async function httpHealthCheck(url: string, timeoutMs = 10_000): Promise<{ ok: boolean; detail: string }> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: 'manual' });
+    const body = (await res.text()).slice(0, 300);
+    return { ok: res.status === 200, detail: `HTTP ${res.status} ${body}` };
+  } catch (error) {
+    return { ok: false, detail: `no answer: ${(error as Error).message}` };
+  }
+}
+
+export function backupStatusReader(path: string): () => Promise<BackupStatus | null> {
+  return async () => {
+    try {
+      return JSON.parse(await readFile(path, 'utf8')) as BackupStatus;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw error;
+    }
+  };
+}
