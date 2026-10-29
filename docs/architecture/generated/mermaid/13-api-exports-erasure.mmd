@@ -1,0 +1,39 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["API server: Exports and erasure"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    style 4 fill:#08427b,stroke:#052e56,color:#ffffff
+
+    70["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
+    style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
+
+    subgraph 6 ["Rodokmen"]
+      style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 25 ["API server"]
+        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        38["<div style='font-weight: bold'>Exports</div><div style='font-size: 70%; margin-top: 0px'>[Component: Reduction in shared/]</div><div style='font-size: 80%; margin-top:10px'>Markdown and GEDCOM 5.5.1<br />writers sharing one<br />Living-people reduction; the<br />Owner's GEDCOM download.</div>"]
+        style 38 fill:#ffffff,stroke:#777777,color:#555555
+        39["<div style='font-weight: bold'>Erasure</div><div style='font-size: 70%; margin-top: 0px'>[Component: One transaction]</div><div style='font-size: 80%; margin-top:10px'>Erases a Living person from<br />the Tree and the log, and<br />keeps their id for restores<br />and Exports.</div>"]
+        style 39 fill:#ffffff,stroke:#777777,color:#555555
+      end
+
+      44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
+      style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      48["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
+      style 48 fill:#ffffff,stroke:#777777,color:#555555
+    end
+
+    48-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->44
+    48-. "<div>Commits the Export to<br />rodokmen-export</div><div style='font-size: 70%'>[Git over SSH, deploy key]</div>" .->70
+    38-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->44
+    39-. "<div>Deletes the Person, rewrites<br />their log entries, records<br />the id</div><div style='font-size: 70%'>[SQL, one transaction]</div>" .->44
+    4-. "<div>Downloads the reduced GEDCOM<br />file</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->38
+    4-. "<div>Erases a Living person after<br />a confirmation</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->39
+    48-. "<div>Runs the Markdown and GEDCOM<br />writers</div><div style='font-size: 70%'>[Same server code]</div>" .->38
+
+  end
