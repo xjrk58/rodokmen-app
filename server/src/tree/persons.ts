@@ -22,7 +22,11 @@ function likePattern(token: string): string {
  */
 export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuery): Promise<PersonSearchResult> {
   const tokens = q.q ? foldForSearch(q.q).split(' ').filter(Boolean) : [];
-  let query = db.selectFrom('person as p').innerJoin('name as pn', (j) => j.onRef('pn.person_id', '=', 'p.id').on('pn.is_primary', '=', true));
+  // Merged Persons have moved all their Names to the kept Person and never show in search.
+  let query = db
+    .selectFrom('person as p')
+    .innerJoin('name as pn', (j) => j.onRef('pn.person_id', '=', 'p.id').on('pn.is_primary', '=', true))
+    .where('p.merged_into_id', 'is', null);
 
   if (q.placeId) {
     const placeId = q.placeId;

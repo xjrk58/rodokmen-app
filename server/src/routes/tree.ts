@@ -51,8 +51,17 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   });
 
   app.get('/api/persons/:id', {
-    schema: { tags: ['Persons'], summary: 'A Person with Names, Events, Families and portraits', params: IdParams, response: { 200: PersonDetail, ...detail } },
-    handler: async (req) => found(await getPerson(deps, req.params.id), 'Person'),
+    schema: {
+      tags: ['Persons'],
+      summary: 'A Person with Names, Events, Families and portraits. A Person merged into another redirects to it',
+      params: IdParams,
+      response: { 200: PersonDetail, 308: z.null().describe('Location: the Person this one was merged into'), ...detail },
+    },
+    handler: async (req, reply) => {
+      const merged = await deps.db.selectFrom('person').select('merged_into_id').where('id', '=', req.params.id).executeTakeFirst();
+      if (merged?.merged_into_id) return reply.redirect(`/api/persons/${merged.merged_into_id}`, 308);
+      return found(await getPerson(deps, req.params.id), 'Person');
+    },
   });
 
   app.get('/api/persons/:id/ancestors', {
@@ -135,10 +144,17 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   });
 
   app.get('/api/images/:id', {
-    schema: { tags: ['Sources'], summary: 'Redirects to an expiring link to the image', params: IdParams, response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), ...detail } },
+    schema: {
+      tags: ['Sources'],
+      summary: 'Redirects to an expiring link to the image: the display copy, or with full=true the original file',
+      params: IdParams,
+      querystring: z.object({ full: z.enum(['true', 'false']).optional() }),
+      response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), ...detail },
+    },
     handler: async (req, reply) => {
-      const image = found(await deps.db.selectFrom('image').select(['storage_key', 'content_type']).where('id', '=', req.params.id).executeTakeFirst() ?? null, 'image');
-      const link = await deps.images.link(image.storage_key, image.content_type);
+      const image = found(await deps.db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', req.params.id).executeTakeFirst() ?? null, 'image');
+      const original = req.query.full === 'true' || !image.display_key;
+      const link = original ? await deps.images.link(image.storage_key, image.content_type) : await deps.images.link(image.display_key!, 'image/webp');
       return reply.header('cache-control', 'no-store').redirect(link.url, 302);
     },
   });

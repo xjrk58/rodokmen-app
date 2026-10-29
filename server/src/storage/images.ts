@@ -1,4 +1,4 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Config } from '../config.js';
 import type { Clock } from '../tree/summaries.js';
@@ -7,17 +7,33 @@ import type { Clock } from '../tree/summaries.js';
  * Images live in a private, S3-compatible bucket (Hetzner Object Storage in production).
  * Members only ever get presigned GET links, valid for {@link IMAGE_LINK_SECONDS}. The
  * tree-model spec allows at most 10 minutes; we use 5.
+ *
+ * Uploads go straight from the phone to the bucket with a presigned PUT link into the
+ * `pending/` prefix ({@link UPLOAD_LINK_SECONDS}); the server then checks the file, writes a
+ * display copy, and moves both to `images/` when the Proposal is accepted.
  */
 export const IMAGE_LINK_SECONDS = 5 * 60;
+export const UPLOAD_LINK_SECONDS = 15 * 60;
 
 export interface ImageLink {
   url: string;
   expiresAt: Date;
 }
 
+export interface UploadLink extends ImageLink {
+  headers: Record<string, string>;
+}
+
 export interface ImageStorage {
   /** A presigned GET link to the object, expiring after IMAGE_LINK_SECONDS. */
   link(storageKey: string, contentType: string): Promise<ImageLink>;
+  /** A presigned PUT link for exactly this content type and size. */
+  uploadLink(storageKey: string, contentType: string, byteSize: number): Promise<UploadLink>;
+  /** The object's bytes, or null when it does not exist. */
+  get(storageKey: string): Promise<Buffer | null>;
+  put(storageKey: string, body: Buffer, contentType: string): Promise<void>;
+  copy(from: string, to: string): Promise<void>;
+  delete(storageKey: string): Promise<void>;
 }
 
 export function createS3Client(s3: Config['s3']): S3Client {
@@ -30,12 +46,72 @@ export function createS3Client(s3: Config['s3']): S3Client {
 }
 
 export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Client = createS3Client(s3)): ImageStorage {
+  const Bucket = s3.bucket;
   return {
     async link(storageKey, contentType) {
       const signingDate = clock.now();
-      const command = new GetObjectCommand({ Bucket: s3.bucket, Key: storageKey, ResponseContentType: contentType, ResponseCacheControl: 'private, max-age=300' });
+      const command = new GetObjectCommand({ Bucket, Key: storageKey, ResponseContentType: contentType, ResponseCacheControl: 'private, max-age=300' });
       const url = await getSignedUrl(client, command, { expiresIn: IMAGE_LINK_SECONDS, signingDate });
       return { url, expiresAt: new Date(signingDate.getTime() + IMAGE_LINK_SECONDS * 1000) };
     },
+    async uploadLink(storageKey, contentType, byteSize) {
+      const signingDate = clock.now();
+      const command = new PutObjectCommand({ Bucket, Key: storageKey, ContentType: contentType, ContentLength: byteSize });
+      const url = await getSignedUrl(client, command, { expiresIn: UPLOAD_LINK_SECONDS, signingDate, signableHeaders: new Set(['content-type', 'content-length']) });
+      return { url, headers: { 'content-type': contentType }, expiresAt: new Date(signingDate.getTime() + UPLOAD_LINK_SECONDS * 1000) };
+    },
+    async get(storageKey) {
+      try {
+        const out = await client.send(new GetObjectCommand({ Bucket, Key: storageKey }));
+        return Buffer.from(await out.Body!.transformToByteArray());
+      } catch (error) {
+        if ((error as { name?: string }).name === 'NoSuchKey') return null;
+        throw error;
+      }
+    },
+    async put(storageKey, body, contentType) {
+      await client.send(new PutObjectCommand({ Bucket, Key: storageKey, Body: body, ContentType: contentType }));
+    },
+    async copy(from, to) {
+      await client.send(new CopyObjectCommand({ Bucket, Key: to, CopySource: `${Bucket}/${from.split('/').map(encodeURIComponent).join('/')}` }));
+    },
+    async delete(storageKey) {
+      await client.send(new DeleteObjectCommand({ Bucket, Key: storageKey }));
+    },
   };
+}
+
+/**
+ * Object storage in memory, for tests and local development without a bucket. Links point at
+ * `baseUrl` (a test server may serve them); the objects are readable through `objects`.
+ */
+export class MemoryImageStorage implements ImageStorage {
+  readonly objects = new Map<string, { body: Buffer; contentType: string }>();
+  constructor(
+    private readonly clock: Clock,
+    public baseUrl = 'https://storage.invalid/bucket/',
+  ) {}
+
+  async link(storageKey: string): Promise<ImageLink> {
+    const expiresAt = new Date(this.clock.now().getTime() + IMAGE_LINK_SECONDS * 1000);
+    return { url: `${this.baseUrl}${storageKey}?expires=${expiresAt.getTime()}`, expiresAt };
+  }
+  async uploadLink(storageKey: string, contentType: string): Promise<UploadLink> {
+    const expiresAt = new Date(this.clock.now().getTime() + UPLOAD_LINK_SECONDS * 1000);
+    return { url: `${this.baseUrl}${storageKey}?upload=${expiresAt.getTime()}`, headers: { 'content-type': contentType }, expiresAt };
+  }
+  async get(storageKey: string): Promise<Buffer | null> {
+    return this.objects.get(storageKey)?.body ?? null;
+  }
+  async put(storageKey: string, body: Buffer, contentType: string): Promise<void> {
+    this.objects.set(storageKey, { body, contentType });
+  }
+  async copy(from: string, to: string): Promise<void> {
+    const o = this.objects.get(from);
+    if (!o) throw new Error(`no object ${from}`);
+    this.objects.set(to, o);
+  }
+  async delete(storageKey: string): Promise<void> {
+    this.objects.delete(storageKey);
+  }
 }

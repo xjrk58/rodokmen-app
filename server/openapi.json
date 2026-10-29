@@ -3,7 +3,7 @@
   "info": {
     "title": "Rodokmen API",
     "version": "0.1.0",
-    "description": "Read API of the Rodokmen Tree, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member."
+    "description": "Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member."
   },
   "components": {
     "securitySchemes": {
@@ -3342,6 +3342,1778 @@
         "required": [
           "ok",
           "member"
+        ]
+      },
+      "TempIdInput": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "RefInput": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          {
+            "$ref": "#/components/schemas/TempIdInput"
+          }
+        ]
+      },
+      "CreatePersonInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPerson"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/SexInput"
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "given": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "surname": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "type": {
+                "$ref": "#/components/schemas/NameTypeInput"
+              },
+              "asFound": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The spelling exactly as found in the Source"
+              }
+            },
+            "required": [
+              "given",
+              "surname",
+              "type",
+              "asFound"
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sex",
+          "name"
+        ],
+        "description": "A new Person with a primary Name"
+      },
+      "AddNameInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addName"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "given": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "surname": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "type": {
+            "$ref": "#/components/schemas/NameTypeInput"
+          },
+          "asFound": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The spelling exactly as found in the Source"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "given",
+          "surname",
+          "type",
+          "asFound"
+        ],
+        "description": "Another Name of a Person (not primary)"
+      },
+      "CreateEventInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEvent"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventTypeInput"
+          },
+          "typeDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EdtfDateInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "placeId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "houseId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "date"
+        ]
+      },
+      "AddRoleInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addRole"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleTypeInput"
+          },
+          "roleDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "eventId",
+          "personId",
+          "role"
+        ],
+        "description": "The part a Person plays in an Event"
+      },
+      "CreateFamilyInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createFamily"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "partner1Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "partner2Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "partner1Id",
+          "partner2Id"
+        ]
+      },
+      "LinkChildInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkChild"
+          },
+          "familyId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "childId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "linkType": {
+            "$ref": "#/components/schemas/ChildLinkTypeInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Family",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "familyId",
+          "childId",
+          "linkType"
+        ]
+      },
+      "CreateSourceInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createSource"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceTypeInput"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "repository": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "familyAccount": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "title"
+        ]
+      },
+      "CreateCitationInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createCitation"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "page": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/ConfidenceInput"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sourceId",
+          "transcription",
+          "readOn",
+          "confidence"
+        ]
+      },
+      "AttachCitationInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "attachCitation"
+          },
+          "citationId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "nameId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event or Name",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "citationId"
+        ]
+      },
+      "AddImageInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addImage"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "uploadId": {
+            "description": "A finished upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKindInput"
+          },
+          "citationId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefInput"
+            }
+          },
+          "caption": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "uploadId",
+          "kind"
+        ]
+      },
+      "SettableRecordInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "event",
+          "role",
+          "childLink",
+          "source",
+          "citation"
+        ]
+      },
+      "SetFieldInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setField"
+          },
+          "record": {
+            "$ref": "#/components/schemas/SettableRecordInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "baseVersion": {
+            "description": "Version of the record as the Member saw it",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "set": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "Field names and their new values"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "baseVersion",
+          "set"
+        ],
+        "description": "Changes fields of an existing record"
+      },
+      "MergePersonsInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "mergePersons"
+          },
+          "keepId": {
+            "description": "The Person that remains",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "mergeId": {
+            "description": "The Person merged into it",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "keepId",
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ],
+        "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
+      },
+      "RestorableTableInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "family",
+          "family_child",
+          "event",
+          "event_role",
+          "source",
+          "citation",
+          "event_citation",
+          "name_citation",
+          "image",
+          "image_person"
+        ]
+      },
+      "RestoreRecordInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "restoreRecord"
+          },
+          "table": {
+            "$ref": "#/components/schemas/RestorableTableInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "baseVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version the record has after the undone Proposal; null if that Proposal deleted it"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "op",
+          "table",
+          "id",
+          "baseVersion",
+          "values"
+        ]
+      },
+      "OperationInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreatePersonInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddNameInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEventInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddRoleInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateFamilyInput"
+          },
+          {
+            "$ref": "#/components/schemas/LinkChildInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateSourceInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateCitationInput"
+          },
+          {
+            "$ref": "#/components/schemas/AttachCitationInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddImageInput"
+          },
+          {
+            "$ref": "#/components/schemas/SetFieldInput"
+          },
+          {
+            "$ref": "#/components/schemas/MergePersonsInput"
+          },
+          {
+            "$ref": "#/components/schemas/RestoreRecordInput"
+          }
+        ]
+      },
+      "ProposalStatusInput": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "ProposalKindInput": {
+        "type": "string",
+        "enum": [
+          "contribution",
+          "direct",
+          "undo"
+        ],
+        "description": "Submitted for review, an Editor's direct change, or an undo"
+      },
+      "SubmitProposalBodyInput": {
+        "type": "object",
+        "properties": {
+          "formatVersion": {
+            "type": "number",
+            "const": 1,
+            "description": "Version of the operation set the Proposal was written for"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,100}$",
+            "description": "One key per Draft: a retried submit returns the same Proposal"
+          },
+          "note": {
+            "default": null,
+            "description": "What the finding is, in the author's words",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "direct": {
+            "default": false,
+            "description": "Editors only: accept at once (a direct change)",
+            "type": "boolean"
+          },
+          "operations": {
+            "minItems": 1,
+            "maxItems": 300,
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "formatVersion",
+          "idempotencyKey",
+          "operations"
+        ]
+      },
+      "SentenceInput": {
+        "type": "object",
+        "properties": {
+          "cs": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cs",
+          "en"
+        ],
+        "description": "The same sentence in Czech and English"
+      },
+      "AuthorRefInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isAgent": {
+            "type": "boolean",
+            "description": "True for an Agent account"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "isAgent"
+        ]
+      },
+      "FieldConflictInput": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "proposed": {},
+          "current": {}
+        },
+        "required": [
+          "field",
+          "proposed",
+          "current"
+        ]
+      },
+      "ConflictViewInput": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "label": {
+            "$ref": "#/components/schemas/SentenceInput"
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currentVersion": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the record no longer exists"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldConflictInput"
+            },
+            "description": "For changed fields: the Proposal's value next to the current one"
+          }
+        },
+        "required": [
+          "record",
+          "id",
+          "label",
+          "baseVersion",
+          "currentVersion",
+          "fields"
+        ],
+        "description": "The operation was based on an older version of the record"
+      },
+      "OperationViewInput": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "operation": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "The operation as it will be applied (with any Editor correction)"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SentenceInput"
+          },
+          "corrected": {
+            "type": "boolean"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The author's operation, when an Editor corrected it"
+          },
+          "originalSummary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SentenceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For changes to existing records: the current values of the fields it sets"
+          },
+          "conflict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConflictViewInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "position",
+          "operation",
+          "summary",
+          "corrected",
+          "original",
+          "originalSummary",
+          "current",
+          "conflict"
+        ]
+      },
+      "UploadStatusInput": {
+        "type": "string",
+        "enum": [
+          "waiting",
+          "ready",
+          "deleted"
+        ]
+      },
+      "UploadViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UploadStatusInput"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "Display copy (WebP); redirects to an expiring link"
+          },
+          "fullUrl": {
+            "type": "string",
+            "description": "The original file; redirects to an expiring link"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "url",
+          "fullUrl"
+        ]
+      },
+      "CitationPreviewInput": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Citation id, or the temporary id of a Citation the Proposal creates"
+          },
+          "sourceTitle": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "page": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transcription": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConfidenceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/UploadStatusInput"
+                },
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                    "image/heic",
+                    "image/heif"
+                  ]
+                },
+                "byteSize": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "width": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "height": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Display copy (WebP); redirects to an expiring link"
+                },
+                "fullUrl": {
+                  "type": "string",
+                  "description": "The original file; redirects to an expiring link"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/ImageKindInput"
+                }
+              },
+              "required": [
+                "id",
+                "status",
+                "contentType",
+                "byteSize",
+                "width",
+                "height",
+                "url",
+                "fullUrl",
+                "kind"
+              ]
+            }
+          }
+        },
+        "required": [
+          "ref",
+          "sourceTitle",
+          "sourceType",
+          "page",
+          "transcription",
+          "confidence",
+          "images"
+        ]
+      },
+      "ProposalViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProposalKindInput"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProposalStatusInput"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "decidedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decidedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decisionNote": {
+            "description": "The Editor's note, shown to the author",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "undoes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "undoneBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationViewInput"
+            }
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationPreviewInput"
+            }
+          },
+          "conflicts": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Operations based on an older version of their record"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind",
+          "status",
+          "author",
+          "note",
+          "submittedAt",
+          "decidedAt",
+          "decidedBy",
+          "decisionNote",
+          "undoes",
+          "undoneBy",
+          "operations",
+          "citations",
+          "conflicts"
+        ]
+      },
+      "ProposalListInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposalViewInput"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ResolutionInput": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "fields": {
+            "default": {},
+            "description": "Per field: keep the Proposal's value or the current one",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "proposal",
+                "current"
+              ]
+            }
+          }
+        },
+        "required": [
+          "position"
+        ]
+      },
+      "AcceptBodyInput": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "corrections": {
+            "default": [],
+            "description": "Editor corrections: replacement operations",
+            "maxItems": 300,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "operation": {}
+              },
+              "required": [
+                "position",
+                "operation"
+              ]
+            }
+          },
+          "resolutions": {
+            "default": [],
+            "description": "Choices for operations in conflict",
+            "maxItems": 300,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResolutionInput"
+            }
+          }
+        }
+      },
+      "RejectBodyInput": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MergeBodyInput": {
+        "type": "object",
+        "properties": {
+          "mergeId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ]
+      },
+      "LaterEditInput": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "$ref": "#/components/schemas/RestorableTableInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "label": {
+            "$ref": "#/components/schemas/SentenceInput"
+          },
+          "recordLevel": {
+            "type": "boolean",
+            "description": "True when the undo would remove or bring back the whole record"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "before": {},
+                "after": {},
+                "current": {}
+              },
+              "required": [
+                "field",
+                "before",
+                "after",
+                "current"
+              ]
+            }
+          }
+        },
+        "required": [
+          "table",
+          "id",
+          "label",
+          "recordLevel",
+          "fields"
+        ],
+        "description": "A record touched again after the Proposal; the Editor chooses per field"
+      },
+      "UndoPreviewInput": {
+        "type": "object",
+        "properties": {
+          "proposalId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "laterEdits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LaterEditInput"
+            }
+          }
+        },
+        "required": [
+          "proposalId",
+          "laterEdits"
+        ]
+      },
+      "UndoBodyInput": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "$ref": "#/components/schemas/RestorableTableInput"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "keep": {
+                  "type": "boolean"
+                },
+                "fields": {
+                  "default": {},
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "enum": [
+                      "undo",
+                      "keep"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "table",
+                "id"
+              ]
+            }
+          }
+        }
+      },
+      "HistoryKindInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "family",
+          "event",
+          "source",
+          "citation"
+        ]
+      },
+      "HistoryEntryInput": {
+        "type": "object",
+        "properties": {
+          "proposalId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProposalKindInput"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "acceptedBy": {
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decisionNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "sourceTitle": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "sourceTitle",
+                "page"
+              ]
+            }
+          },
+          "summaries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SentenceInput"
+            }
+          },
+          "corrections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "by": {
+                  "$ref": "#/components/schemas/AuthorRefInput"
+                },
+                "summary": {
+                  "$ref": "#/components/schemas/SentenceInput"
+                },
+                "original": {
+                  "$ref": "#/components/schemas/SentenceInput"
+                }
+              },
+              "required": [
+                "position",
+                "by",
+                "summary",
+                "original"
+              ]
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "type": "string"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "before": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "table",
+                "id",
+                "before",
+                "after"
+              ]
+            }
+          },
+          "undoneBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposalId",
+          "kind",
+          "author",
+          "acceptedBy",
+          "acceptedAt",
+          "note",
+          "decisionNote",
+          "citations",
+          "summaries",
+          "corrections",
+          "changes",
+          "undoneBy"
+        ]
+      },
+      "HistoryInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntryInput"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CreateUploadBodyInput": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "contentType",
+          "byteSize",
+          "sha256"
+        ]
+      },
+      "UploadTicketInput": {
+        "type": "object",
+        "properties": {
+          "upload": {
+            "$ref": "#/components/schemas/UploadViewInput"
+          },
+          "putUrl": {
+            "type": "string",
+            "description": "Presigned PUT link into the pending/ prefix"
+          },
+          "putHeaders": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "upload",
+          "putUrl",
+          "putHeaders",
+          "expiresAt"
+        ]
+      },
+      "NotificationSettingsInput": {
+        "type": "object",
+        "properties": {
+          "outcomeEmails": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "outcomeEmails"
         ]
       },
       "Id": {
@@ -6761,6 +8533,1852 @@
           "member"
         ],
         "additionalProperties": false
+      },
+      "TempId": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "Ref": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Id"
+          },
+          {
+            "$ref": "#/components/schemas/TempId"
+          }
+        ]
+      },
+      "CreatePerson": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPerson"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/Sex"
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "given": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "surname": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "type": {
+                "$ref": "#/components/schemas/NameType"
+              },
+              "asFound": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The spelling exactly as found in the Source"
+              }
+            },
+            "required": [
+              "given",
+              "surname",
+              "type",
+              "asFound"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sex",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A new Person with a primary Name"
+      },
+      "AddName": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addName"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/Version"
+          },
+          "given": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "surname": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "type": {
+            "$ref": "#/components/schemas/NameType"
+          },
+          "asFound": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The spelling exactly as found in the Source"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "given",
+          "surname",
+          "type",
+          "asFound"
+        ],
+        "additionalProperties": false,
+        "description": "Another Name of a Person (not primary)"
+      },
+      "CreateEvent": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEvent"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "typeDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EdtfDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "placeId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "houseId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "typeDetail",
+          "date",
+          "placeId",
+          "houseId",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "AddRole": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addRole"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleType"
+          },
+          "roleDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "eventId",
+          "personId",
+          "role",
+          "roleDetail"
+        ],
+        "additionalProperties": false,
+        "description": "The part a Person plays in an Event"
+      },
+      "CreateFamily": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createFamily"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "partner1Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "partner2Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "partner1Id",
+          "partner2Id"
+        ],
+        "additionalProperties": false
+      },
+      "LinkChild": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkChild"
+          },
+          "familyId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "childId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "linkType": {
+            "$ref": "#/components/schemas/ChildLinkType"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Family",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "familyId",
+          "childId",
+          "linkType"
+        ],
+        "additionalProperties": false
+      },
+      "CreateSource": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createSource"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceType"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "repository": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "familyAccount": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCitation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createCitation"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "page": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sourceId",
+          "page",
+          "transcription",
+          "readOn",
+          "confidence",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "AttachCitation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "attachCitation"
+          },
+          "citationId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "nameId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event or Name",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "citationId"
+        ],
+        "additionalProperties": false
+      },
+      "AddImage": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addImage"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "uploadId": {
+            "description": "A finished upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKind"
+          },
+          "citationId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ref"
+            }
+          },
+          "caption": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "uploadId",
+          "kind",
+          "citationId",
+          "personIds",
+          "caption"
+        ],
+        "additionalProperties": false
+      },
+      "SettableRecord": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "event",
+          "role",
+          "childLink",
+          "source",
+          "citation"
+        ]
+      },
+      "SetField": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setField"
+          },
+          "record": {
+            "$ref": "#/components/schemas/SettableRecord"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "baseVersion": {
+            "description": "Version of the record as the Member saw it",
+            "$ref": "#/components/schemas/Version"
+          },
+          "set": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "Field names and their new values"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "baseVersion",
+          "set"
+        ],
+        "additionalProperties": false,
+        "description": "Changes fields of an existing record"
+      },
+      "MergePersons": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "mergePersons"
+          },
+          "keepId": {
+            "description": "The Person that remains",
+            "$ref": "#/components/schemas/Id"
+          },
+          "mergeId": {
+            "description": "The Person merged into it",
+            "$ref": "#/components/schemas/Id"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "keepId",
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ],
+        "additionalProperties": false,
+        "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
+      },
+      "RestorableTable": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "family",
+          "family_child",
+          "event",
+          "event_role",
+          "source",
+          "citation",
+          "event_citation",
+          "name_citation",
+          "image",
+          "image_person"
+        ]
+      },
+      "RestoreRecord": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "restoreRecord"
+          },
+          "table": {
+            "$ref": "#/components/schemas/RestorableTable"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "baseVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Version"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version the record has after the undone Proposal; null if that Proposal deleted it"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "op",
+          "table",
+          "id",
+          "baseVersion",
+          "values"
+        ],
+        "additionalProperties": false
+      },
+      "Operation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreatePerson"
+          },
+          {
+            "$ref": "#/components/schemas/AddName"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEvent"
+          },
+          {
+            "$ref": "#/components/schemas/AddRole"
+          },
+          {
+            "$ref": "#/components/schemas/CreateFamily"
+          },
+          {
+            "$ref": "#/components/schemas/LinkChild"
+          },
+          {
+            "$ref": "#/components/schemas/CreateSource"
+          },
+          {
+            "$ref": "#/components/schemas/CreateCitation"
+          },
+          {
+            "$ref": "#/components/schemas/AttachCitation"
+          },
+          {
+            "$ref": "#/components/schemas/AddImage"
+          },
+          {
+            "$ref": "#/components/schemas/SetField"
+          },
+          {
+            "$ref": "#/components/schemas/MergePersons"
+          },
+          {
+            "$ref": "#/components/schemas/RestoreRecord"
+          }
+        ]
+      },
+      "ProposalStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "ProposalKind": {
+        "type": "string",
+        "enum": [
+          "contribution",
+          "direct",
+          "undo"
+        ],
+        "description": "Submitted for review, an Editor's direct change, or an undo"
+      },
+      "SubmitProposalBody": {
+        "type": "object",
+        "properties": {
+          "formatVersion": {
+            "type": "number",
+            "const": 1,
+            "description": "Version of the operation set the Proposal was written for"
+          },
+          "idempotencyKey": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{8,100}$",
+            "description": "One key per Draft: a retried submit returns the same Proposal"
+          },
+          "note": {
+            "default": null,
+            "description": "What the finding is, in the author's words",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "direct": {
+            "default": false,
+            "description": "Editors only: accept at once (a direct change)",
+            "type": "boolean"
+          },
+          "operations": {
+            "minItems": 1,
+            "maxItems": 300,
+            "type": "array",
+            "items": {}
+          }
+        },
+        "required": [
+          "formatVersion",
+          "idempotencyKey",
+          "note",
+          "direct",
+          "operations"
+        ],
+        "additionalProperties": false
+      },
+      "Sentence": {
+        "type": "object",
+        "properties": {
+          "cs": {
+            "type": "string"
+          },
+          "en": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cs",
+          "en"
+        ],
+        "additionalProperties": false,
+        "description": "The same sentence in Czech and English"
+      },
+      "AuthorRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "isAgent": {
+            "type": "boolean",
+            "description": "True for an Agent account"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "isAgent"
+        ],
+        "additionalProperties": false
+      },
+      "FieldConflict": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "proposed": {},
+          "current": {}
+        },
+        "required": [
+          "field",
+          "proposed",
+          "current"
+        ],
+        "additionalProperties": false
+      },
+      "ConflictView": {
+        "type": "object",
+        "properties": {
+          "record": {
+            "type": "string"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Sentence"
+          },
+          "baseVersion": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currentVersion": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Null when the record no longer exists"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldConflict"
+            },
+            "description": "For changed fields: the Proposal's value next to the current one"
+          }
+        },
+        "required": [
+          "record",
+          "id",
+          "label",
+          "baseVersion",
+          "currentVersion",
+          "fields"
+        ],
+        "additionalProperties": false,
+        "description": "The operation was based on an older version of the record"
+      },
+      "OperationView": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "operation": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "The operation as it will be applied (with any Editor correction)"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/Sentence"
+          },
+          "corrected": {
+            "type": "boolean"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The author's operation, when an Editor corrected it"
+          },
+          "originalSummary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Sentence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "current": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For changes to existing records: the current values of the fields it sets"
+          },
+          "conflict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConflictView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "position",
+          "operation",
+          "summary",
+          "corrected",
+          "original",
+          "originalSummary",
+          "current",
+          "conflict"
+        ],
+        "additionalProperties": false
+      },
+      "UploadStatus": {
+        "type": "string",
+        "enum": [
+          "waiting",
+          "ready",
+          "deleted"
+        ]
+      },
+      "UploadView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UploadStatus"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "description": "Display copy (WebP); redirects to an expiring link"
+          },
+          "fullUrl": {
+            "type": "string",
+            "description": "The original file; redirects to an expiring link"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "url",
+          "fullUrl"
+        ],
+        "additionalProperties": false
+      },
+      "CitationPreview": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Citation id, or the temporary id of a Citation the Proposal creates"
+          },
+          "sourceTitle": {
+            "type": "string"
+          },
+          "sourceType": {
+            "type": "string"
+          },
+          "page": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "transcription": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Confidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/UploadStatus"
+                },
+                "contentType": {
+                  "type": "string",
+                  "enum": [
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp",
+                    "image/heic",
+                    "image/heif"
+                  ]
+                },
+                "byteSize": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "width": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "height": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "description": "Display copy (WebP); redirects to an expiring link"
+                },
+                "fullUrl": {
+                  "type": "string",
+                  "description": "The original file; redirects to an expiring link"
+                },
+                "kind": {
+                  "$ref": "#/components/schemas/ImageKind"
+                }
+              },
+              "required": [
+                "id",
+                "status",
+                "contentType",
+                "byteSize",
+                "width",
+                "height",
+                "url",
+                "fullUrl",
+                "kind"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "ref",
+          "sourceTitle",
+          "sourceType",
+          "page",
+          "transcription",
+          "confidence",
+          "images"
+        ],
+        "additionalProperties": false
+      },
+      "ProposalView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProposalKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProposalStatus"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "decidedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decidedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decisionNote": {
+            "description": "The Editor's note, shown to the author",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "undoes": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "undoneBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationView"
+            }
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationPreview"
+            }
+          },
+          "conflicts": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Operations based on an older version of their record"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind",
+          "status",
+          "author",
+          "note",
+          "submittedAt",
+          "decidedAt",
+          "decidedBy",
+          "decisionNote",
+          "undoes",
+          "undoneBy",
+          "operations",
+          "citations",
+          "conflicts"
+        ],
+        "additionalProperties": false
+      },
+      "ProposalList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProposalView"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "Resolution": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "fields": {
+            "default": {},
+            "description": "Per field: keep the Proposal's value or the current one",
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "proposal",
+                "current"
+              ]
+            }
+          }
+        },
+        "required": [
+          "position",
+          "fields"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptBody": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "corrections": {
+            "default": [],
+            "description": "Editor corrections: replacement operations",
+            "maxItems": 300,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "operation": {}
+              },
+              "required": [
+                "position",
+                "operation"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "resolutions": {
+            "default": [],
+            "description": "Choices for operations in conflict",
+            "maxItems": 300,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Resolution"
+            }
+          }
+        },
+        "required": [
+          "note",
+          "corrections",
+          "resolutions"
+        ],
+        "additionalProperties": false
+      },
+      "RejectBody": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "MergeBody": {
+        "type": "object",
+        "properties": {
+          "mergeId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "LaterEdit": {
+        "type": "object",
+        "properties": {
+          "table": {
+            "$ref": "#/components/schemas/RestorableTable"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Sentence"
+          },
+          "recordLevel": {
+            "type": "boolean",
+            "description": "True when the undo would remove or bring back the whole record"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "before": {},
+                "after": {},
+                "current": {}
+              },
+              "required": [
+                "field",
+                "before",
+                "after",
+                "current"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "table",
+          "id",
+          "label",
+          "recordLevel",
+          "fields"
+        ],
+        "additionalProperties": false,
+        "description": "A record touched again after the Proposal; the Editor chooses per field"
+      },
+      "UndoPreview": {
+        "type": "object",
+        "properties": {
+          "proposalId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "laterEdits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LaterEdit"
+            }
+          }
+        },
+        "required": [
+          "proposalId",
+          "laterEdits"
+        ],
+        "additionalProperties": false
+      },
+      "UndoBody": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "choices": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "$ref": "#/components/schemas/RestorableTable"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "keep": {
+                  "type": "boolean"
+                },
+                "fields": {
+                  "default": {},
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "enum": [
+                      "undo",
+                      "keep"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "table",
+                "id",
+                "fields"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "note",
+          "choices"
+        ],
+        "additionalProperties": false
+      },
+      "HistoryKind": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "family",
+          "event",
+          "source",
+          "citation"
+        ]
+      },
+      "HistoryEntry": {
+        "type": "object",
+        "properties": {
+          "proposalId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ProposalKind"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "acceptedBy": {
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "acceptedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "decisionNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "sourceTitle": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "sourceTitle",
+                "page"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "summaries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            }
+          },
+          "corrections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "by": {
+                  "$ref": "#/components/schemas/AuthorRef"
+                },
+                "summary": {
+                  "$ref": "#/components/schemas/Sentence"
+                },
+                "original": {
+                  "$ref": "#/components/schemas/Sentence"
+                }
+              },
+              "required": [
+                "position",
+                "by",
+                "summary",
+                "original"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "type": "string"
+                },
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "before": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "after": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "table",
+                "id",
+                "before",
+                "after"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "undoneBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposalId",
+          "kind",
+          "author",
+          "acceptedBy",
+          "acceptedAt",
+          "note",
+          "decisionNote",
+          "citations",
+          "summaries",
+          "corrections",
+          "changes",
+          "undoneBy"
+        ],
+        "additionalProperties": false
+      },
+      "History": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HistoryEntry"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "CreateUploadBody": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "contentType",
+          "byteSize",
+          "sha256"
+        ],
+        "additionalProperties": false
+      },
+      "UploadTicket": {
+        "type": "object",
+        "properties": {
+          "upload": {
+            "$ref": "#/components/schemas/UploadView"
+          },
+          "putUrl": {
+            "type": "string",
+            "description": "Presigned PUT link into the pending/ prefix"
+          },
+          "putHeaders": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "upload",
+          "putUrl",
+          "putHeaders",
+          "expiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationSettings": {
+        "type": "object",
+        "properties": {
+          "outcomeEmails": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "outcomeEmails"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -6927,7 +10545,7 @@
     },
     "/api/persons/{id}": {
       "get": {
-        "summary": "A Person with Names, Events, Families and portraits",
+        "summary": "A Person with Names, Events, Families and portraits. A Person merged into another redirects to it",
         "tags": [
           "Persons"
         ],
@@ -6951,6 +10569,9 @@
                 }
               }
             }
+          },
+          "308": {
+            "description": "Location: the Person this one was merged into"
           },
           "401": {
             "description": "Default Response",
@@ -7813,11 +11434,23 @@
     },
     "/api/images/{id}": {
       "get": {
-        "summary": "Redirects to an expiring link to the image",
+        "summary": "Redirects to an expiring link to the image: the display copy, or with full=true the original file",
         "tags": [
           "Sources"
         ],
         "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "full",
+            "required": false
+          },
           {
             "schema": {
               "$ref": "#/components/schemas/IdInput"
@@ -7842,6 +11475,1018 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proposals": {
+      "post": {
+        "summary": "Submit a Proposal: one finding with all its changes and at least one Citation. Retrying with the same idempotency key returns the same Proposal. Editors may apply a direct change at once",
+        "tags": [
+          "Proposals"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitProposalBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Proposals, newest first: your own, or everyone's for Editors",
+        "tags": [
+          "Proposals"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/ProposalStatusInput"
+            },
+            "in": "query",
+            "name": "status",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "mine",
+            "required": false,
+            "description": "Only your own Proposals (Editors see everyone's otherwise)"
+          },
+          {
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/review": {
+      "get": {
+        "summary": "The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)",
+        "tags": [
+          "Review"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proposals/{id}": {
+      "get": {
+        "summary": "A Proposal: visible to its author and the Editors only",
+        "tags": [
+          "Proposals"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proposals/{id}/accept": {
+      "post": {
+        "summary": "Accept a Proposal as a whole, optionally after corrections and with per-field choices for conflicts (Editors only)",
+        "tags": [
+          "Review"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proposals/{id}/reject": {
+      "post": {
+        "summary": "Reject a Proposal as a whole, with a note for the author (Editors only)",
+        "tags": [
+          "Review"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/proposals/{id}/undo": {
+      "get": {
+        "summary": "What undoing an accepted Proposal involves: records edited again since, field by field (Editors only)",
+        "tags": [
+          "History"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoPreview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Undo an accepted Proposal as a whole, at once and logged; later edits need a choice per field (Editors only)",
+        "tags": [
+          "History"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/merge": {
+      "post": {
+        "summary": "Merge another Person into this one: Names, Roles, Family links and Citations move here, and the other record redirects (Editors only)",
+        "tags": [
+          "Review"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/{kind}/{id}": {
+      "get": {
+        "summary": "Every accepted change to a record, newest first, with author, accepting Editor, date and Citations",
+        "tags": [
+          "History"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/HistoryKindInput"
+            },
+            "in": "path",
+            "name": "kind",
+            "required": true
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/History"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uploads": {
+      "post": {
+        "summary": "Start an image upload: returns a presigned PUT link into pending/. JPEG, PNG, WebP or HEIC, at most 25 MB",
+        "tags": [
+          "Images"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTicket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uploads/{id}/complete": {
+      "post": {
+        "summary": "Finish an upload: the server checks the file and makes its WebP display copy (HEIC is converted, or refused with a message)",
+        "tags": [
+          "Images"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/uploads/{id}": {
+      "get": {
+        "summary": "Redirects to an expiring link to an uploaded image: for its author and Editors, and for all Members once its Proposal is accepted",
+        "tags": [
+          "Images"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "full",
+            "required": false,
+            "description": "true: the original file instead of the display copy"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Location: presigned link, valid 5 minutes"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/notifications": {
+      "get": {
+        "summary": "Your email settings",
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Turn outcome emails about your Proposals on or off. Editors keep the daily digest while they are Editors",
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationSettingsInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
             "description": "Default Response",
             "content": {
               "application/json": {
