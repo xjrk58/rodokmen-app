@@ -178,11 +178,13 @@ export function proposalCard(p, options = {}) {
  */
 export async function renderReview(root, focusId) {
   root.replaceChildren(h('p', { class: 'muted' }, t('work.loading')));
-  const { items } = await api('review');
-  const reload = () => void renderReview(root, undefined);
+  const { items, total } = await api('review?limit=50');
+  const reload = () => {
+    renderReview(root, undefined).catch((/** @type {Error} */ e) => root.replaceChildren(h('p', { class: 'form-status error' }, e.message)));
+  };
   root.replaceChildren(
     h('h2', {}, t('review.title')),
-    h('p', { class: 'muted small', 'data-testid': 'queue-count' }, t('review.count', { count: items.length })),
+    h('p', { class: 'muted small', 'data-testid': 'queue-count' }, t('review.count', { count: total ?? items.length })),
     ...(items.length ? items.map((/** @type {any} */ p) => proposalCard(p, { review: { onDone: reload } })) : [h('p', { class: 'empty' }, t('review.none'))]),
     mergeTool(reload),
   );
@@ -280,6 +282,10 @@ async function undoFlow(proposalId, box, onDone) {
     preview = await api(`proposals/${proposalId}/undo`);
   } catch (error) {
     box.replaceChildren(h('p', { class: 'form-status error' }, /** @type {Error} */ (error).message));
+    return;
+  }
+  if (preview.blockedBy.length) {
+    box.replaceChildren(h('p', { class: 'form-status error', 'data-testid': 'undo-blocked' }, t('history.blocked', { count: preview.blockedBy.length })));
     return;
   }
   /** @type {Map<string, { table: string, id: string, keep?: boolean, fields: Record<string, string> }>} */

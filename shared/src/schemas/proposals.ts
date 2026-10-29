@@ -8,6 +8,7 @@
  * written for, and the server refuses versions it does not know.
  */
 import { z } from 'zod';
+import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
 import { EdtfDate, Id, IsoDay, UiLanguage, Version } from './common.js';
 import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RoleType, Sex, SourceType } from './tree.js';
 
@@ -185,7 +186,8 @@ export const SetField = z
     const fields = SETTABLE_FIELDS[s.record] as Record<string, z.ZodType>;
     const keys = Object.keys(s.set);
     for (const key of keys) {
-      const schema = fields[key];
+      // Own keys only: "constructor" or "__proto__" must not reach Object.prototype.
+      const schema = Object.hasOwn(fields, key) ? fields[key] : undefined;
       if (!schema) {
         ctx.addIssue({ code: 'custom', message: `a ${s.record} has no settable field "${key}"`, path: ['set', key] });
         continue;
@@ -340,7 +342,7 @@ export const EVIDENCE_MESSAGE = {
 
 /** True when the operations carry at least one Citation (proposals spec, "Evidence is required"). */
 export function hasEvidence(ops: readonly Operation[]): boolean {
-  return ops.some((o) => o.op === 'createCitation' || o.op === 'attachCitation');
+  return ops.some((o) => isCitationOperation(o.op));
 }
 
 export interface ProposalCheck {
@@ -351,8 +353,7 @@ export interface ProposalCheck {
 /**
  * Parses and checks a whole list of operations: each against its schema, temporary ids
  * defined once and before use with the right kind, base versions present, who may use
- * which operation, and the evidence rule. `requireEvidence` is false only for merges and
- * undos, which change no facts.
+ * which operation, and the evidence rule (satisfiesEvidenceRule in rules.ts).
  */
 export function checkOperations(raw: readonly unknown[], options: { editor: boolean; allowRestore?: boolean }): ProposalCheck {
   const issues: ProposalIssue[] = [];
@@ -395,8 +396,7 @@ export function checkOperations(raw: readonly unknown[], options: { editor: bool
     }
     operations.push(op);
   });
-  const factFree = operations.length > 0 && operations.every((o) => o.op === 'mergePersons' || o.op === 'restoreRecord');
-  if (issues.length === 0 && !factFree && !hasEvidence(operations)) issues.push({ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en });
+  if (issues.length === 0 && !satisfiesEvidenceRule(operations.map((o) => o.op))) issues.push({ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en });
   return { operations, issues };
 }
 
@@ -521,7 +521,7 @@ export function describeOperation(op: Operation, ctx: SummaryContext, language: 
       return cs ? `přidává ${KIND_LABELS.cs[op.kind]}: ${of}` : `adds a ${KIND_LABELS.en[op.kind]} to ${of}`;
     }
     case 'setField': {
-      const changes = Object.entries(op.set).map(([k, v]) => `${FIELD_LABELS[language][k] ?? k} → ${fieldValue(v, language, ctx)}`);
+      const changes = Object.entries(op.set).map(([k, v]) => `${Object.hasOwn(FIELD_LABELS[language], k) ? FIELD_LABELS[language][k] : k} → ${fieldValue(v, language, ctx)}`);
       return cs ? `mění (${RECORD_LABELS.cs[op.record]}) ${L(op.id)}: ${changes.join(', ')}` : `changes ${L(op.id)} (${RECORD_LABELS.en[op.record]}): ${changes.join(', ')}`;
     }
     case 'mergePersons':

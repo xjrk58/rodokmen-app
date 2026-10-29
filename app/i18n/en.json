@@ -248,5 +248,6 @@
   "history.record.keep": "keep it as it is",
   "history.choice.undo": "undo to",
   "history.choice.keep": "keep",
-  "history.confirmUndo": "Undo"
+  "history.confirmUndo": "Undo",
+  "history.blocked": "This cannot be undone on its own: later accepted Proposals ({count}) build on its records. Undo those first, newest first."
 }

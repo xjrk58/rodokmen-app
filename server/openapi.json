@@ -4608,6 +4608,12 @@
             "items": {
               "$ref": "#/components/schemas/ProposalViewInput"
             }
+          },
+          "total": {
+            "description": "How many match in all, when the list is paged",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -4794,11 +4800,19 @@
             "items": {
               "$ref": "#/components/schemas/LaterEditInput"
             }
+          },
+          "blockedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Later accepted Proposals that attach records to ones this undo would remove; undo those first, newest first"
           }
         },
         "required": [
           "proposalId",
-          "laterEdits"
+          "laterEdits",
+          "blockedBy"
         ]
       },
       "UndoBodyInput": {
@@ -9838,6 +9852,12 @@
             "items": {
               "$ref": "#/components/schemas/ProposalView"
             }
+          },
+          "total": {
+            "description": "How many match in all, when the list is paged",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
           }
         },
         "required": [
@@ -10042,11 +10062,19 @@
             "items": {
               "$ref": "#/components/schemas/LaterEdit"
             }
+          },
+          "blockedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Later accepted Proposals that attach records to ones this undo would remove; undo those first, newest first"
           }
         },
         "required": [
           "proposalId",
-          "laterEdits"
+          "laterEdits",
+          "blockedBy"
         ],
         "additionalProperties": false
       },
@@ -10571,7 +10599,7 @@
             }
           },
           "308": {
-            "description": "Location: the Person this one was merged into"
+            "description": "Location: the same route for the Person this one was merged into"
           },
           "401": {
             "description": "Default Response",
@@ -10635,6 +10663,9 @@
               }
             }
           },
+          "308": {
+            "description": "Location: the same route for the Person this one was merged into"
+          },
           "401": {
             "description": "Default Response",
             "content": {
@@ -10696,6 +10727,9 @@
                 }
               }
             }
+          },
+          "308": {
+            "description": "Location: the same route for the Person this one was merged into"
           },
           "401": {
             "description": "Default Response",
@@ -11449,7 +11483,8 @@
             },
             "in": "query",
             "name": "full",
-            "required": false
+            "required": false,
+            "description": "true: the original file instead of the display copy"
           },
           {
             "schema": {
@@ -11645,6 +11680,30 @@
         "tags": [
           "Review"
         ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
         "responses": {
           "200": {
             "description": "Default Response",
@@ -11652,6 +11711,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProposalList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

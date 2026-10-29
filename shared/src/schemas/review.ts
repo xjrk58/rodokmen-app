@@ -88,7 +88,14 @@ export const ProposalView = z
   })
   .meta({ id: 'ProposalView' });
 
-export const ProposalList = z.object({ items: z.array(ProposalView) }).meta({ id: 'ProposalList' });
+export const ProposalList = z
+  .object({ items: z.array(ProposalView), total: z.number().int().optional().describe('How many match in all, when the list is paged') })
+  .meta({ id: 'ProposalList' });
+
+export const ReviewQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+});
 
 export const ProposalListQuery = z.object({
   status: ProposalStatus.optional(),
@@ -127,7 +134,13 @@ export const LaterEdit = z
   })
   .meta({ id: 'LaterEdit', description: 'A record touched again after the Proposal; the Editor chooses per field' });
 
-export const UndoPreview = z.object({ proposalId: Id, laterEdits: z.array(LaterEdit) }).meta({ id: 'UndoPreview' });
+export const UndoPreview = z
+  .object({
+    proposalId: Id,
+    laterEdits: z.array(LaterEdit),
+    blockedBy: z.array(z.string()).describe('Later accepted Proposals that attach records to ones this undo would remove; undo those first, newest first'),
+  })
+  .meta({ id: 'UndoPreview' });
 
 export const UndoBody = z
   .object({

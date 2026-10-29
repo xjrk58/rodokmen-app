@@ -197,6 +197,8 @@ async function applyOne(ctx: Ctx, position: number, op: Operation): Promise<void
       return;
     }
     case 'createSource': {
+      const givenBy = op.familyAccount?.givenByPersonId;
+      if (givenBy) await checkBase(ctx, position, 'person', givenBy, undefined, 'the Person who gave the account');
       const s = await rows.insert('source', {
         type: op.type,
         title: op.title,
@@ -250,7 +252,10 @@ async function applyOne(ctx: Ctx, position: number, op: Operation): Promise<void
         sha256: upload.sha256,
         caption: op.caption,
       });
-      for (const p of op.personIds) await rows.insert('image_person', { image_id: imageId, person_id: ref(ctx, p) });
+      for (const p of op.personIds) {
+        if (!isTempId(p)) await checkBase(ctx, position, 'person', p, undefined, 'a Person in the portrait');
+        await rows.insert('image_person', { image_id: imageId, person_id: ref(ctx, p) });
+      }
       ctx.uploads.push({ uploadId: upload.id, imageId, from: { original: upload.storage_key, display: upload.display_key }, to });
       if (op.tempId) ctx.temps.set(op.tempId, imageId);
       return;

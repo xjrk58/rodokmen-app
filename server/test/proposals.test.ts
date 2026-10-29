@@ -324,7 +324,7 @@ describe('Proposals, review, history and undo', () => {
 
   it('undo a wrong merge: both Persons exist again with their own Events, and the log shows the undo', async () => {
     const preview = await call(editor, 'GET', `/api/proposals/${merge!.proposalId}/undo`);
-    expect(preview.json()).toEqual({ proposalId: merge!.proposalId, laterEdits: [] });
+    expect(preview.json()).toEqual({ proposalId: merge!.proposalId, laterEdits: [], blockedBy: [] });
     const res = await call(editor, 'POST', `/api/proposals/${merge!.proposalId}/undo`, { note: 'Two different men after all' });
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json()).toMatchObject({ kind: 'undo', status: 'accepted', undoes: merge!.proposalId });
@@ -380,5 +380,91 @@ describe('Proposals, review, history and undo', () => {
     const undone = await person(v.id);
     expect(undone.sex).toBe('unknown');
     expect(undone.names[0]).toMatchObject({ given: 'Venceslava', surname: 'Invented' });
+  });
+
+  // ---------------------------------------------------------------- review findings
+
+  it('undo is refused while later accepted Proposals attach records to ones it would remove; undoing those first, newest first, works', async () => {
+    const x = ProposalView.parse(
+      (
+        await submit(contributor, [
+          { op: 'createPerson', tempId: 'tmp:p', sex: 'male', name: { given: 'Prokop', surname: 'Invented', type: 'birth', asFound: 'Procopius' } },
+          { op: 'createEvent', tempId: 'tmp:e', type: 'baptism', date: '1828-07-04', placeId: L.kamennaLhota },
+          { op: 'addRole', eventId: 'tmp:e', personId: 'tmp:p', role: 'child' },
+          ...citation('X1'),
+          { op: 'attachCitation', citationId: 'tmp:citX1', eventId: 'tmp:e' },
+        ])
+      ).json(),
+    );
+    expect((await call(editor, 'POST', `/api/proposals/${x.id}/accept`, {})).statusCode).toBe(200);
+    const prokop = (await t.db.selectFrom('name').select('person_id').where('as_found', '=', 'Procopius').executeTakeFirstOrThrow()).person_id;
+    const p = await person(prokop);
+    const death = (await call(contributor, 'GET', `/api/events/${L.janDeath}`)).json();
+    const family = (await call(contributor, 'GET', `/api/families/${L.janFirstFamily}`)).json();
+    // Y attaches a Name, a Role and a child link to the Person X created. None of them changes the Person's version.
+    const y = ProposalView.parse(
+      (
+        await submit(other, [
+          ...citation('Y1'),
+          { op: 'addName', personId: prokop, baseVersion: p.version, given: 'Procopius', surname: 'Invented', type: 'latin', asFound: 'Procopius Inventus' },
+          { op: 'addRole', eventId: L.janDeath, personId: prokop, role: 'witness', baseVersion: death.version },
+          { op: 'linkChild', familyId: L.janFirstFamily, childId: prokop, linkType: 'foster', baseVersion: family.version },
+          { op: 'attachCitation', citationId: 'tmp:citY1', eventId: L.janDeath, baseVersion: death.version },
+        ])
+      ).json(),
+    );
+    expect((await call(editor, 'POST', `/api/proposals/${y.id}/accept`, {})).statusCode).toBe(200);
+    expect((await call(editor, 'GET', `/api/proposals/${x.id}/undo`)).json()).toMatchObject({ laterEdits: [], blockedBy: [y.id] });
+
+    const before = { person: await person(prokop), log: await count('log_entry') };
+    const refused = await call(editor, 'POST', `/api/proposals/${x.id}/undo`, {});
+    expect(refused.statusCode).toBe(409);
+    expect(refused.json().code).toBe('undo_blocked_by_dependents');
+    expect(refused.json().message).toContain(y.id);
+    expect(await person(prokop)).toEqual(before.person);
+    expect(await count('log_entry')).toBe(before.log);
+    expect((await call(contributor, 'GET', `/api/events/${L.janDeath}`)).json().roles.some((r: { person: { id: string } }) => r.person.id === prokop)).toBe(true);
+
+    expect((await call(editor, 'POST', `/api/proposals/${y.id}/undo`, {})).statusCode).toBe(200);
+    expect((await call(editor, 'POST', `/api/proposals/${x.id}/undo`, {})).statusCode).toBe(200);
+    expect((await call(contributor, 'GET', `/api/persons/${prokop}`)).statusCode).toBe(404);
+    expect((await call(contributor, 'GET', `/api/families/${L.janFirstFamily}`)).json().children.map((c: { person: { id: string } }) => c.person.id)).not.toContain(prokop);
+  });
+
+  it('undoing an undo puts the Proposal back in force, and it can be undone again; merged ids redirect on every Person route', async () => {
+    const original = ProposalView.parse((await call(editor, 'GET', `/api/proposals/${merge!.proposalId}`)).json());
+    expect(original.undoneBy).not.toBeNull();
+    const redo = await call(editor, 'POST', `/api/proposals/${original.undoneBy}/undo`, {});
+    expect(redo.statusCode, redo.body).toBe(200);
+    expect(ProposalView.parse((await call(editor, 'GET', `/api/proposals/${merge!.proposalId}`)).json()).undoneBy).toBeNull();
+    // Merged again: the old id redirects on every Person route.
+    for (const sub of ['', '/ancestors?generations=3', '/descendants']) {
+      const res = await call(contributor, 'GET', `/api/persons/${merge!.gone}${sub}`);
+      expect(res.statusCode).toBe(308);
+      expect(res.headers.location).toBe(`/api/persons/${merge!.kept}${sub}`);
+    }
+    // A merged Person cannot be cited as the giver of a Family account.
+    const fa = ProposalView.parse(
+      (
+        await submit(contributor, [
+          { op: 'createSource', tempId: 'tmp:fa', type: 'family_account', title: 'Invented account', familyAccount: { givenBy: 'Matěj', givenByPersonId: merge!.gone, givenOn: '1880' } },
+          { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:fa', transcription: 'Invented.', readOn: '2026-10-01', confidence: 'low' },
+        ])
+      ).json(),
+    );
+    const accept = await call(editor, 'POST', `/api/proposals/${fa.id}/accept`, {});
+    expect(accept.statusCode).toBe(409);
+    expect(accept.json().code).toBe('person_merged');
+    expect((await call(editor, 'POST', `/api/proposals/${merge!.proposalId}/undo`, {})).statusCode).toBe(200);
+    expect((await call(contributor, 'GET', `/api/persons/${merge!.gone}`)).statusCode).toBe(200);
+  });
+
+  it('a field name from Object.prototype is a 400, not a crash', async () => {
+    const jan = await person(L.janNovak);
+    for (const key of ['constructor', 'toString']) {
+      const res = await submit(editor, [...citation('Q'), { op: 'setField', record: 'name', id: jan.names[0]!.id, baseVersion: jan.names[0]!.version, set: { [key]: 'x' } }]);
+      expect(res.statusCode).toBe(400);
+      expect(res.json().message).toContain(`no settable field "${key}"`);
+    }
   });
 });

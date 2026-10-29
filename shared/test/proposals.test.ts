@@ -107,6 +107,18 @@ describe('typed operations', () => {
     expect(unknownField.issues[0]!.message).toMatch(/no settable field "colour"/);
   });
 
+  it('refuses field names inherited from Object.prototype instead of crashing', () => {
+    for (const key of ['constructor', 'toString', 'hasOwnProperty']) {
+      const { issues } = checkOperations([{ op: 'setField', record: 'name', id: ids.name, baseVersion: 1, set: { [key]: 'x' } }], { editor: true });
+      expect(issues[0]!.message).toContain(`no settable field "${key}"`);
+    }
+    // As JSON.parse leaves it: an own property named __proto__.
+    const raw = JSON.parse(`{"op":"setField","record":"name","id":"${ids.name}","baseVersion":1,"set":{"__proto__":{"polluted":true}}}`);
+    const { issues } = checkOperations([raw], { editor: true });
+    expect(issues.length).toBeGreaterThan(0);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
   it('only Editors merge, and nobody submits restoreRecord', () => {
     expect(checkOperations([examples[14]], { editor: false }).issues[0]!.code).toBe('not_allowed');
     expect(checkOperations([examples[14]], { editor: true }).issues).toEqual([]);

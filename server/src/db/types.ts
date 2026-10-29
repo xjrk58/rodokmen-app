@@ -309,6 +309,7 @@ export interface UploadTable {
   height: number | null;
   proposal_id: string | null;
   image_id: string | null;
+  orphaned_at: Timestamp | null;
   deleted_at: Timestamp | null;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
@@ -317,8 +318,20 @@ export interface UploadTable {
 export interface JobRunTable {
   job: string;
   day: string;
-  ran_at: Generated<Date>;
+  status: 'running' | 'done' | 'failed';
+  attempts: Generated<number>;
+  claimed_at: Timestamp;
+  finished_at: Timestamp | null;
   detail: string | null;
+}
+
+export interface JobDeliveryTable {
+  job: string;
+  day: string;
+  account_id: string;
+  sent_at: Timestamp | null;
+  attempts: Generated<number>;
+  last_error: string | null;
 }
 
 export interface Database {
@@ -354,6 +367,7 @@ export interface Database {
   log_change: LogChangeTable;
   upload: UploadTable;
   job_run: JobRunTable;
+  job_delivery: JobDeliveryTable;
 }
 
 export type Proposal = Selectable<ProposalTable>;

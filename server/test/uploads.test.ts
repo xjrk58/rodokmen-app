@@ -153,13 +153,56 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     const jobs = new DailyScheduler({ db: t.db, clock: a.clock, mailer: a.mailer, images: storage, publicOrigin: 'http://localhost:3000' });
     // The job runs daily at 03:30 Prague time; 29 days later the image is still there.
     a.clock.current = new Date('2026-11-27T03:00:00Z');
-    expect(await jobs.tick()).toContain('delete-rejected-images');
+    expect(await jobs.tick()).toContain('delete-unused-images');
     expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(true);
     a.clock.current = new Date('2026-11-29T03:00:00Z');
-    expect(await jobs.tick()).toContain('delete-rejected-images');
+    expect(await jobs.tick()).toContain('delete-unused-images');
     expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(false);
     expect(storage.objects.has(`pending/${uploadId}/display.webp`)).toBe(false);
     expect((await call(author, 'GET', `/api/uploads/${uploadId}`)).statusCode).toBe(410);
     a.clock.current = new Date(a.clock.current.getTime() + DAY);
+  });
+
+  it('a failed copy during accept leaves nothing in images/ and the Proposal pending', async () => {
+    const { proposal, uploadId } = await proposalWithImage();
+    const copy = storage.copy.bind(storage);
+    storage.copy = async (from, to) => {
+      if (to.endsWith('display.webp')) throw new Error('storage unavailable');
+      return copy(from, to);
+    };
+    const before = [...storage.objects.keys()].filter((k) => k.startsWith('images/')).sort();
+    try {
+      expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/accept`, {})).statusCode).toBe(500);
+    } finally {
+      storage.copy = copy;
+    }
+    expect([...storage.objects.keys()].filter((k) => k.startsWith('images/')).sort()).toEqual(before);
+    expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(true);
+    expect((await call(editor, 'GET', `/api/proposals/${proposal.id}`)).json().status).toBe('pending');
+    expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/accept`, {})).statusCode).toBe(200);
+  });
+
+  it('after accept the upload points at images/; an undo keeps the files 30 days for its author and Editors, then they are deleted', async () => {
+    const { proposal, uploadId } = await proposalWithImage();
+    expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/accept`, {})).statusCode).toBe(200);
+    const row = await t.db.selectFrom('upload').selectAll().where('id', '=', uploadId).executeTakeFirstOrThrow();
+    expect(row.storage_key).toBe(`images/${row.image_id}/original`);
+    expect(row.display_key).toBe(`images/${row.image_id}/display.webp`);
+    expect((await call(author, 'GET', `/api/uploads/${uploadId}`)).headers.location).toContain(`images/${row.image_id}/display.webp`);
+
+    expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/undo`, {})).statusCode).toBe(200);
+    const orphan = await t.db.selectFrom('upload').selectAll().where('id', '=', uploadId).executeTakeFirstOrThrow();
+    expect(orphan.image_id).toBeNull();
+    expect(orphan.orphaned_at).not.toBeNull();
+    expect((await call(stranger, 'GET', `/api/uploads/${uploadId}`)).statusCode).toBe(404);
+    expect((await call(author, 'GET', `/api/uploads/${uploadId}`)).headers.location).toContain(`images/${row.image_id}/display.webp`);
+    expect(storage.objects.has(row.storage_key)).toBe(true);
+
+    const jobs = new DailyScheduler({ db: t.db, clock: a.clock, mailer: a.mailer, images: storage, publicOrigin: 'http://localhost:3000' });
+    a.clock.current = new Date(a.clock.current.getTime() + 31 * DAY);
+    expect(await jobs.tick()).toContain('delete-unused-images');
+    expect(storage.objects.has(row.storage_key)).toBe(false);
+    expect(storage.objects.has(row.display_key)).toBe(false);
+    expect((await call(author, 'GET', `/api/uploads/${uploadId}`)).statusCode).toBe(410);
   });
 });

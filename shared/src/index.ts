@@ -1,5 +1,6 @@
 export * from './edtf.js';
 export * from './living.js';
+export * from './rules.js';
 export * from './text.js';
 export * from './schemas/common.js';
 export * from './schemas/tree.js';

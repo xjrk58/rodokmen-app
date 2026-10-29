@@ -15,7 +15,7 @@ import { type Kysely, sql } from 'kysely';
  * - person.merged_into_id: a merged Person stays as a redirect to the kept one, so undo can
  *   restore it. A merged Person has no Names, so the one-primary-Name check skips it.
  * - account.outcome_emails: Members can mute outcome emails.
- * - job_run: which daily job ran on which Prague day.
+ * - job_run / job_delivery: which daily job ran on which Prague day, and to whom it sent email.
  */
 export async function up(db: Kysely<unknown>): Promise<void> {
   await sql
@@ -130,6 +130,7 @@ create table log_change (
 create index log_change_record_idx on log_change (record_id);
 create index log_change_entry_idx on log_change (log_entry_id);
 create index log_change_person_idx on log_change using gin ((coalesce(before, '{}'::jsonb) || coalesce(after, '{}'::jsonb)) jsonb_path_ops);
+create index log_change_before_idx on log_change using gin (before jsonb_path_ops);
 
 create function rdk_log_append_only() returns trigger
 language plpgsql as $$
@@ -160,6 +161,8 @@ create table upload (
   height integer,
   proposal_id uuid references proposal (id),
   image_id uuid references image (id) on delete set null,
+  -- Set when an undo removed the accepted image; its files are kept 30 days in case the undo is undone.
+  orphaned_at timestamptz,
   deleted_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -168,12 +171,28 @@ create index upload_proposal_idx on upload (proposal_id);
 create index upload_author_idx on upload (author_id);
 create trigger upload_bump_version before update on upload for each row execute function rdk_bump_version();
 
+-- A daily job's run for one Prague day: claimed while running (a stale claim, left by a crash,
+-- may be taken over), done once it finished, failed to be retried a few times.
 create table job_run (
   job text not null,
   day date not null,
-  ran_at timestamptz not null default now(),
+  status text not null check (status in ('running', 'done', 'failed')),
+  attempts integer not null default 1,
+  claimed_at timestamptz not null,
+  finished_at timestamptz,
   detail text,
   primary key (job, day)
+);
+
+-- One row per recipient of a daily email, so a retried job never sends twice.
+create table job_delivery (
+  job text not null,
+  day date not null,
+  account_id uuid not null references account (id) on delete cascade,
+  sent_at timestamptz,
+  attempts integer not null default 0,
+  last_error text,
+  primary key (job, day, account_id)
 );
 `,
     )
@@ -184,6 +203,7 @@ export async function down(db: Kysely<unknown>): Promise<void> {
   await sql
     .raw(
       `
+drop table job_delivery;
 drop table job_run;
 drop table upload;
 drop table log_change;
@@ -194,6 +214,38 @@ drop table proposal;
 alter table account drop column outcome_emails;
 alter table image drop column display_key;
 drop trigger person_merge_names on person;
+-- The 0002 check, which does not know merged Persons.
+create or replace function rdk_check_person_names() returns trigger
+language plpgsql as $$
+declare
+  pid uuid;
+  primaries integer;
+begin
+  if tg_table_name = 'person' then
+    pid := new.id;
+  elsif tg_op = 'DELETE' then
+    pid := old.person_id;
+  else
+    pid := new.person_id;
+  end if;
+  if not exists (select 1 from person where id = pid) then
+    return null;
+  end if;
+  select count(*) filter (where is_primary) into primaries from name where person_id = pid;
+  if primaries <> 1 then
+    raise exception 'a Person has exactly one primary Name (person %, found %)', pid, primaries
+      using errcode = 'check_violation';
+  end if;
+  if tg_table_name = 'name' and tg_op = 'UPDATE' then
+    if old.person_id <> new.person_id
+       and exists (select 1 from person where id = old.person_id)
+       and (select count(*) filter (where is_primary) from name where person_id = old.person_id) <> 1 then
+      raise exception 'a Person has exactly one primary Name (person %)', old.person_id using errcode = 'check_violation';
+    end if;
+  end if;
+  return null;
+end
+$$;
 alter table person drop column merged_into_id;
 `,
     )

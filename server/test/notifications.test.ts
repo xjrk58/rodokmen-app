@@ -115,4 +115,81 @@ describe('notifications: the daily Editor digest and outcome emails', () => {
     expect(await jobs.tick()).toContain('editor-digest');
     expect(a.mailer.lastTo(editor.email)).toBeDefined();
   });
+
+  it('an outcome email that cannot be sent does not fail the decision', async () => {
+    const id = await propose(karel, 'O');
+    const send = a.mailer.send.bind(a.mailer);
+    a.mailer.send = async () => {
+      throw new Error('SMTP is down');
+    };
+    try {
+      expect((await call(editor, 'POST', `/api/proposals/${id}/reject`, { note: 'no' })).statusCode).toBe(200);
+    } finally {
+      a.mailer.send = send;
+    }
+  });
+
+  it('a digest that fails for one Editor is retried only for that Editor, and given up after three tries', async () => {
+    at('2026-11-02T08:00:00Z');
+    await propose(karel, 'S');
+    const failing = new Set([owner.email]);
+    const send = a.mailer.send.bind(a.mailer);
+    a.mailer.send = async (m) => {
+      if (failing.has(m.to)) throw new Error('mailbox unavailable');
+      return send(m);
+    };
+    try {
+      a.mailer.clear();
+      at('2026-11-02T17:00:00Z');
+      await jobs.tick();
+      expect(a.mailer.messages.map((m) => m.to)).toEqual([editor.email]);
+      expect((await t.db.selectFrom('job_run').select('status').where('job', '=', 'editor-digest').where('day', '=', '2026-11-02').executeTakeFirstOrThrow()).status).toBe('failed');
+      // Next minute: only the Editor not yet reached.
+      failing.clear();
+      at('2026-11-02T17:01:00Z');
+      await jobs.tick();
+      expect(a.mailer.messages.map((m) => m.to).sort()).toEqual([editor.email, owner.email].sort());
+
+      // Another day, a mailbox that never works: tried three times, nobody else gets duplicates.
+      failing.add(owner.email);
+      a.mailer.clear();
+      for (const minute of ['00', '01', '02', '03', '04']) {
+        at(`2026-11-03T17:${minute}:00Z`);
+        await jobs.tick();
+      }
+      expect(a.mailer.messages.map((m) => m.to)).toEqual([editor.email]);
+      const delivery = await t.db.selectFrom('job_delivery').selectAll().where('day', '=', '2026-11-03').where('account_id', '=', owner.id).executeTakeFirstOrThrow();
+      expect([delivery.sent_at, delivery.attempts]).toEqual([null, 3]);
+      expect((await t.db.selectFrom('job_run').select('status').where('job', '=', 'editor-digest').where('day', '=', '2026-11-03').executeTakeFirstOrThrow()).status).toBe('done');
+    } finally {
+      a.mailer.send = send;
+    }
+  });
+
+  it('a run left "running" by a crash is taken over once stale; a fresh claim is left alone', async () => {
+    a.mailer.clear();
+    at('2026-11-04T17:10:00Z');
+    await t.db.insertInto('job_run').values({ job: 'editor-digest', day: '2026-11-04', status: 'running', claimed_at: new Date('2026-11-04T17:05:00Z') }).execute();
+    expect(await jobs.tick()).not.toContain('editor-digest');
+    expect(a.mailer.messages).toEqual([]);
+    at('2026-11-04T17:25:00Z');
+    expect(await jobs.tick()).toContain('editor-digest');
+    expect(a.mailer.messages.length).toBe(2);
+  });
+
+  it('stopping waits for a running tick', async () => {
+    let release!: () => void;
+    const slow = new DailyScheduler({ db: t.db, clock: a.clock, mailer: a.mailer, images: new MemoryImageStorage(a.clock), publicOrigin: 'https://rodokmen.example' }, [
+      { name: 'slow-test-job', at: { hour: 0, minute: 0 }, run: () => new Promise((resolve) => (release = () => resolve({ detail: 'ok', complete: true }))) },
+    ]);
+    const stop = slow.start(5);
+    await expect.poll(() => typeof release).toBe('function');
+    let stopped = false;
+    const stopping = stop().then(() => (stopped = true));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(stopped).toBe(false);
+    release();
+    await stopping;
+    expect((await t.db.selectFrom('job_run').select('status').where('job', '=', 'slow-test-job').executeTakeFirstOrThrow()).status).toBe('done');
+  });
 });

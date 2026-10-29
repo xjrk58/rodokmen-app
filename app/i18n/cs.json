@@ -248,5 +248,6 @@
   "history.record.keep": "ponechat, jak je",
   "history.choice.undo": "vrátit na",
   "history.choice.keep": "ponechat",
-  "history.confirmUndo": "Vrátit"
+  "history.confirmUndo": "Vrátit",
+  "history.blocked": "Toto nejde vrátit samostatně: na jeho záznamy navazují pozdější přijaté návrhy ({count}). Vraťte nejdřív je, od nejnovějšího."
 }

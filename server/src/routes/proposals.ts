@@ -6,12 +6,14 @@ import {
   HistoryKind,
   IdParams,
   IMAGE_MAX_BYTES,
+  ImageLinkQuery,
   MergeBody,
   NotificationSettings,
   ProposalList,
   ProposalListQuery,
   ProposalView,
   RejectBody,
+  ReviewQuery,
   SubmitProposalBody,
   UndoBody,
   UndoPreview,
@@ -24,13 +26,13 @@ import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { requireRole } from '../auth/plugin.js';
 import { ApiProblem } from '../auth/problem.js';
-import { laterEdits, recordHistory, undoProposal } from '../proposals/history.js';
+import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
 import { acceptProposal, assertCanSee, canReview, getProposalRow, mergePersons, proposalViews, rejectProposal, submitProposal, uploadView, type ProposalDeps } from '../proposals/service.js';
+import { imageLink } from '../storage/images.js';
 import { processImage, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
 const signedIn = { 401: ApiError };
 const editorOnly = { 401: ApiError, 403: ApiError };
-const FullQuery = z.object({ full: z.enum(['true', 'false']).optional().describe('true: the original file instead of the display copy') });
 
 /**
  * The write path into the Tree (proposals, review, tree-history, evidence-media and
@@ -69,10 +71,17 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
 
   app.get('/api/review', {
     ...editor,
-    schema: { tags: ['Review'], summary: 'The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)', response: { 200: ProposalList, ...editorOnly } },
-    handler: async () => {
-      const rows = await db.selectFrom('proposal').selectAll().where('status', '=', 'pending').orderBy('submitted_at').orderBy('id').execute();
-      return { items: await proposalViews(db, rows) };
+    schema: {
+      tags: ['Review'],
+      summary: 'The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)',
+      querystring: ReviewQuery,
+      response: { 200: ProposalList, 400: ApiError, ...editorOnly },
+    },
+    handler: async (req) => {
+      const pending = db.selectFrom('proposal').where('status', '=', 'pending');
+      const rows = await pending.selectAll().orderBy('submitted_at').orderBy('id').limit(req.query.limit).offset(req.query.offset).execute();
+      const { total } = await pending.select((eb) => eb.fn.countAll<number>().as('total')).executeTakeFirstOrThrow();
+      return { items: await proposalViews(db, rows), total };
     },
   });
 
@@ -110,7 +119,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       const p = await getProposalRow(db, req.params.id);
       if (p.status !== 'accepted') throw new ApiProblem(409, 'not_accepted', 'Only an accepted Proposal can be undone.');
       if (p.undone_by_proposal_id) throw new ApiProblem(409, 'already_undone', 'This Proposal was already undone.');
-      return { proposalId: p.id, laterEdits: (await laterEdits(db, p.id)).edits };
+      return { proposalId: p.id, ...(await undoPreview(db, p.id)) };
     },
   });
 
@@ -217,7 +226,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       tags: ['Images'],
       summary: 'Redirects to an expiring link to an uploaded image: for its author and Editors, and for all Members once its Proposal is accepted',
       params: IdParams,
-      querystring: FullQuery,
+      querystring: ImageLinkQuery,
       response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), 404: ApiError, 409: ApiError, 410: ApiError, ...signedIn },
     },
     handler: async (req, reply) => {
@@ -226,16 +235,10 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       if (!u || (u.author_id !== member.id && !canReview(member) && u.image_id === null)) throw new ApiProblem(404, 'not_found', 'No image with this id.');
       if (u.status === 'deleted') throw new ApiProblem(410, 'deleted', 'This image was deleted.');
       if (u.status !== 'ready') throw new ApiProblem(409, 'not_ready', 'This image is still being uploaded.');
-      let key = req.query.full === 'true' ? u.storage_key : u.display_key;
-      let type = req.query.full === 'true' ? u.content_type! : 'image/webp';
-      if (u.image_id) {
-        const image = await db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', u.image_id).executeTakeFirst();
-        if (image) {
-          key = req.query.full === 'true' || !image.display_key ? image.storage_key : image.display_key;
-          type = key === image.storage_key ? image.content_type : 'image/webp';
-        }
-      }
-      const link = await deps.images.link(key, type);
+      // An accepted image is served from its image record; otherwise from the upload (pending/,
+      // or images/ for one an undo removed, kept for 30 days).
+      const image = u.image_id ? await db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', u.image_id).executeTakeFirst() : undefined;
+      const link = await imageLink(deps.images, image ?? { storage_key: u.storage_key, display_key: u.display_key, content_type: u.content_type! }, req.query.full === 'true');
       return reply.header('cache-control', 'no-store').redirect(link.url, 302);
     },
   });

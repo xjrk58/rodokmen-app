@@ -1,11 +1,12 @@
-import { describeOperations, type HistoryEntry, type HistoryKind, type LaterEdit, type Operation, type ProposalView, type RestorableTable, type UndoBody } from '@rodokmen/shared';
+import { describeOperations, undoBlockers, type Dependency, type HistoryEntry, type HistoryKind, type LaterEdit, type Operation, type ProposalView, type RestorableTable, type UndoBody } from '@rodokmen/shared';
 import { isDeepStrictEqual } from 'node:util';
 import { sql } from 'kysely';
+import { v7 as uuidv7 } from 'uuid';
 import { ApiProblem } from '../auth/problem.js';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import { idsIn, labelsFor } from './labels.js';
-import { restorableColumns, snapshot, type Snapshot } from './records.js';
+import { dependentsOf, restorableColumns, snapshot, type Snapshot } from './records.js';
 import { acceptInTransaction, authorRef, finishMoves, insertProposal, loadOperations, proposalViews, transaction, type ProposalDeps } from './service.js';
 
 // ---------------------------------------------------------------- record history
@@ -114,6 +115,13 @@ async function loggedChanges(db: Db, proposalId: string): Promise<LoggedChange[]
 }
 
 /** Records changed again after the Proposal, field by field (tree-history spec, "Undo after later edits"). */
+/** What undoing involves, for the Editor before choosing: later edits, and Proposals that block it. */
+export async function undoPreview(db: Db, proposalId: string): Promise<{ laterEdits: LaterEdit[]; blockedBy: string[] }> {
+  const { changes, edits, current } = await laterEdits(db, proposalId);
+  const deletions = changes.filter((c) => c.before === null && current.get(`${c.table}:${c.id}`)).map((c) => ({ table: c.table, id: c.id }));
+  return { laterEdits: edits, blockedBy: await blockingProposals(db, proposalId, deletions) };
+}
+
 export async function laterEdits(db: Db, proposalId: string, lock = false): Promise<{ changes: LoggedChange[]; edits: LaterEdit[]; current: Map<string, Snapshot | null> }> {
   const changes = await loggedChanges(db, proposalId);
   const labels = await labelsFor(db, changes.map((c) => c.id).concat(idsIn(changes.map((c) => [c.before?.person_id, c.after?.person_id]))));
@@ -137,6 +145,41 @@ export async function laterEdits(db: Db, proposalId: string, lock = false): Prom
     edits.push({ table: c.table, id: c.id, label, recordLevel: c.before === null, fields });
   }
   return { changes, edits, current };
+}
+
+/**
+ * Later accepted Proposals that attach records to ones this undo would delete (a Name or Role
+ * added to a Person the undone Proposal created, a child linked to its Family …), newest first.
+ * Deleting would cascade into them unseen, so the Editor undoes those first.
+ */
+export async function blockingProposals(db: Db, proposalId: string, deletions: ReadonlyArray<{ table: RestorableTable; id: string }>): Promise<string[]> {
+  // Gather the inputs; the rule itself is undoBlockers (shared/src/rules.ts).
+  const dependencies: Dependency[] = [];
+  for (const d of deletions) for (const dep of await dependentsOf(db, d.table, d.id)) dependencies.push({ of: d, dependent: dep });
+  if (dependencies.length === 0) return [];
+  const touches = await db
+    .selectFrom('log_change as c')
+    .innerJoin('log_entry as l', 'l.id', 'c.log_entry_id')
+    .innerJoin('proposal as p', 'p.id', 'l.proposal_id')
+    .select(['p.id', 'l.accepted_at', 'c.record_table', 'c.record_id', 'p.undone_by_proposal_id'])
+    .where('c.record_id', 'in', dependencies.map((d) => d.dependent.id))
+    .execute();
+  const result = undoBlockers(
+    proposalId,
+    deletions,
+    dependencies,
+    touches.map((t) => ({ proposalId: t.id, acceptedAt: new Date(t.accepted_at).getTime(), record: { table: t.record_table, id: t.record_id }, undone: t.undone_by_proposal_id !== null })),
+  );
+  // Records attached outside any logged Proposal still block: deleting them would go unlogged.
+  return result.unlogged && result.blockedBy.length === 0 ? ['(records not in the log)'] : result.blockedBy;
+}
+
+function blockedProblem(blockedBy: string[]): ApiProblem {
+  return new ApiProblem(
+    409,
+    'undo_blocked_by_dependents',
+    `Later accepted Proposals attach records to ones this undo would remove. Undo them first, newest first: ${blockedBy.join(', ')}.`,
+  );
 }
 
 /**
@@ -181,11 +224,17 @@ export async function undoProposal(deps: ProposalDeps, editor: Account, proposal
         ops.push({ op: 'restoreRecord', table: c.table, id: c.id, baseVersion: cur!.version, values: c.before, fields: columns });
       }
       if (ops.length === 0) throw new ApiProblem(409, 'nothing_to_undo', 'Every change of this Proposal is kept; there is nothing to undo.');
+      const deletions = ops.flatMap((o) => (o.op === 'restoreRecord' && o.values === null ? [{ table: o.table, id: o.id }] : []));
+      const blockedBy = await blockingProposals(tx, proposalId, deletions);
+      if (blockedBy.length) throw blockedProblem(blockedBy);
 
-      const created = await insertProposal(tx, now, editor, { kind: 'undo', note: body.note, idempotencyKey: `undo-${proposalId}`, undoes: proposalId }, ops);
-      if (!created.created) throw new ApiProblem(409, 'already_undone', 'This Proposal was already undone.');
+      const created = await insertProposal(tx, now, editor, { kind: 'undo', note: body.note, idempotencyKey: `undo-${proposalId}-${uuidv7()}`, undoes: proposalId }, ops);
       const accepted = await acceptInTransaction(tx, deps, created.proposal, editor, { note: null, corrections: [], resolutions: [] });
       await tx.updateTable('proposal').set({ undone_by_proposal_id: accepted.proposal.id }).where('id', '=', proposalId).execute();
+      // Undoing an undo puts the Proposal it undid back in force, so that one can be undone again.
+      if (original.kind === 'undo' && original.undoes_proposal_id) {
+        await tx.updateTable('proposal').set({ undone_by_proposal_id: null }).where('id', '=', original.undoes_proposal_id).execute();
+      }
       return accepted;
     },
     deps,

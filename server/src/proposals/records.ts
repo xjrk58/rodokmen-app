@@ -108,6 +108,9 @@ export function trackedRows(db: Db, changes: ChangeSet): Rows {
     async remove(name, id) {
       const before = await snapshot(db, name, id);
       if (!before) return;
+      // Never let ON DELETE CASCADE / SET NULL change other records unseen and unlogged.
+      const dependents = await dependentsOf(db, name, id);
+      if (dependents.length) throw new DependentsProblem(name, id, dependents);
       await db.deleteFrom(table(name) as 'person').where('id', '=', id).execute();
       changes.record(name, id, before, null);
     },
@@ -130,4 +133,53 @@ export function trackedRows(db: Db, changes: ChangeSet): Rows {
       return after;
     },
   };
+}
+
+/** Snapshots of many records of one table in one query, keyed by id (no lock). */
+export async function snapshotsMany(db: Db, name: RestorableTable, ids: readonly string[]): Promise<Map<string, Snapshot>> {
+  if (ids.length === 0) return new Map();
+  const { rows } = await sql<{ row: Snapshot }>`select to_jsonb(t.*) as row from ${sql.table(table(name))} t where t.id = any(${[...new Set(ids)]}::uuid[])`.execute(db);
+  return new Map(rows.map((r) => [r.row.id, r.row]));
+}
+
+export interface Dependent {
+  table: RestorableTable;
+  id: string;
+}
+
+/** A record cannot be deleted while other Tree records refer to it. */
+export class DependentsProblem extends ApiProblem {
+  constructor(
+    readonly table: RestorableTable,
+    readonly recordId: string,
+    readonly dependents: Dependent[],
+  ) {
+    super(409, 'has_dependents', `The ${table.replace('_', ' ')} record ${recordId} is still referred to by ${dependents.length} other record(s).`);
+  }
+}
+
+const fkCache = new Map<string, Array<{ table: RestorableTable; column: string }>>();
+
+/** Foreign keys from Tree tables that point at a table, read from the catalog once. */
+async function referencesTo(db: Db, name: RestorableTable): Promise<Array<{ table: RestorableTable; column: string }>> {
+  const cached = fkCache.get(name);
+  if (cached) return cached;
+  const { rows } = await sql<{ table_name: string; column_name: string }>`
+    select c.conrelid::regclass::text as table_name, a.attname as column_name
+    from pg_constraint c
+    join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey)
+    where c.contype = 'f' and c.confrelid = ${`public.${table(name)}`}::regclass`.execute(db);
+  const refs = rows.filter((r) => TABLES.has(r.table_name)).map((r) => ({ table: r.table_name as RestorableTable, column: r.column_name }));
+  fkCache.set(name, refs);
+  return refs;
+}
+
+/** Tree records that refer to a record (and would be removed or changed by deleting it). */
+export async function dependentsOf(db: Db, name: RestorableTable, id: string): Promise<Dependent[]> {
+  const out: Dependent[] = [];
+  for (const ref of await referencesTo(db, name)) {
+    const { rows } = await sql<{ id: string }>`select id from ${sql.table(ref.table)} where ${sql.ref(ref.column)} = ${id}`.execute(db);
+    for (const r of rows) out.push({ table: ref.table, id: r.id });
+  }
+  return out;
 }

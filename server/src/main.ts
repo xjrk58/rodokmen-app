@@ -32,7 +32,7 @@ async function main() {
 
   const shutdown = async (signal: string) => {
     app.log.info({ signal }, 'shutting down');
-    stopJobs();
+    await stopJobs();
     await app.close();
     await db.destroy();
     process.exit(0);
