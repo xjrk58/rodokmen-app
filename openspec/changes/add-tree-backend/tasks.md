@@ -20,12 +20,12 @@
 
 ## 4. Read API
 
-- [ ] 4.1 Serve Fastify routes for Persons, Families, Events, Places, Houses, Sources and Citations, validated by the shared schemas; verify with integration tests on the fixture
-- [ ] 4.2 Add diacritic-insensitive Person search across all Names (`unaccent` plus trigram index); verify "nowak" finds the Person whose primary Name is "Novák"
-- [ ] 4.3 Add ancestors and descendants queries (recursive CTE, at least 6 generations); verify against the fixture's known pedigree
-- [ ] 4.4 Add the map query (bounding box plus year range); verify that only Events of the range inside the box return
+- [x] 4.1 Serve Fastify routes for Persons, Families, Events, Places, Houses, Sources and Citations, validated by the shared schemas; verify with integration tests on the fixture
+- [x] 4.2 Add diacritic-insensitive Person search across all Names (`unaccent` plus trigram index); verify "nowak" finds the Person whose primary Name is "Novák"
+- [x] 4.3 Add ancestors and descendants queries (recursive CTE, at least 6 generations); verify against the fixture's known pedigree
+- [x] 4.4 Add the map query (bounding box plus year range); verify that only Events of the range inside the box return
 - [ ] 4.5 Generate and publish the OpenAPI description; verify the CI route comparison fails when a route is added without a schema
-- [ ] 4.6 Reject requests without a session or token; verify the 401 scenario, including for unknown ids
+- [x] 4.6 Reject requests without a session or token; verify the 401 scenario, including for unknown ids
 
 ## 5. Accounts
 

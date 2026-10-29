@@ -4,6 +4,7 @@ import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it, inject } from 'vitest';
 import { createDb, migrateToLatest, MIGRATIONS, type Db } from '../src/db/db.js';
 import { TREE_TABLES } from '../src/db/migrations/0002_tree.js';
+import { dropDatabase } from './db.js';
 import { databaseUrl } from './global-setup.js';
 
 /** Migrates a database created empty (no template), as a fresh deployment would. */
@@ -23,7 +24,7 @@ describe('migrations on an empty database', () => {
 
   afterAll(async () => {
     await db?.destroy();
-    await admin.query(`drop database if exists ${name} with (force)`);
+    await dropDatabase(admin, name);
     await admin.end();
   });
 

@@ -34,8 +34,26 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     db,
     async drop() {
       await db.destroy();
-      await admin.query(`drop database if exists ${name} with (force)`);
+      await dropDatabase(admin, name);
       await admin.end();
     },
   };
+}
+
+/**
+ * Drops a test database once its connections have closed. A forced drop would kill
+ * connections that are still shutting down and surface as unhandled errors, so it is
+ * only the last resort.
+ */
+export async function dropDatabase(admin: pg.Client, name: string): Promise<void> {
+  for (let attempt = 0; attempt < 50; attempt++) {
+    try {
+      await admin.query(`drop database if exists ${name}`);
+      return;
+    } catch (error) {
+      if (!/being accessed by other users/.test((error as Error).message)) throw error;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+  await admin.query(`drop database if exists ${name} with (force)`);
 }

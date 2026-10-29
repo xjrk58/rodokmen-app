@@ -147,7 +147,7 @@ export const PersonDetail = z
 // ---------------------------------------------------------------- Pedigree
 
 export const PedigreeQuery = z.object({
-  generations: z.coerce.number().int().min(1).max(12).default(6),
+  generations: z.coerce.number().int().min(1).max(12).default(6).describe('Generations in the chart, counting the root Person as the first'),
 });
 
 export const Pedigree = z
@@ -155,7 +155,13 @@ export const Pedigree = z
     rootId: Id,
     direction: z.enum(['ancestors', 'descendants']),
     generations: z.number().int(),
-    persons: z.array(z.object({ generation: z.number().int().describe('0 is the root Person'), person: PersonSummary })),
+    persons: z.array(
+      z.object({
+        generation: z.number().int().describe('1 is the root Person, 2 its parents (or children), and so on'),
+        relation: z.enum(['root', 'ancestor', 'descendant', 'partner']).describe('"partner": the other partner in a descendant\'s Family'),
+        person: PersonSummary,
+      }),
+    ),
     families: z.array(z.object({ id: Id, version: Version, partner1Id: Id.nullable(), partner2Id: Id.nullable() })),
     childLinks: z.array(z.object({ id: Id, familyId: Id, childId: Id, linkType: ChildLinkType })),
   })
