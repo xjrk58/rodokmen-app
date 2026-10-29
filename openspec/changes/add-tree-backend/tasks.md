@@ -3,7 +3,9 @@
 ## 1. Workspace
 
 - [ ] 1.1 Turn the repo into a pnpm workspace with `app/`, `server/` and `shared/`; verify `pnpm -r build` and `pnpm -r test` run in CI
-- [ ] 1.2 Add a CI guard that fails if the repo gains family data (any `.ged` file, a `people/` folder, or an image outside `app/` assets and test fixtures); verify with a deliberately added `.ged` file
+  - Note: done: root `package.json` and `pnpm-workspace.yaml` (app, server, shared); `pnpm -r build`, `pnpm -r typecheck` and `pnpm -r test` pass locally (shared 90 tests, server 92 tests) and `.github/workflows/server-ci.yml` runs them against a `postgis/postgis` service (actionlint clean). Remains: a first green run on GitHub Actions, which cannot run from this sandbox; `app/` joins when add-map-core is merged.
+- [x] 1.2 Add a CI guard that fails if the repo gains family data (any `.ged` file, a `people/` folder, or an image outside `app/` assets and test fixtures); verify with a deliberately added `.ged` file
+  - Note: verified locally: `.github/scripts/repo-guard.sh` (run by `repo-guard.yml`) fails on a deliberately added `family.ged`, a `people/` folder and a stray image, and passes for images under `app/` and test fixtures.
 
 ## 2. Shared model
 
@@ -24,7 +26,8 @@
 - [x] 4.2 Add diacritic-insensitive Person search across all Names (`unaccent` plus trigram index); verify "nowak" finds the Person whose primary Name is "Novák"
 - [x] 4.3 Add ancestors and descendants queries (recursive CTE, at least 6 generations); verify against the fixture's known pedigree
 - [x] 4.4 Add the map query (bounding box plus year range); verify that only Events of the range inside the box return
-- [ ] 4.5 Generate and publish the OpenAPI description; verify the CI route comparison fails when a route is added without a schema
+- [x] 4.5 Generate and publish the OpenAPI description; verify the CI route comparison fails when a route is added without a schema
+  - Note: `server/openapi.json` is generated from the shared schemas and served at `/api/openapi.json` to Members; `openapi:check` in server-ci fails when it is stale or when a route has no response schema or is missing (`server/test/openapi.test.ts` adds such a route and sees the comparison fail).
 - [x] 4.6 Reject requests without a session or token; verify the 401 scenario, including for unknown ids
 
 ## 5. Accounts
@@ -39,15 +42,22 @@
 ## 6. Hosting and deploys
 
 - [ ] 6.1 Write the Docker Compose stack (PostGIS, API serving `app/`, Caddy); verify locally with `docker compose up` and a health check
+  - Note: done: `deploy/docker-compose.yml` (PostGIS, two API slots serving `app/`, Caddy, watchdog, backup job), `deploy/Dockerfile`, `deploy/Caddyfile`; `docker compose config` validates offline; the built server serves a stand-in `app/` and `/api/health`, and Caddy with this Caddyfile on localhost proxies it over HTTPS. Remains: `docker compose up` and the container health check, because images cannot be pulled here (Docker Hub is blocked).
 - [ ] 6.2 Provision the Hetzner VPS and bucket, point the domain, and enable HTTPS; verify the http → https redirect and certificate renewal dry run
+  - Note: needs the Owner's Hetzner account, the final domain and DNS (deploy/README.md, steps 1–4). Prepared and checked locally: Caddy with `deploy/Caddyfile` answers http://localhost/x with 308 to https://localhost/x. Remains: provisioning, real certificate, renewal dry run.
 - [ ] 6.3 Add the GitHub Actions deploy with health-checked switch and rollback; verify by deploying a build that fails its health check and seeing the old version keep serving
+  - Note: done: `.github/workflows/deploy.yml` (tests and repo guard, GHCR image, SSH) and `deploy/scripts/deploy.sh` (blue/green slots, switch only when healthy, alert and exit 1 otherwise, rollback); `deploy/scripts/deploy.test.sh` checks the switch, failed-health-check and rollback paths with a fake docker and runs in server-ci. Remains: deploying a failing build to the real VPS.
 - [ ] 6.4 Connect the EU email service on the domain (SPF, DKIM, DMARC); verify a sign-in email arrives in under a minute and passes DKIM
+  - Note: done: mail interface with dev/test outbox and an SMTP transport (nodemailer, STARTTLS required) configured by env; tested against a local SMTP server with STARTTLS and auth. Remains: choosing the EU provider, SPF/DKIM/DMARC records, and checking real delivery under a minute with DKIM pass (needs the Owner's accounts).
 
 ## 7. Backups and alerts
 
 - [ ] 7.1 Add the nightly `pg_dump` and bucket copy into restic at the second provider, with 30 daily and 12 monthly snapshots kept; verify one night's snapshot exists and is encrypted
+  - Note: done: `deploy/backup/backup.sh` (pg_dump and record counts in one snapshot, rclone copy of the bucket, restic with `--keep-daily 30 --keep-monthly 12 --prune`, status file), backup image and systemd timer. Verified locally against a local restic repository: snapshot created, no plaintext in the repository files, wrong password refused, and the retention keeps 30 daily + 12 monthly of 401 back-dated snapshots. Remains: the second provider's account and one real night on the VPS.
 - [ ] 7.2 Add the monthly restore test in CI; verify it fails when a table is deliberately emptied in the scratch restore
+  - Note: done: `.github/workflows/backup-restore-test.yml` (monthly, throwaway PostGIS service) and `deploy/backup/restore-check.sh`. Verified locally with a local repository: passes on the intact restore (4,199 records in 28 tables, 2 images) and fails when `EMPTY_TABLE=name` empties a table in the scratch restore. Remains: running it in CI against the real Backups (needs the `backups` secrets).
 - [ ] 7.3 Add alerts to the Owner for a failing health check (over 5 minutes) and for a failed Backup; verify both by forcing each failure once
+  - Note: done: watchdog (`node dist/cli.js watchdog`, compose service) alerts after 5 minutes of failing health checks, on a failed Backup and when none succeeded for 26 hours; unit-tested with a fake clock. Forced once locally with real processes: against a closed port the health alert arrived after exactly 5 minutes, and a Backup run with a wrong restic password produced the "Nightly Backup failed" alert, both by SMTP to a local server. Remains: forcing both on the VPS with the real email service.
 
 ## Workflow follow-up
 
