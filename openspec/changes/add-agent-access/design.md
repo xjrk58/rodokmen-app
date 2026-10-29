@@ -1,0 +1,40 @@
+# Design
+
+## Context
+
+The write path (Proposals) and review exist after `add-proposals-and-review`. Agents are another kind of author on that path, with stricter limits.
+
+## Goals / Non-Goals
+
+**Goals:**
+- An assistant can do useful research work through MCP alone.
+- The Owner can see and stop any Agent at once.
+
+**Non-Goals:**
+- No autonomous scheduling of Agents by the server; Agents run elsewhere and call in.
+
+## Decisions
+
+### Agents are accounts with their own role
+An Agent is an account with role `agent`. Its permissions are a fixed subset of a Contributor's, with no email and no sessions. Reusing the account table keeps authorship in Proposals and the log uniform.
+
+### Tokens
+A token is a random 256-bit value with a short visible prefix (for example `rdk_ag_7f3a…`). Only its SHA-256 hash is stored. The prefix is shown in the Owner's token list, so the Owner can tell which token to revoke.
+
+### MCP server as a thin client
+`server/mcp` uses the official TypeScript MCP SDK and calls the public API with the Agent's token; it has no database access of its own. That makes "nothing beyond the API" true by construction. It runs over stdio for local assistants and over streamable HTTP on the same domain, under `/mcp`.
+
+### Rate limiting
+A fixed-window limit is kept per token in Postgres. That is enough at family scale and avoids running a separate store.
+
+### Seeding run
+The existing research notes are private and never enter this repo. The seeding Agent runs in a private session, reads the notes there, and submits one Proposal per finding, citing a Family account for knowledge without a register entry. The Owner reviews them like any other Proposals.
+
+## Risks / Trade-offs
+
+- [An Agent floods the queue] → rate limits, and the Owner can revoke the token.
+- [An Agent invents facts] → the evidence rule, confidence on every Citation, the Agent badge, and review.
+
+## Open Questions
+
+None that change the specs.
