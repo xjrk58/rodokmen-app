@@ -28,11 +28,11 @@
     {
       "code": "539996",
       "name": "Brdy (vojenský újezd)",
-      "reason": "Brdy (vojenský újezd): military area abolished on 1 January 2016"
+      "reason": "military area abolished on 1 January 2016"
     }
   ],
   "reassigned": {
-    "note": "Listed under one district in the municipality list but inside the polygon of another (district boundaries changed in 2021). The app uses the polygon district.",
+    "note": "Listed under one district in the municipality list but inside the polygon of another (district boundaries changed in 2021). The app shows the polygon district; municipalityOverrides in archives.json keeps the archive of the listed district.",
     "municipalities": [
       {
         "code": "585131",

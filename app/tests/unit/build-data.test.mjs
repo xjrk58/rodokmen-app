@@ -58,6 +58,30 @@ test('coverage check: missing, unknown and doubled districts', () => {
   assert.match(checkArchiveCoverage(archivesFor(['Alfa', 'Beta'], ['Beta']), ['Alfa', 'Beta']).join(), /Beta is listed under both/);
 });
 
+test('coverage check: municipality overrides', () => {
+  const data = { ...archivesFor(['Alfa'], ['Beta']), municipalityOverrides: { 900001: { name: 'Testov', archive: 'a1', district: 'Beta', reason: 'r' } } };
+  assert.deepEqual(checkArchiveCoverage(data, ['Alfa', 'Beta']), []);
+  data.municipalityOverrides[900001].district = 'Alfa';
+  assert.match(checkArchiveCoverage(data, ['Alfa', 'Beta']).join(), /"Alfa" is not a district of Archive 1/);
+  data.municipalityOverrides[900001].archive = 'nope';
+  assert.match(checkArchiveCoverage(data, ['Alfa', 'Beta']).join(), /unknown archive "nope"/);
+});
+
+test('committed overrides: one per reassigned municipality, with the archive of its listed district', async () => {
+  const archives = await readJson('data/archives.json');
+  const info = await readJson('data/build-info.json');
+  const municipalities = await readJson('data/municipalities.json');
+  const reassigned = info.reassigned.municipalities;
+  assert.equal(reassigned.length, 15);
+  assert.deepEqual(Object.keys(archives.municipalityOverrides).sort(), reassigned.map((/** @type {any} */ r) => r.code).sort());
+  for (const r of reassigned) {
+    const o = archives.municipalityOverrides[r.code];
+    assert.equal(o.district, r.listedDistrict);
+    assert.ok(archives.archives.find((/** @type {any} */ a) => a.id === o.archive).districts.includes(r.listedDistrict));
+    assert.equal(municipalities.find((/** @type {any} */ m) => m.code === r.code).district, r.polygonDistrict);
+  }
+});
+
 test('committed data: 77 named districts and every municipality inside its district', async () => {
   const districts = await readJson('data/districts.geojson');
   const municipalities = await readJson('data/municipalities.json');

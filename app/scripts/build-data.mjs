@@ -4,6 +4,7 @@
 //   app/data/districts.geojson    77 district (okres) polygons, named, simplified
 //   app/data/country.geojson      the national border (all districts dissolved)
 //   app/data/municipalities.json  every Municipality: code, name, normalized name, district, lat, lon
+//   app/data/archives.json        rewritten with a generated "municipalityOverrides" section
 //   app/data/build-info.json      source checksums, counts and data notes
 //
 // Sources are downloaded once into app/.cache/sources/ and reused, so a rebuild
@@ -25,6 +26,7 @@ import { bboxContains, bboxOf, polygonsContain, polygonsOf } from '../src/geo.js
 import { czechCollator, normalize } from '../src/text.js';
 import { checkArchiveCoverage } from './lib/archives-check.mjs';
 import { parseCsv } from './lib/csv.mjs';
+import { formatJson } from './lib/json-format.mjs';
 
 const appDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -43,6 +45,13 @@ const SOURCES = {
 
 /** Rows of the municipality list that are no longer Municipalities, by municipality code. */
 const ABOLISHED = new Map([['539996', 'military area abolished on 1 January 2016']]);
+
+/**
+ * Why a Municipality keeps the archive of the district it is listed under:
+ * the polygons follow today's districts, the list the older ones, and the
+ * registers are filed by the older regions.
+ */
+const OVERRIDE_REASON = 'district changed in 2021; registers follow the older district';
 
 /** Share of vertices kept by mapshaper; about 300 KB of GeoJSON. */
 const SIMPLIFY = '2%';
@@ -206,8 +215,29 @@ async function main() {
 
   records.sort((a, b) => czechCollator.compare(a.name, b.name) || czechCollator.compare(a.district, b.district) || a.code.localeCompare(b.code));
 
-  // 6. Write.
+  // 6. Municipalities whose listed (older) district differs from the polygon
+  //    keep the archive of the listed district.
+  /** @type {Map<string, string>} */
+  const archiveIdByDistrict = new Map();
+  for (const archive of archives.archives) for (const d of archive.districts) archiveIdByDistrict.set(d, archive.id);
+  /** @type {Record<string, { name: string, archive: string, district: string, reason: string }>} */
+  const municipalityOverrides = {};
+  for (const r of [...reassigned].sort((a, b) => a.code.localeCompare(b.code))) {
+    municipalityOverrides[r.code] = {
+      name: r.name,
+      archive: /** @type {string} */ (archiveIdByDistrict.get(r.listedDistrict)),
+      district: r.listedDistrict,
+      reason: OVERRIDE_REASON,
+    };
+  }
+  const { municipalityOverrides: _previous, ...archiveInput } = archives;
+  const archivesOut = { ...archiveInput, municipalityOverrides };
+  const outputErrors = checkArchiveCoverage(archivesOut, [...districtCodes.keys()]);
+  if (outputErrors.length) throw new BuildError(`Generated archives.json is invalid:\n  ${outputErrors.join('\n  ')}`);
+
+  // 7. Write.
   await mkdir(args.out, { recursive: true });
+  await writeFile(join(args.out, 'archives.json'), `${formatJson(archivesOut)}\n`);
   await writeFile(join(args.out, 'districts.geojson'), districtsOut.endsWith('\n') ? districtsOut : `${districtsOut}\n`);
   await writeFile(join(args.out, 'country.geojson'), countryOut.endsWith('\n') ? countryOut : `${countryOut}\n`);
   await writeFile(join(args.out, 'municipalities.json'), `[\n${records.map((r) => JSON.stringify(r)).join(',\n')}\n]\n`);
@@ -220,7 +250,7 @@ async function main() {
     counts: { districts: simplified.features.length, municipalities: records.length },
     excluded,
     reassigned: {
-      note: 'Listed under one district in the municipality list but inside the polygon of another (district boundaries changed in 2021). The app uses the polygon district.',
+      note: 'Listed under one district in the municipality list but inside the polygon of another (district boundaries changed in 2021). The app shows the polygon district; municipalityOverrides in archives.json keeps the archive of the listed district.',
       municipalities: reassigned,
     },
   };
@@ -232,8 +262,12 @@ async function main() {
   console.log(`Every district has an archive (${archives.archives.length} archives)`);
   for (const e of excluded) console.log(`Excluded ${e.name} (${e.code}): ${e.reason}`);
   if (reassigned.length) {
-    console.log(`${reassigned.length} municipalities lie in a different district polygon than listed (see build-info.json):`);
-    for (const r of reassigned) console.log(`  ${r.name}: listed ${r.listedDistrict}, lies in ${r.polygonDistrict}`);
+    console.log(`${reassigned.length} municipalities lie in a different district polygon than listed; archives.json overrides their archive:`);
+    for (const r of reassigned) {
+      const from = archiveIdByDistrict.get(r.polygonDistrict);
+      const to = archiveIdByDistrict.get(r.listedDistrict);
+      console.log(`  ${r.name}: listed ${r.listedDistrict}, lies in ${r.polygonDistrict}${from === to ? '' : ` (archive ${to}, not ${from})`}`);
+    }
   }
 }
 

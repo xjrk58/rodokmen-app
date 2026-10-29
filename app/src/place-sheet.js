@@ -78,7 +78,9 @@ export class PlaceSheet {
     const place = this.place;
     if (!place) return;
     const { index, gazetteer } = this.deps;
-    const answer = index.lookup(place.lat, place.lon);
+    const nearest = place.municipality ? { municipality: place.municipality, km: 0 } : gazetteer.nearest(place.lat, place.lon);
+    const municipality = nearest?.municipality;
+    const answer = index.lookup(place.lat, place.lon, municipality);
     const close = h('button', { type: 'button', class: 'icon-button', 'aria-label': t('sheet.close'), title: t('sheet.close') }, closeIcon());
     close.addEventListener('click', () => this.hide());
 
@@ -92,8 +94,6 @@ export class PlaceSheet {
       return;
     }
 
-    const nearest = place.municipality ? { municipality: place.municipality, km: 0 } : gazetteer.nearest(place.lat, place.lon);
-    const municipality = nearest?.municipality;
     const showDistance = nearest && nearest.km >= SAME_PLACE_KM;
 
     const head = h('div', { class: 'sheet-head' },
@@ -114,10 +114,14 @@ export class PlaceSheet {
         h('span', {}, archive.name)),
       externalLink(scansUrl(archive, municipality?.name), t('sheet.openScans'), { class: 'button primary', 'data-testid': 'open-scans' }),
       h('p', { class: 'viewer-note' }, t('sheet.viewer', { portal: archive.portal.name, archive: archive.name })),
-      ...answer.alsoCheck.map(({ archive: other, km }) =>
-        h('div', { class: 'also-check', role: 'note', 'data-testid': 'also-check' },
-          h('p', {}, t('sheet.alsoCheck', { archive: other.name, distance: formatKm(km) })),
-          h('p', {}, t('sheet.alsoCheckWhy'), ' ', externalLink(scansUrl(other, municipality?.name), other.portal.name)))),
+      ...answer.alsoCheck.map(({ archive: other, km, reason, district, olderDistrict }) =>
+        h('div', { class: 'also-check', role: 'note', 'data-testid': 'also-check', 'data-reason': reason },
+          h('p', {}, reason === 'district'
+            ? t('sheet.alsoCheckDistrict', { archive: other.name, district: district ?? '' })
+            : t('sheet.alsoCheck', { archive: other.name, distance: formatKm(km) })),
+          h('p', {}, reason === 'district'
+            ? t('sheet.alsoCheckDistrictWhy', { olderDistrict: olderDistrict ?? '' })
+            : t('sheet.alsoCheckWhy'), ' ', externalLink(scansUrl(other, municipality?.name), other.portal.name)))),
     );
 
     const jewish = index.jewishRegisters;

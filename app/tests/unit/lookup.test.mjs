@@ -55,3 +55,41 @@ test('nearest municipality', () => {
   const m = town('Pardubice');
   assert.equal(gazetteer.nearest(m.lat + 0.001, m.lon)?.municipality.name, 'Pardubice');
 });
+
+/** @param {string} name @param {string} district */
+const find = (name, district) => /** @type {import('../../src/types.js').Municipality} */ (municipalities.find((m) => m.name === name && m.district === district));
+
+test('a district change of 2021 keeps the older archive and names today\'s as "also check"', () => {
+  const harrachov = find('Harrachov', 'Jablonec nad Nisou');
+  const answer = index.lookup(harrachov.lat, harrachov.lon, harrachov);
+  assert.equal(answer?.archive.id, 'soa-zamrsk');
+  assert.equal(answer?.alsoCheck[0].reason, 'district');
+  assert.equal(answer?.alsoCheck[0].archive.id, 'soa-litomerice');
+  assert.equal(answer?.alsoCheck[0].olderDistrict, 'Semily');
+  // Zámrsk is the answer, so it is not repeated as a border hint.
+  assert.ok(!answer?.alsoCheck.some((a) => a.archive.id === 'soa-zamrsk'));
+
+  const studlov = find('Študlov', 'Zlín');
+  const s = index.lookup(studlov.lat, studlov.lon, studlov);
+  assert.equal(s?.archive.id, 'za-opava');
+  assert.deepEqual(s?.alsoCheck.map((a) => [a.archive.id, a.reason]), [['mza-brno', 'district']]);
+});
+
+test('the override applies only with its Municipality and inside its district', () => {
+  const harrachov = find('Harrachov', 'Jablonec nad Nisou');
+  // Same point, no Municipality: the polygon decides.
+  assert.equal(index.lookup(harrachov.lat, harrachov.lon)?.archive.id, 'soa-litomerice');
+  // Študlov's override, but a point in another district (Uherské Hradiště, MZA Brno).
+  const studlov = find('Študlov', 'Zlín');
+  const elsewhere = find('Uherské Hradiště', 'Uherské Hradiště');
+  const answer = index.lookup(elsewhere.lat, elsewhere.lon, studlov);
+  assert.equal(answer?.archive.id, 'mza-brno');
+  assert.ok(answer?.alsoCheck.every((a) => a.reason === 'border'));
+});
+
+test('an override within the same archive changes nothing', () => {
+  const holysov = find('Holýšov', 'Plzeň-jih');
+  const answer = index.lookup(holysov.lat, holysov.lon, holysov);
+  assert.equal(answer?.archive.id, 'soa-plzen');
+  assert.ok(answer?.alsoCheck.every((a) => a.reason === 'border'));
+});

@@ -17,6 +17,8 @@
   "sheet.viewer": "{portal}, the online viewer of {archive}",
   "sheet.alsoCheck": "Near an archive boundary: also check {archive} ({distance}).",
   "sheet.alsoCheckWhy": "A parish is filed with the archive of its seat, which can lie across the line.",
+  "sheet.alsoCheckDistrict": "Since 2021 this place is in the {district} district: also check {archive}.",
+  "sheet.alsoCheckDistrictWhy": "Registers are filed by the older districts, and until 2021 it was in the {olderDistrict} district.",
   "sheet.jewish": "Jewish registers",
   "sheet.jewishText": "Jewish registers for the whole of the Czech lands are kept at {archive}.",
   "sheet.jewishLink": "Open {portal}",

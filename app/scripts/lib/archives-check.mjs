@@ -35,6 +35,7 @@ export function checkArchiveCoverage(data, districtNames) {
   for (const district of districtNames) {
     if (!owner.has(district)) errors.push(`District ${district} has no archive`);
   }
+  if (data.municipalityOverrides !== undefined) errors.push(...checkOverrides(data));
   if (!data.jewishRegisters) errors.push('archives.json has no "jewishRegisters" entry');
   else errors.push(...checkPortal(data.jewishRegisters, data.jewishRegisters.name ?? 'jewishRegisters'));
   return errors;
@@ -52,6 +53,27 @@ function checkPortal(entry, label) {
   if (!entry.portal || typeof entry.portal.name !== 'string') errors.push(`${label}: missing portal.name`);
   if (entry.placeSearchUrl !== null && (typeof entry.placeSearchUrl !== 'string' || !entry.placeSearchUrl.includes('{name}'))) {
     errors.push(`${label}: placeSearchUrl must be null or a URL containing {name}`);
+  }
+  return errors;
+}
+
+/**
+ * Each override names an archive id and a district of that archive.
+ * @param {any} data
+ */
+function checkOverrides(data) {
+  const errors = [];
+  const overrides = data.municipalityOverrides;
+  if (!overrides || typeof overrides !== 'object' || Array.isArray(overrides)) return ['municipalityOverrides must be an object keyed by municipality code'];
+  /** @type {Map<string, any>} */
+  const byId = new Map(data.archives.map((/** @type {any} */ a) => [a.id, a]));
+  for (const [code, o] of Object.entries(overrides)) {
+    const label = `Override ${code} (${o?.name ?? '?'})`;
+    if (!/^\d+$/.test(code)) errors.push(`${label}: key must be a municipality code`);
+    const archive = byId.get(o?.archive);
+    if (!archive) errors.push(`${label}: unknown archive "${o?.archive}"`);
+    else if (!archive.districts?.includes(o.district)) errors.push(`${label}: district "${o.district}" is not a district of ${archive.name}`);
+    if (typeof o?.reason !== 'string' || !o.reason) errors.push(`${label}: missing reason`);
   }
   return errors;
 }

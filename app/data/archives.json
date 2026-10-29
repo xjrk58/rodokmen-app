@@ -1,5 +1,5 @@
 {
-  "$comment": "Archives that hold the parish registers of the Czech lands, by district (okres) as in 1960-2000. Edit only this file to change an archive, its districts or its portal. District names must match app/data/districts.geojson; scripts/build-data.mjs fails if a district has no archive. placeSearchUrl is a URL with {name} for the Municipality name, or null where no place-search pattern has been verified. color is the tint of the archive regions layer.",
+  "$comment": "Archives that hold the parish registers of the Czech lands, by district (okres) as in 1960-2000. Edit only this file to change an archive, its districts or its portal. District names must match app/data/districts.geojson; scripts/build-data.mjs fails if a district has no archive. placeSearchUrl is a URL with {name} for the Municipality name, or null where no place-search pattern has been verified. color is the tint of the archive regions layer. municipalityOverrides is written by scripts/build-data.mjs (do not edit it by hand): Municipalities that keep the archive of their older district.",
   "archives": [
     {
       "id": "soa-praha",
@@ -72,5 +72,22 @@
     "name": "Národní archiv",
     "portal": { "name": "Vademecum", "url": "https://vademecum.nacr.cz/vademecum/" },
     "placeSearchUrl": null
+  },
+  "municipalityOverrides": {
+    "544931": { "name": "Študlov", "archive": "za-opava", "district": "Vsetín", "reason": "district changed in 2021; registers follow the older district" },
+    "545112": { "name": "Valašské Příkazy", "archive": "za-opava", "district": "Vsetín", "reason": "district changed in 2021; registers follow the older district" },
+    "553506": { "name": "Bukovec", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "553654": { "name": "Holýšov", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "553662": { "name": "Horní Kamenice", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "553841": { "name": "Kvíčovice", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "554022": { "name": "Neuměř", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "566071": { "name": "Všekary", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "566080": { "name": "Čečovice", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "566098": { "name": "Černovice", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "566101": { "name": "Štichov", "archive": "soa-plzen", "district": "Domažlice", "reason": "district changed in 2021; registers follow the older district" },
+    "570354": { "name": "Lužany", "archive": "soa-zamrsk", "district": "Hradec Králové", "reason": "district changed in 2021; registers follow the older district" },
+    "577081": { "name": "Harrachov", "archive": "soa-zamrsk", "district": "Semily", "reason": "district changed in 2021; registers follow the older district" },
+    "585131": { "name": "Březová", "archive": "mza-brno", "district": "Zlín", "reason": "district changed in 2021; registers follow the older district" },
+    "599301": { "name": "Černíky", "archive": "soa-praha", "district": "Nymburk", "reason": "district changed in 2021; registers follow the older district" }
   }
 }

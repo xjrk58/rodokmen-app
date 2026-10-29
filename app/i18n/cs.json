@@ -17,6 +17,8 @@
   "sheet.viewer": "{portal}, online prohlížeč archivu {archive}",
   "sheet.alsoCheck": "Blízko hranice archivů: zkontrolujte také {archive} ({distance}).",
   "sheet.alsoCheckWhy": "Farnost patří k archivu podle sídla fary, a to může ležet za hranicí.",
+  "sheet.alsoCheckDistrict": "Od roku 2021 patří místo do okresu {district}: zkontrolujte také {archive}.",
+  "sheet.alsoCheckDistrictWhy": "Matriky jsou uložené podle starších okresů a do roku 2021 patřilo místo do okresu {olderDistrict}.",
   "sheet.jewish": "Židovské matriky",
   "sheet.jewishText": "Židovské matriky z celých českých zemí uchovává {archive}.",
   "sheet.jewishLink": "Otevřít {portal}",
