@@ -16,5 +16,6 @@ openspec/
 docs/verification.md
 docs/architecture/generated/
 
-# Not yet formatted, until the LemmaScript proofs of the review rules land (chore/prove-review-rules).
-shared/src/rules.ts
+
+# LemmaScript working files (git-ignored), written by `pnpm --filter @rodokmen/shared verify`.
+**/.lemmascript/
