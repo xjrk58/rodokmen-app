@@ -11,7 +11,7 @@ import { PRECACHE } from './src/precache.js';
 import { TILE_CACHE_LIMIT, TileLru } from './src/tile-lru.js';
 
 /** Written by scripts/stamp-version.mjs; changes whenever a precached file changes. */
-const VERSION = '0.1.0+a031d99a56';
+const VERSION = '0.1.0+0fcc7912ae';
 
 const SHELL_PREFIX = 'rodokmen-shell-';
 const SHELL_CACHE = `${SHELL_PREFIX}${VERSION}`;
