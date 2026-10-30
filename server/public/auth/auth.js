@@ -56,7 +56,9 @@ const STRINGS = {
 };
 
 const $ = (id) => document.getElementById(id);
-let lang = localStorage.getItem('rodokmen.language') || ((navigator.language || '').toLowerCase().startsWith('cs') ? 'cs' : 'en');
+// The map app shares this key; anything but a language of these pages falls back to the browser's.
+const stored = localStorage.getItem('rodokmen.language');
+let lang = stored && Object.hasOwn(STRINGS, stored) ? stored : (navigator.language || '').toLowerCase().startsWith('cs') ? 'cs' : 'en';
 
 function t(key) {
   return STRINGS[lang][key] ?? key;

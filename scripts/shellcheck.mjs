@@ -3,9 +3,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 
 const IMAGE = 'koalaman/shellcheck:v0.11.0';
-// Warnings and errors only, for now. Two lower notes are open (SC2086 in .github/scripts/repo-guard.sh,
-// SC2001 in deploy/backup/restore-check.sh); drop --severity once they are fixed.
-const OPTIONS = ['--severity=warning', '--external-sources', '--format=gcc'];
+// ShellCheck's default severity: errors, warnings, and the info and style notes.
+const OPTIONS = ['--external-sources', '--format=gcc'];
 /** `docker run` exits 125 when Docker itself fails (no daemon, image not pulled offline). */
 const DOCKER_FAILED = 125;
 
@@ -20,5 +19,5 @@ if (result.error || result.status === DOCKER_FAILED) {
     process.exit(2);
   }
 }
-if (result.status === 0) console.log(`shellcheck: ${files.length} scripts, no warnings`);
+if (result.status === 0) console.log(`shellcheck: ${files.length} scripts, no findings`);
 process.exit(result.status ?? 1);

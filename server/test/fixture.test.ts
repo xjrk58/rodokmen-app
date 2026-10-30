@@ -96,6 +96,12 @@ describe('invented fixture Tree', () => {
     expect(rows.map((r) => ({ ...r, account_given_by: r.account_given_by?.includes('Ludmila') }))).toEqual([{ type: 'family_account', account_given_by: true, account_given_on: '2026-05-01', confidence: 'low' }]);
   });
 
+  it('keeps the order of every Event\'s Roles, also across the 500-row insert chunks', async () => {
+    const stored = await t.db.selectFrom('event_role').select(['id', 'event_id']).orderBy('event_id').orderBy('sort_order').orderBy('id').execute();
+    const expected = [...model.roles].sort((x, y) => (x.eventId < y.eventId ? -1 : x.eventId > y.eventId ? 1 : 0)).map((r) => r.id);
+    expect(stored.map((r) => r.id)).toEqual(expected);
+  });
+
   it('stores dates as written with derived earliest and latest days', async () => {
     const rows = await t.db.selectFrom('event').select(['date', 'date_earliest', 'date_latest']).where('date', 'in', ['1745~', '../1805', '1931~', '1749/1751']).orderBy('date_earliest').execute();
     expect(rows).toEqual([

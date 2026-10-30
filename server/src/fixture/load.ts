@@ -35,8 +35,9 @@ function period(p: Period) {
   return periodColumns(p);
 }
 
-async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknown>): Promise<void> {
-  for (let i = 0; i < rows.length; i += 500) await insert(rows.slice(i, i + 500));
+/** Inserts in chunks of 500 rows; `start` is the index of the chunk's first row in `rows`. */
+async function insertChunks<T>(rows: T[], insert: (chunk: T[], start: number) => Promise<unknown>): Promise<void> {
+  for (let i = 0; i < rows.length; i += 500) await insert(rows.slice(i, i + 500), i);
 }
 
 /** Validates the whole model with the shared schemas and inserts it in one transaction. */
@@ -60,10 +61,10 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
 
   await db.transaction().execute(async (tx) => {
     await insertChunks(model.persons, (c) => tx.insertInto('person').values(c.map((p) => ({ id: p.id, sex: p.sex }))).execute());
-    await insertChunks(model.names, (c) =>
+    await insertChunks(model.names, (c, start) =>
       tx
         .insertInto('name')
-        .values(c.map((n, i) => ({ id: n.id, person_id: n.personId, given: n.given, surname: n.surname, type: n.type, as_found: n.asFound, is_primary: n.primary, sort_order: n.primary ? 0 : i + 1 })))
+        .values(c.map((n, i) => ({ id: n.id, person_id: n.personId, given: n.given, surname: n.surname, type: n.type, as_found: n.asFound, is_primary: n.primary, sort_order: n.primary ? 0 : start + i + 1 })))
         .execute(),
     );
     await insertChunks(model.places, (c) =>
@@ -95,10 +96,10 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
     await insertChunks(model.families, (c) =>
       tx.insertInto('family').values(c.map((f) => ({ id: f.id, partner1_id: f.partner1Id, partner2_id: f.partner2Id }))).execute(),
     );
-    await insertChunks(model.childLinks, (c) =>
+    await insertChunks(model.childLinks, (c, start) =>
       tx
         .insertInto('family_child')
-        .values(c.map((l, i) => ({ id: l.id, family_id: l.familyId, child_id: l.childId, link_type: l.linkType, sort_order: i })))
+        .values(c.map((l, i) => ({ id: l.id, family_id: l.familyId, child_id: l.childId, link_type: l.linkType, sort_order: start + i })))
         .execute(),
     );
     await insertChunks(model.events, (c) =>
@@ -107,10 +108,10 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
         .values(c.map((e) => ({ id: e.id, type: e.type, type_detail: e.typeDetail, ...dateColumns(e.date), place_id: e.placeId, house_id: e.houseId, description: e.description })))
         .execute(),
     );
-    await insertChunks(model.roles, (c) =>
+    await insertChunks(model.roles, (c, start) =>
       tx
         .insertInto('event_role')
-        .values(c.map((r, i) => ({ id: r.id, event_id: r.eventId, person_id: r.personId, role: r.role, role_detail: r.roleDetail, sort_order: i })))
+        .values(c.map((r, i) => ({ id: r.id, event_id: r.eventId, person_id: r.personId, role: r.role, role_detail: r.roleDetail, sort_order: start + i })))
         .execute(),
     );
     await insertChunks(model.sources, (c) =>

@@ -148,4 +148,15 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
     expect(await page.evaluate(async () => (await fetch('/api/me')).status)).toBe(401);
     await context.close();
   }, 60_000);
+  it('a language stored by something else (here "de") does not break the sign-in page', async () => {
+    const context = await browser.newContext({ locale: 'en-US' });
+    await context.addInitScript(() => localStorage.setItem('rodokmen.language', 'de'));
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(`${origin}/auth/sign-in`);
+    await expect.poll(() => page.locator('#lang-switch').textContent()).toBe('Čeština');
+    expect(errors).toEqual([]);
+    await context.close();
+  });
 });
