@@ -19,7 +19,7 @@ import {
   type GeoPoint,
 } from '@rodokmen/shared';
 import { sql, type Kysely } from 'kysely';
-import { type z } from 'zod';
+import type { z } from 'zod';
 import type { Database } from '../db/types.js';
 import { dateColumns, periodColumns } from '../tree/dates.js';
 import { generateFixture, type FixtureModel } from './generate.js';

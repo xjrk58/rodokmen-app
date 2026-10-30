@@ -71,7 +71,7 @@ export async function resolveSession(db: Db, clock: Clock, options: SessionOptio
     await db.updateTable('session').set({ last_seen_at: now, expires_at: refreshed }).where('id', '=', session_id).execute();
     await db.updateTable('account').set({ last_seen_at: now }).where('id', '=', account.id).execute();
   }
-  return { sessionId: session_id, account: account as Account, refreshed };
+  return { sessionId: session_id, account: account, refreshed };
 }
 
 export async function endSession(db: Db, clock: Clock, sessionId: string): Promise<void> {
