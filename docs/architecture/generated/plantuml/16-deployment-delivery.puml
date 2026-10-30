@@ -1,0 +1,91 @@
+@startuml
+title <size:24>Deployment: delivery, Export, Agents and Vault import</size>\n<size:24>How releases, the Export, Agents and the Vault import reach the VPS.</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Deployment>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Deployment Node,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Deployment Node,Built", $bgColor="#ffffff", $borderColor="#888888", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+
+AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+
+Deployment_Node(Production.Assistantsmachine, "Assistant's machine", $type="Any OS", $descr="Where an AI assistant runs; the server never schedules Agents.", $tags="Deployment Node,Planned", $link="") {
+  Container(Production.Assistantsmachine.MCPserver_1, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+}
+
+Deployment_Node(Production.Ownerscomputer, "Owner's computer", $type="Node 22", $descr="Runs the Vault importer against a checkout of the Vault.", $tags="Deployment Node,Planned", $link="") {
+  Container(Production.Ownerscomputer.Vaultimporter_1, "Vault importer", $techn="Node 22 CLI in server/, Agent token", $descr="Reads the Vault once and submits one Proposal per Source note as an import batch; can be re-run.", $tags="Container,Planned", $link="")
+}
+
+Deployment_Node(Production.HetznerCloud, "Hetzner Cloud", $type="Hetzner", $descr="Germany, EU.", $tags="Deployment Node,Built", $link="") {
+  Deployment_Node(Production.HetznerCloud.VPS, "VPS", $type="Ubuntu 24.04, 2 vCPU, 4 GB", $descr="One server for one family; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
+    Deployment_Node(Production.HetznerCloud.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
+      }
+
+    }
+
+  }
+
+}
+
+Deployment_Node(Production.SecondEUprovider, "Second EU provider", $type="S3-compatible object storage", $descr="A different company from the host.", $tags="Deployment Node,Built", $link="") {
+  System(Production.SecondEUprovider.Backupstorage_1, "Backup storage", $descr="Object storage at a second EU provider, holding the encrypted Backups.", $tags="Software System,External,Built", $link="")
+}
+
+Deployment_Node(Production.GitHub, "GitHub", $type="SaaS", $descr="github.com", $tags="Deployment Node,Built", $link="") {
+  Container(Production.GitHub.GitHubActions_1, "GitHub Actions", $techn="Workflows in .github/workflows/", $descr="Tests, repo guard, image builds, deploys, the monthly restore test and the weekly portal check.", $tags="Container,External,Built", $link="")
+  Container(Production.GitHub.GitHubContainerRegistry_1, "GitHub Container Registry", $techn="ghcr.io/<owner>/rodokmen-app", $descr="API images tagged by commit.", $tags="Container,External,Built", $link="")
+  Container(Production.GitHub.GitHubPages_1, "GitHub Pages", $techn="Static hosting", $descr="Preview of the map only, at https://<owner>.github.io/rodokmen-app/.", $tags="Container,External,Built", $link="")
+  Container(Production.GitHub.rodokmenexportrepo_1, "rodokmen-export repo", $techn="Git: Markdown notes, family.ged", $descr="Private repo with the nightly one-way Export; nobody edits it by hand.", $tags="Container,External,Planned", $link="")
+  System(Production.GitHub.Vault_1, "Vault", $descr="The Owner's Markdown notes in the private rodokmen-data repo, about 4,100 people with scans; frozen after the import.", $tags="Software System,External,Planned", $link="")
+}
+
+Rel(Production.Assistantsmachine.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.Ownerscomputer.Vaultimporter_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Production.Assistantsmachine.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.Ownerscomputer.Vaultimporter_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.SecondEUprovider.Backupstorage_1, "Restores the latest Backup monthly and compares counts", $techn="restic", $tags="Built", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.GitHub.GitHubContainerRegistry_1, "Pushes the API image", $techn="OCI", $tags="Built", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.GitHub.GitHubPages_1, "Publishes app/ on every push to main", $techn="Pages deploy", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, Production.GitHub.rodokmenexportrepo_1, "Commits changed notes and family.ged; one fresh commit after an erasure", $techn="Git over SSH, deploy key", $tags="Planned", $link="")
+Rel(Production.Ownerscomputer.Vaultimporter_1, Production.GitHub.Vault_1, "Reads notes, scans and PDFs", $techn="Git checkout", $tags="Planned", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

@@ -1,0 +1,12 @@
+' Status legend for every diagram exported from workspace.dsl (view property "plantuml.includes").
+' It replaces C4-PlantUML's own legend, which lists every combination of tags. Keep the colours
+' in step with the styles in workspace.dsl.
+!unquoted procedure SHOW_LEGEND($hideStereotype="true", $details="Normal")
+legend right
+<color:#333333><b>Status</b></color>
+|<#ffffff> <color:#2e6295><size:18>━━━</size></color> |<#ffffff> <color:#333333><b>Built</b>: on main. Solid border and line.</color> |
+|<#ffffff> <color:#c25e00><size:18>┅┅┅</size></color> |<#ffffff> <color:#333333><b>In progress</b>: branch feat/proposals-and-review. Orange dotted border and line.</color> |
+|<#ffffff> <color:#777777><size:18>╌╌╌</size></color> |<#ffffff> <color:#333333><b>Planned</b>: a later OpenSpec change. White box, grey dashed border and line.</color> |
+|<#8c8c8c> <color:#ffffff> grey </color> |<#ffffff> <color:#333333><b>External</b>: a system or site outside Rodokmen.</color> |
+endlegend
+!endprocedure

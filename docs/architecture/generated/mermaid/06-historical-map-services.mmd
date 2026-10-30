@@ -1,0 +1,31 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Historical map services"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    6["<div style='font-weight: bold'>Rodokmen</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>A private, shared family Tree<br />for one extended family,<br />shown on a map of the Czech<br />lands; the map works for<br />anyone.</div>"]
+    style 6 fill:#1168bd,stroke:#0b4884,color:#ffffff
+
+    subgraph 59 ["Historical map services"]
+      style 59 fill:#ffffff,stroke:#616161,color:#616161
+
+      60["<div style='font-weight: bold'>CENIA WMS: 2nd military survey</div><div style='font-size: 70%; margin-top: 0px'>[Container: WMS 1.3.0]</div><div style='font-size: 80%; margin-top:10px'>Map service for the 2nd<br />military survey (1836-1852).</div>"]
+      style 60 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      61["<div style='font-weight: bold'>CENIA WMS: 3rd military survey</div><div style='font-size: 70%; margin-top: 0px'>[Container: WMS 1.3.0]</div><div style='font-size: 80%; margin-top:10px'>Map service for the special<br />maps of the 3rd military<br />survey.</div>"]
+      style 61 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      62["<div style='font-weight: bold'>ČÚZK Archiv</div><div style='font-size: 70%; margin-top: 0px'>[Container: Web map viewer]</div><div style='font-size: 80%; margin-top:10px'>Imperial imprints of the<br />stable cadastre.</div>"]
+      style 62 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      63["<div style='font-weight: bold'>OldMapsOnline</div><div style='font-size: 70%; margin-top: 0px'>[Container: Web map viewer]</div><div style='font-size: 80%; margin-top:10px'>Search across old maps by<br />place name.</div>"]
+      style 63 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      64["<div style='font-weight: bold'>Arcanum Maps</div><div style='font-size: 70%; margin-top: 0px'>[Container: Web map viewer]</div><div style='font-size: 80%; margin-top:10px'>Historical maps of the<br />Habsburg lands.</div>"]
+      style 64 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    end
+
+    6-- "<div>Requests overlay images</div><div style='font-size: 70%'>[WMS GetMap, EPSG:3857]</div>" -->60
+    6-- "<div>Requests overlay images</div><div style='font-size: 70%'>[WMS GetMap, EPSG:3857]</div>" -->61
+    6-- "<div>Links from the place sheet</div><div style='font-size: 70%'>[HTTPS link]</div>" -->62
+    6-- "<div>Links for the Municipality's<br />name</div><div style='font-size: 70%'>[HTTPS link]</div>" -->63
+    6-- "<div>Links from the place sheet</div><div style='font-size: 70%'>[HTTPS link]</div>" -->64
+
+  end

@@ -1,0 +1,58 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["API server: Research leads and scan reading"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    style 4 fill:#08427b,stroke:#052e56,color:#ffffff
+
+    68["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
+    style 68 fill:#ffffff,stroke:#777777,color:#555555
+
+    subgraph 6 ["Rodokmen"]
+      style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 25 ["API server"]
+        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        35["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks each upload and<br />makes a 2,000-pixel WebP<br />copy.</div>"]
+        style 35 fill:#85bbf0,stroke:#c25e00,color:#000000
+        40["<div style='font-weight: bold'>Research leads</div><div style='font-size: 70%; margin-top: 0px'>[Component: Rule-based gap finder]</div><div style='font-size: 80%; margin-top:10px'>Suggested next research<br />steps: question, where to<br />look, status, what was<br />searched; no review.</div>"]
+        style 40 fill:#ffffff,stroke:#777777,color:#555555
+        41["<div style='font-weight: bold'>Scan reader</div><div style='font-size: 70%; margin-top: 0px'>[Component: Anthropic API client, off until the Owner switches it on]</div><div style='font-size: 80%; margin-top:10px'>Sends a scan a Member<br />uploaded to the Claude API;<br />returns a transcription,<br />facts and leads.</div>"]
+        style 41 fill:#ffffff,stroke:#777777,color:#555555
+      end
+
+      subgraph 7 ["App (PWA)"]
+        style 7 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        14["<div style='font-weight: bold'>Drafts</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/drafts.js]</div><div style='font-size: 80%; margin-top:10px'>Keeps Drafts and their photos<br />on the device until the<br />Member submits them.</div>"]
+        style 14 fill:#85bbf0,stroke:#c25e00,color:#000000
+        19["<div style='font-weight: bold'>Research lead screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/ (planned)]</div><div style='font-size: 80%; margin-top:10px'>Lists open Research leads;<br />Members add one or record<br />what they searched.</div>"]
+        style 19 fill:#ffffff,stroke:#777777,color:#555555
+        20["<div style='font-weight: bold'>Scan reading</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/ (planned)]</div><div style='font-size: 80%; margin-top:10px'>Uploads an archive scan,<br />shows its reading, and saves<br />it as a Draft for the Member<br />to check.</div>"]
+        style 20 fill:#ffffff,stroke:#777777,color:#555555
+      end
+
+      22[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
+      style 22 fill:#438dd5,stroke:#c25e00,color:#ffffff
+      42["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API.</div>"]
+      style 42 fill:#ffffff,stroke:#777777,color:#555555
+      44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
+      style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    14-. "<div>Keeps Drafts and photos as<br />blobs</div><div style='font-size: 70%'>[IndexedDB]</div>" .->22
+    19-. "<div>Lists, adds and updates<br />Research leads</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->40
+    20-. "<div>Uploads the scan</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->35
+    20-. "<div>Asks for a reading of the<br />scan</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->41
+    20-. "<div>Saves the reading as a Draft<br />to check</div><div style='font-size: 70%'>[JS call]</div>" .->14
+    41-. "<div>Reads the uploaded scan</div><div style='font-size: 70%'>[JS call]</div>" .->35
+    41-. "<div>Sends the scan; gets a<br />transcription and extracted<br />facts</div><div style='font-size: 70%'>[HTTPS, Anthropic API]</div>" .->68
+    41-. "<div>Suggests Research leads from<br />the scan</div><div style='font-size: 70%'>[JS call]</div>" .->40
+    40-. "<div>Stores leads; the gap finder<br />queries the Tree for gaps</div><div style='font-size: 70%'>[SQL]</div>" .->44
+    42-. "<div>Creates and reads Research<br />leads</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->40
+    4-. "<div>Switches scan reading on or<br />off</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->41
+
+  end

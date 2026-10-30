@@ -1,0 +1,83 @@
+@startuml
+title <size:24>API server: accounts, Tree read API and operations</size>\n<size:24>Accounts, the read API and operations (add-tree-backend).</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Component,In progress", $bgColor="#85bbf0", $borderColor="#c25e00", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
+AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
+AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
+
+AddBoundaryTag("Container,Built,Browser", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddBoundaryTag("Container,Built", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles and keeps the Backups.", $tags="Person,Built", $link="")
+
+System(EUemailservice, "EU email service", $descr="Transactional email provider in the EU, sending from the Rodokmen domain.", $tags="Software System,External,Built", $link="")
+System(GitHub, "GitHub", $descr="Hosts the code, CI and deploys, the image registry, the map preview and the private Export repo.", $tags="Software System,External,Built", $link="")
+
+System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
+  Container_Boundary("Rodokmen.APIserver_boundary", "API server", $tags="Container,Built") {
+    Component(Rodokmen.APIserver.Pages, "Pages", $techn="@fastify/static", $descr="Serves app/ at / and the sign-in pages at /auth/ from the API's own origin.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Accountsandsignin, "Accounts and sign-in", $techn="@simplewebauthn/server", $descr="Invitations, passkeys, emailed links, sessions and roles; checks the session on every request.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.TreereadAPI, "Tree read API", $techn="Recursive SQL, PostGIS", $descr="Person search across Names, records, ancestors and descendants, and Events for a map area and years.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.OpenAPI, "OpenAPI", $techn="@fastify/swagger, Zod", $descr="Publishes /api/openapi.json, generated from the same shared schemas that check requests.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Health, "Health", $techn="Fastify route", $descr="Health check at /api/health, used by deploys, the watchdog and outside monitors.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Mailer, "Mailer", $techn="nodemailer", $descr="Writes each email in the recipient's language and sends it over SMTP.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Evidencemedia, "Evidence media", $techn="sharp, S3 presigner", $descr="Presigned upload and view links; checks each upload and makes a 2,000-pixel WebP copy.", $tags="Component,In progress", $link="")
+  }
+
+  Container_Boundary("Rodokmen.AppPWA_boundary", "App (PWA)", $tags="Container,Built,Browser") {
+    Component(Rodokmen.AppPWA.Signinpages, "Sign-in pages", $techn="server/public/auth", $descr="Accept an invitation, register a passkey, or use an emailed link; served at /auth/.", $tags="Component,Built", $link="")
+  }
+
+  Container(Rodokmen.Serviceworker, "Service worker", $techn="Service Worker, Cache Storage", $descr="Precaches the app and reference data per release and keeps up to 2,000 viewed tiles, so the map works offline.", $tags="Container,Built", $link="")
+  Container(Rodokmen.MCPserver, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+  ContainerDb(Rodokmen.Database, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
+  ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="S3-compatible object storage", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads.", $tags="Container,Built,Data store", $link="")
+  Container(Rodokmen.Watchdog, "Watchdog", $techn="Node 22, API image, cli.js watchdog", $descr="Emails the Owner when the health check fails for over 5 minutes or a Backup fails or is missing.", $tags="Container,Built", $link="")
+}
+
+Rel(Rodokmen.AppPWA.Signinpages, Rodokmen.APIserver.Accountsandsignin, "Accepts invitations, registers passkeys, verifies emailed links", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.Serviceworker, Rodokmen.APIserver.Pages, "Precaches the app at each release", $techn="HTTPS GET", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Accountsandsignin, Rodokmen.Database, "Stores accounts, passkeys, sessions and hashed tokens", $techn="SQL", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Accountsandsignin, Rodokmen.APIserver.Mailer, "Sends invitations and sign-in links", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.TreereadAPI, Rodokmen.Database, "Searches Names; walks ancestors with recursive SQL", $techn="SQL, PostGIS", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.TreereadAPI, Rodokmen.APIserver.Evidencemedia, "Gets view links for images", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Health, Rodokmen.Database, "Checks the database answers", $techn="SQL", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Mailer, EUemailservice, "Sends from the Rodokmen domain", $techn="SMTP, STARTTLS", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Evidencemedia, Rodokmen.Imagebucket, "Presigns links; writes, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
+Rel(Owner, Rodokmen.APIserver.Accountsandsignin, "Invites Members, assigns roles, disables accounts", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.MCPserver, Rodokmen.APIserver.TreereadAPI, "Searches Persons and Places; reads records and pedigrees", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Rodokmen.Watchdog, Rodokmen.APIserver.Health, "Checks /api/health through the public URL", $techn="HTTPS", $tags="Built", $link="")
+Rel(GitHub, Rodokmen.APIserver.Health, "Checks /api/health after each deploy", $techn="HTTPS", $tags="Built", $link="")
+Rel(GitHub, Rodokmen.APIserver.OpenAPI, "Fails CI when routes and description disagree", $techn="cli.js openapi check", $tags="Built", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

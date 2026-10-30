@@ -1,0 +1,66 @@
+@startuml
+title <size:24>Rodokmen: System Context</size>\n<size:24>Who uses Rodokmen and what it depends on.</size>
+
+set separator none
+top to bottom direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Software System,Built", $bgColor="#1168bd", $borderColor="#0b4884", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Person,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
+AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
+
+Person(Visitor, "Visitor", $descr="Anyone using the public map without an account.", $tags="Person,Built", $link="")
+Person(Contributor, "Contributor", $descr="A Member who reads the Tree and submits Proposals; every new Member starts here.", $tags="Person,Built", $link="")
+Person(Editor, "Editor", $descr="A Member who reviews Proposals and may change the Tree directly.", $tags="Person,Built", $link="")
+Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles and keeps the Backups.", $tags="Person,Built", $link="")
+System(Archiveportals, "Archive portals", $descr="Online parish-register viewers of the archives that hold the registers of the Czech lands.", $tags="Software System,External,Built", $link="")
+Person(Agent, "Agent", $descr="An AI assistant with its own Owner-issued account that contributes only through Proposals.", $tags="Person,Planned", $link="")
+System(Historicalmapservices, "Historical map services", $descr="Public services for 19th-century maps of the Czech lands, run by several providers.", $tags="Software System,External,Built", $link="")
+System(Rodokmen, "Rodokmen", $descr="A private, shared family Tree for one extended family, shown on a map of the Czech lands; the map works for anyone.", $tags="Software System,Built", $link="")
+System(OpenStreetMaptiles, "OpenStreetMap tiles", $descr="Today's base map; used without prefetching and with attribution.", $tags="Software System,External,Built", $link="")
+System(EUemailservice, "EU email service", $descr="Transactional email provider in the EU, sending from the Rodokmen domain.", $tags="Software System,External,Built", $link="")
+System(Backupstorage, "Backup storage", $descr="Object storage at a second EU provider, holding the encrypted Backups.", $tags="Software System,External,Built", $link="")
+System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+System(Vault, "Vault", $descr="The Owner's Markdown notes in the private rodokmen-data repo, about 4,100 people with scans; frozen after the import.", $tags="Software System,External,Planned", $link="")
+System(GitHub, "GitHub", $descr="Hosts the code, CI and deploys, the image registry, the map preview and the private Export repo.", $tags="Software System,External,Built", $link="")
+
+Rel(Visitor, Rodokmen, "Searches places and finds their archive and historical maps", $techn="Browser", $tags="Built", $link="")
+Rel(Contributor, Rodokmen, "Reads the Tree; writes Drafts and submits Proposals with evidence", $techn="Browser", $tags="In progress", $link="")
+Rel(Editor, Rodokmen, "Reviews and accepts Proposals, merges Persons and undoes changes", $techn="Browser", $tags="In progress", $link="")
+Rel(Owner, Rodokmen, "Invites Members and assigns roles; later imports the Vault, manages Agents and erases Living people", $techn="HTTPS API", $tags="Built", $link="")
+Rel(Agent, Rodokmen, "Reads the Tree and submits Proposals", $techn="MCP or HTTPS API, Agent token", $tags="Planned", $link="")
+Rel(Agent, Vault, "Opens pull requests until import day; afterwards uses MCP", $techn="Git", $tags="Planned", $link="")
+Rel(Rodokmen, Vault, "Imports the Vault once, then leaves it frozen", $techn="Git checkout", $tags="Planned", $link="")
+Rel(Rodokmen, Archiveportals, "Links each place to the register viewer of its archive", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, AnthropicClaudeAPI, "Sends uploaded scans for reading, once the Owner switches it on", $techn="HTTPS", $tags="Planned", $link="")
+Rel(Rodokmen, Historicalmapservices, "Overlays military survey maps and links to historical map viewers", $techn="WMS, HTTPS links", $tags="Built", $link="")
+Rel(Rodokmen, OpenStreetMaptiles, "Loads base map tiles", $techn="HTTPS", $tags="Built", $link="")
+Rel(Rodokmen, EUemailservice, "Sends invitations, sign-in links, digests, outcomes and alerts", $techn="SMTP", $tags="Built", $link="")
+Rel(Rodokmen, Backupstorage, "Stores nightly encrypted Backups", $techn="restic over HTTPS", $tags="Built", $link="")
+Rel(Rodokmen, GitHub, "Writes the nightly Export to rodokmen-export", $techn="Git over SSH", $tags="Planned", $link="")
+Rel(GitHub, Rodokmen, "Builds, tests and deploys each release", $techn="SSH, GHCR", $tags="Built", $link="")
+Rel(GitHub, Backupstorage, "Restores the latest Backup monthly to test it", $techn="restic", $tags="Built", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

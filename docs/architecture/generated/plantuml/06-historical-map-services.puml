@@ -1,0 +1,48 @@
+@startuml
+title <size:24>Historical map services</size>\n<size:24>Overlays and historical map viewers of the place sheet (app/data/layers.json).</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,Built", $bgColor="#1168bd", $borderColor="#0b4884", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+
+AddBoundaryTag("Software System,External,Built", $bgColor="#ffffff", $borderColor="#616161", $fontColor="#616161", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+System(Rodokmen, "Rodokmen", $descr="A private, shared family Tree for one extended family, shown on a map of the Czech lands; the map works for anyone.", $tags="Software System,Built", $link="")
+
+System_Boundary("Historicalmapservices_boundary", "Historical map services", $tags="Software System,External,Built") {
+  Container(Historicalmapservices.CENIAWMS2ndmilitarysurvey, "CENIA WMS: 2nd military survey", $techn="WMS 1.3.0", $descr="Map service for the 2nd military survey (1836-1852).", $tags="Container,External,Built", $link="")
+  Container(Historicalmapservices.CENIAWMS3rdmilitarysurvey, "CENIA WMS: 3rd military survey", $techn="WMS 1.3.0", $descr="Map service for the special maps of the 3rd military survey.", $tags="Container,External,Built", $link="")
+  Container(Historicalmapservices.ČÚZKArchiv, "ČÚZK Archiv", $techn="Web map viewer", $descr="Imperial imprints of the stable cadastre.", $tags="Container,External,Built", $link="")
+  Container(Historicalmapservices.OldMapsOnline, "OldMapsOnline", $techn="Web map viewer", $descr="Search across old maps by place name.", $tags="Container,External,Built", $link="")
+  Container(Historicalmapservices.ArcanumMaps, "Arcanum Maps", $techn="Web map viewer", $descr="Historical maps of the Habsburg lands.", $tags="Container,External,Built", $link="")
+}
+
+Rel(Rodokmen, Historicalmapservices.CENIAWMS2ndmilitarysurvey, "Requests overlay images", $techn="WMS GetMap, EPSG:3857", $tags="Built", $link="")
+Rel(Rodokmen, Historicalmapservices.CENIAWMS3rdmilitarysurvey, "Requests overlay images", $techn="WMS GetMap, EPSG:3857", $tags="Built", $link="")
+Rel(Rodokmen, Historicalmapservices.ČÚZKArchiv, "Links from the place sheet", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Historicalmapservices.OldMapsOnline, "Links for the Municipality's name", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Historicalmapservices.ArcanumMaps, "Links from the place sheet", $techn="HTTPS link", $tags="Built", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
