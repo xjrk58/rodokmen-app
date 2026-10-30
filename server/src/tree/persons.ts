@@ -63,12 +63,7 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
     const folded = tokens.join(' ');
     const matches = db
       .selectFrom('name as n')
-      .select([
-        'n.person_id',
-        'n.as_found',
-        'n.is_primary',
-        sql<number>`similarity(n.search_text, rdk_fold(${folded}))`.as('score'),
-      ])
+      .select(['n.person_id', 'n.as_found', 'n.is_primary', sql<number>`similarity(n.search_text, rdk_fold(${folded}))`.as('score')])
       // rdk_fold, the fold behind search_text, also folds the query: both sides match by definition.
       // One LIKE per word, which the trigram index serves (it cannot serve LIKE ALL over an array).
       .where((eb) => eb.and(patterns.map((p) => sql<boolean>`n.search_text like rdk_fold(${p})`)));
@@ -92,27 +87,36 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
         .execute()
     ).map((r) => ({ id: r.id, matched: r.matched }));
   } else {
-    rows = (
-      await query
-        .select(['p.id'])
-        .orderBy('pn.surname')
-        .orderBy('pn.given')
-        .orderBy('p.id')
-        .limit(q.limit)
-        .offset(q.offset)
-        .execute()
-    ).map((r) => ({ id: r.id, matched: null }));
+    rows = (await query.select(['p.id']).orderBy('pn.surname').orderBy('pn.given').orderBy('p.id').limit(q.limit).offset(q.offset).execute()).map((r) => ({
+      id: r.id,
+      matched: null,
+    }));
   }
-  const summaries = await personSummaries(db, rows.map((r) => r.id), clock);
+  const summaries = await personSummaries(
+    db,
+    rows.map((r) => r.id),
+    clock,
+  );
   return { items: rows.map((r) => ({ person: summaries.get(r.id)!, matchedName: r.matched })), limit: q.limit, offset: q.offset };
 }
 
 /** An image row as IMAGE_COLUMNS selects it. */
-type ImageRow = Pick<Selectable<ImageTable>, 'id' | 'version' | 'kind' | 'citation_id' | 'storage_key' | 'content_type' | 'byte_size' | 'width' | 'height' | 'sha256' | 'caption'>;
+type ImageRow = Pick<
+  Selectable<ImageTable>,
+  'id' | 'version' | 'kind' | 'citation_id' | 'storage_key' | 'content_type' | 'byte_size' | 'width' | 'height' | 'sha256' | 'caption'
+>;
 
 export async function imageViews(deps: TreeDeps, rows: ImageRow[]): Promise<ImageView[]> {
   if (rows.length === 0) return [];
-  const subjects = await deps.db.selectFrom('image_person').select(['image_id', 'person_id']).where('image_id', 'in', rows.map((r) => r.id)).execute();
+  const subjects = await deps.db
+    .selectFrom('image_person')
+    .select(['image_id', 'person_id'])
+    .where(
+      'image_id',
+      'in',
+      rows.map((r) => r.id),
+    )
+    .execute();
   return Promise.all(
     rows.map(async (r) => {
       const link = await deps.images.link(r.storage_key, r.content_type);
@@ -135,7 +139,19 @@ export async function imageViews(deps: TreeDeps, rows: ImageRow[]): Promise<Imag
   );
 }
 
-export const IMAGE_COLUMNS = ['i.id', 'i.version', 'i.kind', 'i.citation_id', 'i.storage_key', 'i.content_type', 'i.byte_size', 'i.width', 'i.height', 'i.sha256', 'i.caption'] as const;
+export const IMAGE_COLUMNS = [
+  'i.id',
+  'i.version',
+  'i.kind',
+  'i.citation_id',
+  'i.storage_key',
+  'i.content_type',
+  'i.byte_size',
+  'i.width',
+  'i.height',
+  'i.sha256',
+  'i.caption',
+] as const;
 
 export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetail | null> {
   const { db, clock } = deps;
@@ -143,7 +159,11 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
   if (!person) return null;
 
   const names = await db.selectFrom('name').selectAll().where('person_id', '=', id).orderBy('is_primary', 'desc').orderBy('sort_order').orderBy('id').execute();
-  const nameCitations = await citationSummariesFor(db, 'name', names.map((n) => n.id));
+  const nameCitations = await citationSummariesFor(
+    db,
+    'name',
+    names.map((n) => n.id),
+  );
 
   const roles = await db
     .selectFrom('event_role as r')
@@ -152,7 +172,14 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
     .where('r.person_id', '=', id)
     .execute();
   roles.sort((a, b) => compareEarliestDays(a.date_earliest, b.date_earliest) || a.event_id.localeCompare(b.event_id));
-  const events = new Map((await eventSummaries(db, roles.map((r) => r.event_id))).map((e) => [e.id, e]));
+  const events = new Map(
+    (
+      await eventSummaries(
+        db,
+        roles.map((r) => r.event_id),
+      )
+    ).map((e) => [e.id, e]),
+  );
 
   const asPartner = await db
     .selectFrom('family')
@@ -168,7 +195,16 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
     .orderBy('fc.link_type')
     .execute();
   const children = asPartner.length
-    ? await db.selectFrom('family_child').select(['id', 'family_id', 'child_id', 'link_type', 'sort_order']).where('family_id', 'in', asPartner.map((f) => f.id)).orderBy('sort_order').execute()
+    ? await db
+        .selectFrom('family_child')
+        .select(['id', 'family_id', 'child_id', 'link_type', 'sort_order'])
+        .where(
+          'family_id',
+          'in',
+          asPartner.map((f) => f.id),
+        )
+        .orderBy('sort_order')
+        .execute()
     : [];
 
   const relatedIds = [

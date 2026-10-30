@@ -32,19 +32,21 @@ export async function mockExternal(context, log) {
   );
 }
 
-export const test = base.extend(/** @type {import('@playwright/test').Fixtures<Fixtures, {}, import('@playwright/test').PlaywrightTestArgs & import('@playwright/test').PlaywrightTestOptions>} */ ({
-  external: async ({ context }, use) => {
-    /** @type {string[]} */
-    const log = [];
-    await mockExternal(context, log);
-    await use(log);
-  },
-  // Every test gets the mock, whether or not it reads the log.
-  page: async ({ page, external }, use) => {
-    void external;
-    await use(page);
-  },
-}));
+export const test = base.extend(
+  /** @type {import('@playwright/test').Fixtures<Fixtures, {}, import('@playwright/test').PlaywrightTestArgs & import('@playwright/test').PlaywrightTestOptions>} */ ({
+    external: async ({ context }, use) => {
+      /** @type {string[]} */
+      const log = [];
+      await mockExternal(context, log);
+      await use(log);
+    },
+    // Every test gets the mock, whether or not it reads the log.
+    page: async ({ page, external }, use) => {
+      void external;
+      await use(page);
+    },
+  }),
+);
 
 export { expect };
 

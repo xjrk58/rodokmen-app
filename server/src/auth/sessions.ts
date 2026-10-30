@@ -32,7 +32,15 @@ export async function createSession(
   const expiresAt = new Date(now.getTime() + options.idleDays * 86_400_000);
   const row = await db
     .insertInto('session')
-    .values({ token_hash: hash, account_id: accountId, method, user_agent: userAgent?.slice(0, 400) ?? null, created_at: now, last_seen_at: now, expires_at: expiresAt })
+    .values({
+      token_hash: hash,
+      account_id: accountId,
+      method,
+      user_agent: userAgent?.slice(0, 400) ?? null,
+      created_at: now,
+      last_seen_at: now,
+      expires_at: expiresAt,
+    })
     .returning('id')
     .executeTakeFirstOrThrow();
   await db.updateTable('account').set({ last_seen_at: now }).where('id', '=', accountId).execute();
@@ -79,6 +87,11 @@ export async function endSession(db: Db, clock: Clock, sessionId: string): Promi
 }
 
 export async function endAllSessions(db: Db, clock: Clock, accountId: string): Promise<number> {
-  const result = await db.updateTable('session').set({ ended_at: clock.now() }).where('account_id', '=', accountId).where('ended_at', 'is', null).executeTakeFirst();
+  const result = await db
+    .updateTable('session')
+    .set({ ended_at: clock.now() })
+    .where('account_id', '=', accountId)
+    .where('ended_at', 'is', null)
+    .executeTakeFirst();
   return Number(result.numUpdatedRows);
 }

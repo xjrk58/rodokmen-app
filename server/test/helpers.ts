@@ -50,7 +50,12 @@ export interface TestApp {
 
 export async function makeApp(
   t: TestDatabase,
-  options: { config?: Record<string, string>; extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes']; clock?: TestClock; images?: (clock: TestClock) => ImageStorage } = {},
+  options: {
+    config?: Record<string, string>;
+    extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes'];
+    clock?: TestClock;
+    images?: (clock: TestClock) => ImageStorage;
+  } = {},
 ): Promise<TestApp> {
   const config = testConfig(t.url, options.config);
   const mailer = new OutboxMailer();
@@ -62,7 +67,11 @@ export async function makeApp(
 let counter = 0;
 
 /** Creates a Member directly in the database (the Owner first, if none exists). */
-export async function createMember(db: Db, role: MemberRole = 'contributor', fields: { email?: string; displayName?: string; language?: UiLanguage } = {}): Promise<Account> {
+export async function createMember(
+  db: Db,
+  role: MemberRole = 'contributor',
+  fields: { email?: string; displayName?: string; language?: UiLanguage } = {},
+): Promise<Account> {
   counter += 1;
   const email = fields.email ?? `member${counter}-${Math.random().toString(36).slice(2, 8)}@example.test`;
   return db

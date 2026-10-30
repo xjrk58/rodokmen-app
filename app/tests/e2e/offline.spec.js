@@ -28,10 +28,13 @@ test('offline reload opens the map, searches and shows a place sheet', async ({ 
   /** @type {string[]} */
   const blocked = [];
   await context.unrouteAll({ behavior: 'ignoreErrors' });
-  await context.route((url) => !LOCAL.test(url.href), (route) => {
-    blocked.push(route.request().url());
-    return route.abort('internetdisconnected');
-  });
+  await context.route(
+    (url) => !LOCAL.test(url.href),
+    (route) => {
+      blocked.push(route.request().url());
+      return route.abort('internetdisconnected');
+    },
+  );
   await context.setOffline(true);
 
   await page.reload();
@@ -80,7 +83,9 @@ test('a damaged tile index does not stop the map tiles: they come from the netwo
     await waitForServiceWorker(page);
     // The saved use order is unreadable (a write cut short, a bug in an older version).
     await page.evaluate(async (key) => {
-      await (await caches.open('rodokmen-meta')).put(key, new Response('["https://tile.openstreetmap.org/8/1', { headers: { 'content-type': 'application/json' } }));
+      await (
+        await caches.open('rodokmen-meta')
+      ).put(key, new Response('["https://tile.openstreetmap.org/8/1', { headers: { 'content-type': 'application/json' } }));
     }, `${server.url}__tile-lru__.json`);
     await page.reload();
     await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');

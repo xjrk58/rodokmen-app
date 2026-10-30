@@ -21,16 +21,16 @@ x-api: &api
   environment:
     NODE_ENV: production
     HOST: 0.0.0.0
-    PORT: "3000"
+    PORT: '3000'
     APP_DIR: /srv/app
-    TRUST_PROXY: "true"
+    TRUST_PROXY: 'true'
     PUBLIC_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
     DATABASE_URL: postgres://rodokmen:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/rodokmen
   depends_on:
     db:
       condition: service_healthy
   healthcheck:
-    test: ["CMD", "node", "dist/cli.js", "health"]
+    test: ['CMD', 'node', 'dist/cli.js', 'health']
     interval: 10s
     timeout: 6s
     retries: 3
@@ -51,7 +51,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rodokmen -d rodokmen"]
+      test: ['CMD-SHELL', 'pg_isready -U rodokmen -d rodokmen']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -70,9 +70,9 @@ services:
     image: caddy:2-alpine
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
     environment:
       DOMAIN: ${DOMAIN:?set DOMAIN in .env}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
@@ -86,7 +86,7 @@ services:
   watchdog:
     image: ${WATCHDOG_IMAGE:-ghcr.io/xjrk58/rodokmen-app:main}
     restart: unless-stopped
-    command: ["node", "dist/cli.js", "watchdog"]
+    command: ['node', 'dist/cli.js', 'watchdog']
     env_file:
       - path: .env
         required: true

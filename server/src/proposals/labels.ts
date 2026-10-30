@@ -64,16 +64,34 @@ async function houseLabels(db: Db, ids: string[], out: Labels): Promise<void> {
     .where('h.id', 'in', ids)
     .execute();
   if (houses.length === 0) return;
-  const numbers = await db.selectFrom('house_number').select(['house_id', 'number']).where('house_id', 'in', houses.map((h) => h.id)).orderBy('valid_from').execute();
+  const numbers = await db
+    .selectFrom('house_number')
+    .select(['house_id', 'number'])
+    .where(
+      'house_id',
+      'in',
+      houses.map((h) => h.id),
+    )
+    .orderBy('valid_from')
+    .execute();
   for (const h of houses) {
-    const list = numbers.filter((n) => n.house_id === h.id).map((n) => n.number).join('/');
+    const list = numbers
+      .filter((n) => n.house_id === h.id)
+      .map((n) => n.number)
+      .join('/');
     out.set(h.id, { cs: `${h.name} čp. ${list}`, en: `${h.name} No. ${list}` });
   }
 }
 
 async function evidenceLabels(db: Db, ids: string[], out: Labels): Promise<void> {
-  for (const s of await db.selectFrom('source').select(['id', 'title']).where('id', 'in', ids).execute()) out.set(s.id, { cs: `„${s.title}“`, en: `“${s.title}”` });
-  for (const c of await db.selectFrom('citation as c').innerJoin('source as s', 's.id', 'c.source_id').select(['c.id', 'c.page', 's.title']).where('c.id', 'in', ids).execute()) {
+  for (const s of await db.selectFrom('source').select(['id', 'title']).where('id', 'in', ids).execute())
+    out.set(s.id, { cs: `„${s.title}“`, en: `“${s.title}”` });
+  for (const c of await db
+    .selectFrom('citation as c')
+    .innerJoin('source as s', 's.id', 'c.source_id')
+    .select(['c.id', 'c.page', 's.title'])
+    .where('c.id', 'in', ids)
+    .execute()) {
     out.set(c.id, c.page ? { cs: `„${c.title}“, s. ${c.page}`, en: `“${c.title}”, p. ${c.page}` } : { cs: `„${c.title}“`, en: `“${c.title}”` });
   }
 }
@@ -82,7 +100,9 @@ async function familyLabels(db: Db, ids: string[], out: Labels): Promise<void> {
   const families = await db.selectFrom('family').select(['id', 'partner1_id', 'partner2_id']).where('id', 'in', ids).execute();
   if (families.length === 0) return;
   const partnerIds = families.flatMap((f) => [f.partner1_id, f.partner2_id]).filter((x): x is string => x !== null);
-  const names = partnerIds.length ? await db.selectFrom('name').select(['person_id', 'given', 'surname']).where('person_id', 'in', partnerIds).where('is_primary', '=', true).execute() : [];
+  const names = partnerIds.length
+    ? await db.selectFrom('name').select(['person_id', 'given', 'surname']).where('person_id', 'in', partnerIds).where('is_primary', '=', true).execute()
+    : [];
   const byId = new Map(names.map((n) => [n.person_id, displayName(n.given, n.surname)]));
   for (const f of families) {
     const ps = [f.partner1_id, f.partner2_id].filter((x): x is string => x !== null).map((p) => byId.get(p) ?? '?');
@@ -119,9 +139,11 @@ export async function labelsFor(db: Db, ids: readonly string[]): Promise<Summary
   const list = [...new Set(ids)];
   if (list.length > 0) {
     await personLabels(db, list, labels);
-    for (const n of await db.selectFrom('name').select(['id', 'as_found']).where('id', 'in', list).execute()) labels.set(n.id, { cs: `„${n.as_found}“`, en: `“${n.as_found}”` });
+    for (const n of await db.selectFrom('name').select(['id', 'as_found']).where('id', 'in', list).execute())
+      labels.set(n.id, { cs: `„${n.as_found}“`, en: `“${n.as_found}”` });
     await eventLabels(db, list, labels);
-    for (const p of await db.selectFrom('place_name').select(['place_id', 'name']).where('place_id', 'in', list).where('is_primary', '=', true).execute()) labels.set(p.place_id, both(p.name));
+    for (const p of await db.selectFrom('place_name').select(['place_id', 'name']).where('place_id', 'in', list).where('is_primary', '=', true).execute())
+      labels.set(p.place_id, both(p.name));
     await houseLabels(db, list, labels);
     await evidenceLabels(db, list, labels);
     await familyLabels(db, list, labels);

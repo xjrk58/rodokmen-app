@@ -60,7 +60,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--check')) {
     const stale = stamps.filter((s) => s.version !== version);
     if (stale.length) {
-      console.error(`Version stamp is stale: ${stale.map((s) => `${s.file} has ${s.version}`).join(', ')}; the files give ${version}. Run node scripts/stamp-version.mjs`);
+      console.error(
+        `Version stamp is stale: ${stale.map((s) => `${s.file} has ${s.version}`).join(', ')}; the files give ${version}. Run node scripts/stamp-version.mjs`,
+      );
       process.exit(1);
     }
     console.log(`Version stamp ${version} is current`);

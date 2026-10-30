@@ -67,7 +67,7 @@ function open() {
   const attempt = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (event) => upgrade(request.result, event.oldVersion);
-    request.onblocked = () => reject(new Error('The Drafts storage is being upgraded; close the app\'s other tabs.'));
+    request.onblocked = () => reject(new Error("The Drafts storage is being upgraded; close the app's other tabs."));
     request.onsuccess = () => {
       const db = request.result;
       db.onversionchange = () => {
@@ -135,7 +135,17 @@ function run(store, mode, fn) {
  * @returns {v is Draft}
  */
 function isDraft(v) {
-  return typeof v === 'object' && v !== null && 'id' in v && typeof v.id === 'string' && 'kind' in v && KINDS.some((k) => k === v.kind) && 'form' in v && typeof v.form === 'object' && v.form !== null;
+  return (
+    typeof v === 'object' &&
+    v !== null &&
+    'id' in v &&
+    typeof v.id === 'string' &&
+    'kind' in v &&
+    KINDS.some((k) => k === v.kind) &&
+    'form' in v &&
+    typeof v.form === 'object' &&
+    v.form !== null
+  );
 }
 
 /**

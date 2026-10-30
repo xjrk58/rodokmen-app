@@ -64,9 +64,13 @@ export class Settings {
     if (!this.lastCheck) return;
     this.results.replaceChildren(
       ...this.lastCheck.map(({ overlay, working }) =>
-        h('li', { 'data-overlay': overlay.id, 'data-working': String(working) },
+        h(
+          'li',
+          { 'data-overlay': overlay.id, 'data-working': String(working) },
           h('span', {}, t(`overlay.${overlay.id}`), overlay.enabled ? null : h('span', { class: 'status off' }, ` (${t('settings.switchedOff')})`)),
-          h('span', { class: `status ${working ? 'ok' : 'bad'}` }, working ? t('settings.working') : t('settings.notWorking')))),
+          h('span', { class: `status ${working ? 'ok' : 'bad'}` }, working ? t('settings.working') : t('settings.notWorking')),
+        ),
+      ),
     );
   }
 }

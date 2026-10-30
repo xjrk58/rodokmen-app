@@ -22,7 +22,9 @@ describe('Proposals, review and history', () => {
   // ---------------------------------------------------------------- 1.2 evidence rule
 
   it('a Proposal without any Citation is refused and asks for the register entry, a document or a Family account', async () => {
-    const res = await submit(contributor, [{ op: 'createPerson', tempId: 'tmp:p', sex: 'female', name: { given: 'Ludmila', surname: 'Invented', type: 'birth', asFound: 'Ludmila Invented' } }]);
+    const res = await submit(contributor, [
+      { op: 'createPerson', tempId: 'tmp:p', sex: 'female', name: { given: 'Ludmila', surname: 'Invented', type: 'birth', asFound: 'Ludmila Invented' } },
+    ]);
     expect(res.statusCode).toBe(400);
     expect(errorOf(res).code).toBe('evidence_missing');
     // In the author's language (Czech here).
@@ -32,7 +34,13 @@ describe('Proposals, review and history', () => {
   it('a Proposal citing a Family account is accepted for review', async () => {
     const res = await submit(contributor, [
       { op: 'createPerson', tempId: 'tmp:p', sex: 'female', name: { given: 'Ludmila', surname: 'Invented', type: 'birth', asFound: 'Ludmila Invented' } },
-      { op: 'createSource', tempId: 'tmp:fa', type: 'family_account', title: 'What grandmother remembers (invented)', familyAccount: { givenBy: 'Invented aunt', givenByPersonId: null, givenOn: '2026-05' } },
+      {
+        op: 'createSource',
+        tempId: 'tmp:fa',
+        type: 'family_account',
+        title: 'What grandmother remembers (invented)',
+        familyAccount: { givenBy: 'Invented aunt', givenByPersonId: null, givenOn: '2026-05' },
+      },
       { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:fa', transcription: 'She was called Lída at home.', readOn: '2026-05-10', confidence: 'low' },
     ]);
     expect(res.statusCode).toBe(201);
@@ -42,7 +50,12 @@ describe('Proposals, review and history', () => {
   });
 
   it('a retried submit with the same idempotency key creates one Proposal', async () => {
-    const body = { formatVersion: 1, idempotencyKey: newKey(), note: 'retry', operations: [...citation('R'), { op: 'attachCitation', citationId: 'tmp:citR', eventId: L.janDeath, baseVersion: 1 }] };
+    const body = {
+      formatVersion: 1,
+      idempotencyKey: newKey(),
+      note: 'retry',
+      operations: [...citation('R'), { op: 'attachCitation', citationId: 'tmp:citR', eventId: L.janDeath, baseVersion: 1 }],
+    };
     const before = await count('proposal');
     const first = await call(contributor, 'POST', '/api/proposals', body);
     const second = await call(contributor, 'POST', '/api/proposals', body);
@@ -53,7 +66,10 @@ describe('Proposals, review and history', () => {
 
   it('pending Proposals stay private: other Contributors see the Person as accepted so far and cannot open the Proposal', async () => {
     const jan = await person(L.janNovak);
-    const res = await submit(contributor, [...citation('P'), { op: 'addName', personId: L.janNovak, baseVersion: jan.version, given: 'Johannes', surname: 'Nowack', type: 'german', asFound: 'Johannes Nowack' }]);
+    const res = await submit(contributor, [
+      ...citation('P'),
+      { op: 'addName', personId: L.janNovak, baseVersion: jan.version, given: 'Johannes', surname: 'Nowack', type: 'german', asFound: 'Johannes Nowack' },
+    ]);
     expect(res.statusCode).toBe(201);
     const after = await person(L.janNovak, other);
     expect(after).toEqual(await person(L.janNovak, owner));
@@ -79,11 +95,23 @@ describe('Proposals, review and history', () => {
       { op: 'addRole', eventId: L.janBaptism, personId: childRole.person.id, role: 'child', baseVersion: baptism.version },
     ]);
     expect(res.statusCode).toBe(201);
-    const counts = { persons: await count('person'), names: await count('name'), events: await count('event'), roles: await count('event_role'), log: await count('log_entry') };
+    const counts = {
+      persons: await count('person'),
+      names: await count('name'),
+      events: await count('event'),
+      roles: await count('event_role'),
+      log: await count('log_entry'),
+    };
     const accept = await call(editor, 'POST', `/api/proposals/${idOf(res)}/accept`, {});
     expect(accept.statusCode).toBe(409);
     expect(errorOf(accept).message).toMatch(/Operation 7/);
-    expect({ persons: await count('person'), names: await count('name'), events: await count('event'), roles: await count('event_role'), log: await count('log_entry') }).toEqual(counts);
+    expect({
+      persons: await count('person'),
+      names: await count('name'),
+      events: await count('event'),
+      roles: await count('event_role'),
+      log: await count('log_entry'),
+    }).toEqual(counts);
     expect(ProposalView.parse((await call(editor, 'GET', `/api/proposals/${idOf(res)}`)).json()).status).toBe('pending');
   });
 
@@ -91,7 +119,15 @@ describe('Proposals, review and history', () => {
     const jan = await person(L.janNovak);
     const latin = jan.names.find((n) => n.type === 'latin')!;
     // The database refuses a Name with neither given name nor surname only at the end.
-    const res = await submit(editor, [...citation('C'), { op: 'createPerson', tempId: 'tmp:x', sex: 'male', name: { given: 'Ondřej', surname: 'Invented', type: 'birth', asFound: 'Ondřej' } }, { op: 'setField', record: 'name', id: latin.id, baseVersion: latin.version, set: { given: '', surname: '' } }], { direct: true });
+    const res = await submit(
+      editor,
+      [
+        ...citation('C'),
+        { op: 'createPerson', tempId: 'tmp:x', sex: 'male', name: { given: 'Ondřej', surname: 'Invented', type: 'birth', asFound: 'Ondřej' } },
+        { op: 'setField', record: 'name', id: latin.id, baseVersion: latin.version, set: { given: '', surname: '' } },
+      ],
+      { direct: true },
+    );
     expect(res.statusCode).toBe(409);
     expect((await person(L.janNovak)).names.find((n) => n.id === latin.id)!.given).toBe(latin.given);
   });
@@ -150,25 +186,48 @@ describe('Proposals, review and history', () => {
       { op: 'attachCitation', citationId: 'tmp:citY', eventId: 'tmp:e' },
     ];
     const p = ProposalView.parse((await submit(contributor, ops)).json());
-    const res = await call(editor, 'POST', `/api/proposals/${p.id}/accept`, { note: 'Year was 1813, see the register', corrections: [{ position: 1, operation: { ...ops[1], date: '1813-04-02' } }] });
+    const res = await call(editor, 'POST', `/api/proposals/${p.id}/accept`, {
+      note: 'Year was 1813, see the register',
+      corrections: [{ position: 1, operation: { ...ops[1], date: '1813-04-02' } }],
+    });
     expect(res.statusCode, res.body).toBe(200);
     const accepted = ProposalView.parse(res.json());
     expect(accepted.status).toBe('accepted');
-    expect(accepted.operations[1]).toMatchObject({ corrected: true, summary: { en: 'adds the baptism on 1813-04-02 at Kamenná Lhota' }, originalSummary: { en: 'adds the baptism on 1831-04-02 at Kamenná Lhota' } });
+    expect(accepted.operations[1]).toMatchObject({
+      corrected: true,
+      summary: { en: 'adds the baptism on 1813-04-02 at Kamenná Lhota' },
+      originalSummary: { en: 'adds the baptism on 1831-04-02 at Kamenná Lhota' },
+    });
     const barbora = await t.db.selectFrom('name').select('person_id').where('as_found', '=', 'Barbara').executeTakeFirstOrThrow();
     const detail = await person(barbora.person_id);
     expect(detail.events[0]!.event.date).toBe('1813-04-02');
     const history = History.parse((await call(contributor, 'GET', `/api/history/person/${barbora.person_id}`)).json()).items;
     expect(history).toHaveLength(1);
-    expect(history[0]).toMatchObject({ author: { displayName: 'Karel Contributor' }, acceptedBy: { displayName: 'Eva Editor' }, decisionNote: 'Year was 1813, see the register' });
+    expect(history[0]).toMatchObject({
+      author: { displayName: 'Karel Contributor' },
+      acceptedBy: { displayName: 'Eva Editor' },
+      decisionNote: 'Year was 1813, see the register',
+    });
     const corrections = history[0]!.corrections;
     expect(corrections.map((c) => ({ position: c.position, by: c.by, summary: c.summary.en, original: c.original.en }))).toEqual([
-      { position: 1, by: { id: editor.id, displayName: 'Eva Editor', isAgent: false }, summary: 'adds the baptism on 1813-04-02 at Kamenná Lhota', original: 'adds the baptism on 1831-04-02 at Kamenná Lhota' },
+      {
+        position: 1,
+        by: { id: editor.id, displayName: 'Eva Editor', isAgent: false },
+        summary: 'adds the baptism on 1813-04-02 at Kamenná Lhota',
+        original: 'adds the baptism on 1831-04-02 at Kamenná Lhota',
+      },
     ]);
   });
 
   it('reject with a note: nothing in the Tree changes and the author sees the note', async () => {
-    const p = ProposalView.parse((await submit(contributor, [{ op: 'createPerson', tempId: 'tmp:z', sex: 'male', name: { given: 'Zikmund', surname: 'Invented', type: 'birth', asFound: 'Sigismundus' } }, ...citation('N')])).json());
+    const p = ProposalView.parse(
+      (
+        await submit(contributor, [
+          { op: 'createPerson', tempId: 'tmp:z', sex: 'male', name: { given: 'Zikmund', surname: 'Invented', type: 'birth', asFound: 'Sigismundus' } },
+          ...citation('N'),
+        ])
+      ).json(),
+    );
     const persons = await count('person');
     const res = await call(editor, 'POST', `/api/proposals/${p.id}/reject`, { note: 'wrong parish, see 1820 register' });
     expect(res.statusCode).toBe(200);
@@ -182,20 +241,31 @@ describe('Proposals, review and history', () => {
 
   it('two Proposals for the same date: the Editor sees both values and picks one before the second can be accepted', async () => {
     const death = EventDetail.parse((await call(contributor, 'GET', `/api/events/${L.janDeath}`)).json());
-    const change = (date: string, tag: string): OperationInput[] => [...citation(tag), { op: 'setField', record: 'event', id: L.janDeath, baseVersion: death.version, set: { date } }, { op: 'attachCitation', citationId: `tmp:cit${tag}`, eventId: L.janDeath, baseVersion: death.version }];
+    const change = (date: string, tag: string): OperationInput[] => [
+      ...citation(tag),
+      { op: 'setField', record: 'event', id: L.janDeath, baseVersion: death.version, set: { date } },
+      { op: 'attachCitation', citationId: `tmp:cit${tag}`, eventId: L.janDeath, baseVersion: death.version },
+    ];
     const first = ProposalView.parse((await submit(contributor, change('1850-11-04', 'A'))).json());
     const second = ProposalView.parse((await submit(other, change('1850-11-13', 'B'))).json());
     expect((await call(editor, 'POST', `/api/proposals/${first.id}/accept`, {})).statusCode).toBe(200);
 
     const queued = ProposalView.parse((await call(editor, 'GET', `/api/proposals/${second.id}`)).json());
     expect(queued.conflicts).toBe(2);
-    expect(queued.operations[2]!.conflict).toMatchObject({ record: 'event', baseVersion: death.version, currentVersion: death.version + 1, fields: [{ field: 'date', proposed: '1850-11-13', current: '1850-11-04' }] });
+    expect(queued.operations[2]!.conflict).toMatchObject({
+      record: 'event',
+      baseVersion: death.version,
+      currentVersion: death.version + 1,
+      fields: [{ field: 'date', proposed: '1850-11-13', current: '1850-11-04' }],
+    });
 
     const refused = await call(editor, 'POST', `/api/proposals/${second.id}/accept`, {});
     expect(refused.statusCode).toBe(409);
     expect(errorOf(refused).code).toBe('conflict');
 
-    const res = await call(editor, 'POST', `/api/proposals/${second.id}/accept`, { resolutions: [{ position: 2, fields: { date: 'current' } }, { position: 3 }] });
+    const res = await call(editor, 'POST', `/api/proposals/${second.id}/accept`, {
+      resolutions: [{ position: 2, fields: { date: 'current' } }, { position: 3 }],
+    });
     expect(res.statusCode, res.body).toBe(200);
     expect(EventDetail.parse((await call(contributor, 'GET', `/api/events/${L.janDeath}`)).json()).date).toBe('1850-11-04');
     // The choice is stored as the Editor's correction.
@@ -209,7 +279,9 @@ describe('Proposals, review and history', () => {
     const setter = history.find((h) => h.summaries.some((s) => s.en.includes('“1850-11-04”')))!;
     expect(setter).toMatchObject({ author: { displayName: 'Karel Contributor' }, acceptedBy: { displayName: 'Eva Editor' }, kind: 'contribution' });
     expect(setter.acceptedAt).toBe(a.clock.now().toISOString());
-    expect(setter.citations.map(({ id, sourceTitle, page }) => ({ id: /^[0-9a-f-]{36}$/.test(id), sourceTitle, page }))).toEqual([{ id: true, sourceTitle: 'Invented register A', page: '17' }]);
+    expect(setter.citations.map(({ id, sourceTitle, page }) => ({ id: /^[0-9a-f-]{36}$/.test(id), sourceTitle, page }))).toEqual([
+      { id: true, sourceTitle: 'Invented register A', page: '17' },
+    ]);
     const change = setter.changes.find((c) => c.table === 'event')!;
     expect([change.before!.date, change.after!.date]).toEqual(['1850-11-03', '1850-11-04']);
   });

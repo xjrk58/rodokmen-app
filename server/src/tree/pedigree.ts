@@ -39,7 +39,11 @@ export async function ancestors({ db, clock }: TreeDeps, rootId: string, generat
         .orderBy('fc.id')
         .execute()
     : [];
-  const summaries = await personSummaries(db, rows.map((r) => r.person_id), clock);
+  const summaries = await personSummaries(
+    db,
+    rows.map((r) => r.person_id),
+    clock,
+  );
   const families = new Map(links.map((l) => [l.family_id, { id: l.family_id, version: l.version, partner1Id: l.partner1_id, partner2Id: l.partner2_id }]));
   return {
     rootId,
@@ -47,7 +51,11 @@ export async function ancestors({ db, clock }: TreeDeps, rootId: string, generat
     generations,
     persons: rows
       .sort((a, b) => a.generation - b.generation || a.person_id.localeCompare(b.person_id))
-      .map((r) => ({ generation: r.generation, relation: r.generation === 1 ? ('root' as const) : ('ancestor' as const), person: summaries.get(r.person_id)! })),
+      .map((r) => ({
+        generation: r.generation,
+        relation: r.generation === 1 ? ('root' as const) : ('ancestor' as const),
+        person: summaries.get(r.person_id)!,
+      })),
     families: [...families.values()],
     childLinks: links.map((l) => ({ id: l.id, familyId: l.family_id, childId: l.child_id, linkType: l.link_type })),
   };
@@ -81,12 +89,35 @@ export async function descendants({ db, clock }: TreeDeps, rootId: string, gener
     ? await db
         .selectFrom('family')
         .select(['id', 'version', 'partner1_id', 'partner2_id'])
-        .where((eb) => eb.or([eb('partner1_id', 'in', inner.map((r) => r.person_id)), eb('partner2_id', 'in', inner.map((r) => r.person_id))]))
+        .where((eb) =>
+          eb.or([
+            eb(
+              'partner1_id',
+              'in',
+              inner.map((r) => r.person_id),
+            ),
+            eb(
+              'partner2_id',
+              'in',
+              inner.map((r) => r.person_id),
+            ),
+          ]),
+        )
         .orderBy('id')
         .execute()
     : [];
   const links = familyRows.length
-    ? await db.selectFrom('family_child').select(['id', 'family_id', 'child_id', 'link_type']).where('family_id', 'in', familyRows.map((f) => f.id)).orderBy('family_id').orderBy('sort_order').execute()
+    ? await db
+        .selectFrom('family_child')
+        .select(['id', 'family_id', 'child_id', 'link_type'])
+        .where(
+          'family_id',
+          'in',
+          familyRows.map((f) => f.id),
+        )
+        .orderBy('family_id')
+        .orderBy('sort_order')
+        .execute()
     : [];
   const partners = new Map<string, number>();
   for (const f of familyRows) {
@@ -97,7 +128,11 @@ export async function descendants({ db, clock }: TreeDeps, rootId: string, gener
   }
   const summaries = await personSummaries(db, [...rows.map((r) => r.person_id), ...partners.keys()], clock);
   const persons = [
-    ...rows.map((r) => ({ generation: r.generation, relation: r.generation === 1 ? ('root' as const) : ('descendant' as const), person: summaries.get(r.person_id)! })),
+    ...rows.map((r) => ({
+      generation: r.generation,
+      relation: r.generation === 1 ? ('root' as const) : ('descendant' as const),
+      person: summaries.get(r.person_id)!,
+    })),
     ...[...partners].map(([id, generation]) => ({ generation, relation: 'partner' as const, person: summaries.get(id)! })),
   ].sort((a, b) => a.generation - b.generation || a.person.id.localeCompare(b.person.id));
   return {
@@ -106,8 +141,6 @@ export async function descendants({ db, clock }: TreeDeps, rootId: string, gener
     generations,
     persons,
     families: familyRows.map((f) => ({ id: f.id, version: f.version, partner1Id: f.partner1_id, partner2Id: f.partner2_id })),
-    childLinks: links
-      .filter((l) => generationOf.has(l.child_id))
-      .map((l) => ({ id: l.id, familyId: l.family_id, childId: l.child_id, linkType: l.link_type })),
+    childLinks: links.filter((l) => generationOf.has(l.child_id)).map((l) => ({ id: l.id, familyId: l.family_id, childId: l.child_id, linkType: l.link_type })),
   };
 }

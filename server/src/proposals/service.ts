@@ -37,7 +37,6 @@ function targetColumns(op: Operation): { target_table: string | null; target_id:
   return { target_table: RECORD_TABLES[t.record], target_id: t.id, base_version: t.baseVersion ?? null };
 }
 
-
 export async function getProposalRow(db: Db, id: string): Promise<Proposal> {
   const p = await db.selectFrom('proposal').selectAll().where('id', '=', id).executeTakeFirst();
   if (!p) throw new ApiProblem(404, 'not_found', 'No Proposal with this id.');
@@ -85,7 +84,12 @@ async function insertProposal(
     .returningAll()
     .executeTakeFirst();
   if (!inserted) {
-    const existing = await tx.selectFrom('proposal').selectAll().where('author_id', '=', author.id).where('idempotency_key', '=', fields.idempotencyKey).executeTakeFirstOrThrow();
+    const existing = await tx
+      .selectFrom('proposal')
+      .selectAll()
+      .where('author_id', '=', author.id)
+      .where('idempotency_key', '=', fields.idempotencyKey)
+      .executeTakeFirstOrThrow();
     return { proposal: existing, created: false };
   }
   await tx
@@ -102,7 +106,12 @@ async function insertProposal(
       .where('status', '=', 'ready')
       .where('proposal_id', 'is', null)
       .executeTakeFirst();
-    if (Number(r.numUpdatedRows) === 0) throw new ApiProblem(409, 'upload_unusable', 'An image of this Proposal is not uploaded yet, is not yours, or belongs to another Proposal. Upload it again.');
+    if (Number(r.numUpdatedRows) === 0)
+      throw new ApiProblem(
+        409,
+        'upload_unusable',
+        'An image of this Proposal is not uploaded yet, is not yours, or belongs to another Proposal. Upload it again.',
+      );
   }
   return { proposal: inserted, created: true };
 }
@@ -117,12 +126,22 @@ export async function submitProposal(deps: ProposalDeps, author: Account, body: 
   const { operations, issues } = checkOperations(body.operations, { editor });
   if (issues.length) throw issuesProblem(issues, author.language);
   const now = deps.clock.now();
-  const result = await transaction(deps.db, async (tx) => {
-    const created = await insertProposal(tx, now, author, { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey }, operations);
-    if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
-    const accepted = await acceptInTransaction(tx, deps, created.proposal, author, { note: null, corrections: [], resolutions: [] });
-    return { proposal: accepted.proposal, created: true, moves: accepted.moves };
-  }, deps);
+  const result = await transaction(
+    deps.db,
+    async (tx) => {
+      const created = await insertProposal(
+        tx,
+        now,
+        author,
+        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey },
+        operations,
+      );
+      if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
+      const accepted = await acceptInTransaction(tx, deps, created.proposal, author, { note: null, corrections: [], resolutions: [] });
+      return { proposal: accepted.proposal, created: true, moves: accepted.moves };
+    },
+    deps,
+  );
   await finishMoves(deps, result.moves);
   const [view] = await proposalViews(deps.db, [result.proposal]);
   return { view: view!, created: result.created };
@@ -165,15 +184,26 @@ async function finishMoves(deps: ProposalDeps, moves: readonly UploadMove[]): Pr
  * Editor corrections: a replacement of the same kind of operation, recorded as the Editor's.
  * Returns the operations as they will be applied, and the corrected ones by position.
  */
-function applyCorrections(stored: readonly StoredOperation[], body: AcceptBody, proposal: Proposal, editor: Account): { effective: Operation[]; corrected: Map<number, Operation> } {
+function applyCorrections(
+  stored: readonly StoredOperation[],
+  body: AcceptBody,
+  proposal: Proposal,
+  editor: Account,
+): { effective: Operation[]; corrected: Map<number, Operation> } {
   const effective = stored.map((s) => s.effective);
   const corrected = new Map<number, Operation>();
   for (const c of body.corrections) {
     const s = stored[c.position];
     if (!s) throw new ApiProblem(400, 'invalid_correction', `There is no operation ${c.position + 1} to correct.`);
     const parsed = Operation.safeParse(c.operation);
-    if (!parsed.success) throw new ApiProblem(400, 'invalid_correction', `Correction of operation ${c.position + 1}: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
-    if (parsed.data.op !== s.original.op) throw new ApiProblem(400, 'invalid_correction', `Operation ${c.position + 1} is ${s.original.op}; a correction cannot turn it into ${parsed.data.op}.`);
+    if (!parsed.success)
+      throw new ApiProblem(
+        400,
+        'invalid_correction',
+        `Correction of operation ${c.position + 1}: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
+      );
+    if (parsed.data.op !== s.original.op)
+      throw new ApiProblem(400, 'invalid_correction', `Operation ${c.position + 1} is ${s.original.op}; a correction cannot turn it into ${parsed.data.op}.`);
     effective[c.position] = parsed.data;
     corrected.set(c.position, parsed.data);
   }
@@ -239,7 +269,14 @@ async function resolveConflicts(tx: Db, effective: Operation[], corrected: Map<n
 async function writeLog(tx: Db, proposal: Proposal, editor: Account, now: Date, applied: ApplyResult): Promise<void> {
   const entry = await tx
     .insertInto('log_entry')
-    .values({ proposal_id: proposal.id, kind: proposal.kind, author_id: proposal.author_id, accepted_by: editor.id, accepted_at: now, citation_ids: applied.citationIds })
+    .values({
+      proposal_id: proposal.id,
+      kind: proposal.kind,
+      author_id: proposal.author_id,
+      accepted_by: editor.id,
+      accepted_at: now,
+      citation_ids: applied.citationIds,
+    })
     .returning('id')
     .executeTakeFirstOrThrow();
   const changes = applied.changes.list();
@@ -265,7 +302,11 @@ async function writeLog(tx: Db, proposal: Proposal, editor: Account, now: Date, 
  */
 async function followUploads(tx: Db, applied: ApplyResult, now: Date): Promise<void> {
   for (const m of applied.uploads) {
-    await tx.updateTable('upload').set({ image_id: m.imageId, storage_key: m.to.original, display_key: m.to.display, orphaned_at: null }).where('id', '=', m.uploadId).execute();
+    await tx
+      .updateTable('upload')
+      .set({ image_id: m.imageId, storage_key: m.to.original, display_key: m.to.display, orphaned_at: null })
+      .where('id', '=', m.uploadId)
+      .execute();
   }
   for (const c of applied.changes.list().filter((x) => x.table === 'image')) {
     const removed = c.after === null ? c.before?.storage_key : undefined;
@@ -279,7 +320,13 @@ async function followUploads(tx: Db, applied: ApplyResult, now: Date): Promise<v
 }
 
 /** Applies a pending Proposal in the caller's transaction and writes its log entry. */
-async function acceptInTransaction(tx: Db, deps: ProposalDeps, proposal: Proposal, editor: Account, body: AcceptBody): Promise<{ proposal: Proposal; moves: UploadMove[] }> {
+async function acceptInTransaction(
+  tx: Db,
+  deps: ProposalDeps,
+  proposal: Proposal,
+  editor: Account,
+  body: AcceptBody,
+): Promise<{ proposal: Proposal; moves: UploadMove[] }> {
   const now = deps.clock.now();
   const { effective, corrected } = applyCorrections(await loadOperations(tx, proposal.id), body, proposal, editor);
   await resolveConflicts(tx, effective, corrected, body.resolutions);
@@ -367,11 +414,21 @@ async function sendOutcome(deps: ProposalDeps, p: Proposal, view: ProposalView):
 // ---------------------------------------------------------------- merge
 
 /** Merging two Persons is an Editor's direct change (review spec, "Merging duplicate Persons"). */
-export async function mergePersons(deps: ProposalDeps, editor: Account, keepId: string, body: { mergeId: string; keepBaseVersion: number; mergeBaseVersion: number; note: string | null }): Promise<ProposalView> {
+export async function mergePersons(
+  deps: ProposalDeps,
+  editor: Account,
+  keepId: string,
+  body: { mergeId: string; keepBaseVersion: number; mergeBaseVersion: number; note: string | null },
+): Promise<ProposalView> {
   const op = { op: 'mergePersons', keepId, mergeId: body.mergeId, keepBaseVersion: body.keepBaseVersion, mergeBaseVersion: body.mergeBaseVersion };
-  const { view } = await submitProposal(deps, editor, { formatVersion: OPERATIONS_VERSION, idempotencyKey: `merge-${keepId}-${body.mergeId}-${deps.clock.now().getTime()}`, note: body.note, direct: true, operations: [op] });
+  const { view } = await submitProposal(deps, editor, {
+    formatVersion: OPERATIONS_VERSION,
+    idempotencyKey: `merge-${keepId}-${body.mergeId}-${deps.clock.now().getTime()}`,
+    note: body.note,
+    direct: true,
+    operations: [op],
+  });
   return view;
 }
 
 export { insertProposal, acceptInTransaction, transaction, finishMoves };
-

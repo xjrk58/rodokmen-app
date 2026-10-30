@@ -17,8 +17,14 @@ const survey3 = overlay('survey3');
 test('"Check map layers" reports a blocked overlay as not working', async ({ page }) => {
   await openApp(page);
   // Routes added later take precedence over the fixture's catch-all mock.
-  await page.route((url) => url.href.startsWith(survey2.url), (route) => route.abort('blockedbyclient'));
-  await page.route((url) => url.href.startsWith(survey3.url), (route) => route.fulfill({ status: 200, contentType: 'image/png', body: TILE }));
+  await page.route(
+    (url) => url.href.startsWith(survey2.url),
+    (route) => route.abort('blockedbyclient'),
+  );
+  await page.route(
+    (url) => url.href.startsWith(survey3.url),
+    (route) => route.fulfill({ status: 200, contentType: 'image/png', body: TILE }),
+  );
   await page.locator('#settings-button').click();
   await page.getByRole('button', { name: 'Check map layers' }).click();
   await expect(page.locator(`#check-results [data-overlay="${survey2.id}"]`)).toContainText('not working');
@@ -29,8 +35,15 @@ test('"Check map layers" reports a blocked overlay as not working', async ({ pag
 
 test('a service answering with an error page counts as not working', async ({ page }) => {
   await openApp(page);
-  await page.route((url) => url.href.startsWith(survey2.url) || url.href.startsWith(survey3.url), (route) =>
-    route.fulfill({ status: 200, contentType: 'text/xml', body: '<ServiceExceptionReport><ServiceException>CRS not supported</ServiceException></ServiceExceptionReport>' }));
+  await page.route(
+    (url) => url.href.startsWith(survey2.url) || url.href.startsWith(survey3.url),
+    (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/xml',
+        body: '<ServiceExceptionReport><ServiceException>CRS not supported</ServiceException></ServiceExceptionReport>',
+      }),
+  );
   await page.locator('#settings-button').click();
   await page.getByRole('button', { name: 'Check map layers' }).click();
   await expect(page.locator('#check-results [data-working="false"]')).toHaveCount(2);

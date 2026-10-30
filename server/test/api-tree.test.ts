@@ -1,4 +1,17 @@
-import { CitationDetail, EstateDetail, EventDetail, FamilyDetail, HouseDetail, HouseSummary, ParishDetail, PersonDetail, PlaceDetail, PlaceSearchResult, SourceDetail, SourceSearchResult } from '@rodokmen/shared';
+import {
+  CitationDetail,
+  EstateDetail,
+  EventDetail,
+  FamilyDetail,
+  HouseDetail,
+  HouseSummary,
+  ParishDetail,
+  PersonDetail,
+  PlaceDetail,
+  PlaceSearchResult,
+  SourceDetail,
+  SourceSearchResult,
+} from '@rodokmen/shared';
 import { z } from 'zod';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { generateFixture } from '../src/fixture/generate.js';
@@ -100,7 +113,8 @@ describe('read API on the fixture Tree', () => {
   });
 
   it('GET /api/places/:id/houses finds the House by its number at a date', async () => {
-    const at = async (number: string, date: string) => Houses.parse((await get(`/api/places/${L.kamennaLhota}/houses?number=${number}&at=${date}`)).json()).items.map((h) => h.id);
+    const at = async (number: string, date: string) =>
+      Houses.parse((await get(`/api/places/${L.kamennaLhota}/houses?number=${number}&at=${date}`)).json()).items.map((h) => h.id);
     expect(await at('12', '1801')).toEqual([L.houseA]);
     expect(await at('15', '1850')).toEqual([L.houseA]);
     expect(await at('12', '1850')).toEqual([L.houseB]);

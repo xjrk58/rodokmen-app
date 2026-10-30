@@ -9,7 +9,8 @@ export const PUBLIC_DIR = fileURLToPath(new URL('../../public/', import.meta.url
 /** The map app at the repo root, used when APP_DIR is not set. */
 export const DEFAULT_APP_DIR = fileURLToPath(new URL('../../../app/', import.meta.url));
 
-const PAGE_CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
+const PAGE_CSP =
+  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'";
 
 /**
  * Serves the sign-in pages under /auth/ and the map app (`app/`, add-map-core) at /, from the
@@ -34,7 +35,12 @@ export async function pageRoutes(app: FastifyInstance, options: { appDir: string
 
   for (const page of ['/auth/invite', '/auth/link', '/auth/sign-in']) {
     app.get(page, { schema: { hide: true } }, async (_req, reply) =>
-      reply.type('text/html; charset=utf-8').header('content-security-policy', PAGE_CSP).header('cache-control', 'no-store').header('referrer-policy', 'no-referrer').send(authHtml),
+      reply
+        .type('text/html; charset=utf-8')
+        .header('content-security-policy', PAGE_CSP)
+        .header('cache-control', 'no-store')
+        .header('referrer-policy', 'no-referrer')
+        .send(authHtml),
     );
   }
 
@@ -57,7 +63,9 @@ export async function pageRoutes(app: FastifyInstance, options: { appDir: string
       reply
         .type('text/html; charset=utf-8')
         .header('content-security-policy', PAGE_CSP)
-        .send('<!doctype html><html lang="en"><meta charset="utf-8"><title>Rodokmen</title><p>Rodokmen is running. The map app is not part of this build.</p><p><a href="/auth/sign-in">Sign in</a></p></html>'),
+        .send(
+          '<!doctype html><html lang="en"><meta charset="utf-8"><title>Rodokmen</title><p>Rodokmen is running. The map app is not part of this build.</p><p><a href="/auth/sign-in">Sign in</a></p></html>',
+        ),
     );
   }
 }

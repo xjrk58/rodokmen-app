@@ -29,7 +29,9 @@ export const SAMPLE = { lat: 49.9108, lon: 15.3897, zoom: 13 };
  * @param {OverlayConfig} overlay
  */
 export function sampleGetMapUrl(overlay) {
-  const bbox = tileBounds3857(SAMPLE.lat, SAMPLE.lon, SAMPLE.zoom).map((v) => v.toFixed(3)).join(',');
+  const bbox = tileBounds3857(SAMPLE.lat, SAMPLE.lon, SAMPLE.zoom)
+    .map((v) => v.toFixed(3))
+    .join(',');
   const params = new URLSearchParams({
     service: 'WMS',
     request: 'GetMap',

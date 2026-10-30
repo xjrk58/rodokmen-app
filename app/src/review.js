@@ -33,7 +33,13 @@ const NOT_NULL = new Set(['given', 'surname', 'asFound', 'transcription', 'title
 
 /** @param {string} iso */
 export function formatDate(iso) {
-  return new Intl.DateTimeFormat(language() === 'cs' ? 'cs-CZ' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  return new Intl.DateTimeFormat(language() === 'cs' ? 'cs-CZ' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(iso));
 }
 
 /** @param {unknown} v */
@@ -51,16 +57,39 @@ const isRecord = (v) => typeof v === 'object' && v !== null && !Array.isArray(v)
 
 /** @param {AuthorRef} author */
 function authorLine(author) {
-  return h('span', { class: 'author' }, author.displayName, author.isAgent ? h('span', { class: 'badge agent', 'data-testid': 'agent-badge' }, t('review.agent')) : null);
+  return h(
+    'span',
+    { class: 'author' },
+    author.displayName,
+    author.isAgent ? h('span', { class: 'badge agent', 'data-testid': 'agent-badge' }, t('review.agent')) : null,
+  );
 }
 
 /** @param {CitationPreview} c */
 function citationBlock(c) {
-  return h('div', { class: 'citation', 'data-testid': 'citation' },
-    h('p', { class: 'citation-source-line' }, h('strong', {}, c.sourceTitle), c.page ? ` · ${t('citation.page')} ${c.page}` : '', c.confidence ? ` · ${t(`confidence.${c.confidence}`)}` : ''),
+  return h(
+    'div',
+    { class: 'citation', 'data-testid': 'citation' },
+    h(
+      'p',
+      { class: 'citation-source-line' },
+      h('strong', {}, c.sourceTitle),
+      c.page ? ` · ${t('citation.page')} ${c.page}` : '',
+      c.confidence ? ` · ${t(`confidence.${c.confidence}`)}` : '',
+    ),
     c.transcription ? h('blockquote', {}, c.transcription) : null,
     c.images.length
-      ? h('div', { class: 'photos' }, ...c.images.map((i) => h('a', { href: i.fullUrl, target: '_blank', rel: 'noopener', class: 'thumb', title: t('review.fullSize') }, h('img', { src: i.url, alt: t(`imageKind.${i.kind}`), loading: 'lazy', 'data-testid': 'citation-image' }))))
+      ? h(
+          'div',
+          { class: 'photos' },
+          ...c.images.map((i) =>
+            h(
+              'a',
+              { href: i.fullUrl, target: '_blank', rel: 'noopener', class: 'thumb', title: t('review.fullSize') },
+              h('img', { src: i.url, alt: t(`imageKind.${i.kind}`), loading: 'lazy', 'data-testid': 'citation-image' }),
+            ),
+          ),
+        )
       : null,
   );
 }
@@ -90,9 +119,18 @@ function conflictBlock(p, o, c, state, lang) {
   for (const f of c.fields) {
     const name = `c-${p.id}-${o.position}-${f.field}`;
     const row = h('div', { class: 'choice' }, h('div', { class: 'small' }, t(`field.${f.field}`)));
-    for (const [which, value] of /** @type {const} */ ([['proposal', f.proposed], ['current', f.current]])) {
+    for (const [which, value] of /** @type {const} */ ([
+      ['proposal', f.proposed],
+      ['current', f.current],
+    ])) {
       // Drawn again when the corrections open or close: show the choice already made.
-      const radio = h('input', { type: 'radio', name, value: which, checked: state.choices.get(o.position)?.[f.field] === which, 'data-testid': `choose-${which}-${f.field}` });
+      const radio = h('input', {
+        type: 'radio',
+        name,
+        value: which,
+        checked: state.choices.get(o.position)?.[f.field] === which,
+        'data-testid': `choose-${which}-${f.field}`,
+      });
       radio.addEventListener('change', () => {
         const picked = state.choices.get(o.position) ?? {};
         picked[f.field] = which;
@@ -144,7 +182,13 @@ function changeItem(p, o, state, review) {
   if (o.corrected && o.originalSummary) li.append(h('span', { class: 'muted small corrected' }, ` (${t('review.correctedFrom')}: ${o.originalSummary[lang]})`));
   const set = o.operation.op === 'setField' ? o.operation.set : {};
   if (o.current && !o.conflict) {
-    li.append(h('div', { class: 'compare muted small' }, ...Object.entries(o.current).map(([f, v]) => h('div', {}, `${t(`field.${f}`)}: ${show(v)} → ${show(set[f])}`))));
+    li.append(
+      h(
+        'div',
+        { class: 'compare muted small' },
+        ...Object.entries(o.current).map(([f, v]) => h('div', {}, `${t(`field.${f}`)}: ${show(v)} → ${show(set[f])}`)),
+      ),
+    );
   }
   if (o.conflict && review) li.append(conflictBlock(p, o, o.conflict, state, lang));
   else if (o.conflict) li.append(h('div', { class: 'muted small' }, t('review.conflictNote')));
@@ -187,14 +231,16 @@ function reviewActions(p, state, renderChanges, onDone) {
       accept.disabled = reject.disabled = false;
     }
   };
-  accept.addEventListener('click', () =>
-    void act(() =>
-      acceptProposal(p.id, {
-        note: note.value.trim() || null,
-        corrections: [...state.corrections].map(([position, operation]) => ({ position, operation })),
-        resolutions: [...state.choices].map(([position, fields]) => ({ position, fields })),
-      }),
-    ),
+  accept.addEventListener(
+    'click',
+    () =>
+      void act(() =>
+        acceptProposal(p.id, {
+          note: note.value.trim() || null,
+          corrections: [...state.corrections].map(([position, operation]) => ({ position, operation })),
+          resolutions: [...state.choices].map(([position, fields]) => ({ position, fields })),
+        }),
+      ),
   );
   reject.addEventListener('click', () => void act(() => rejectProposal(p.id, { note: note.value.trim() || null })));
   return [note, status, h('div', { class: 'form-actions' }, correct, reject, accept)];
@@ -210,12 +256,21 @@ export function proposalCard(p, options = {}) {
   const state = { choices: new Map(), corrections: new Map(), editing: false };
   const ops = h('ol', { class: 'changes', 'data-testid': 'changes' });
   const renderChanges = () => ops.replaceChildren(...p.operations.map((o) => changeItem(p, o, state, Boolean(options.review))));
-  const card = h('article', { class: 'card proposal', 'data-testid': 'proposal', 'data-id': p.id },
+  const card = h(
+    'article',
+    { class: 'card proposal', 'data-testid': 'proposal', 'data-id': p.id },
     h('header', { class: 'card-head' }, authorLine(p.author), h('span', { class: 'muted small' }, formatDate(p.submittedAt)), statusChip(p)),
     p.note ? h('p', { class: 'proposal-note' }, p.note) : null,
     ops,
     ...p.citations.map(citationBlock),
-    p.decisionNote ? h('p', { class: 'decision-note', 'data-testid': 'decision-note' }, h('strong', {}, `${t('review.editorNote')}${p.decidedBy ? ` (${p.decidedBy.displayName})` : ''}: `), p.decisionNote) : null,
+    p.decisionNote
+      ? h(
+          'p',
+          { class: 'decision-note', 'data-testid': 'decision-note' },
+          h('strong', {}, `${t('review.editorNote')}${p.decidedBy ? ` (${p.decidedBy.displayName})` : ''}: `),
+          p.decisionNote,
+        )
+      : null,
   );
   renderChanges();
   if (options.review && p.status === 'pending') card.append(...reviewActions(p, state, renderChanges, options.review.onDone));
@@ -271,7 +326,9 @@ function mergeTool(onDone) {
     }
   };
   button.addEventListener('click', () => void merge());
-  return h('details', { class: 'card merge-tool' },
+  return h(
+    'details',
+    { class: 'card merge-tool' },
     h('summary', {}, t('merge.title')),
     h('p', { class: 'muted small' }, t('merge.help')),
     personPicker({ value: null, label: t('merge.keep'), testid: 'merge-keep', allowNew: false, onChange: (v) => (keep = v) }),
@@ -290,12 +347,20 @@ function mergeTool(onDone) {
 function historyEntry(e, canUndo, onUndone) {
   const lang = language();
   const undoBox = h('div', { class: 'undo-box' });
-  const entry = h('article', { class: 'card history-entry', 'data-testid': 'history-entry' },
+  const entry = h(
+    'article',
+    { class: 'card history-entry', 'data-testid': 'history-entry' },
     h('header', { class: 'card-head' }, h('span', { class: 'chip' }, t(`kind.${e.kind}`)), h('span', { class: 'muted small' }, formatDate(e.acceptedAt))),
     h('p', { class: 'small' }, t('history.by', { author: e.author.displayName, editor: e.acceptedBy.displayName })),
     h('ol', { class: 'changes' }, ...e.summaries.map((s) => h('li', {}, s[lang]))),
     ...e.corrections.map((c) => h('p', { class: 'muted small' }, t('history.corrected', { editor: c.by.displayName, change: c.summary[lang] }))),
-    e.citations.length ? h('p', { class: 'muted small' }, `${t('history.citations')}: ${e.citations.map((c) => (c.page ? `${c.sourceTitle}, ${c.page}` : c.sourceTitle)).join('; ')}`) : null,
+    e.citations.length
+      ? h(
+          'p',
+          { class: 'muted small' },
+          `${t('history.citations')}: ${e.citations.map((c) => (c.page ? `${c.sourceTitle}, ${c.page}` : c.sourceTitle)).join('; ')}`,
+        )
+      : null,
     e.decisionNote ? h('p', { class: 'small' }, `${t('review.editorNote')}: ${e.decisionNote}`) : null,
     e.undoneBy ? h('p', { class: 'chip status-rejected' }, t('history.undone')) : null,
     undoBox,
@@ -356,7 +421,10 @@ function laterEditBlock(e, choice, lang) {
   }
   for (const f of e.fields) {
     const row = h('div', { class: 'choice' }, h('div', { class: 'small' }, f.field));
-    for (const [which, value] of /** @type {const} */ ([['undo', f.before], ['keep', f.current]])) {
+    for (const [which, value] of /** @type {const} */ ([
+      ['undo', f.before],
+      ['keep', f.current],
+    ])) {
       const radio = h('input', { type: 'radio', name: `u-${key}-${f.field}`, 'data-testid': `undo-${which}-${f.field}` });
       radio.addEventListener('change', () => (choice.fields[f.field] = which));
       row.append(h('label', { class: 'radio-row' }, radio, h('span', {}, `${t(`history.choice.${which}`)}: ${show(value)}`)));

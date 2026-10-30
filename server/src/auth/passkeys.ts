@@ -23,7 +23,11 @@ export const CHALLENGE_SECONDS = 300;
 
 /** WebAuthn answers as the browser sends them (base64url fields), checked before verification. */
 const Base64Url = z.string().regex(/^[A-Za-z0-9_-]*$/);
-const ClientExtensions = z.object({ appid: z.boolean().optional(), credProps: z.object({ rk: z.boolean().optional() }).optional(), hmacCreateSecret: z.boolean().optional() });
+const ClientExtensions = z.object({
+  appid: z.boolean().optional(),
+  credProps: z.object({ rk: z.boolean().optional() }).optional(),
+  hmacCreateSecret: z.boolean().optional(),
+});
 const Credential = {
   id: Base64Url,
   rawId: Base64Url,
@@ -76,7 +80,8 @@ async function takeChallenge(deps: PasskeyDeps, id: string | undefined, purpose:
     .where('expires_at', '>', deps.clock.now())
     .returning(['challenge', 'account_id'])
     .executeTakeFirst();
-  if (!row || (accountId !== null && row.account_id !== accountId)) throw new ApiProblem(400, 'challenge_missing', 'Start again: the passkey request has expired.');
+  if (!row || (accountId !== null && row.account_id !== accountId))
+    throw new ApiProblem(400, 'challenge_missing', 'Start again: the passkey request has expired.');
   return row.challenge;
 }
 

@@ -11,7 +11,8 @@ describe('roles, the single Owner, sessions and disabling', () => {
   let ownerCookie: string;
 
   const me = async (cookie: string) => a.app.inject({ method: 'GET', url: '/api/me', headers: { cookie } });
-  const setRole = (id: string, role: string, cookie = ownerCookie) => a.app.inject({ method: 'PUT', url: `/api/members/${id}/role`, headers: { cookie }, payload: { role } });
+  const setRole = (id: string, role: string, cookie = ownerCookie) =>
+    a.app.inject({ method: 'PUT', url: `/api/members/${id}/role`, headers: { cookie }, payload: { role } });
   const owners = async () => (await t.db.selectFrom('account').select('id').where('role', '=', 'owner').execute()).map((r) => r.id);
 
   beforeAll(async () => {
@@ -107,7 +108,9 @@ describe('roles, the single Owner, sessions and disabling', () => {
     a.mailer.clear();
     await a.app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: member.email } });
     expect(a.mailer.messages).toHaveLength(0);
-    expect(MemberView.parse((await a.app.inject({ method: 'POST', url: `/api/members/${member.id}/enable`, headers: { cookie: ownerCookie } })).json()).disabled).toBe(false);
+    expect(
+      MemberView.parse((await a.app.inject({ method: 'POST', url: `/api/members/${member.id}/enable`, headers: { cookie: ownerCookie } })).json()).disabled,
+    ).toBe(false);
   });
 
   it('the Owner cannot be disabled, and only the Owner disables', async () => {

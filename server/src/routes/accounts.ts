@@ -15,7 +15,16 @@ import {
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { changeRole, createInvitation, disableMember, enableMember, listInvitations, listMembers, revokeInvitation, type AccountDeps } from '../auth/accounts.js';
+import {
+  changeRole,
+  createInvitation,
+  disableMember,
+  enableMember,
+  listInvitations,
+  listMembers,
+  revokeInvitation,
+  type AccountDeps,
+} from '../auth/accounts.js';
 import { requireRole } from '../auth/plugin.js';
 import { ApiProblem } from '../auth/problem.js';
 import { endSession } from '../auth/sessions.js';
@@ -23,8 +32,21 @@ import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 
 export async function meView(db: Db, a: Account): Promise<Me> {
-  const { n } = await db.selectFrom('passkey').select((eb) => eb.fn.countAll<number>().as('n')).where('account_id', '=', a.id).executeTakeFirstOrThrow();
-  return { id: a.id, version: a.version, email: a.email, displayName: a.display_name, language: a.language, role: a.role, permissions: permissionsFor(a.role), passkeyCount: n };
+  const { n } = await db
+    .selectFrom('passkey')
+    .select((eb) => eb.fn.countAll<number>().as('n'))
+    .where('account_id', '=', a.id)
+    .executeTakeFirstOrThrow();
+  return {
+    id: a.id,
+    version: a.version,
+    email: a.email,
+    displayName: a.display_name,
+    language: a.language,
+    role: a.role,
+    permissions: permissionsFor(a.role),
+    passkeyCount: n,
+  };
 }
 
 const signedIn = { 401: ApiError };
@@ -68,7 +90,13 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   app.delete('/api/me/sessions/:id', {
     schema: { tags: ['Account'], summary: 'End one of your own sessions', params: IdParams, response: { 204: z.null(), 404: ApiError, ...signedIn } },
     handler: async (req, reply) => {
-      const s = await deps.db.selectFrom('session').select('id').where('id', '=', req.params.id).where('account_id', '=', req.member!.id).where('ended_at', 'is', null).executeTakeFirst();
+      const s = await deps.db
+        .selectFrom('session')
+        .select('id')
+        .where('id', '=', req.params.id)
+        .where('account_id', '=', req.member!.id)
+        .where('ended_at', 'is', null)
+        .executeTakeFirst();
       if (!s) throw new ApiProblem(404, 'not_found', 'No open session of yours with this id.');
       await endSession(deps.db, deps.clock, s.id);
       return reply.code(204).send(null);
@@ -122,13 +150,23 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
 
   app.post('/api/members/:id/disable', {
     ...owner,
-    schema: { tags: ['Members'], summary: 'Disable a Member and end all their sessions (Owner only)', params: IdParams, response: { 200: MemberView, 404: ApiError, 409: ApiError, ...ownerOnly } },
+    schema: {
+      tags: ['Members'],
+      summary: 'Disable a Member and end all their sessions (Owner only)',
+      params: IdParams,
+      response: { 200: MemberView, 404: ApiError, 409: ApiError, ...ownerOnly },
+    },
     handler: async (req) => disableMember(deps, req.member!, req.params.id),
   });
 
   app.post('/api/members/:id/enable', {
     ...owner,
-    schema: { tags: ['Members'], summary: 'Enable a disabled Member again (Owner only)', params: IdParams, response: { 200: MemberView, 404: ApiError, ...ownerOnly } },
+    schema: {
+      tags: ['Members'],
+      summary: 'Enable a disabled Member again (Owner only)',
+      params: IdParams,
+      response: { 200: MemberView, 404: ApiError, ...ownerOnly },
+    },
     handler: async (req) => enableMember(deps, req.params.id),
   });
 
@@ -154,7 +192,12 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
 
   app.delete('/api/invitations/:id', {
     ...owner,
-    schema: { tags: ['Members'], summary: 'Withdraw an open invitation (Owner only)', params: IdParams, response: { 204: z.null(), 404: ApiError, ...ownerOnly } },
+    schema: {
+      tags: ['Members'],
+      summary: 'Withdraw an open invitation (Owner only)',
+      params: IdParams,
+      response: { 204: z.null(), 404: ApiError, ...ownerOnly },
+    },
     handler: async (req, reply) => {
       await revokeInvitation(deps, req.params.id);
       return reply.code(204).send(null);

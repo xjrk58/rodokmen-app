@@ -21,11 +21,13 @@ test('a Draft submitted from the list is checked before its photos are uploaded'
   await expect(page.getByTestId('photos').locator('img')).toHaveCount(1);
   await page.getByTestId('tab-drafts').click();
   await page.getByTestId('submit-draft').click();
-  await expect(page.getByTestId('draft').locator('.form-status')).toHaveText('Evidence is missing: add the register entry, a document or a Family account, with a transcription.');
+  await expect(page.getByTestId('draft').locator('.form-status')).toHaveText(
+    'Evidence is missing: add the register entry, a document or a Family account, with a transcription.',
+  );
   expect(calls.map((c) => c.key).filter((key) => key.startsWith('POST'))).toEqual([]);
 });
 
-test('a photo\'s thumbnail lets go of the photo\'s memory once shown', async ({ page }) => {
+test("a photo's thumbnail lets go of the photo's memory once shown", async ({ page }) => {
   await page.addInitScript(() => {
     const revoke = URL.revokeObjectURL.bind(URL);
     URL.revokeObjectURL = (url) => {

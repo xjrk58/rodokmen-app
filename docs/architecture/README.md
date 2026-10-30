@@ -6,11 +6,11 @@ In the SVGs, Built elements have solid borders, In progress elements orange dott
 
 ## Views
 
-| | |
-|---|---|
-| ![](generated/svg/01-system-context.svg) | ![](generated/svg/02-containers.svg) |
-| ![](generated/svg/03-containers-operations.svg) | ![](generated/svg/14-proposal-flow.svg) |
-| ![](generated/svg/15-deployment.svg) | ![](generated/svg/16-deployment-delivery.svg) |
+|                                                 |                                               |
+| ----------------------------------------------- | --------------------------------------------- |
+| ![](generated/svg/01-system-context.svg)        | ![](generated/svg/02-containers.svg)          |
+| ![](generated/svg/03-containers-operations.svg) | ![](generated/svg/14-proposal-flow.svg)       |
+| ![](generated/svg/15-deployment.svg)            | ![](generated/svg/16-deployment-delivery.svg) |
 
 All views are in [`generated/svg/`](generated/svg/):
 

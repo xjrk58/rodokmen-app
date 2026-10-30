@@ -52,7 +52,13 @@ export async function loadOperations(db: Db, proposalId: string): Promise<Stored
 export async function loadOperationsOf(db: Db, proposalIds: readonly string[]): Promise<Map<string, StoredOperation[]>> {
   const out = new Map<string, StoredOperation[]>();
   if (proposalIds.length === 0) return out;
-  const rows = await db.selectFrom('proposal_operation').selectAll().where('proposal_id', 'in', [...proposalIds]).orderBy('proposal_id').orderBy('position').execute();
+  const rows = await db
+    .selectFrom('proposal_operation')
+    .selectAll()
+    .where('proposal_id', 'in', [...proposalIds])
+    .orderBy('proposal_id')
+    .orderBy('position')
+    .execute();
   for (const r of rows) {
     const original = Operation.parse(r.operation);
     const corrected = r.corrected ? Operation.parse(r.corrected) : null;
@@ -100,7 +106,9 @@ export async function findConflicts(db: Db, ops: readonly Operation[]): Promise<
 
 // ---------------------------------------------------------------- views
 
-export function uploadView(u: Pick<Upload, 'id' | 'status' | 'content_type' | 'declared_type' | 'byte_size' | 'declared_size' | 'width' | 'height'>): UploadView {
+export function uploadView(
+  u: Pick<Upload, 'id' | 'status' | 'content_type' | 'declared_type' | 'byte_size' | 'declared_size' | 'width' | 'height'>,
+): UploadView {
   return {
     id: u.id,
     status: u.status,
@@ -126,8 +134,14 @@ async function accountsById(db: Db, ids: Iterable<string | null>): Promise<Map<s
  */
 export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalView[]> {
   if (rows.length === 0) return [];
-  const accounts = await accountsById(db, rows.flatMap((p) => [p.author_id, p.decided_by]));
-  const stored = await loadOperationsOf(db, rows.map((p) => p.id));
+  const accounts = await accountsById(
+    db,
+    rows.flatMap((p) => [p.author_id, p.decided_by]),
+  );
+  const stored = await loadOperationsOf(
+    db,
+    rows.map((p) => p.id),
+  );
   const allOps = [...stored.values()].flat();
   const labels = await labelsFor(db, idsIn(allOps.map((s) => [s.original, s.corrected])));
   const effectiveAll = allOps.map((s) => s.effective);
@@ -214,7 +228,9 @@ async function citationSupport(db: Db, ops: readonly Operation[]): Promise<Citat
   const citationIds = ops.flatMap((o) => (o.op === 'attachCitation' && !isTempId(o.citationId) ? [o.citationId] : []));
   return {
     uploads: new Map(uploadIds.length ? (await db.selectFrom('upload').selectAll().where('id', 'in', uploadIds).execute()).map((u) => [u.id, u]) : []),
-    sources: new Map(sourceIds.length ? (await db.selectFrom('source').select(['id', 'title', 'type']).where('id', 'in', sourceIds).execute()).map((x) => [x.id, x]) : []),
+    sources: new Map(
+      sourceIds.length ? (await db.selectFrom('source').select(['id', 'title', 'type']).where('id', 'in', sourceIds).execute()).map((x) => [x.id, x]) : [],
+    ),
     citations: new Map(
       citationIds.length
         ? (
@@ -240,12 +256,28 @@ function citationPreviews(ops: readonly Operation[], support: CitationSupport, l
   // A new Citation, described by its operation.
   const created = (o: Extract<Operation, { op: 'createCitation' }>): CitationPreview => {
     const source = isTempId(o.sourceId) ? sources.get(o.sourceId) : support.sources.get(o.sourceId);
-    return { ref: o.tempId, sourceTitle: source?.title ?? labels.label(o.sourceId, 'en'), sourceType: source?.type ?? 'other', page: o.page, transcription: o.transcription, confidence: o.confidence, images: imagesOf(o.tempId) };
+    return {
+      ref: o.tempId,
+      sourceTitle: source?.title ?? labels.label(o.sourceId, 'en'),
+      sourceType: source?.type ?? 'other',
+      page: o.page,
+      transcription: o.transcription,
+      confidence: o.confidence,
+      images: imagesOf(o.tempId),
+    };
   };
   // An existing Citation attached again, described by its stored record.
   const existing = (id: string): CitationPreview => {
     const c = support.citations.get(id);
-    return { ref: id, sourceTitle: c?.title ?? labels.label(id, 'en'), sourceType: c?.type ?? 'other', page: c?.page ?? null, transcription: c?.transcription ?? null, confidence: c?.confidence ?? null, images: imagesOf(id) };
+    return {
+      ref: id,
+      sourceTitle: c?.title ?? labels.label(id, 'en'),
+      sourceType: c?.type ?? 'other',
+      page: c?.page ?? null,
+      transcription: c?.transcription ?? null,
+      confidence: c?.confidence ?? null,
+      images: imagesOf(id),
+    };
   };
   const out: CitationPreview[] = [];
   const seen = new Set<string>();
@@ -262,14 +294,30 @@ function citationPreviews(ops: readonly Operation[], support: CitationSupport, l
 }
 
 /** What the Editor digest lists per pending Proposal: cheaper than a full view. */
-export async function proposalDigestLines(db: Db, rows: Proposal[]): Promise<Array<{ id: string; author: AuthorRef; submittedAt: Date; note: string | null; first: Record<'cs' | 'en', string>; changes: number }>> {
-  const accounts = await accountsById(db, rows.map((p) => p.author_id));
-  const stored = await loadOperationsOf(db, rows.map((p) => p.id));
+export async function proposalDigestLines(
+  db: Db,
+  rows: Proposal[],
+): Promise<Array<{ id: string; author: AuthorRef; submittedAt: Date; note: string | null; first: Record<'cs' | 'en', string>; changes: number }>> {
+  const accounts = await accountsById(
+    db,
+    rows.map((p) => p.author_id),
+  );
+  const stored = await loadOperationsOf(
+    db,
+    rows.map((p) => p.id),
+  );
   const firsts = rows.map((p) => stored.get(p.id)?.[0]?.effective).filter((o): o is Operation => o !== undefined);
   const labels = await labelsFor(db, idsIn(firsts));
   return rows.map((p) => {
     const ops = (stored.get(p.id) ?? []).map((s) => s.effective);
     const [first] = describeOperations(ops.slice(0, 1), labels);
-    return { id: p.id, author: authorRef(accounts.get(p.author_id)!), submittedAt: new Date(p.submitted_at), note: p.note?.trim() || null, first: first ?? { cs: '', en: '' }, changes: ops.length };
+    return {
+      id: p.id,
+      author: authorRef(accounts.get(p.author_id)!),
+      submittedAt: new Date(p.submitted_at),
+      note: p.note?.trim() || null,
+      first: first ?? { cs: '', en: '' },
+      changes: ops.length,
+    };
   });
 }

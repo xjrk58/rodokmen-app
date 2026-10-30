@@ -39,7 +39,9 @@ describe('OpenAPI description generated from the shared schemas', () => {
     const problems = checkRouteCoverage(app.routeRecords, openApiDocument(app));
     expect(problems).toEqual(['GET /api/undocumented has no response schema', 'GET /api/request-schema-only has no response schema']);
     // A route hidden from the description is caught too.
-    const { app: hidden } = await makeApp(t, { extraRoutes: (scope) => void scope.get('/api/hidden', { schema: { hide: true, response: { 200: z.object({}) } } }, async () => ({})) });
+    const { app: hidden } = await makeApp(t, {
+      extraRoutes: (scope) => void scope.get('/api/hidden', { schema: { hide: true, response: { 200: z.object({}) } } }, async () => ({})),
+    });
     expect(checkRouteCoverage(hidden.routeRecords, openApiDocument(hidden))).toEqual(['GET /api/hidden is missing from the OpenAPI description']);
     await app.close();
     await hidden.close();

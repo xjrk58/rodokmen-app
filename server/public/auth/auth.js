@@ -101,10 +101,19 @@ async function api(path, body) {
 // ---- WebAuthn JSON <-> binary (base64url)
 
 const fromB64 = (s) => {
-  const b = atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '='));
+  const b = atob(
+    s
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(s.length / 4) * 4, '='),
+  );
   return Uint8Array.from(b, (c) => c.charCodeAt(0)).buffer;
 };
-const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const toB64 = (buf) =>
+  btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 
 function creationOptions(o) {
   return {

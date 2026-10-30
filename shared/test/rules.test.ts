@@ -31,7 +31,17 @@ describe('conflict detection', () => {
     expect(detectConflict(3, 3, [{ field: 'date', value: '1850' }], [{ field: 'date', value: '1849' }])).toBeNull();
   });
   it('a changed record lists each field it sets next to the current value', () => {
-    expect(detectConflict(3, 4, [{ field: 'date', value: '1850-11-13' }, { field: 'placeId', value: null }], [{ field: 'date', value: '1850-11-04' }])).toEqual({
+    expect(
+      detectConflict(
+        3,
+        4,
+        [
+          { field: 'date', value: '1850-11-13' },
+          { field: 'placeId', value: null },
+        ],
+        [{ field: 'date', value: '1850-11-04' }],
+      ),
+    ).toEqual({
       baseVersion: 3,
       currentVersion: 4,
       fields: [
@@ -53,7 +63,10 @@ describe('the undo dependency check', () => {
   const touch = (proposalId: string, acceptedAt: number, record: { table: string; id: string }, undone = false) => ({ proposalId, acceptedAt, record, undone });
 
   it('dependents the undo removes itself do not block', () => {
-    expect(undoBlockers('X', [person, childName], [{ of: person, dependent: childName }], [touch('X', 1, childName)])).toEqual({ blockedBy: [], unlogged: false });
+    expect(undoBlockers('X', [person, childName], [{ of: person, dependent: childName }], [touch('X', 1, childName)])).toEqual({
+      blockedBy: [],
+      unlogged: false,
+    });
   });
   it('later Proposals that attached records are named, newest first, once each', () => {
     const result = undoBlockers(

@@ -2,7 +2,7 @@
 import { expect, test } from './fixtures.js';
 import { conflictingProposal, gate, ID, me, mockApi, personHit, submitted } from './work-api.js';
 
-test('the Editor\'s conflict choices survive opening the corrections, and corrections closed again are not sent', async ({ page }) => {
+test("the Editor's conflict choices survive opening the corrections, and corrections closed again are not sent", async ({ page }) => {
   const accept = `POST proposals/${ID(400)}/accept`;
   const calls = await mockApi(page, {
     'GET me': { json: me('editor') },

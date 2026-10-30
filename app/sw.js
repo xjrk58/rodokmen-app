@@ -29,7 +29,8 @@ sw.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(SHELL_CACHE).then((cache) =>
       // cache: 'reload' skips the HTTP cache, so a release never mixes in older files.
-      cache.addAll(PRECACHE.map((path) => new Request(new URL(path, scope), { cache: 'reload' })))),
+      cache.addAll(PRECACHE.map((path) => new Request(new URL(path, scope), { cache: 'reload' }))),
+    ),
   );
 });
 

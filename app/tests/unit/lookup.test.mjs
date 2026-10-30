@@ -16,7 +16,13 @@ const gazetteer = new Gazetteer(municipalities);
 const districtSeat = (name) => /** @type {import('../../src/types.js').Municipality} */ (municipalities.find((m) => m.name === name && m.district === name));
 
 test('spec cases', () => {
-  for (const [name, archive] of [['Pardubice', 'SOA Zámrsk'], ['Havlíčkův Brod', 'SOA Zámrsk'], ['Pelhřimov', 'SOA Třeboň'], ['Vsetín', 'Zemský archiv Opava'], ['Praha', 'Archiv hlavního města Prahy']]) {
+  for (const [name, archive] of [
+    ['Pardubice', 'SOA Zámrsk'],
+    ['Havlíčkův Brod', 'SOA Zámrsk'],
+    ['Pelhřimov', 'SOA Třeboň'],
+    ['Vsetín', 'Zemský archiv Opava'],
+    ['Praha', 'Archiv hlavního města Prahy'],
+  ]) {
     const m = districtSeat(name);
     assert.equal(index.lookup(m.lat, m.lon)?.archive.name, archive, name);
   }
@@ -31,7 +37,10 @@ test('every Municipality lies in the district it is labelled with', () => {
 test('near-border hint: 3 km from MZA Brno inside SOA Zámrsk', () => {
   const answer = index.lookup(49.642, 16.34);
   assert.equal(answer?.archive.id, 'soa-zamrsk');
-  assert.deepEqual(answer?.alsoCheck.map((a) => a.archive.id), ['mza-brno']);
+  assert.deepEqual(
+    answer?.alsoCheck.map((a) => a.archive.id),
+    ['mza-brno'],
+  );
   assert.ok(Math.abs((answer?.alsoCheck[0].km ?? 0) - 3) < 0.05);
   assert.ok(NEAR_BORDER_KM === 5);
 });
@@ -39,7 +48,10 @@ test('near-border hint: 3 km from MZA Brno inside SOA Zámrsk', () => {
 test('scans link: place search when a pattern is known, else the portal', () => {
   const archive = { portal: { url: 'https://example.org/' }, placeSearchUrl: null };
   assert.equal(scansUrl(archive, 'Žďár'), 'https://example.org/');
-  assert.equal(scansUrl({ ...archive, placeSearchUrl: 'https://example.org/find?q={name}' }, 'Žďár nad Sázavou'), 'https://example.org/find?q=%C5%BD%C4%8F%C3%A1r%20nad%20S%C3%A1zavou');
+  assert.equal(
+    scansUrl({ ...archive, placeSearchUrl: 'https://example.org/find?q={name}' }, 'Žďár nad Sázavou'),
+    'https://example.org/find?q=%C5%BD%C4%8F%C3%A1r%20nad%20S%C3%A1zavou',
+  );
 });
 
 test('search ranks whole names, then prefixes, then words, then the rest', () => {
@@ -57,7 +69,8 @@ test('nearest municipality', () => {
 });
 
 /** @param {string} name @param {string} district */
-const find = (name, district) => /** @type {import('../../src/types.js').Municipality} */ (municipalities.find((m) => m.name === name && m.district === district));
+const find = (name, district) =>
+  /** @type {import('../../src/types.js').Municipality} */ (municipalities.find((m) => m.name === name && m.district === district));
 
 test('a district change of 2021 keeps the older archive and names today\'s as "also check"', () => {
   const harrachov = find('Harrachov', 'Jablonec nad Nisou');
@@ -72,7 +85,10 @@ test('a district change of 2021 keeps the older archive and names today\'s as "a
   const studlov = find('Študlov', 'Zlín');
   const s = index.lookup(studlov.lat, studlov.lon, studlov);
   assert.equal(s?.archive.id, 'za-opava');
-  assert.deepEqual(s?.alsoCheck.map((a) => [a.archive.id, a.reason]), [['mza-brno', 'district']]);
+  assert.deepEqual(
+    s?.alsoCheck.map((a) => [a.archive.id, a.reason]),
+    [['mza-brno', 'district']],
+  );
 });
 
 test('the override applies only with its Municipality and inside its district', () => {

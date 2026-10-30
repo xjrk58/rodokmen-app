@@ -14,7 +14,10 @@ function answer(t, respond) {
 
 test('an error answer says what the API said', async (t) => {
   answer(t, () => Response.json({ code: 'upload_unusable', message: 'Upload it again.' }, { status: 409 }));
-  await assert.rejects(api('proposals', { method: 'POST', body: {} }), (error) => error instanceof ApiError && error.status === 409 && error.code === 'upload_unusable' && error.message === 'Upload it again.');
+  await assert.rejects(
+    api('proposals', { method: 'POST', body: {} }),
+    (error) => error instanceof ApiError && error.status === 409 && error.code === 'upload_unusable' && error.message === 'Upload it again.',
+  );
 });
 
 test('an error answer without a message names the HTTP status, also over HTTP/2 (no status text)', async (t) => {

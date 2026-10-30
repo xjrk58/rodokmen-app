@@ -92,18 +92,29 @@ describe('migrations on an empty database', () => {
       return p;
     });
     await expect(db.insertInto('family').values({ partner1_id: id, partner2_id: id }).execute()).rejects.toThrow(/family_distinct_partners/);
-    await expect(db.insertInto('event').values({ type: 'birth', date: '1801', date_earliest: '1802-01-01', date_latest: '1801-12-31' }).execute()).rejects.toThrow(/event_date_range/);
+    await expect(
+      db.insertInto('event').values({ type: 'birth', date: '1801', date_earliest: '1802-01-01', date_latest: '1801-12-31' }).execute(),
+    ).rejects.toThrow(/event_date_range/);
     await expect(db.insertInto('source').values({ type: 'family_account', title: 'Oral history' }).execute()).rejects.toThrow(/source_family_account/);
   });
 
   it('allows at most one Owner, and exactly one once accounts exist', async () => {
-    await expect(db.insertInto('account').values({ email: 'a@example.test', display_name: 'A', language: 'cs', role: 'contributor' }).execute()).rejects.toThrow(/exactly one Owner/);
+    await expect(
+      db.insertInto('account').values({ email: 'a@example.test', display_name: 'A', language: 'cs', role: 'contributor' }).execute(),
+    ).rejects.toThrow(/exactly one Owner/);
     await db.insertInto('account').values({ email: 'owner@example.test', display_name: 'O', language: 'cs', role: 'owner' }).execute();
-    await expect(db.insertInto('account').values({ email: 'b@example.test', display_name: 'B', language: 'en', role: 'owner' }).execute()).rejects.toThrow(/account_one_owner_idx/);
+    await expect(db.insertInto('account').values({ email: 'b@example.test', display_name: 'B', language: 'en', role: 'owner' }).execute()).rejects.toThrow(
+      /account_one_owner_idx/,
+    );
   });
 
   it('the Proposals and fold migrations can be rolled back and applied again', async () => {
-    const migrator = new Migrator({ db, provider: { getMigrations: async () => MIGRATIONS }, migrationTableName: 'schema_migration', migrationLockTableName: 'schema_migration_lock' });
+    const migrator = new Migrator({
+      db,
+      provider: { getMigrations: async () => MIGRATIONS },
+      migrationTableName: 'schema_migration',
+      migrationLockTableName: 'schema_migration_lock',
+    });
     const down = await migrator.migrateTo('0003_accounts');
     expect(down.error).toBeUndefined();
     expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([

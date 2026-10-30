@@ -63,7 +63,10 @@ export class Watchdog {
     }
     if (result.ok) {
       if (this.healthAlerted) {
-        await this.o.alert('Health check recovered', `The health check passes again since ${now.toISOString()}.\nIt had been failing since ${this.failingSince?.toISOString()}.`);
+        await this.o.alert(
+          'Health check recovered',
+          `The health check passes again since ${now.toISOString()}.\nIt had been failing since ${this.failingSince?.toISOString()}.`,
+        );
       }
       this.failingSince = null;
       this.healthAlerted = false;
@@ -99,15 +102,25 @@ export class Watchdog {
     }
     this.backupAlerts.delete('unreadable');
     if (status === null) {
-      if (now.getTime() - this.startedAt.getTime() >= maxAge) await once('missing', 'No Backup recorded', `No Backup has reported since the watchdog started at ${this.startedAt.toISOString()}.`);
+      if (now.getTime() - this.startedAt.getTime() >= maxAge)
+        await once('missing', 'No Backup recorded', `No Backup has reported since the watchdog started at ${this.startedAt.toISOString()}.`);
       return;
     }
     if (!status.ok) {
-      await once(`failed:${status.finishedAt}`, 'Nightly Backup failed', `The Backup started at ${status.startedAt} failed at ${status.finishedAt}.\n${status.error ?? ''}`);
+      await once(
+        `failed:${status.finishedAt}`,
+        'Nightly Backup failed',
+        `The Backup started at ${status.startedAt} failed at ${status.finishedAt}.\n${status.error ?? ''}`,
+      );
       return;
     }
     const age = now.getTime() - new Date(status.finishedAt).getTime();
-    if (age >= maxAge) await once(`stale:${status.finishedAt}`, 'Nightly Backup missing', `The last successful Backup finished at ${status.finishedAt}, ${Math.round(age / 3_600_000)} hours ago.`);
+    if (age >= maxAge)
+      await once(
+        `stale:${status.finishedAt}`,
+        'Nightly Backup missing',
+        `The last successful Backup finished at ${status.finishedAt}, ${Math.round(age / 3_600_000)} hours ago.`,
+      );
   }
 }
 

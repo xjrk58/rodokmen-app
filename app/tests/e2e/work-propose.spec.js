@@ -62,7 +62,7 @@ test('an untouched form is not kept as a Draft', async ({ page }) => {
   await expect(page.getByText('No Drafts.')).toBeVisible();
 });
 
-test('switching the Person to correct while the first one loads shows the second one\'s records', async ({ page }) => {
+test("switching the Person to correct while the first one loads shows the second one's records", async ({ page }) => {
   const slow = gate();
   await mockApi(page, {
     'GET me': { json: me('contributor') },

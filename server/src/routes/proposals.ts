@@ -47,7 +47,8 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   app.post('/api/proposals', {
     schema: {
       tags: ['Proposals'],
-      summary: 'Submit a Proposal: one finding with all its changes and at least one Citation. Retrying with the same idempotency key returns the same Proposal. Editors may apply a direct change at once',
+      summary:
+        'Submit a Proposal: one finding with all its changes and at least one Citation. Retrying with the same idempotency key returns the same Proposal. Editors may apply a direct change at once',
       body: SubmitProposalBody,
       response: { 200: ProposalView, 201: ProposalView, 400: ApiError, 409: ApiError, ...editorOnly },
     },
@@ -59,7 +60,12 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.get('/api/proposals', {
-    schema: { tags: ['Proposals'], summary: "Proposals, newest first: your own, or everyone's for Editors", querystring: ProposalListQuery, response: { 200: ProposalList, 400: ApiError, ...signedIn } },
+    schema: {
+      tags: ['Proposals'],
+      summary: "Proposals, newest first: your own, or everyone's for Editors",
+      querystring: ProposalListQuery,
+      response: { 200: ProposalList, 400: ApiError, ...signedIn },
+    },
     handler: async (req) => {
       const member = req.member!;
       let q = db.selectFrom('proposal').selectAll();
@@ -87,7 +93,12 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.get('/api/proposals/:id', {
-    schema: { tags: ['Proposals'], summary: 'A Proposal: visible to its author and the Editors only', params: IdParams, response: { 200: ProposalView, 404: ApiError, ...signedIn } },
+    schema: {
+      tags: ['Proposals'],
+      summary: 'A Proposal: visible to its author and the Editors only',
+      params: IdParams,
+      response: { 200: ProposalView, 404: ApiError, ...signedIn },
+    },
     handler: async (req) => {
       const p = await getProposalRow(db, req.params.id);
       assertCanSee(req.member!, p);
@@ -109,13 +120,24 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
 
   app.post('/api/proposals/:id/reject', {
     ...editor,
-    schema: { tags: ['Review'], summary: 'Reject a Proposal as a whole, with a note for the author (Editors only)', params: IdParams, body: RejectBody, response: { 200: ProposalView, 404: ApiError, 409: ApiError, ...editorOnly } },
+    schema: {
+      tags: ['Review'],
+      summary: 'Reject a Proposal as a whole, with a note for the author (Editors only)',
+      params: IdParams,
+      body: RejectBody,
+      response: { 200: ProposalView, 404: ApiError, 409: ApiError, ...editorOnly },
+    },
     handler: async (req) => rejectProposal(deps, req.member!, req.params.id, req.body.note),
   });
 
   app.get('/api/proposals/:id/undo', {
     ...editor,
-    schema: { tags: ['History'], summary: 'What undoing an accepted Proposal involves: records edited again since, field by field (Editors only)', params: IdParams, response: { 200: UndoPreview, 404: ApiError, 409: ApiError, ...editorOnly } },
+    schema: {
+      tags: ['History'],
+      summary: 'What undoing an accepted Proposal involves: records edited again since, field by field (Editors only)',
+      params: IdParams,
+      response: { 200: UndoPreview, 404: ApiError, 409: ApiError, ...editorOnly },
+    },
     handler: async (req) => {
       const p = await getProposalRow(db, req.params.id);
       if (p.status !== 'accepted') throw new ApiProblem(409, 'not_accepted', 'Only an accepted Proposal can be undone.');
@@ -214,7 +236,14 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       await deps.images.put(u.display_key, processed.display, 'image/webp');
       const row = await db
         .updateTable('upload')
-        .set({ status: 'ready', content_type: processed.contentType, byte_size: processed.byteSize, sha256: processed.sha256, width: processed.width, height: processed.height })
+        .set({
+          status: 'ready',
+          content_type: processed.contentType,
+          byte_size: processed.byteSize,
+          sha256: processed.sha256,
+          width: processed.width,
+          height: processed.height,
+        })
         .where('id', '=', u.id)
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -238,8 +267,14 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       if (u.status !== 'ready') throw new ApiProblem(409, 'not_ready', 'This image is still being uploaded.');
       // An accepted image is served from its image record; otherwise from the upload (pending/,
       // or images/ for one an undo removed, kept for 30 days).
-      const image = u.image_id ? await db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', u.image_id).executeTakeFirst() : undefined;
-      const link = await imageLink(deps.images, image ?? { storage_key: u.storage_key, display_key: u.display_key, content_type: u.content_type! }, req.query.full === 'true');
+      const image = u.image_id
+        ? await db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', u.image_id).executeTakeFirst()
+        : undefined;
+      const link = await imageLink(
+        deps.images,
+        image ?? { storage_key: u.storage_key, display_key: u.display_key, content_type: u.content_type! },
+        req.query.full === 'true',
+      );
       return reply.header('cache-control', 'no-store').redirect(link.url, 302);
     },
   });
@@ -259,7 +294,12 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       response: { 200: NotificationSettings, 400: ApiError, ...signedIn },
     },
     handler: async (req) => {
-      const row = await db.updateTable('account').set({ outcome_emails: req.body.outcomeEmails }).where('id', '=', req.member!.id).returning('outcome_emails').executeTakeFirstOrThrow();
+      const row = await db
+        .updateTable('account')
+        .set({ outcome_emails: req.body.outcomeEmails })
+        .where('id', '=', req.member!.id)
+        .returning('outcome_emails')
+        .executeTakeFirstOrThrow();
       return { outcomeEmails: row.outcome_emails };
     },
   });

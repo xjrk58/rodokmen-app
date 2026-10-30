@@ -40,7 +40,11 @@ export interface ImageStorage {
  * The link for one stored image: its WebP display copy, or the original file when asked for
  * full resolution or when there is no display copy (evidence-media spec, "Originals are kept").
  */
-export function imageLink(storage: ImageStorage, image: { storage_key: string; display_key: string | null; content_type: string }, full: boolean): Promise<ImageLink> {
+export function imageLink(
+  storage: ImageStorage,
+  image: { storage_key: string; display_key: string | null; content_type: string },
+  full: boolean,
+): Promise<ImageLink> {
   return full || !image.display_key ? storage.link(image.storage_key, image.content_type) : storage.link(image.display_key, 'image/webp');
 }
 
@@ -65,7 +69,11 @@ export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Cli
     async uploadLink(storageKey, contentType, byteSize) {
       const signingDate = clock.now();
       const command = new PutObjectCommand({ Bucket, Key: storageKey, ContentType: contentType, ContentLength: byteSize });
-      const url = await getSignedUrl(client, command, { expiresIn: UPLOAD_LINK_SECONDS, signingDate, signableHeaders: new Set(['content-type', 'content-length']) });
+      const url = await getSignedUrl(client, command, {
+        expiresIn: UPLOAD_LINK_SECONDS,
+        signingDate,
+        signableHeaders: new Set(['content-type', 'content-length']),
+      });
       return { url, headers: { 'content-type': contentType }, expiresAt: new Date(signingDate.getTime() + UPLOAD_LINK_SECONDS * 1000) };
     },
     async get(storageKey) {

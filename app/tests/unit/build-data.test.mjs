@@ -18,8 +18,12 @@ const FIXTURE_CSV = join(APP, 'tests', 'fixtures', 'municipalities-small.csv');
 /** @param {...string[]} groups districts of each archive */
 const archivesFor = (...groups) => ({
   archives: groups.map((districts, i) => ({
-    id: `a${i}`, name: `Archive ${i}`, color: '#123456', placeSearchUrl: null,
-    portal: { name: 'Portal', url: `https://example.org/${i}/` }, districts,
+    id: `a${i}`,
+    name: `Archive ${i}`,
+    color: '#123456',
+    placeSearchUrl: null,
+    portal: { name: 'Portal', url: `https://example.org/${i}/` },
+    districts,
   })),
   jewishRegisters: { id: 'j', name: 'Jewish', placeSearchUrl: null, portal: { name: 'Portal', url: 'https://example.org/j/' } },
 });
@@ -30,7 +34,17 @@ test('build-data fails and names the district when a district has no archive', a
     const archives = join(dir, 'archives.json');
     await writeFile(archives, JSON.stringify(archivesFor(['Alfa'])));
     await assert.rejects(
-      run(process.execPath, [SCRIPT, '--municipalities-file', FIXTURE_CSV, '--archives', archives, '--out', join(dir, 'out'), '--districts-file', join(dir, 'missing.json')]),
+      run(process.execPath, [
+        SCRIPT,
+        '--municipalities-file',
+        FIXTURE_CSV,
+        '--archives',
+        archives,
+        '--out',
+        join(dir, 'out'),
+        '--districts-file',
+        join(dir, 'missing.json'),
+      ]),
       (/** @type {any} */ error) => {
         assert.equal(error.code, 1);
         assert.match(error.stderr, /District Beta has no archive/);
@@ -97,11 +111,18 @@ test('committed data: 77 named districts and every municipality inside its distr
 
 test('every URL in layers.json is https', async () => {
   assert.deepEqual(checkLayers(await readJson('data/layers.json')), []);
-  const plain = { base: { url: 'http://tiles.example/{z}/{x}/{y}.png' }, overlays: [{ id: 'o', url: 'https://wms.example/' }], viewers: [{ id: 'v', url: 'http://viewer.example/?q={name}' }] };
+  const plain = {
+    base: { url: 'http://tiles.example/{z}/{x}/{y}.png' },
+    overlays: [{ id: 'o', url: 'https://wms.example/' }],
+    viewers: [{ id: 'v', url: 'http://viewer.example/?q={name}' }],
+  };
   assert.deepEqual(checkLayers(plain), ['base.url must be an https URL', 'viewer v: url must be an https URL']);
 });
 
 test('CSV reader handles quotes, commas and CRLF', () => {
   const rows = parseCsv('a,b\r\n"x, y","say ""hi"""\r\nz,\r\n');
-  assert.deepEqual(rows, [{ a: 'x, y', b: 'say "hi"' }, { a: 'z', b: '' }]);
+  assert.deepEqual(rows, [
+    { a: 'x, y', b: 'say "hi"' },
+    { a: 'z', b: '' },
+  ]);
 });

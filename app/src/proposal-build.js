@@ -119,12 +119,34 @@ function sourceTypeOf(c) {
 export function emptyForm(kind) {
   /** @type {FormBase} */
   const base = {
-    citation: { sourceMode: 'new', sourceType: 'parish_register', title: '', repository: '', reference: '', page: '', transcription: '', confidence: 'normal', readOn: today() },
+    citation: {
+      sourceMode: 'new',
+      sourceType: 'parish_register',
+      title: '',
+      repository: '',
+      reference: '',
+      page: '',
+      transcription: '',
+      confidence: 'normal',
+      readOn: today(),
+    },
     note: '',
   };
   switch (kind) {
     case 'baptism':
-      return { kind, form: { ...base, eventType: 'baptism', date: '', place: null, child: { mode: 'new', given: '', surname: '', sex: 'unknown' }, father: null, mother: null, godparents: [] } };
+      return {
+        kind,
+        form: {
+          ...base,
+          eventType: 'baptism',
+          date: '',
+          place: null,
+          child: { mode: 'new', given: '', surname: '', sex: 'unknown' },
+          father: null,
+          mother: null,
+          godparents: [],
+        },
+      };
     case 'marriage':
       return { kind, form: { ...base, date: '', place: null, partner1: null, partner2: null, witnesses: [] } };
     case 'death':
@@ -216,7 +238,12 @@ class Builder {
     const tempId = this.temp(prefix);
     const given = clean(p.given);
     const surname = clean(p.surname);
-    this.ops.push({ op: 'createPerson', tempId, sex: p.sex ?? 'unknown', name: { given, surname, type: 'birth', asFound: clean(p.asFound) || `${given} ${surname}`.trim() } });
+    this.ops.push({
+      op: 'createPerson',
+      tempId,
+      sex: p.sex ?? 'unknown',
+      name: { given, surname, type: 'birth', asFound: clean(p.asFound) || `${given} ${surname}`.trim() },
+    });
     return tempId;
   }
 
@@ -255,7 +282,14 @@ class Builder {
         familyAccount: { givenBy: clean(c.givenBy), givenByPersonId: null, givenOn: clean(c.givenOn) },
       });
     } else {
-      this.ops.push({ op: 'createSource', tempId, type: c.sourceType || 'parish_register', title: clean(c.title), repository: orNull(c.repository), reference: orNull(c.reference) });
+      this.ops.push({
+        op: 'createSource',
+        tempId,
+        type: c.sourceType || 'parish_register',
+        title: clean(c.title),
+        repository: orNull(c.repository),
+        reference: orNull(c.reference),
+      });
     }
     return tempId;
   }

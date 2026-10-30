@@ -21,22 +21,89 @@ const anna = { mode: 'existing', id: id(4), version: 1, label: 'Anna Králová' 
 const newPerson = { mode: 'new', given: 'Tomáš', surname: 'Invented', sex: 'male' };
 /** @type {Record<string, CitationForm>} */
 const citations = {
-  'a new register': { sourceMode: 'new', sourceType: 'parish_register', title: 'Invented register N 1790–1820', repository: 'Invented archive', reference: '', page: '12', transcription: 'Wenceslaus filius legitimus', confidence: 'high', readOn: '2026-10-01' },
-  'an existing Source': { sourceMode: 'existing', source: { id: id(50), label: 'Invented register', type: 'parish_register' }, page: '3', transcription: 'Anna nata', confidence: 'normal', readOn: '' },
-  'a Family account': { sourceMode: 'account', givenBy: 'Invented aunt', givenOn: '2026-05', title: '', transcription: 'Buried next to her husband.', confidence: 'low' },
+  'a new register': {
+    sourceMode: 'new',
+    sourceType: 'parish_register',
+    title: 'Invented register N 1790–1820',
+    repository: 'Invented archive',
+    reference: '',
+    page: '12',
+    transcription: 'Wenceslaus filius legitimus',
+    confidence: 'high',
+    readOn: '2026-10-01',
+  },
+  'an existing Source': {
+    sourceMode: 'existing',
+    source: { id: id(50), label: 'Invented register', type: 'parish_register' },
+    page: '3',
+    transcription: 'Anna nata',
+    confidence: 'normal',
+    readOn: '',
+  },
+  'a Family account': {
+    sourceMode: 'account',
+    givenBy: 'Invented aunt',
+    givenOn: '2026-05',
+    title: '',
+    transcription: 'Buried next to her husband.',
+    confidence: 'low',
+  },
 };
 
 /** @param {CitationForm} citation @returns {[string, KindForm][]} */
 const forms = (citation) => [
-  ['baptism with new parents', { kind: 'baptism', form: { eventType: 'birth', date: '1803-05-02', place: { id: id(5), label: 'Kamenná Lhota' }, child: { mode: 'new', given: 'Václav', surname: '', sex: 'male' }, father: newPerson, mother: anna, godparents: [null, anna], citation, note: '' } }],
-  ['marriage', { kind: 'marriage', form: { date: '1858-11-23', place: null, partner1: anna, partner2: newPerson, witnesses: [newPerson], citation, note: 'n' } }],
+  [
+    'baptism with new parents',
+    {
+      kind: 'baptism',
+      form: {
+        eventType: 'birth',
+        date: '1803-05-02',
+        place: { id: id(5), label: 'Kamenná Lhota' },
+        child: { mode: 'new', given: 'Václav', surname: '', sex: 'male' },
+        father: newPerson,
+        mother: anna,
+        godparents: [null, anna],
+        citation,
+        note: '',
+      },
+    },
+  ],
+  [
+    'marriage',
+    { kind: 'marriage', form: { date: '1858-11-23', place: null, partner1: anna, partner2: newPerson, witnesses: [newPerson], citation, note: 'n' } },
+  ],
   ['burial', { kind: 'death', form: { eventType: 'burial', date: '', place: null, person: newPerson, citation, note: '' } }],
   ['new Name', { kind: 'name', form: { person: anna, given: '', surname: 'Kralowa', type: 'german', asFound: '', citation, note: '' } }],
-  ['Event correction that clears the description', { kind: 'correction', form: { person: anna, target: { record: 'event', id: id(7), version: 5, label: 'death', current: { date: '1850', description: 'x' } }, set: { date: '1850-11-03', description: '' }, citation, note: '' } }],
-  ['Name correction', { kind: 'correction', form: { person: anna, target: { record: 'name', id: id(8), version: 2, label: 'Name', current: { given: 'Anna', surname: 'Králová', asFound: 'Anna Králová' } }, set: { given: '', asFound: 'Anna Kralowa' }, citation, note: '' } }],
+  [
+    'Event correction that clears the description',
+    {
+      kind: 'correction',
+      form: {
+        person: anna,
+        target: { record: 'event', id: id(7), version: 5, label: 'death', current: { date: '1850', description: 'x' } },
+        set: { date: '1850-11-03', description: '' },
+        citation,
+        note: '',
+      },
+    },
+  ],
+  [
+    'Name correction',
+    {
+      kind: 'correction',
+      form: {
+        person: anna,
+        target: { record: 'name', id: id(8), version: 2, label: 'Name', current: { given: 'Anna', surname: 'Králová', asFound: 'Anna Králová' } },
+        set: { given: '', asFound: 'Anna Kralowa' },
+        citation,
+        note: '',
+      },
+    },
+  ],
 ];
 
-test('every kind of Propose form, with every kind of Citation, passes the server\'s check of operations', () => {
+test("every kind of Propose form, with every kind of Citation, passes the server's check of operations", () => {
   for (const [source, citation] of Object.entries(citations)) {
     for (const [name, draft] of forms(citation)) {
       for (const family of [null, { id: id(6), version: 4 }]) {
@@ -48,7 +115,7 @@ test('every kind of Propose form, with every kind of Citation, passes the server
   }
 });
 
-test('the app\'s copies of shared constants match shared/', () => {
+test("the app's copies of shared constants match shared/", () => {
   assert.equal(OPERATIONS_VERSION, SHARED_OPERATIONS_VERSION);
   assert.deepEqual([...CONFIDENCES], Confidence.options);
   assert.deepEqual([...NAME_TYPES].sort(), [...NameType.options].sort());

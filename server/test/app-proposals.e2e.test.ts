@@ -40,7 +40,10 @@ async function freePort(): Promise<number> {
 
 async function photo(text: string): Promise<Buffer> {
   // An invented "register page": ruled lines of scribbles under a heading.
-  const lines = Array.from({ length: 22 }, (_, i) => `<path d="M90 ${300 + i * 56} q 120 -18 240 0 t 240 0 t 240 0 t 240 0" stroke="#4a3b28" stroke-width="5" fill="none"/>`).join('');
+  const lines = Array.from(
+    { length: 22 },
+    (_, i) => `<path d="M90 ${300 + i * 56} q 120 -18 240 0 t 240 0 t 240 0 t 240 0" stroke="#4a3b28" stroke-width="5" fill="none"/>`,
+  ).join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600"><rect width="100%" height="100%" fill="#e9dfc7"/><rect x="40" y="40" width="1120" height="1520" fill="none" stroke="#8a7350" stroke-width="8"/><text x="90" y="200" font-size="72" fill="#3b2f1e">${text}</text>${lines}</svg>`;
   return sharp(Buffer.from(svg)).jpeg().toBuffer();
 }
@@ -58,10 +61,20 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
   const contexts: BrowserContext[] = [];
 
   async function phoneAs(member: Account): Promise<{ context: BrowserContext; page: Page }> {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'en-GB', serviceWorkers: 'block' });
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+      isMobile: true,
+      hasTouch: true,
+      locale: 'en-GB',
+      serviceWorkers: 'block',
+    });
     contexts.push(context);
     // Map tiles and anything else off this server get a stub; nothing reaches the network.
-    await context.route((url) => !url.href.startsWith(origin), (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1PX }));
+    await context.route(
+      (url) => !url.href.startsWith(origin),
+      (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1PX }),
+    );
     const token = (await signIn(t.db, clock, member)).split('=')[1]!;
     await context.addCookies([{ name: 'rdk_session', value: token, url: origin }]);
     const page = await context.newPage();
@@ -77,7 +90,15 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       { op: 'createEvent', tempId: 'tmp:e', type: 'baptism', date: '1842-06-03', placeId: L.kamennaLhota },
       { op: 'addRole', eventId: 'tmp:e', personId: 'tmp:p', role: 'child' },
       { op: 'createSource', tempId: 'tmp:s', type: 'parish_register', title: 'Invented register N 1830–1850', repository: 'Invented archive' },
-      { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:s', page: '41', transcription: `${given}, filia legitima, nata 2. Junii`, readOn: '2026-10-20', confidence: 'high' },
+      {
+        op: 'createCitation',
+        tempId: 'tmp:c',
+        sourceId: 'tmp:s',
+        page: '41',
+        transcription: `${given}, filia legitima, nata 2. Junii`,
+        readOn: '2026-10-20',
+        confidence: 'high',
+      },
       { op: 'attachCitation', citationId: 'tmp:c', eventId: 'tmp:e' },
     ];
     if (withImage) {
@@ -88,7 +109,12 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       expect((await inject(member, 'POST', `/api/uploads/${ticket.upload.id}/complete`)).statusCode).toBe(200);
       ops.push({ op: 'addImage', uploadId: ticket.upload.id, kind: 'page', citationId: 'tmp:c' });
     }
-    const res = await inject(member, 'POST', '/api/proposals', { formatVersion: 1, idempotencyKey: `e2e-${randomUUID()}`, note: `Baptism of ${given}, found in the 1842 register`, operations: ops });
+    const res = await inject(member, 'POST', '/api/proposals', {
+      formatVersion: 1,
+      idempotencyKey: `e2e-${randomUUID()}`,
+      note: `Baptism of ${given}, found in the 1842 register`,
+      operations: ops,
+    });
     expect(res.statusCode, res.body).toBe(201);
     clock.advance(60_000);
     return ProposalView.parse(res.json()).id;
@@ -106,7 +132,11 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       clock,
       images: storage,
       extraRoutes: (scope) => {
-        scope.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp', 'image/heic'], { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 }, (_req, body, done) => done(null, body));
+        scope.addContentTypeParser(
+          ['image/jpeg', 'image/png', 'image/webp', 'image/heic'],
+          { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 },
+          (_req, body, done) => done(null, body),
+        );
         scope.put('/test-storage/*', { schema: { hide: true } }, async (req, reply) => {
           const key = new URL(req.url, origin).pathname.replace('/test-storage/', '');
           await storage.put(key, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.headers['content-type'] ?? 'application/octet-stream');
@@ -160,11 +190,21 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     expect(ProposalView.parse((await inject(editor, 'GET', `/api/proposals/${ids[0]}`)).json()).status).toBe('accepted');
   });
 
-  it('baptism entry end to end: one Proposal adds the child and the baptism, links the parents\' Family and the godparents, and attaches the Citation with its page image', async () => {
+  it("baptism entry end to end: one Proposal adds the child and the baptism, links the parents' Family and the godparents, and attaches the Citation with its page image", async () => {
     const family = await t.db.selectFrom('family').selectAll().where('id', '=', L.janFirstFamily).executeTakeFirstOrThrow();
-    const names = await t.db.selectFrom('name').select(['person_id', 'given', 'surname']).where('is_primary', '=', true).where('person_id', 'in', [family.partner1_id!, family.partner2_id!]).execute();
+    const names = await t.db
+      .selectFrom('name')
+      .select(['person_id', 'given', 'surname'])
+      .where('is_primary', '=', true)
+      .where('person_id', 'in', [family.partner1_id!, family.partner2_id!])
+      .execute();
     const nameOf = (id: string) => names.find((n) => n.person_id === id)!;
-    const godparent = await t.db.selectFrom('name').select(['person_id', 'given', 'surname']).where('person_id', '=', L.founder).where('is_primary', '=', true).executeTakeFirstOrThrow();
+    const godparent = await t.db
+      .selectFrom('name')
+      .select(['person_id', 'given', 'surname'])
+      .where('person_id', '=', L.founder)
+      .where('is_primary', '=', true)
+      .executeTakeFirstOrThrow();
 
     const { page } = await phoneAs(contributor);
     await page.goto(`${origin}/#work/propose`);
@@ -173,7 +213,11 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     await form.waitFor();
     await page.getByTestId('date').fill('1830-02-14');
     await page.getByTestId('place-search').fill('Kamenná');
-    await page.getByTestId('place-results').getByRole('button', { name: /Kamenná Lhota/ }).first().click();
+    await page
+      .getByTestId('place-results')
+      .getByRole('button', { name: /Kamenná Lhota/ })
+      .first()
+      .click();
     await page.getByTestId('child-given').fill('Vojtěch');
     await page.getByTestId('child-surname').fill('Novák');
     await page.getByTestId('child-sex').selectOption('male');
@@ -183,7 +227,9 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       await page.getByTestId(`${testid}-search`).fill(`${person.given} ${person.surname}`);
       const results = page.getByTestId(`${testid}-results`).getByRole('button');
       await results.first().waitFor();
-      const hits = PersonSearchResult.parse((await inject(contributor, 'GET', `/api/persons?q=${encodeURIComponent(`${person.given} ${person.surname}`)}&limit=8`)).json()).items;
+      const hits = PersonSearchResult.parse(
+        (await inject(contributor, 'GET', `/api/persons?q=${encodeURIComponent(`${person.given} ${person.surname}`)}&limit=8`)).json(),
+      ).items;
       await results.nth(hits.findIndex((h) => h.person.id === person.person_id)).click();
       await page.getByTestId(`${testid}-picked`).waitFor();
     };
@@ -209,7 +255,9 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     const proposalId = page.url().split('/').at(-1)!;
     await expect.poll(() => page.locator(`[data-id="${proposalId}"]`).getByTestId('status').textContent()).toBe('pending');
 
-    const ops = (await t.db.selectFrom('proposal_operation').select('operation').where('proposal_id', '=', proposalId).orderBy('position').execute()).map((r) => Operation.parse(r.operation));
+    const ops = (await t.db.selectFrom('proposal_operation').select('operation').where('proposal_id', '=', proposalId).orderBy('position').execute()).map((r) =>
+      Operation.parse(r.operation),
+    );
     const roles = ops.flatMap((o) => (o.op === 'addRole' ? [[o.role, o.personId]] : []));
     const created = (given: string) => ops.flatMap((o) => (o.op === 'createPerson' && o.name.given === given ? [o] : []))[0]!;
     const child = created('Vojtěch');
@@ -222,7 +270,12 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       ['godparent', newGodparent.tempId],
     ]);
     expect(ops.find((o) => o.op === 'createEvent')).toMatchObject({ type: 'baptism', date: '1830-02-14', placeId: L.kamennaLhota });
-    expect(ops.find((o) => o.op === 'linkChild')).toMatchObject({ familyId: L.janFirstFamily, childId: child.tempId, linkType: 'birth', baseVersion: family.version });
+    expect(ops.find((o) => o.op === 'linkChild')).toMatchObject({
+      familyId: L.janFirstFamily,
+      childId: child.tempId,
+      linkType: 'birth',
+      baseVersion: family.version,
+    });
     expect(ops.find((o) => o.op === 'createCitation')).toMatchObject({ page: '58', confidence: 'high' });
     const image = ops.flatMap((o) => (o.op === 'addImage' ? [o] : []))[0]!;
     expect(image).toMatchObject({ kind: 'page' });
@@ -295,7 +348,10 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     await home.getByTestId('drafts-offer').click();
     const drafts = home.getByTestId('draft');
     await expect.poll(() => drafts.count()).toBe(2);
-    expect(await drafts.getByTestId('draft-title').allTextContents()).toEqual(['Marriage: Šimon Invented & Dorota Invented', 'Death or burial: Apolena Invented']);
+    expect(await drafts.getByTestId('draft-title').allTextContents()).toEqual([
+      'Marriage: Šimon Invented & Dorota Invented',
+      'Death or burial: Apolena Invented',
+    ]);
 
     // The first submit reaches the server but the answer is lost on the way back.
     let interrupted = 0;
@@ -318,11 +374,19 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     const proposals = await mine();
     expect(proposals).toHaveLength(2);
     // The marriage Proposal carries its photo from the archive.
-    const ops = await t.db.selectFrom('proposal_operation').select('op').where('proposal_id', 'in', proposals.map((p) => p.id)).execute();
+    const ops = await t.db
+      .selectFrom('proposal_operation')
+      .select('op')
+      .where(
+        'proposal_id',
+        'in',
+        proposals.map((p) => p.id),
+      )
+      .execute();
     expect(ops.filter((o) => o.op === 'addImage')).toHaveLength(1);
   });
 
-  it('the author sees a rejected Proposal with the Editor\'s note', async () => {
+  it("the author sees a rejected Proposal with the Editor's note", async () => {
     const id = await pendingProposal(contributor, 'Markéta');
     expect((await inject(editor, 'POST', `/api/proposals/${id}/reject`, { note: 'wrong parish, see 1820 register' })).statusCode).toBe(200);
     const { page } = await phoneAs(contributor);
@@ -344,7 +408,9 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     await page.getByTestId('photo-input').setInputFiles({ name: 'grave.jpg', mimeType: 'image/jpeg', buffer: await photo('Burial 1831') });
     await expect.poll(() => page.getByTestId('photos').locator('img').count()).toBe(1);
     // The connection drops after the photo is uploaded, before the Proposal reaches the server.
-    await page.route(`${origin}/api/proposals`, (route) => (route.request().method() === 'POST' ? route.abort('internetdisconnected') : route.fallback()), { times: 1 });
+    await page.route(`${origin}/api/proposals`, (route) => (route.request().method() === 'POST' ? route.abort('internetdisconnected') : route.fallback()), {
+      times: 1,
+    });
     await page.getByTestId('submit').click();
     await expect.poll(() => page.getByTestId('form-status').textContent()).toContain('The submit was interrupted');
     const uploads = () => t.db.selectFrom('upload').select(['id', 'status']).where('author_id', '=', patient.id).orderBy('created_at').execute();

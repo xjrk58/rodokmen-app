@@ -16,7 +16,11 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
     .orderBy('sort_order')
     .orderBy('id')
     .execute();
-  const persons = await personSummaries(db, roles.map((r) => r.person_id), clock);
+  const persons = await personSummaries(
+    db,
+    roles.map((r) => r.person_id),
+    clock,
+  );
   const citations = await citationSummariesFor(db, 'event', [id]);
   const placeId = summary.place?.id ?? null;
   const dated = summary.date !== null;
@@ -32,7 +36,13 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
 export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<FamilyDetail | null> {
   const f = await db.selectFrom('family').select(['id', 'version', 'partner1_id', 'partner2_id']).where('id', '=', id).executeTakeFirst();
   if (!f) return null;
-  const children = await db.selectFrom('family_child').select(['id', 'version', 'child_id', 'link_type']).where('family_id', '=', id).orderBy('sort_order').orderBy('id').execute();
+  const children = await db
+    .selectFrom('family_child')
+    .select(['id', 'version', 'child_id', 'link_type'])
+    .where('family_id', '=', id)
+    .orderBy('sort_order')
+    .orderBy('id')
+    .execute();
   const partnerIds = [f.partner1_id, f.partner2_id].filter((x): x is string => x !== null);
   const persons = await personSummaries(db, [...partnerIds, ...children.map((c) => c.child_id)], clock);
 
@@ -45,7 +55,14 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
       .where((eb) =>
         eb.and(
           partnerIds.map((pid) =>
-            eb.exists(eb.selectFrom('event_role as r').select(sql`1`.as('x')).whereRef('r.event_id', '=', 'e.id').where('r.person_id', '=', pid).where('r.role', '=', 'partner')),
+            eb.exists(
+              eb
+                .selectFrom('event_role as r')
+                .select(sql`1`.as('x'))
+                .whereRef('r.event_id', '=', 'e.id')
+                .where('r.person_id', '=', pid)
+                .where('r.role', '=', 'partner'),
+            ),
           ),
         ),
       )
@@ -110,7 +127,11 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
         .selectFrom('event_role as r')
         .innerJoin('name as n', (j) => j.onRef('n.person_id', '=', 'r.person_id').on('n.is_primary', '=', true))
         .select(['r.event_id', 'r.person_id', 'r.role', 'n.given', 'n.surname'])
-        .where('r.event_id', 'in', kept.map((r) => r.id))
+        .where(
+          'r.event_id',
+          'in',
+          kept.map((r) => r.id),
+        )
         .orderBy('r.sort_order')
         .execute()
     : [];

@@ -28,7 +28,14 @@ async function main() {
   if (config.env === 'production' && !config.s3.configured) app.log.warn('object storage is not configured; image links will not work');
 
   // Daily jobs (Editor digest at 18:00 Prague time, deleting images of rejected Proposals).
-  const stopJobs = new DailyScheduler({ db, clock: systemClock, mailer, images, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) }).start();
+  const stopJobs = new DailyScheduler({
+    db,
+    clock: systemClock,
+    mailer,
+    images,
+    publicOrigin: config.publicOrigin,
+    log: (msg, err) => app.log.error({ err }, msg),
+  }).start();
 
   const shutdown = async (signal: string) => {
     app.log.info({ signal }, 'shutting down');

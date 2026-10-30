@@ -14,7 +14,15 @@ const L = generateFixture().landmarks;
 /** An Editor's direct change citing an invented register entry for Jan Novák's death. */
 const citeDeath = (tag: string): OperationInput[] => [
   { op: 'createSource', tempId: `tmp:s${tag}`, type: 'parish_register', title: `Invented register ${tag}` },
-  { op: 'createCitation', tempId: `tmp:c${tag}`, sourceId: `tmp:s${tag}`, page: '3', transcription: 'Invented entry.', readOn: '2026-10-01', confidence: 'normal' },
+  {
+    op: 'createCitation',
+    tempId: `tmp:c${tag}`,
+    sourceId: `tmp:s${tag}`,
+    page: '3',
+    transcription: 'Invented entry.',
+    readOn: '2026-10-01',
+    confidence: 'normal',
+  },
   { op: 'attachCitation', citationId: `tmp:c${tag}`, eventId: L.janDeath, baseVersion: 1 },
 ];
 
@@ -42,7 +50,10 @@ describe('history of a record', () => {
   /** recordHistory on a connection that counts the queries it runs. */
   const countedHistory = async () => {
     let queries = 0;
-    const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool: createPool(t.url, { max: 1 }) }), log: (e) => void (e.level === 'query' && queries++) });
+    const db = new Kysely<Database>({
+      dialect: new PostgresDialect({ pool: createPool(t.url, { max: 1 }) }),
+      log: (e) => void (e.level === 'query' && queries++),
+    });
     try {
       const items = await recordHistory(db, 'event', L.janDeath);
       return { items, queries };

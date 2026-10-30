@@ -8,8 +8,30 @@
  * @type {Readonly<Record<string, string>>}
  */
 const LETTERS = {
-  æ: 'ae', œ: 'oe', ø: 'o', ł: 'l', ŀ: 'l', ɫ: 'l', đ: 'd', ð: 'd', þ: 'th', ħ: 'h', ı: 'i', ŧ: 't', ŋ: 'n',
-  ĸ: 'q', ß: 'ss', ſ: 's', ƒ: 'f', ĳ: 'ij', ǆ: 'dz', ǉ: 'lj', ǌ: 'nj', ﬁ: 'fi', ﬂ: 'fl', ŉ: "'n",
+  æ: 'ae',
+  œ: 'oe',
+  ø: 'o',
+  ł: 'l',
+  ŀ: 'l',
+  ɫ: 'l',
+  đ: 'd',
+  ð: 'd',
+  þ: 'th',
+  ħ: 'h',
+  ı: 'i',
+  ŧ: 't',
+  ŋ: 'n',
+  ĸ: 'q',
+  ß: 'ss',
+  ſ: 's',
+  ƒ: 'f',
+  ĳ: 'ij',
+  ǆ: 'dz',
+  ǉ: 'lj',
+  ǌ: 'nj',
+  ﬁ: 'fi',
+  ﬂ: 'fl',
+  ŉ: "'n",
 };
 const LETTER = new RegExp(`[${Object.keys(LETTERS).join('')}]`, 'gu');
 

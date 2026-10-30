@@ -12,7 +12,15 @@ export const TIME_ZONE = 'Europe/Prague';
 /** The day and minute of the day in Prague for an instant, so jobs follow local time across DST. */
 export function pragueTime(at: Date): { day: string; minutes: number } {
   const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
       .formatToParts(at)
       .map((p) => [p.type, p.value]),
   );
@@ -75,15 +83,32 @@ export async function sendDigests(deps: JobDeps, day: string, job = 'editor-dige
     const groups = new Map<string, { author: string; isAgent: boolean; items: Array<{ submittedAt: Date; summary: string; changes: number; link: string }> }>();
     for (const l of lines) {
       const g = groups.get(l.author.id) ?? { author: l.author.displayName, isAgent: l.author.isAgent, items: [] };
-      g.items.push({ submittedAt: l.submittedAt, summary: l.note ?? l.first[editor.language], changes: l.changes, link: `${deps.publicOrigin}/#work/review/${l.id}` });
+      g.items.push({
+        submittedAt: l.submittedAt,
+        summary: l.note ?? l.first[editor.language],
+        changes: l.changes,
+        link: `${deps.publicOrigin}/#work/review/${l.id}`,
+      });
       groups.set(l.author.id, g);
     }
     try {
-      await deps.mailer.send(digestEmail({ to: editor.email, language: editor.language, displayName: editor.display_name, groups: [...groups.values()], queueLink: `${deps.publicOrigin}/#work/review` }));
+      await deps.mailer.send(
+        digestEmail({
+          to: editor.email,
+          language: editor.language,
+          displayName: editor.display_name,
+          groups: [...groups.values()],
+          queueLink: `${deps.publicOrigin}/#work/review`,
+        }),
+      );
       await deps.db
         .insertInto('job_delivery')
         .values({ job, day, account_id: editor.id, sent_at: deps.clock.now(), attempts: 1 })
-        .onConflict((oc) => oc.columns(['job', 'day', 'account_id']).doUpdateSet((eb) => ({ sent_at: deps.clock.now(), attempts: eb('job_delivery.attempts', '+', 1), last_error: null })))
+        .onConflict((oc) =>
+          oc
+            .columns(['job', 'day', 'account_id'])
+            .doUpdateSet((eb) => ({ sent_at: deps.clock.now(), attempts: eb('job_delivery.attempts', '+', 1), last_error: null })),
+        )
         .execute();
       sent += 1;
     } catch (error) {
@@ -91,7 +116,9 @@ export async function sendDigests(deps: JobDeps, day: string, job = 'editor-dige
       const row = await deps.db
         .insertInto('job_delivery')
         .values({ job, day, account_id: editor.id, attempts: 1, last_error: message })
-        .onConflict((oc) => oc.columns(['job', 'day', 'account_id']).doUpdateSet((eb) => ({ attempts: eb('job_delivery.attempts', '+', 1), last_error: message })))
+        .onConflict((oc) =>
+          oc.columns(['job', 'day', 'account_id']).doUpdateSet((eb) => ({ attempts: eb('job_delivery.attempts', '+', 1), last_error: message })),
+        )
         .returning('attempts')
         .executeTakeFirstOrThrow();
       if (row.attempts >= MAX_DELIVERY_ATTEMPTS) deps.log?.(`giving up the ${job} email to ${editor.email} for ${day}`, error);

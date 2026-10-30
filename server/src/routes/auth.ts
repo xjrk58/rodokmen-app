@@ -14,7 +14,15 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { acceptInvitation, checkInvitation, consumeEmailLink, requestEmailLink, type AccountDeps } from '../auth/accounts.js';
-import { authenticationOptions, CHALLENGE_COOKIE, CHALLENGE_SECONDS, registrationOptions, verifyAuthentication, verifyRegistration, type PasskeyDeps } from '../auth/passkeys.js';
+import {
+  authenticationOptions,
+  CHALLENGE_COOKIE,
+  CHALLENGE_SECONDS,
+  registrationOptions,
+  verifyAuthentication,
+  verifyRegistration,
+  type PasskeyDeps,
+} from '../auth/passkeys.js';
 import { sessionCookieOptions, unauthorized } from '../auth/plugin.js';
 import { createSession, endSession, SESSION_COOKIE } from '../auth/sessions.js';
 import type { Account } from '../db/types.js';
@@ -42,7 +50,12 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
 
   app.post('/api/auth/invitation/check', {
     config: pub,
-    schema: { tags: ['Sign-in'], summary: 'Whether an invitation link is still valid, and what to tell the relative', body: TokenBody, response: { 200: InvitationCheck, 404: ApiError } },
+    schema: {
+      tags: ['Sign-in'],
+      summary: 'Whether an invitation link is still valid, and what to tell the relative',
+      body: TokenBody,
+      response: { 200: InvitationCheck, 404: ApiError },
+    },
     handler: async (req) => checkInvitation(deps, req.body.token),
   });
 
@@ -97,7 +110,12 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
 
   app.post('/api/auth/passkey/authentication/verify', {
     config: pub,
-    schema: { tags: ['Sign-in'], summary: 'Finish signing in with a passkey', body: PasskeyLoginVerifyBody, response: { 200: SignedIn, 400: ApiError, 401: ApiError } },
+    schema: {
+      tags: ['Sign-in'],
+      summary: 'Finish signing in with a passkey',
+      body: PasskeyLoginVerifyBody,
+      response: { 200: SignedIn, 400: ApiError, 401: ApiError },
+    },
     handler: async (req, reply) => {
       const account = await verifyAuthentication(deps.passkeys, req.cookies[CHALLENGE_COOKIE], req.body.response);
       reply.clearCookie(CHALLENGE_COOKIE, { path: '/api/auth/passkey' });

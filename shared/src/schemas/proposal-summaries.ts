@@ -14,13 +14,53 @@ export interface SummaryContext {
 }
 
 export const EVENT_TYPE_LABELS: Record<SummaryLanguage, Record<EventType, string>> = {
-  en: { birth: 'birth', baptism: 'baptism', marriage: 'marriage', death: 'death', burial: 'burial', residence: 'residence', census: 'census entry', other: 'event' },
-  cs: { birth: 'narození', baptism: 'křest', marriage: 'sňatek', death: 'úmrtí', burial: 'pohřeb', residence: 'bydliště', census: 'záznam sčítání', other: 'událost' },
+  en: {
+    birth: 'birth',
+    baptism: 'baptism',
+    marriage: 'marriage',
+    death: 'death',
+    burial: 'burial',
+    residence: 'residence',
+    census: 'census entry',
+    other: 'event',
+  },
+  cs: {
+    birth: 'narození',
+    baptism: 'křest',
+    marriage: 'sňatek',
+    death: 'úmrtí',
+    burial: 'pohřeb',
+    residence: 'bydliště',
+    census: 'záznam sčítání',
+    other: 'událost',
+  },
 };
 
 export const ROLE_LABELS: Record<SummaryLanguage, Record<RoleType, string>> = {
-  en: { child: 'child', father: 'father', mother: 'mother', partner: 'partner', godparent: 'godparent', witness: 'witness', priest: 'priest', deceased: 'deceased', informant: 'informant', other: 'other role' },
-  cs: { child: 'dítě', father: 'otec', mother: 'matka', partner: 'partner', godparent: 'kmotr', witness: 'svědek', priest: 'kněz', deceased: 'zemřelý', informant: 'oznamovatel', other: 'jiná role' },
+  en: {
+    child: 'child',
+    father: 'father',
+    mother: 'mother',
+    partner: 'partner',
+    godparent: 'godparent',
+    witness: 'witness',
+    priest: 'priest',
+    deceased: 'deceased',
+    informant: 'informant',
+    other: 'other role',
+  },
+  cs: {
+    child: 'dítě',
+    father: 'otec',
+    mother: 'matka',
+    partner: 'partner',
+    godparent: 'kmotr',
+    witness: 'svědek',
+    priest: 'kněz',
+    deceased: 'zemřelý',
+    informant: 'oznamovatel',
+    other: 'jiná role',
+  },
 };
 
 const NAME_TYPE_LABELS: Record<SummaryLanguage, Record<NameType, string>> = {
@@ -51,14 +91,52 @@ const KIND_LABELS: Record<SummaryLanguage, Record<ImageKind, string>> = {
 /** Readable names of the settable fields. */
 export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
   en: {
-    sex: 'sex', given: 'given names', surname: 'surname', type: 'type', asFound: 'spelling as found', typeDetail: 'kind', date: 'date', placeId: 'Place', houseId: 'House',
-    description: 'description', role: 'role', roleDetail: 'role detail', linkType: 'link type', title: 'title', repository: 'archive', reference: 'call number', url: 'link',
-    page: 'page', transcription: 'transcription', readOn: 'read on', confidence: 'confidence', note: 'note',
+    sex: 'sex',
+    given: 'given names',
+    surname: 'surname',
+    type: 'type',
+    asFound: 'spelling as found',
+    typeDetail: 'kind',
+    date: 'date',
+    placeId: 'Place',
+    houseId: 'House',
+    description: 'description',
+    role: 'role',
+    roleDetail: 'role detail',
+    linkType: 'link type',
+    title: 'title',
+    repository: 'archive',
+    reference: 'call number',
+    url: 'link',
+    page: 'page',
+    transcription: 'transcription',
+    readOn: 'read on',
+    confidence: 'confidence',
+    note: 'note',
   },
   cs: {
-    sex: 'pohlaví', given: 'křestní jména', surname: 'příjmení', type: 'druh', asFound: 'zápis v prameni', typeDetail: 'upřesnění', date: 'datum', placeId: 'místo', houseId: 'dům',
-    description: 'popis', role: 'role', roleDetail: 'upřesnění role', linkType: 'druh vazby', title: 'název', repository: 'archiv', reference: 'signatura', url: 'odkaz',
-    page: 'strana', transcription: 'přepis', readOn: 'přečteno', confidence: 'věrohodnost', note: 'poznámka',
+    sex: 'pohlaví',
+    given: 'křestní jména',
+    surname: 'příjmení',
+    type: 'druh',
+    asFound: 'zápis v prameni',
+    typeDetail: 'upřesnění',
+    date: 'datum',
+    placeId: 'místo',
+    houseId: 'dům',
+    description: 'popis',
+    role: 'role',
+    roleDetail: 'upřesnění role',
+    linkType: 'druh vazby',
+    title: 'název',
+    repository: 'archiv',
+    reference: 'signatura',
+    url: 'odkaz',
+    page: 'strana',
+    transcription: 'přepis',
+    readOn: 'přečteno',
+    confidence: 'věrohodnost',
+    note: 'poznámka',
   },
 };
 
@@ -81,7 +159,8 @@ interface Say {
   ctx: SummaryContext;
 }
 
-const typeOf = (op: { type: EventType; typeDetail: string | null }, language: SummaryLanguage) => (op.type === 'other' && op.typeDetail ? op.typeDetail : EVENT_TYPE_LABELS[language][op.type]);
+const typeOf = (op: { type: EventType; typeDetail: string | null }, language: SummaryLanguage) =>
+  op.type === 'other' && op.typeDetail ? op.typeDetail : EVENT_TYPE_LABELS[language][op.type];
 
 function addName(op: Op<'addName'>, { L, cs, language }: Say): string {
   return cs
@@ -102,7 +181,15 @@ function attachCitation(op: Op<'attachCitation'>, { L, cs }: Say): string {
 function createEvent(op: Op<'createEvent'>, { L, cs, language }: Say): string {
   const type = typeOf(op, language);
   const when = op.date ? (cs ? ` ${op.date}` : ` on ${op.date}`) : '';
-  const where = op.placeId ? (cs ? `, místo: ${L(op.placeId)}` : ` at ${L(op.placeId)}`) : op.houseId ? (cs ? `, dům: ${L(op.houseId)}` : ` at ${L(op.houseId)}`) : '';
+  const where = op.placeId
+    ? cs
+      ? `, místo: ${L(op.placeId)}`
+      : ` at ${L(op.placeId)}`
+    : op.houseId
+      ? cs
+        ? `, dům: ${L(op.houseId)}`
+        : ` at ${L(op.houseId)}`
+      : '';
   return cs ? `přidává událost: ${type}${when}${where}` : `adds the ${type}${when}${where}`;
 }
 
@@ -134,8 +221,12 @@ function addImage(op: Op<'addImage'>, { L, cs }: Say): string {
 }
 
 function setField(op: Op<'setField'>, { L, cs, language, ctx }: Say): string {
-  const changes = Object.entries(op.set).map(([k, v]) => `${Object.hasOwn(FIELD_LABELS[language], k) ? FIELD_LABELS[language][k] : k} → ${fieldValue(v, language, ctx)}`);
-  return cs ? `mění (${RECORD_LABELS.cs[op.record]}) ${L(op.id)}: ${changes.join(', ')}` : `changes ${L(op.id)} (${RECORD_LABELS.en[op.record]}): ${changes.join(', ')}`;
+  const changes = Object.entries(op.set).map(
+    ([k, v]) => `${Object.hasOwn(FIELD_LABELS[language], k) ? FIELD_LABELS[language][k] : k} → ${fieldValue(v, language, ctx)}`,
+  );
+  return cs
+    ? `mění (${RECORD_LABELS.cs[op.record]}) ${L(op.id)}: ${changes.join(', ')}`
+    : `changes ${L(op.id)} (${RECORD_LABELS.en[op.record]}): ${changes.join(', ')}`;
 }
 
 function restoreRecord(op: Op<'restoreRecord'>, { L, cs }: Say): string {
@@ -164,7 +255,9 @@ export function describeOperation(op: Operation, ctx: SummaryContext, language: 
     case 'createFamily':
       return createFamily(op, say);
     case 'linkChild':
-      return cs ? `připojuje ${LINK_TYPE_LABELS.cs[op.linkType]}: ${L(op.childId)} (${L(op.familyId)})` : `links ${L(op.childId)} as ${LINK_TYPE_LABELS.en[op.linkType]} to ${L(op.familyId)}`;
+      return cs
+        ? `připojuje ${LINK_TYPE_LABELS.cs[op.linkType]}: ${L(op.childId)} (${L(op.familyId)})`
+        : `links ${L(op.childId)} as ${LINK_TYPE_LABELS.en[op.linkType]} to ${L(op.familyId)}`;
     case 'createSource':
       return createSource(op, say);
     case 'createCitation':

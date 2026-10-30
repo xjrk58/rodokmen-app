@@ -12,8 +12,13 @@ describe('labels of existing records in review and history sentences', () => {
   });
   afterAll(async () => t?.drop());
 
-  it('names a Role in the reader\'s language', async () => {
-    const godparent = await t.db.selectFrom('event_role').select('id').where('event_id', '=', L.janBaptism).where('role', '=', 'godparent').executeTakeFirstOrThrow();
+  it("names a Role in the reader's language", async () => {
+    const godparent = await t.db
+      .selectFrom('event_role')
+      .select('id')
+      .where('event_id', '=', L.janBaptism)
+      .where('role', '=', 'godparent')
+      .executeTakeFirstOrThrow();
     const labels = await labelsFor(t.db, [godparent.id]);
     expect(labels.label(godparent.id, 'cs')).toMatch(/\(kmotr\)$/);
     expect(labels.label(godparent.id, 'en')).toMatch(/\(godparent\)$/);

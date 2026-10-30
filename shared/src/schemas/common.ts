@@ -84,7 +84,6 @@ export const Paging = z.object({
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
 });
 
-
 export type Id = z.infer<typeof Id>;
 export type EdtfDate = z.infer<typeof EdtfDate>;
 export type DatedValue = z.infer<typeof DatedValue>;

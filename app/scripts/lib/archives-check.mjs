@@ -126,7 +126,8 @@ function checkOverrides(data) {
     const archive = byId.get(archiveId);
     const district = String(prop(o, 'district'));
     if (!archive) errors.push(`${label}: unknown archive "${String(archiveId)}"`);
-    else if (!list(prop(archive, 'districts')).includes(district)) errors.push(`${label}: district "${district}" is not a district of ${labelOf(archive, '?')}`);
+    else if (!list(prop(archive, 'districts')).includes(district))
+      errors.push(`${label}: district "${district}" is not a district of ${labelOf(archive, '?')}`);
     if (!isText(prop(o, 'reason'))) errors.push(`${label}: missing reason`);
   }
   return errors;

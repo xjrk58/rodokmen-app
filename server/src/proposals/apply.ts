@@ -48,7 +48,10 @@ export function fieldOf(row: Record<string, unknown>, field: string): unknown {
 
 /** An operation based on a version of a record that is no longer current. */
 export class ConflictProblem extends ApiProblem {
-  constructor(readonly position: number, what: string) {
+  constructor(
+    readonly position: number,
+    what: string,
+  ) {
     super(409, 'conflict', `Operation ${position + 1}: ${what} was changed since the Proposal was written. Choose per field before accepting.`);
   }
 }
@@ -89,7 +92,8 @@ function ref(ctx: Ctx, value: string): string {
 async function checkBase(ctx: Ctx, position: number, name: RestorableTable, id: string, baseVersion: number | null | undefined, what: string) {
   const current = await snapshot(ctx.db, name, id);
   if (!current) throw new ApiProblem(409, 'record_missing', `Operation ${position + 1}: ${what} no longer exists.`);
-  if (name === 'person' && current.merged_into_id) throw new ApiProblem(409, 'person_merged', `Operation ${position + 1}: this Person was merged into another; propose against the remaining Person.`);
+  if (name === 'person' && current.merged_into_id)
+    throw new ApiProblem(409, 'person_merged', `Operation ${position + 1}: this Person was merged into another; propose against the remaining Person.`);
   if (baseVersion === undefined || baseVersion === null) return current;
   const start = ctx.changes.startVersion(name, id);
   const seen = start === undefined ? current.version : start;
@@ -98,7 +102,9 @@ async function checkBase(ctx: Ctx, position: number, name: RestorableTable, id: 
 }
 
 async function nextSort(db: Db, name: 'name' | 'event_role' | 'family_child', column: 'person_id' | 'event_id' | 'family_id', id: string): Promise<number> {
-  const { rows } = await sql<{ n: number }>`select coalesce(max(sort_order) + 1, 0)::int as n from ${sql.table(name)} where ${sql.ref(column)} = ${id}`.execute(db);
+  const { rows } = await sql<{ n: number }>`select coalesce(max(sort_order) + 1, 0)::int as n from ${sql.table(name)} where ${sql.ref(column)} = ${id}`.execute(
+    db,
+  );
   return rows[0]?.n ?? 0;
 }
 
@@ -114,12 +120,23 @@ async function merge(ctx: Ctx, position: number, op: Extract<Operation, { op: 'm
     await rows.update('name', n.id, { person_id: keep, is_primary: false, sort_order: order++ });
   }
   for (const r of await db.selectFrom('event_role').select(['id', 'event_id', 'role']).where('person_id', '=', gone).execute()) {
-    const twin = await db.selectFrom('event_role').select('id').where('event_id', '=', r.event_id).where('person_id', '=', keep).where('role', '=', r.role).executeTakeFirst();
+    const twin = await db
+      .selectFrom('event_role')
+      .select('id')
+      .where('event_id', '=', r.event_id)
+      .where('person_id', '=', keep)
+      .where('role', '=', r.role)
+      .executeTakeFirst();
     if (twin) await rows.remove('event_role', r.id);
     else await rows.update('event_role', r.id, { person_id: keep });
   }
-  for (const f of await db.selectFrom('family').selectAll().where((eb) => eb.or([eb('partner1_id', '=', gone), eb('partner2_id', '=', gone)])).execute()) {
-    if (f.partner1_id === keep || f.partner2_id === keep) throw new ApiProblem(409, 'merge_partners', 'These two Persons are partners in one Family, so they cannot be the same Person.');
+  for (const f of await db
+    .selectFrom('family')
+    .selectAll()
+    .where((eb) => eb.or([eb('partner1_id', '=', gone), eb('partner2_id', '=', gone)]))
+    .execute()) {
+    if (f.partner1_id === keep || f.partner2_id === keep)
+      throw new ApiProblem(409, 'merge_partners', 'These two Persons are partners in one Family, so they cannot be the same Person.');
     await rows.update('family', f.id, f.partner1_id === gone ? { partner1_id: keep } : { partner2_id: keep });
   }
   for (const l of await db.selectFrom('family_child').select(['id', 'family_id']).where('child_id', '=', gone).execute()) {
@@ -146,7 +163,15 @@ type Op<K extends Operation['op']> = Extract<Operation, { op: K }>;
 
 async function createPerson(ctx: Ctx, op: Op<'createPerson'>) {
   const p = await ctx.rows.insert('person', { sex: op.sex });
-  await ctx.rows.insert('name', { person_id: p.id, given: op.name.given, surname: op.name.surname, type: op.name.type, as_found: op.name.asFound, is_primary: true, sort_order: 0 });
+  await ctx.rows.insert('name', {
+    person_id: p.id,
+    given: op.name.given,
+    surname: op.name.surname,
+    type: op.name.type,
+    as_found: op.name.asFound,
+    is_primary: true,
+    sort_order: 0,
+  });
   ctx.temps.set(op.tempId, p.id);
 }
 
@@ -166,7 +191,14 @@ async function addName(ctx: Ctx, position: number, op: Op<'addName'>) {
 }
 
 async function createEvent(ctx: Ctx, op: Op<'createEvent'>) {
-  const e = await ctx.rows.insert('event', { type: op.type, type_detail: op.typeDetail, ...dateColumns(op.date), place_id: op.placeId, house_id: op.houseId, description: op.description });
+  const e = await ctx.rows.insert('event', {
+    type: op.type,
+    type_detail: op.typeDetail,
+    ...dateColumns(op.date),
+    place_id: op.placeId,
+    house_id: op.houseId,
+    description: op.description,
+  });
   ctx.temps.set(op.tempId, e.id);
 }
 
@@ -175,7 +207,13 @@ async function addRole(ctx: Ctx, position: number, op: Op<'addRole'>) {
   const personId = ref(ctx, op.personId);
   if (!isTempId(op.eventId)) await checkBase(ctx, position, 'event', eventId, op.baseVersion, 'the Event');
   if (!isTempId(op.personId)) await checkBase(ctx, position, 'person', personId, undefined, 'the Person');
-  await ctx.rows.insert('event_role', { event_id: eventId, person_id: personId, role: op.role, role_detail: op.roleDetail, sort_order: await nextSort(ctx.db, 'event_role', 'event_id', eventId) });
+  await ctx.rows.insert('event_role', {
+    event_id: eventId,
+    person_id: personId,
+    role: op.role,
+    role_detail: op.roleDetail,
+    sort_order: await nextSort(ctx.db, 'event_role', 'event_id', eventId),
+  });
 }
 
 async function createFamily(ctx: Ctx, position: number, op: Op<'createFamily'>) {
@@ -194,7 +232,12 @@ async function linkChild(ctx: Ctx, position: number, op: Op<'linkChild'>) {
   const childId = ref(ctx, op.childId);
   if (!isTempId(op.familyId)) await checkBase(ctx, position, 'family', familyId, op.baseVersion, 'the Family');
   if (!isTempId(op.childId)) await checkBase(ctx, position, 'person', childId, undefined, 'the child');
-  await ctx.rows.insert('family_child', { family_id: familyId, child_id: childId, link_type: op.linkType, sort_order: await nextSort(ctx.db, 'family_child', 'family_id', familyId) });
+  await ctx.rows.insert('family_child', {
+    family_id: familyId,
+    child_id: childId,
+    link_type: op.linkType,
+    sort_order: await nextSort(ctx.db, 'family_child', 'family_id', familyId),
+  });
 }
 
 async function createSource(ctx: Ctx, position: number, op: Op<'createSource'>) {
@@ -214,7 +257,14 @@ async function createSource(ctx: Ctx, position: number, op: Op<'createSource'>) 
 }
 
 async function createCitation(ctx: Ctx, op: Op<'createCitation'>) {
-  const c = await ctx.rows.insert('citation', { source_id: ref(ctx, op.sourceId), page: op.page, transcription: op.transcription, read_on: op.readOn, confidence: op.confidence, note: op.note });
+  const c = await ctx.rows.insert('citation', {
+    source_id: ref(ctx, op.sourceId),
+    page: op.page,
+    transcription: op.transcription,
+    read_on: op.readOn,
+    confidence: op.confidence,
+    note: op.note,
+  });
   ctx.temps.set(op.tempId, c.id);
   ctx.citations.add(c.id);
 }
@@ -235,7 +285,15 @@ async function attachCitation(ctx: Ctx, position: number, op: Op<'attachCitation
 
 async function addImage(ctx: Ctx, position: number, op: Op<'addImage'>) {
   const upload = await ctx.db.selectFrom('upload').selectAll().where('id', '=', op.uploadId).forUpdate().executeTakeFirst();
-  if (!upload || upload.author_id !== ctx.authorId || upload.proposal_id !== ctx.proposalId || upload.status !== 'ready' || !upload.content_type || !upload.sha256 || !upload.byte_size) {
+  if (
+    !upload ||
+    upload.author_id !== ctx.authorId ||
+    upload.proposal_id !== ctx.proposalId ||
+    upload.status !== 'ready' ||
+    !upload.content_type ||
+    !upload.sha256 ||
+    !upload.byte_size
+  ) {
     throw new ApiProblem(409, 'upload_unusable', `Operation ${position + 1}: the image upload is missing, not finished, or not part of this Proposal.`);
   }
   const imageId = uuidv7();

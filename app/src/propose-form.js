@@ -19,9 +19,18 @@ import { CONFIDENCES, formProblems, KINDS, NAME_TYPES, NEW_SOURCE_TYPES } from '
 
 /** The kind chooser at the top of "Propose". */
 export function kindChooser() {
-  return h('div', { class: 'kind-grid' },
-    ...KINDS.map((kind) => h('a', { class: 'kind-card', href: `#work/propose/${kind}`, 'data-testid': `kind-${kind}` },
-      h('strong', {}, t(`propose.kind.${kind}`)), h('span', { class: 'muted small' }, t(`propose.kindHint.${kind}`)))));
+  return h(
+    'div',
+    { class: 'kind-grid' },
+    ...KINDS.map((kind) =>
+      h(
+        'a',
+        { class: 'kind-card', href: `#work/propose/${kind}`, 'data-testid': `kind-${kind}` },
+        h('strong', {}, t(`propose.kind.${kind}`)),
+        h('span', { class: 'muted small' }, t(`propose.kindHint.${kind}`)),
+      ),
+    ),
+  );
 }
 
 /**
@@ -103,8 +112,20 @@ function eventFields(form) {
  */
 function correctionTargets(person) {
   return [
-    ...person.names.map((n) => ({ record: /** @type {const} */ ('name'), id: n.id, version: n.version, label: `${t('propose.correctName')}: ${n.asFound}`, current: { given: n.given, surname: n.surname, asFound: n.asFound } })),
-    ...person.events.map(({ event: e }) => ({ record: /** @type {const} */ ('event'), id: e.id, version: e.version, label: `${t(`eventType.${e.type}`)} ${e.date ?? ''}`.trim(), current: { date: e.date ?? '', description: e.description ?? '' } })),
+    ...person.names.map((n) => ({
+      record: /** @type {const} */ ('name'),
+      id: n.id,
+      version: n.version,
+      label: `${t('propose.correctName')}: ${n.asFound}`,
+      current: { given: n.given, surname: n.surname, asFound: n.asFound },
+    })),
+    ...person.events.map(({ event: e }) => ({
+      record: /** @type {const} */ ('event'),
+      id: e.id,
+      version: e.version,
+      label: `${t(`eventType.${e.type}`)} ${e.date ?? ''}`.trim(),
+      current: { date: e.date ?? '', description: e.description ?? '' },
+    })),
   ];
 }
 
@@ -164,7 +185,8 @@ function correctionFields(form) {
     try {
       person = await getPerson(form.person.id);
     } catch (error) {
-      if (mine === loads) targets.replaceChildren(h('p', { class: 'muted' }, error instanceof ApiError && error.offline ? t('picker.offline') : messageOf(error)));
+      if (mine === loads)
+        targets.replaceChildren(h('p', { class: 'muted' }, error instanceof ApiError && error.offline ? t('picker.offline') : messageOf(error)));
       return;
     }
     if (mine === loads) showTargets(correctionTargets(person));
@@ -198,10 +220,13 @@ function photoFields(draft, ensureSaved, report) {
     photos.replaceChildren(
       ...list.map((p) => {
         const remove = h('button', { type: 'button', class: 'icon-button small', 'aria-label': t('photos.remove') }, '×');
-        remove.addEventListener('click', guarded(report, async () => {
-          await deletePhoto(p.id);
-          await renderPhotos();
-        }));
+        remove.addEventListener(
+          'click',
+          guarded(report, async () => {
+            await deletePhoto(p.id);
+            await renderPhotos();
+          }),
+        );
         const url = URL.createObjectURL(p.blob);
         const img = h('img', { src: url, alt: p.name });
         // The thumbnail keeps its pixels; the blob URL would hold the photo in memory until the page closes.
@@ -211,13 +236,24 @@ function photoFields(draft, ensureSaved, report) {
       }),
     );
   };
-  const file = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif', capture: 'environment', multiple: true, 'data-testid': 'photo-input', class: 'visually-hidden', id: 'photo-input' });
-  file.addEventListener('change', guarded(report, async () => {
-    await ensureSaved();
-    for (const f of file.files ?? []) await savePhoto({ id: newKey(), draftId: draft.id, blob: f, name: f.name, uploadId: null });
-    file.value = '';
-    await renderPhotos();
-  }));
+  const file = h('input', {
+    type: 'file',
+    accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif',
+    capture: 'environment',
+    multiple: true,
+    'data-testid': 'photo-input',
+    class: 'visually-hidden',
+    id: 'photo-input',
+  });
+  file.addEventListener(
+    'change',
+    guarded(report, async () => {
+      await ensureSaved();
+      for (const f of file.files ?? []) await savePhoto({ id: newKey(), draftId: draft.id, blob: f, name: f.name, uploadId: null });
+      file.value = '';
+      await renderPhotos();
+    }),
+  );
   renderPhotos().catch(report);
   return [h('div', { class: 'photo-row' }, h('label', { class: 'button', for: 'photo-input' }, t('photos.add')), file), photos];
 }
@@ -242,7 +278,10 @@ function citationFields(draft, ensureSaved, report) {
       );
     } else {
       box.replaceChildren(
-        field(t('citation.sourceType'), select(c, 'sourceType', NEW_SOURCE_TYPES, (v) => t(`sourceType.${v}`), { 'data-testid': 'source-type' })),
+        field(
+          t('citation.sourceType'),
+          select(c, 'sourceType', NEW_SOURCE_TYPES, (v) => t(`sourceType.${v}`), { 'data-testid': 'source-type' }),
+        ),
         field(t('citation.title'), textInput(c, 'title', { placeholder: t('citation.titlePlaceholder'), 'data-testid': 'source-title' })),
         field(t('citation.repository'), textInput(c, 'repository', { 'data-testid': 'repository' })),
         field(t('citation.reference'), textInput(c, 'reference', { 'data-testid': 'reference' })),
@@ -250,7 +289,9 @@ function citationFields(draft, ensureSaved, report) {
       );
     }
   };
-  const modes = h('div', { class: 'segmented', role: 'radiogroup' },
+  const modes = h(
+    'div',
+    { class: 'segmented', role: 'radiogroup' },
     .../** @type {const} */ (['new', 'existing', 'account']).map((mode) => {
       const radio = h('input', { type: 'radio', name: 'source-mode', value: mode, checked: c.sourceMode === mode, 'data-testid': `source-mode-${mode}` });
       radio.addEventListener('change', () => {
@@ -258,7 +299,8 @@ function citationFields(draft, ensureSaved, report) {
         renderSource();
       });
       return h('label', {}, radio, h('span', {}, t(`citation.mode.${mode}`)));
-    }));
+    }),
+  );
   renderSource();
 
   const transcription = h('textarea', { rows: '4', 'data-testid': 'transcription' });
@@ -267,13 +309,18 @@ function citationFields(draft, ensureSaved, report) {
     c.transcription = transcription.value;
   });
 
-  return h('section', { class: 'form-section' },
+  return h(
+    'section',
+    { class: 'form-section' },
     h('h3', {}, t('citation.title.section')),
     h('p', { class: 'muted small' }, t('citation.why')),
     modes,
     box,
     field(t('citation.transcription'), transcription),
-    field(t('citation.confidence'), select(c, 'confidence', CONFIDENCES, (v) => t(`confidence.${v}`), { 'data-testid': 'confidence' })),
+    field(
+      t('citation.confidence'),
+      select(c, 'confidence', CONFIDENCES, (v) => t(`confidence.${v}`), { 'data-testid': 'confidence' }),
+    ),
     field(t('citation.readOn'), textInput(c, 'readOn', { type: 'date', 'data-testid': 'read-on' })),
     ...photoFields(draft, ensureSaved, report),
   );
@@ -289,7 +336,10 @@ function findingFields(draft) {
     case 'baptism': {
       const form = draft.form;
       return [
-        field(t('propose.eventType'), select(form, 'eventType', /** @type {const} */ (['baptism', 'birth']), (v) => t(`eventType.${v}`), { 'data-testid': 'event-type' })),
+        field(
+          t('propose.eventType'),
+          select(form, 'eventType', /** @type {const} */ (['baptism', 'birth']), (v) => t(`eventType.${v}`), { 'data-testid': 'event-type' }),
+        ),
         ...eventFields(form),
         personPicker({ value: form.child, label: t('role.child'), testid: 'child', onChange: (v) => (form.child = v) }),
         personPicker({ value: form.father, label: t('role.father'), testid: 'father', onChange: (v) => (form.father = v) }),
@@ -309,7 +359,10 @@ function findingFields(draft) {
     case 'death': {
       const form = draft.form;
       return [
-        field(t('propose.eventType'), select(form, 'eventType', /** @type {const} */ (['death', 'burial']), (v) => t(`eventType.${v}`), { 'data-testid': 'event-type' })),
+        field(
+          t('propose.eventType'),
+          select(form, 'eventType', /** @type {const} */ (['death', 'burial']), (v) => t(`eventType.${v}`), { 'data-testid': 'event-type' }),
+        ),
         ...eventFields(form),
         personPicker({ value: form.person, label: t('role.deceased'), testid: 'person', onChange: (v) => (form.person = v) }),
       ];
@@ -321,7 +374,10 @@ function findingFields(draft) {
         field(t('picker.given'), textInput(form, 'given', { 'data-testid': 'name-given' })),
         field(t('picker.surname'), textInput(form, 'surname', { 'data-testid': 'name-surname' })),
         field(t('field.asFound'), textInput(form, 'asFound', { 'data-testid': 'name-as-found' })),
-        field(t('field.type'), select(form, 'type', NAME_TYPES, (v) => t(`nameType.${v}`), { 'data-testid': 'name-type' })),
+        field(
+          t('field.type'),
+          select(form, 'type', NAME_TYPES, (v) => t(`nameType.${v}`), { 'data-testid': 'name-type' }),
+        ),
       ];
     }
     case 'correction':
@@ -352,7 +408,9 @@ export function proposeForm(draft, actions) {
   const notice = h('p', { class: 'warning small', 'data-testid': 'pending-notice', hidden: true }, t('drafts.pending'));
   const saveButton = h('button', { type: 'button', class: 'button', 'data-testid': 'save-draft' }, t('propose.saveDraft'));
   const submitButton = h('button', { type: 'button', class: 'button primary', 'data-testid': 'submit' }, t('propose.submit'));
-  const element = h('form', { class: 'propose-form', 'data-kind': draft.kind, 'data-testid': 'propose-form', novalidate: true },
+  const element = h(
+    'form',
+    { class: 'propose-form', 'data-kind': draft.kind, 'data-testid': 'propose-form', novalidate: true },
     h('h2', {}, t(`propose.kind.${draft.kind}`)),
     notice,
     h('section', { class: 'form-section' }, ...findingFields(draft)),
@@ -386,13 +444,16 @@ export function proposeForm(draft, actions) {
   };
   if (draft.pending) lock();
 
-  saveButton.addEventListener('click', guarded(report, async () => {
-    clearTimeout(timer);
-    snapshot = JSON.stringify(form);
-    await actions.save();
-    status.classList.remove('error');
-    status.textContent = t('propose.saved');
-  }));
+  saveButton.addEventListener(
+    'click',
+    guarded(report, async () => {
+      clearTimeout(timer);
+      snapshot = JSON.stringify(form);
+      await actions.save();
+      status.classList.remove('error');
+      status.textContent = t('propose.saved');
+    }),
+  );
   const submit = async () => {
     const problems = formProblems(draft);
     if (problems.length) {

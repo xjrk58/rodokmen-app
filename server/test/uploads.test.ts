@@ -35,7 +35,8 @@ describe('images: uploads, display copies, privacy and deletion', () => {
   let editor: Account;
   let stranger: Account;
   const cookies = new Map<string, string>();
-  const call = (m: Account, method: 'GET' | 'POST', url: string, payload?: object) => a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload }) });
+  const call = (m: Account, method: 'GET' | 'POST', url: string, payload?: object) =>
+    a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload }) });
 
   /** What the app does: ask for a link, PUT the bytes there, then ask the server to finish. */
   async function upload(m: Account, body: Buffer, contentType = 'image/jpeg') {

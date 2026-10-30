@@ -42,11 +42,19 @@ describe('Merging Persons and undoing Proposals', () => {
 
   it('same man added twice: after the merge one Person remains with both Events, and the other no longer appears in search', async () => {
     const { baptised, married } = await sameManTwice();
-    const search = async () => PersonSearchResult.parse((await call(contributor, 'GET', '/api/persons?q=zvonar')).json()).items.map((i) => i.person.id).sort();
+    const search = async () =>
+      PersonSearchResult.parse((await call(contributor, 'GET', '/api/persons?q=zvonar')).json())
+        .items.map((i) => i.person.id)
+        .sort();
     expect(await search()).toEqual([baptised, married].sort());
     const kept = await person(baptised);
     const gone = await person(married);
-    const res = await call(editor, 'POST', `/api/persons/${baptised}/merge`, { mergeId: married, keepBaseVersion: kept.version, mergeBaseVersion: gone.version, note: 'Same man: same parents named in both entries' });
+    const res = await call(editor, 'POST', `/api/persons/${baptised}/merge`, {
+      mergeId: married,
+      keepBaseVersion: kept.version,
+      mergeBaseVersion: gone.version,
+      note: 'Same man: same parents named in both entries',
+    });
     expect(res.statusCode, res.body).toBe(200);
     expect(res.json()).toMatchObject({ kind: 'direct', status: 'accepted' });
     const after = await person(baptised);
@@ -71,7 +79,10 @@ describe('Merging Persons and undoing Proposals', () => {
     expect((await call(contributor, 'POST', `/api/proposals/${p.id}/reject`, { note: 'no' })).statusCode).toBe(403);
     expect((await call(other, 'POST', `/api/proposals/${p.id}/accept`, {})).statusCode).toBe(403);
     const jan = await person(L.janNovak);
-    expect((await call(contributor, 'POST', `/api/persons/${L.janNovak}/merge`, { mergeId: L.founder, keepBaseVersion: jan.version, mergeBaseVersion: 1 })).statusCode).toBe(403);
+    expect(
+      (await call(contributor, 'POST', `/api/persons/${L.janNovak}/merge`, { mergeId: L.founder, keepBaseVersion: jan.version, mergeBaseVersion: 1 }))
+        .statusCode,
+    ).toBe(403);
     const sneaky = await submit(contributor, [{ op: 'mergePersons', keepId: L.janNovak, mergeId: L.founder, keepBaseVersion: 1, mergeBaseVersion: 1 }]);
     expect(sneaky.statusCode).toBe(403);
     expect((await call(contributor, 'POST', `/api/proposals/${merge!.proposalId}/undo`, {})).statusCode).toBe(403);
@@ -128,24 +139,55 @@ describe('Merging Persons and undoing Proposals', () => {
     // A first Proposal sets the sex and the surname …
     const fix = ProposalView.parse(
       (
-        await submit(editor, [...citation('V'), { op: 'setField', record: 'person', id: v.id, baseVersion: v.version, set: { sex: 'female' } }, { op: 'setField', record: 'name', id: name.id, baseVersion: name.version, set: { surname: 'Invented-Nová' } }, { op: 'attachCitation', citationId: 'tmp:citV', nameId: name.id, baseVersion: name.version }], { direct: true })
+        await submit(
+          editor,
+          [
+            ...citation('V'),
+            { op: 'setField', record: 'person', id: v.id, baseVersion: v.version, set: { sex: 'female' } },
+            { op: 'setField', record: 'name', id: name.id, baseVersion: name.version, set: { surname: 'Invented-Nová' } },
+            { op: 'attachCitation', citationId: 'tmp:citV', nameId: name.id, baseVersion: name.version },
+          ],
+          { direct: true },
+        )
       ).json(),
     );
     // … and a later one edits the surname again.
     const later = await person(v.id);
     const latestName = later.names[0]!;
-    expect((await submit(editor, [...citation('W'), { op: 'setField', record: 'name', id: name.id, baseVersion: latestName.version, set: { surname: 'Nová', given: 'Venceslava' } }, { op: 'attachCitation', citationId: 'tmp:citW', nameId: name.id, baseVersion: latestName.version }], { direct: true })).statusCode).toBe(201);
+    expect(
+      (
+        await submit(
+          editor,
+          [
+            ...citation('W'),
+            { op: 'setField', record: 'name', id: name.id, baseVersion: latestName.version, set: { surname: 'Nová', given: 'Venceslava' } },
+            { op: 'attachCitation', citationId: 'tmp:citW', nameId: name.id, baseVersion: latestName.version },
+          ],
+          { direct: true },
+        )
+      ).statusCode,
+    ).toBe(201);
 
     const preview = UndoPreview.parse((await call(editor, 'GET', `/api/proposals/${fix.id}/undo`)).json());
     expect(preview.laterEdits).toEqual([
-      expect.objectContaining({ table: 'name', id: name.id, recordLevel: false, fields: [{ field: 'given', before: 'Věnceslava', after: 'Věnceslava', current: 'Venceslava' }, { field: 'surname', before: 'Invented', after: 'Invented-Nová', current: 'Nová' }] }),
+      expect.objectContaining({
+        table: 'name',
+        id: name.id,
+        recordLevel: false,
+        fields: [
+          { field: 'given', before: 'Věnceslava', after: 'Věnceslava', current: 'Venceslava' },
+          { field: 'surname', before: 'Invented', after: 'Invented-Nová', current: 'Nová' },
+        ],
+      }),
     ]);
     const refused = await call(editor, 'POST', `/api/proposals/${fix.id}/undo`, {});
     expect(refused.statusCode).toBe(409);
     expect(errorOf(refused).code).toBe('later_edits');
     expect((await person(v.id)).sex).toBe('female');
 
-    const res = await call(editor, 'POST', `/api/proposals/${fix.id}/undo`, { choices: [{ table: 'name', id: name.id, fields: { given: 'keep', surname: 'undo' } }] });
+    const res = await call(editor, 'POST', `/api/proposals/${fix.id}/undo`, {
+      choices: [{ table: 'name', id: name.id, fields: { given: 'keep', surname: 'undo' } }],
+    });
     expect(res.statusCode, res.body).toBe(200);
     const undone = await person(v.id);
     expect(undone.sex).toBe('unknown');
@@ -198,7 +240,9 @@ describe('Merging Persons and undoing Proposals', () => {
     expect((await call(editor, 'POST', `/api/proposals/${y.id}/undo`, {})).statusCode).toBe(200);
     expect((await call(editor, 'POST', `/api/proposals/${x.id}/undo`, {})).statusCode).toBe(200);
     expect((await call(contributor, 'GET', `/api/persons/${prokop}`)).statusCode).toBe(404);
-    expect(FamilyDetail.parse((await call(contributor, 'GET', `/api/families/${L.janFirstFamily}`)).json()).children.map((c) => c.person.id)).not.toContain(prokop);
+    expect(FamilyDetail.parse((await call(contributor, 'GET', `/api/families/${L.janFirstFamily}`)).json()).children.map((c) => c.person.id)).not.toContain(
+      prokop,
+    );
   });
 
   it('undoing an undo puts the Proposal back in force, and it can be undone again; merged ids redirect on every Person route', async () => {
@@ -217,7 +261,13 @@ describe('Merging Persons and undoing Proposals', () => {
     const fa = ProposalView.parse(
       (
         await submit(contributor, [
-          { op: 'createSource', tempId: 'tmp:fa', type: 'family_account', title: 'Invented account', familyAccount: { givenBy: 'Matěj', givenByPersonId: merge!.gone, givenOn: '1880' } },
+          {
+            op: 'createSource',
+            tempId: 'tmp:fa',
+            type: 'family_account',
+            title: 'Invented account',
+            familyAccount: { givenBy: 'Matěj', givenByPersonId: merge!.gone, givenOn: '1880' },
+          },
           { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:fa', transcription: 'Invented.', readOn: '2026-10-01', confidence: 'low' },
         ])
       ).json(),
@@ -232,7 +282,10 @@ describe('Merging Persons and undoing Proposals', () => {
   it('a field name from Object.prototype is a 400, not a crash', async () => {
     const jan = await person(L.janNovak);
     for (const key of ['constructor', 'toString']) {
-      const res = await submit(editor, [...citation('Q'), { op: 'setField', record: 'name', id: jan.names[0]!.id, baseVersion: jan.names[0]!.version, set: { [key]: 'x' } }]);
+      const res = await submit(editor, [
+        ...citation('Q'),
+        { op: 'setField', record: 'name', id: jan.names[0]!.id, baseVersion: jan.names[0]!.version, set: { [key]: 'x' } },
+      ]);
       expect(res.statusCode).toBe(400);
       expect(errorOf(res).message).toContain(`no settable field "${key}"`);
     }

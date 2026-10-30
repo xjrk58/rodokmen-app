@@ -12,7 +12,16 @@ export const newKey = () => randomBytes(9).toString('base64url');
 export function citation(tag: string, extra: Partial<Record<string, unknown>> = {}): OperationInput[] {
   return [
     { op: 'createSource', tempId: `tmp:src${tag}`, type: 'parish_register', title: `Invented register ${tag}`, repository: 'Invented archive' },
-    { op: 'createCitation', tempId: `tmp:cit${tag}`, sourceId: `tmp:src${tag}`, page: '17', transcription: 'Invented transcription of the entry.', readOn: '2026-10-01', confidence: 'high', ...extra },
+    {
+      op: 'createCitation',
+      tempId: `tmp:cit${tag}`,
+      sourceId: `tmp:src${tag}`,
+      page: '17',
+      transcription: 'Invented transcription of the entry.',
+      readOn: '2026-10-01',
+      confidence: 'high',
+      ...extra,
+    },
   ];
 }
 
@@ -59,7 +68,12 @@ export function useProposalTestbed() {
     call(m, 'POST', '/api/proposals', { formatVersion: 1, idempotencyKey: newKey(), note: null, operations, ...extra });
   const person = async (id: string, m: Account = ready().contributor) => PersonDetail.parse((await call(m, 'GET', `/api/persons/${id}`)).json());
   const count = async (table: 'person' | 'name' | 'event' | 'event_role' | 'log_entry' | 'proposal') =>
-    (await ready().t.db.selectFrom(table).select((eb) => eb.fn.countAll<number>().as('n')).executeTakeFirstOrThrow()).n;
+    (
+      await ready()
+        .t.db.selectFrom(table)
+        .select((eb) => eb.fn.countAll<number>().as('n'))
+        .executeTakeFirstOrThrow()
+    ).n;
 
   return { ready, call, submit, person, count };
 }

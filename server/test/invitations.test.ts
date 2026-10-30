@@ -103,7 +103,9 @@ describe('invitations', () => {
     await invite('late-en@example.test', 'en');
     const tokenEn = tokenFromEmail(a.mailer.lastTo('late-en@example.test')!.text);
     a.clock.advance(8 * DAY);
-    expect(errorOf(await post('/api/auth/invitation/accept', { token: tokenEn, displayName: 'Late', language: 'en' })).message).toBe('This invitation has expired. Ask the Owner for a new one.');
+    expect(errorOf(await post('/api/auth/invitation/accept', { token: tokenEn, displayName: 'Late', language: 'en' })).message).toBe(
+      'This invitation has expired. Ask the Owner for a new one.',
+    );
   });
 
   it('Czech invitation: the Owner picks Czech and the email is in Czech', async () => {

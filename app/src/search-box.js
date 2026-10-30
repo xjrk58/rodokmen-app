@@ -63,11 +63,16 @@ export class SearchBox {
     this.active = -1;
     this.list.replaceChildren(
       ...results.map((m, i) =>
-        h('li', { id: `search-result-${i}`, role: 'option', 'aria-selected': 'false', 'data-index': String(i) },
+        h(
+          'li',
+          { id: `search-result-${i}`, role: 'option', 'aria-selected': 'false', 'data-index': String(i) },
           h('span', { class: 'name' }, m.name),
-          h('span', { class: 'district' }, t('search.district', { district: m.district })))),
+          h('span', { class: 'district' }, t('search.district', { district: m.district })),
+        ),
+      ),
     );
-    this.note.textContent = total === 0 ? t('search.none', { query: query.trim() }) : total > results.length ? t('search.more', { count: total - results.length }) : '';
+    this.note.textContent =
+      total === 0 ? t('search.none', { query: query.trim() }) : total > results.length ? t('search.more', { count: total - results.length }) : '';
     this.box.hidden = false;
     this.input.setAttribute('aria-expanded', 'true');
     this.input.removeAttribute('aria-activedescendant');

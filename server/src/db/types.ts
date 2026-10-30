@@ -182,8 +182,6 @@ export interface ImagePersonTable extends RecordColumns {
   person_id: string;
 }
 
-
-
 export interface AccountTable {
   id: Generated<string>;
   version: Generated<number>;

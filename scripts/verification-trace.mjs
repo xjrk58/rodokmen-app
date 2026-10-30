@@ -131,7 +131,13 @@ function lscInfo(file, { pkg, entry }) {
   try {
     return JSON.parse(execFileSync(lsc, ['info', '--typed', entry], { cwd: join(ROOT, pkg), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
   } catch (e) {
-    problem(`lsc info --typed ${file} failed: ${String(e.stderr || e.message).trim().split('\n')[0]}`);
+    problem(
+      `lsc info --typed ${file} failed: ${
+        String(e.stderr || e.message)
+          .trim()
+          .split('\n')[0]
+      }`,
+    );
     return null;
   }
 }
@@ -223,11 +229,15 @@ for (const [file, info] of verifiedFiles) {
   const verifiedNames = new Set(lscView.functions.map((f) => f.name));
 
   // Contracts in the source must be exactly the contracts lsc extracted.
-  const inSource = contractLines.filter((c) => c.file === file).map((c) => c.text).sort();
+  const inSource = contractLines
+    .filter((c) => c.file === file)
+    .map((c) => c.text)
+    .sort();
   const extracted = lscView.functions.flatMap((f) => f.contract ?? []).sort();
   for (const c of contractLines.filter((c) => c.file === file)) {
     const fn = fns.find((f) => f.start < c.line - 1 && c.line - 1 <= f.end);
-    if (!fn || !verifiedNames.has(fn.name)) problem(`${c.file}:${c.line}: //@ contract on ${fn ? `"${fn.name}", which lsc does not verify (missing //@ verify?)` : 'no function lsc verifies'}`);
+    if (!fn || !verifiedNames.has(fn.name))
+      problem(`${c.file}:${c.line}: //@ contract on ${fn ? `"${fn.name}", which lsc does not verify (missing //@ verify?)` : 'no function lsc verifies'}`);
   }
   if (JSON.stringify(inSource) !== JSON.stringify(extracted) && problems.length === 0) {
     problem(`${file}: the //@ contract lines and the contracts lsc extracts differ (${inSource.length} vs ${extracted.length})`);
@@ -237,7 +247,10 @@ for (const [file, info] of verifiedFiles) {
     const range = fns.find((f) => f.name === fn.name);
     const body = range ? lines.slice(range.start, range.end + 1) : [];
     const requiresText = body.map((l) => /^\s*\/\/@ requires\s+(.*?)\s*$/.exec(l)?.[1]).filter(Boolean);
-    const markers = body.map((l) => TRUST_MARKER.exec(l)).filter(Boolean).map((m) => `\`//@ ${m[1]}${m[2] ? ` ${m[2]}` : ''}\``);
+    const markers = body
+      .map((l) => TRUST_MARKER.exec(l))
+      .filter(Boolean)
+      .map((m) => `\`//@ ${m[1]}${m[2] ? ` ${m[2]}` : ''}\``);
     if (fn.autohavoc) markers.push('`//@ autohavoc`');
 
     // Unverified production code that calls it: there its requires are assumed, not checked.
@@ -263,7 +276,11 @@ for (const [file, info] of verifiedFiles) {
   }
 
   for (const ext of lscView.externs ?? []) {
-    assumptions.push({ name: ext.name ?? ext.qualified ?? '(extern)', file, assumed: ['an axiom: its contract is assumed (`//@ extern` or a call into another file)'] });
+    assumptions.push({
+      name: ext.name ?? ext.qualified ?? '(extern)',
+      file,
+      assumed: ['an axiom: its contract is assumed (`//@ extern` or a call into another file)'],
+    });
   }
 
   const { dfy, lines: added } = proofAdditions(info.pkg, info.entry);
@@ -297,12 +314,14 @@ out.push('');
 out.push('| Requirement | Specified in | Function | File | Assumed, not proved |');
 out.push('|---|---|---|---|---|');
 for (const r of byRequirement) {
-  out.push(`| ${r.requirement} | ${specOf(r.requirement)} | ${fnRef(r)} | ${r.file} | ${r.assumed.length === 0 ? 'nothing beyond the trusted base' : 'see below'} |`);
+  out.push(
+    `| ${r.requirement} | ${specOf(r.requirement)} | ${fnRef(r)} | ${r.file} | ${r.assumed.length === 0 ? 'nothing beyond the trusted base' : 'see below'} |`,
+  );
 }
 out.push('');
 out.push('## Assumed, not proved');
 out.push('');
-out.push('A verified function\'s `requires` are proved wherever a verified function calls it. Where unverified code');
+out.push("A verified function's `requires` are proved wherever a verified function calls it. Where unverified code");
 out.push('(the "shell": parsing, I/O, the clock) calls it, they are assumed; the tests cover those callers.');
 out.push('');
 const seen = new Set();
@@ -332,14 +351,15 @@ out.push('## Proof additions');
 out.push('');
 out.push('Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.');
 out.push('');
-for (const a of additions.sort((x, y) => x.dfy.localeCompare(y.dfy))) out.push(`- ${a.dfy}: ${a.lemmas.length > 0 ? a.lemmas.map((l) => `\`${l}\``).join(', ') : 'assertions only'}`);
+for (const a of additions.sort((x, y) => x.dfy.localeCompare(y.dfy)))
+  out.push(`- ${a.dfy}: ${a.lemmas.length > 0 ? a.lemmas.map((l) => `\`${l}\``).join(', ') : 'assertions only'}`);
 if (additions.length === 0) out.push('- none');
 out.push('');
 out.push('## Trusted base');
 out.push('');
 out.push('Every proof above also trusts:');
 out.push('');
-out.push('- LemmaScript\'s translation of TypeScript to Dafny (`lemmascript` as pinned in the package; a tech preview).');
+out.push("- LemmaScript's translation of TypeScript to Dafny (`lemmascript` as pinned in the package; a tech preview).");
 out.push('  Read the generated `.dfy.gen` when writing a proof, and avoid the known issues below.');
 out.push('- Dafny and its Z3 solver (the version pinned in `.github/workflows/verify.yml`).');
 out.push('- The model: `number` is a mathematical integer (no floating point, no overflow), strings are sequences of');

@@ -81,9 +81,7 @@ export class PlaceSheet {
 
     if (!answer) {
       this.el.replaceChildren(
-        h('div', { class: 'sheet-head' },
-          h('div', {}, h('h2', {}, formatCoordinates(point.lat, point.lon))),
-          close),
+        h('div', { class: 'sheet-head' }, h('div', {}, h('h2', {}, formatCoordinates(point.lat, point.lon))), close),
         h('p', { class: 'outside', 'data-testid': 'outside' }, t('sheet.outside')),
       );
       return;
@@ -91,48 +89,86 @@ export class PlaceSheet {
 
     const showDistance = nearest && nearest.km >= SAME_PLACE_KM;
 
-    const head = h('div', { class: 'sheet-head' },
-      h('div', {},
+    const head = h(
+      'div',
+      { class: 'sheet-head' },
+      h(
+        'div',
+        {},
         showDistance ? h('p', { class: 'eyebrow' }, t('sheet.nearest', { distance: formatKm(nearest.km) })) : null,
         h('h2', { 'data-testid': 'municipality' }, municipality?.name ?? formatCoordinates(point.lat, point.lon)),
-        h('p', { class: 'meta' },
+        h(
+          'p',
+          { class: 'meta' },
           municipality ? h('span', { 'data-testid': 'district' }, t('sheet.district', { district: municipality.district })) : null,
           municipality ? ' · ' : null,
-          formatCoordinates(point.lat, point.lon))),
-      close);
+          formatCoordinates(point.lat, point.lon),
+        ),
+      ),
+      close,
+    );
 
     const { archive } = answer;
-    const registers = h('section', { class: 'registers', 'data-testid': 'registers' },
+    const registers = h(
+      'section',
+      { class: 'registers', 'data-testid': 'registers' },
       h('h3', {}, t('sheet.registers')),
-      h('p', { class: 'archive-name', 'data-testid': 'archive' },
+      h(
+        'p',
+        { class: 'archive-name', 'data-testid': 'archive' },
         h('span', { class: 'swatch', style: `background:${archive.color}` }),
-        h('span', {}, archive.name)),
+        h('span', {}, archive.name),
+      ),
       externalLink(scansUrl(archive, municipality?.name), t('sheet.openScans'), { class: 'button primary', 'data-testid': 'open-scans' }),
       h('p', { class: 'viewer-note' }, t('sheet.viewer', { portal: archive.portal.name, archive: archive.name })),
       ...answer.alsoCheck.map(({ archive: other, km, reason, district, olderDistrict }) =>
-        h('div', { class: 'also-check', role: 'note', 'data-testid': 'also-check', 'data-reason': reason },
-          h('p', {}, reason === 'district'
-            ? t('sheet.alsoCheckDistrict', { archive: other.name, district: district ?? '' })
-            : t('sheet.alsoCheck', { archive: other.name, distance: formatKm(km) })),
-          h('p', {}, reason === 'district'
-            ? t('sheet.alsoCheckDistrictWhy', { olderDistrict: olderDistrict ?? '' })
-            : t('sheet.alsoCheckWhy'), ' ', externalLink(scansUrl(other, municipality?.name), other.portal.name)))),
+        h(
+          'div',
+          { class: 'also-check', role: 'note', 'data-testid': 'also-check', 'data-reason': reason },
+          h(
+            'p',
+            {},
+            reason === 'district'
+              ? t('sheet.alsoCheckDistrict', { archive: other.name, district: district ?? '' })
+              : t('sheet.alsoCheck', { archive: other.name, distance: formatKm(km) }),
+          ),
+          h(
+            'p',
+            {},
+            reason === 'district' ? t('sheet.alsoCheckDistrictWhy', { olderDistrict: olderDistrict ?? '' }) : t('sheet.alsoCheckWhy'),
+            ' ',
+            externalLink(scansUrl(other, municipality?.name), other.portal.name),
+          ),
+        ),
+      ),
     );
 
     const jewish = index.jewishRegisters;
-    const jewishSection = h('section', { 'data-testid': 'jewish' },
+    const jewishSection = h(
+      'section',
+      { 'data-testid': 'jewish' },
       h('h3', {}, t('sheet.jewish')),
-      h('p', { class: 'secondary' },
-        t('sheet.jewishText', { archive: jewish.name }), ' ',
-        externalLink(scansUrl(jewish, municipality?.name), t('sheet.jewishLink', { portal: jewish.portal.name }), { 'data-testid': 'jewish-link' })),
+      h(
+        'p',
+        { class: 'secondary' },
+        t('sheet.jewishText', { archive: jewish.name }),
+        ' ',
+        externalLink(scansUrl(jewish, municipality?.name), t('sheet.jewishLink', { portal: jewish.portal.name }), { 'data-testid': 'jewish-link' }),
+      ),
     );
 
     const name = municipality?.name ?? '';
-    const historical = h('section', { 'data-testid': 'historical' },
+    const historical = h(
+      'section',
+      { 'data-testid': 'historical' },
       h('h3', {}, t('sheet.historical')),
-      h('ul', { class: 'link-list' },
+      h(
+        'ul',
+        { class: 'link-list' },
         ...this.deps.viewers.map((viewer) =>
-          h('li', {}, externalLink(withName(viewer.url, name), t(`viewer.${viewer.id}`, { name }), { 'data-viewer': viewer.id })))),
+          h('li', {}, externalLink(withName(viewer.url, name), t(`viewer.${viewer.id}`, { name }), { 'data-viewer': viewer.id })),
+        ),
+      ),
     );
 
     this.el.replaceChildren(head, registers, jewishSection, historical);

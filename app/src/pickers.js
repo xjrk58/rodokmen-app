@@ -83,9 +83,12 @@ export function personPicker(o) {
     };
     let body;
     if (value?.mode === 'existing') {
-      body = h('div', { class: 'picked' },
+      body = h(
+        'div',
+        { class: 'picked' },
         h('span', { 'data-testid': `${o.testid}-picked` }, value.label),
-        h('button', { type: 'button', class: 'link-button' }, t('picker.change')));
+        h('button', { type: 'button', class: 'link-button' }, t('picker.change')),
+      );
       body.querySelector('button')?.addEventListener('click', () => set(null));
     } else if (value?.mode === 'new') {
       const v = value;
@@ -98,14 +101,19 @@ export function personPicker(o) {
         });
         return h('label', { class: 'field' }, h('span', {}, t(`picker.${key}`)), input);
       };
-      const sex = h('select', { 'data-testid': `${o.testid}-sex` },
-        ...SEXES.map((s) => h('option', { value: s, selected: v.sex === s }, t(`sex.${s}`))));
+      const sex = h('select', { 'data-testid': `${o.testid}-sex` }, ...SEXES.map((s) => h('option', { value: s, selected: v.sex === s }, t(`sex.${s}`))));
       sex.addEventListener('change', () => {
         v.sex = SEXES.find((s) => s === sex.value) ?? 'unknown';
         o.onChange({ ...v });
       });
-      body = h('div', { class: 'new-person' }, field('given'), field('surname'), h('label', { class: 'field' }, h('span', {}, t('picker.sex')), sex),
-        h('button', { type: 'button', class: 'link-button' }, t('picker.findInstead')));
+      body = h(
+        'div',
+        { class: 'new-person' },
+        field('given'),
+        field('surname'),
+        h('label', { class: 'field' }, h('span', {}, t('picker.sex')), sex),
+        h('button', { type: 'button', class: 'link-button' }, t('picker.findInstead')),
+      );
       body.querySelector('.link-button')?.addEventListener('click', () => set(null));
     } else {
       /** @type {HTMLElement} */
@@ -116,7 +124,8 @@ export function personPicker(o) {
         /** @param {PersonSearchHit} hit */
         label: (hit) => personText(hit.person.given, hit.person.surname, hit.person.birth),
         /** @param {PersonSearchHit} hit */
-        onPick: (hit) => set({ mode: 'existing', id: hit.person.id, version: hit.person.version, label: personText(hit.person.given, hit.person.surname, hit.person.birth) }),
+        onPick: (hit) =>
+          set({ mode: 'existing', id: hit.person.id, version: hit.person.version, label: personText(hit.person.given, hit.person.surname, hit.person.birth) }),
       });
       const add = o.allowNew === false ? null : h('button', { type: 'button', class: 'link-button', 'data-testid': `${o.testid}-new` }, t('picker.newPerson'));
       add?.addEventListener('click', () => set({ mode: 'new', given: '', surname: '', sex: 'unknown' }));
@@ -151,7 +160,10 @@ function recordPicker(o) {
       root.replaceChildren(...head, h('div', { class: 'picked' }, h('span', { 'data-testid': `${o.testid}-picked` }, value.label), change));
       return;
     }
-    root.replaceChildren(...head, searchBox({ placeholder: o.placeholder, testid: o.testid, search: o.search, label: o.label, onPick: (item) => set(o.choice(item)) }));
+    root.replaceChildren(
+      ...head,
+      searchBox({ placeholder: o.placeholder, testid: o.testid, search: o.search, label: o.label, onPick: (item) => set(o.choice(item)) }),
+    );
   };
   render(o.value);
   return root;

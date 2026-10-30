@@ -15,7 +15,30 @@ test('normalize folds case, diacritics and dashes', () => {
   assert.equal(normalize('Řečany – Ůvaly'), 'recany uvaly');
 });
 
-test('normalize folds letters the way the server\'s search does (shared foldForSearch)', () => {
-  const words = ['Žďár nad Sázavou', 'Straße', 'STRASSE', 'Łódź', 'Æbeltoft', 'Œuvre', 'Ørsted', 'Đakovo', 'Þórshöfn', 'Ħamrun', 'İzmir', 'ıspanak', 'Ĳsselmeer', 'ſchön', 'ﬁlip', 'Mährisch Ostrau', 'Nový Jičín', 'Olomouc', 'Český Krumlov', 'Ödön Lechner', 'Ångström', 'Zürich'];
+test("normalize folds letters the way the server's search does (shared foldForSearch)", () => {
+  const words = [
+    'Žďár nad Sázavou',
+    'Straße',
+    'STRASSE',
+    'Łódź',
+    'Æbeltoft',
+    'Œuvre',
+    'Ørsted',
+    'Đakovo',
+    'Þórshöfn',
+    'Ħamrun',
+    'İzmir',
+    'ıspanak',
+    'Ĳsselmeer',
+    'ſchön',
+    'ﬁlip',
+    'Mährisch Ostrau',
+    'Nový Jičín',
+    'Olomouc',
+    'Český Krumlov',
+    'Ödön Lechner',
+    'Ångström',
+    'Zürich',
+  ];
   for (const word of words) assert.equal(normalize(word), foldForSearch(word), word);
 });

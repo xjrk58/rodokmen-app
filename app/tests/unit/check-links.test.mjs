@@ -23,7 +23,8 @@ before(async () => {
   server = createServer((req, res) => {
     if (req.url?.startsWith('/ok')) res.writeHead(200).end('ok');
     else if (req.url === '/moved') res.writeHead(301, { location: '/ok/after-redirect' }).end();
-    else if (req.url === '/slow') return; // never answers
+    else if (req.url === '/slow')
+      return; // never answers
     else if (req.url === '/forbidden') res.writeHead(403).end('bot check');
     else if (req.url === '/down') res.writeHead(503).end('maintenance');
     else res.writeHead(404).end('gone');
@@ -76,7 +77,10 @@ test('fails on an unreachable host', async () => {
 
 test('--extra adds a deliberately broken URL for a test run', async () => {
   const file = await archivesFile({ 'Archive A': `${base}/ok/a`, 'Jewish registers': `${base}/ok/j` });
-  await assert.rejects(run(process.execPath, [SCRIPT, '--file', file, '--retries', '0', '--extra', `Broken on purpose=${base}/nope`]), /Broken on purpose: .*\/nope \(HTTP 404\)/);
+  await assert.rejects(
+    run(process.execPath, [SCRIPT, '--file', file, '--retries', '0', '--extra', `Broken on purpose=${base}/nope`]),
+    /Broken on purpose: .*\/nope \(HTTP 404\)/,
+  );
 });
 
 test('the real archives.json yields one portal per archive plus the National Archives', async () => {
@@ -87,7 +91,12 @@ test('the real archives.json yields one portal per archive plus the National Arc
 });
 
 test('only warns when a portal times out, blocks the runner or is down', async () => {
-  const file = await archivesFile({ 'Archive Slow': `${base}/slow`, 'Archive Blocked': `${base}/forbidden`, 'Archive Down': `${base}/down`, 'Jewish registers': `${base}/ok/j` });
+  const file = await archivesFile({
+    'Archive Slow': `${base}/slow`,
+    'Archive Blocked': `${base}/forbidden`,
+    'Archive Down': `${base}/down`,
+    'Jewish registers': `${base}/ok/j`,
+  });
   const { stdout } = await run(process.execPath, [SCRIPT, '--file', file, '--retries', '0', '--timeout', '500']);
   assert.match(stdout, /WARN {2}Archive Slow/);
   assert.match(stdout, /WARN {2}Archive Blocked .*HTTP 403/);

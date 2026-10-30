@@ -167,7 +167,14 @@ export const AddImage = z
 export const SETTABLE_FIELDS = {
   person: { sex: Sex },
   name: { given: text(200), surname: text(200), type: NameType, asFound: nonEmpty(400) },
-  event: { type: EventType, typeDetail: text(200).nullable(), date: EdtfDate.nullable(), placeId: Id.nullable(), houseId: Id.nullable(), description: text(4000).nullable() },
+  event: {
+    type: EventType,
+    typeDetail: text(200).nullable(),
+    date: EdtfDate.nullable(),
+    placeId: Id.nullable(),
+    houseId: Id.nullable(),
+    description: text(4000).nullable(),
+  },
   role: { role: RoleType, roleDetail: text(200).nullable() },
   childLink: { linkType: ChildLinkType },
   source: { title: nonEmpty(400), repository: text(400).nullable(), reference: text(200).nullable(), url: WebUrl.nullable() },
@@ -196,7 +203,8 @@ export const SetField = z
         continue;
       }
       const r = schema.safeParse(s.set[key]);
-      if (!r.success) for (const issue of r.error.issues) ctx.addIssue({ code: 'custom', message: issue.message, path: ['set', key, ...issuePath(issue.path)] });
+      if (!r.success)
+        for (const issue of r.error.issues) ctx.addIssue({ code: 'custom', message: issue.message, path: ['set', key, ...issuePath(issue.path)] });
     }
   })
   .meta({ id: 'SetField', description: 'Changes fields of an existing record' });
@@ -213,7 +221,20 @@ export const MergePersons = z
   .meta({ id: 'MergePersons', description: 'Editors only: moves every Name, Role, Family link and Citation to the kept Person' });
 
 /** Tables an undo may restore. */
-export const RESTORABLE_TABLES = ['person', 'name', 'family', 'family_child', 'event', 'event_role', 'source', 'citation', 'event_citation', 'name_citation', 'image', 'image_person'] as const;
+export const RESTORABLE_TABLES = [
+  'person',
+  'name',
+  'family',
+  'family_child',
+  'event',
+  'event_role',
+  'source',
+  'citation',
+  'event_citation',
+  'name_citation',
+  'image',
+  'image_person',
+] as const;
 export const RestorableTable = z.enum(RESTORABLE_TABLES).meta({ id: 'RestorableTable' });
 export type RestorableTable = z.infer<typeof RestorableTable>;
 
@@ -234,7 +255,21 @@ export const RestoreRecord = z
   .meta({ id: 'RestoreRecord' });
 
 export const Operation = z
-  .discriminatedUnion('op', [CreatePerson, AddName, CreateEvent, AddRole, CreateFamily, LinkChild, CreateSource, CreateCitation, AttachCitation, AddImage, SetField, MergePersons, RestoreRecord])
+  .discriminatedUnion('op', [
+    CreatePerson,
+    AddName,
+    CreateEvent,
+    AddRole,
+    CreateFamily,
+    LinkChild,
+    CreateSource,
+    CreateCitation,
+    AttachCitation,
+    AddImage,
+    SetField,
+    MergePersons,
+    RestoreRecord,
+  ])
   .meta({ id: 'Operation' });
 
 export type Operation = z.infer<typeof Operation>;
@@ -252,14 +287,17 @@ export const ProposalStatus = z.enum(['pending', 'accepted', 'rejected']).meta({
 export type ProposalStatus = z.infer<typeof ProposalStatus>;
 export const ProposalKind = z
   .enum(['contribution', 'direct', 'undo'])
-  .meta({ id: 'ProposalKind', description: 'Submitted for review, an Editor\'s direct change, or an undo' });
+  .meta({ id: 'ProposalKind', description: "Submitted for review, an Editor's direct change, or an undo" });
 export type ProposalKind = z.infer<typeof ProposalKind>;
 
 export const SubmitProposalBody = z
   .object({
     formatVersion: z.literal(OPERATIONS_VERSION).describe('Version of the operation set the Proposal was written for'),
-    idempotencyKey: z.string().regex(/^[A-Za-z0-9_-]{8,100}$/).describe('One key per Draft: a retried submit returns the same Proposal'),
-    note: text(4000).nullable().default(null).describe('What the finding is, in the author\'s words'),
+    idempotencyKey: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{8,100}$/)
+      .describe('One key per Draft: a retried submit returns the same Proposal'),
+    note: text(4000).nullable().default(null).describe("What the finding is, in the author's words"),
     direct: z.boolean().default(false).describe('Editors only: accept at once (a direct change)'),
     operations: z.array(z.unknown()).min(1).max(300),
   })
@@ -314,14 +352,19 @@ function referencesOf(op: Operation): Array<{ ref: string; kind: TempKind; path:
         ...(op.nameId ? [{ ref: op.nameId, kind: 'name' as const, path: 'nameId' }] : []),
       ];
     case 'addImage':
-      return [...(op.citationId ? [{ ref: op.citationId, kind: 'citation' as const, path: 'citationId' }] : []), ...op.personIds.map((p, i) => ({ ref: p, kind: 'person' as const, path: `personIds.${i}` }))];
+      return [
+        ...(op.citationId ? [{ ref: op.citationId, kind: 'citation' as const, path: 'citationId' }] : []),
+        ...op.personIds.map((p, i) => ({ ref: p, kind: 'person' as const, path: `personIds.${i}` })),
+      ];
     default:
       return [];
   }
 }
 
 /** The existing record an operation changes and must name a base version for, if any. */
-export function baseTargetOf(op: Operation): { record: 'person' | 'event' | 'family' | 'name' | SettableRecord; id: string; baseVersion: number | undefined; path: string } | null {
+export function baseTargetOf(
+  op: Operation,
+): { record: 'person' | 'event' | 'family' | 'name' | SettableRecord; id: string; baseVersion: number | undefined; path: string } | null {
   switch (op.op) {
     case 'addName':
       return isTempId(op.personId) ? null : { record: 'person', id: op.personId, baseVersion: op.baseVersion, path: 'baseVersion' };
@@ -360,18 +403,29 @@ const tempIdOf = (op: Operation): string | undefined => ('tempId' in op ? op.tem
 
 /** One parsed operation in context: who may use it, and its temporary ids (recorded in `temps`). */
 function checkOne(op: Operation, position: number, options: { editor: boolean; allowRestore?: boolean }, temps: Map<string, TempKind>): ProposalIssue[] {
-  if (op.op === 'restoreRecord' && !options.allowRestore) return [{ code: 'not_allowed', position, message: `operation ${position + 1}: restoreRecord is written only by an undo` }];
-  if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor) return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` }];
+  if (op.op === 'restoreRecord' && !options.allowRestore)
+    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: restoreRecord is written only by an undo` }];
+  if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor)
+    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` }];
   const issues: ProposalIssue[] = [];
   for (const r of referencesOf(op)) {
     if (!isTempId(r.ref)) continue;
     const kind = temps.get(r.ref);
-    if (kind === undefined) issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is not created before it is used` });
-    else if (kind !== r.kind) issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is a ${kind}, not a ${r.kind}` });
+    if (kind === undefined)
+      issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is not created before it is used` });
+    else if (kind !== r.kind)
+      issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is a ${kind}, not a ${r.kind}` });
   }
-  if (op.op === 'setField' && Object.keys(op.set).length === 0) issues.push({ code: 'invalid_operation', position, path: ['set'], message: `operation ${position + 1} (setField): set at least one field` });
+  if (op.op === 'setField' && Object.keys(op.set).length === 0)
+    issues.push({ code: 'invalid_operation', position, path: ['set'], message: `operation ${position + 1} (setField): set at least one field` });
   const target = baseTargetOf(op);
-  if (target && target.baseVersion === undefined) issues.push({ code: 'invalid_operation', position, path: [target.path], message: `operation ${position + 1} (${op.op}): name the version of the ${target.record} you saw (baseVersion)` });
+  if (target && target.baseVersion === undefined)
+    issues.push({
+      code: 'invalid_operation',
+      position,
+      path: [target.path],
+      message: `operation ${position + 1} (${op.op}): name the version of the ${target.record} you saw (baseVersion)`,
+    });
   const creates = CREATES[op.op];
   const tempId = tempIdOf(op);
   if (creates && tempId) {
@@ -398,7 +452,13 @@ export function checkOperations(raw: readonly unknown[], options: { editor: bool
     }
     const parsed = Operation.safeParse(value);
     if (!parsed.success) {
-      for (const i of parsed.error.issues) issues.push({ code: 'invalid_operation', position, path: issuePath(i.path), message: `operation ${position + 1} (${name}) ${i.path.join('.')}: ${i.message}` });
+      for (const i of parsed.error.issues)
+        issues.push({
+          code: 'invalid_operation',
+          position,
+          path: issuePath(i.path),
+          message: `operation ${position + 1} (${name}) ${i.path.join('.')}: ${i.message}`,
+        });
       return;
     }
     const found = checkOne(parsed.data, position, options, temps);

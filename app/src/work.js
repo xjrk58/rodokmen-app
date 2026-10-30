@@ -6,7 +6,19 @@
 
 import { ApiError, getMe, getPerson, messageOf, myProposals, notificationSettings, setNotificationSettings, submitProposal, uploadImage } from './api.js';
 import { guarded, h, showError } from './dom.js';
-import { deleteDraft, draftPhotos, getDraft, isStale, listDrafts, newDraft, QUOTA_WARNING, requestPersistence, saveDraft, savePhoto, storageEstimate } from './drafts.js';
+import {
+  deleteDraft,
+  draftPhotos,
+  getDraft,
+  isStale,
+  listDrafts,
+  newDraft,
+  QUOTA_WARNING,
+  requestPersistence,
+  saveDraft,
+  savePhoto,
+  storageEstimate,
+} from './drafts.js';
 import { onLanguageChange, t } from './i18n.js';
 import { kindChooser, proposeForm } from './propose-form.js';
 import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
@@ -260,7 +272,9 @@ export class WorkPanel {
     ];
     const current = view === 'draft' ? 'drafts' : view;
     this.els.nav.replaceChildren(
-      ...tabs.map(([id, key]) => h('a', { href: `#work/${id}`, class: 'tab', 'aria-current': id === current ? 'page' : null, 'data-testid': `tab-${id}` }, t(key))),
+      ...tabs.map(([id, key]) =>
+        h('a', { href: `#work/${id}`, class: 'tab', 'aria-current': id === current ? 'page' : null, 'data-testid': `tab-${id}` }, t(key)),
+      ),
     );
   }
 
@@ -357,19 +371,25 @@ export class WorkPanel {
       }
     };
     submit.addEventListener('click', () => void send());
-    remove.addEventListener('click', guarded(showError(status), async () => {
-      if (!confirm(t('drafts.confirmDelete'))) return;
-      await deleteDraft(d.id);
-      void this.refreshBadge();
-      await this.renderDrafts(signal);
-    }));
-    return h('article', { class: 'card draft', 'data-testid': 'draft', 'data-id': d.id },
+    remove.addEventListener(
+      'click',
+      guarded(showError(status), async () => {
+        if (!confirm(t('drafts.confirmDelete'))) return;
+        await deleteDraft(d.id);
+        void this.refreshBadge();
+        await this.renderDrafts(signal);
+      }),
+    );
+    return h(
+      'article',
+      { class: 'card draft', 'data-testid': 'draft', 'data-id': d.id },
       h('header', { class: 'card-head' }, h('a', { href: `#work/draft/${d.id}`, 'data-testid': 'draft-title' }, draftTitle(d, t))),
       h('p', { class: 'muted small' }, t('drafts.meta', { date: formatDate(d.updatedAt), photos: photos.length })),
       isStale(d) ? h('p', { class: 'warning small' }, t('drafts.stale')) : null,
       d.pending ? h('p', { class: 'warning small' }, t('drafts.pending')) : null,
       status,
-      h('div', { class: 'form-actions' }, remove, submit));
+      h('div', { class: 'form-actions' }, remove, submit),
+    );
   }
 
   /** @param {AbortSignal} signal */
@@ -380,7 +400,11 @@ export class WorkPanel {
     if (signal.aborted) return;
     const full = estimate ? estimate.usage / estimate.quota > QUOTA_WARNING : false;
     const quota = estimate
-      ? h('p', { class: `small ${full ? 'warning' : 'muted'}`, 'data-testid': 'storage' }, t(full ? 'drafts.storageFull' : 'drafts.storage', { used: mb(estimate.usage), quota: mb(estimate.quota) }))
+      ? h(
+          'p',
+          { class: `small ${full ? 'warning' : 'muted'}`, 'data-testid': 'storage' },
+          t(full ? 'drafts.storageFull' : 'drafts.storage', { used: mb(estimate.usage), quota: mb(estimate.quota) }),
+        )
       : null;
     this.els.body.replaceChildren(
       h('h2', {}, t('drafts.title')),
@@ -399,15 +423,18 @@ export class WorkPanel {
     if (signal.aborted) return;
     const toggle = h('input', { type: 'checkbox', checked: settings.outcomeEmails, 'data-testid': 'outcome-emails' });
     const status = h('p', { class: 'form-status', role: 'status', 'data-testid': 'outcome-status' });
-    toggle.addEventListener('change', guarded(showError(status), async () => {
-      status.textContent = '';
-      try {
-        await setNotificationSettings({ outcomeEmails: toggle.checked });
-      } catch (error) {
-        toggle.checked = !toggle.checked;
-        throw error;
-      }
-    }));
+    toggle.addEventListener(
+      'change',
+      guarded(showError(status), async () => {
+        status.textContent = '';
+        try {
+          await setNotificationSettings({ outcomeEmails: toggle.checked });
+        } catch (error) {
+          toggle.checked = !toggle.checked;
+          throw error;
+        }
+      }),
+    );
     this.els.body.replaceChildren(
       h('h2', {}, t('mine.title')),
       h('label', { class: 'switch-row' }, toggle, h('span', {}, t('mine.outcomeEmails'))),

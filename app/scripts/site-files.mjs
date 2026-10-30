@@ -22,7 +22,19 @@ export const SITE_DIRS = ['src', 'vendor', 'i18n', 'data', 'icons'];
 /** Files inside SITE_DIRS that are not deployed: type declarations for the type check. */
 const NOT_DEPLOYED = /\.d\.ts$/;
 /** Everything else at the top of app/: tooling, tests and build output, never deployed. */
-export const NOT_SITE = ['package.json', 'tsconfig.json', 'tsconfig.node.json', 'tsconfig.sw.json', 'playwright.config.js', 'scripts', 'tests', 'node_modules', '.cache', 'test-results', 'playwright-report'];
+export const NOT_SITE = [
+  'package.json',
+  'tsconfig.json',
+  'tsconfig.node.json',
+  'tsconfig.sw.json',
+  'playwright.config.js',
+  'scripts',
+  'tests',
+  'node_modules',
+  '.cache',
+  'test-results',
+  'playwright-report',
+];
 
 /**
  * @param {string} dir

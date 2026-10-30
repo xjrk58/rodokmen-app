@@ -1,9 +1,18 @@
-import { compareByEarliest, isLiving, livingFactsFromEvents, parseEdtf, type EventSummary, type GeoPoint, type HouseRef, type PersonSummary, type PlaceRef } from '@rodokmen/shared';
+import {
+  compareByEarliest,
+  isLiving,
+  livingFactsFromEvents,
+  parseEdtf,
+  type EventSummary,
+  type GeoPoint,
+  type HouseRef,
+  type PersonSummary,
+  type PlaceRef,
+} from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Clock } from '../clock.js';
 import type { Db } from '../db/db.js';
 import { dayOrNull } from './dates.js';
-
 
 /** Latitude and longitude of a geography(Point) column, for a select list. */
 export const lat = (column: string) => sql<number | null>`ST_Y(${sql.ref(column)}::geometry)`;
@@ -53,7 +62,10 @@ export async function personSummaries(db: Db, ids: readonly string[], clock: Clo
   }
   const today = clock.now();
   const earliestOf = (dates: Array<string | null>): string | null => {
-    const parsed = dates.filter((d): d is string => d !== null).map(parseEdtf).sort(compareByEarliest);
+    const parsed = dates
+      .filter((d): d is string => d !== null)
+      .map(parseEdtf)
+      .sort(compareByEarliest);
     return parsed[0]?.input ?? null;
   };
   for (const p of persons) {
@@ -163,7 +175,13 @@ export async function summarizeEvents(db: Db, rows: EventRow[], order?: readonly
     rows.map((r): [string, EventSummary] => {
       const h = r.house_id ? houseById.get(r.house_id) : undefined;
       const house: HouseRef | null = h
-        ? { id: h.id, version: h.version, placeId: h.place_id, number: numberAt(numbers.get(h.id) ?? [], dayOrNull(r.date_earliest), dayOrNull(r.date_latest)), location: geoPoint(h) }
+        ? {
+            id: h.id,
+            version: h.version,
+            placeId: h.place_id,
+            number: numberAt(numbers.get(h.id) ?? [], dayOrNull(r.date_earliest), dayOrNull(r.date_latest)),
+            location: geoPoint(h),
+          }
         : null;
       const placeId = r.place_id ?? h?.place_id ?? null;
       return [

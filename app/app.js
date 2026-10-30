@@ -27,7 +27,8 @@ const byId = (id, type) => required(document, `#${id}`, type);
  * Shown when the app cannot start: in both languages, because the interface
  * strings themselves may be what failed to load.
  */
-const FATAL = 'Aplikaci se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku. · The app could not be loaded. Check the connection and reload the page.';
+const FATAL =
+  'Aplikaci se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku. · The app could not be loaded. Check the connection and reload the page.';
 
 /** @param {unknown} error */
 function showFatal(error) {

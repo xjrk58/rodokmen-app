@@ -1,11 +1,28 @@
-import { foldForSearch, parseEdtf, type EstateDetail, type HouseDetail, type HouseSummary, type ParishDetail, type PlaceDetail, type PlaceSummary } from '@rodokmen/shared';
+import {
+  foldForSearch,
+  parseEdtf,
+  type EstateDetail,
+  type HouseDetail,
+  type HouseSummary,
+  type ParishDetail,
+  type PlaceDetail,
+  type PlaceSummary,
+} from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import { periodOf } from './dates.js';
 import { containsPattern, compareEarliestDays, geoPoint, lat, lon, placeRefs, summarizeEvents } from './summaries.js';
 
-
-function placeSummary(r: { id: string; version: number; type: PlaceSummary['type']; name: string; lat: number | null; lon: number | null; municipality_code: string | null; municipality_name: string | null }): PlaceSummary {
+function placeSummary(r: {
+  id: string;
+  version: number;
+  type: PlaceSummary['type'];
+  name: string;
+  lat: number | null;
+  lon: number | null;
+  municipality_code: string | null;
+  municipality_name: string | null;
+}): PlaceSummary {
   return {
     id: r.id,
     version: r.version,
@@ -28,7 +45,15 @@ export async function searchPlaces(db: Db, q: { q?: string | undefined; limit: n
   let query = basePlaceQuery(db);
   if (q.q) {
     const needle = containsPattern(foldForSearch(q.q));
-    query = query.where((eb) => eb.exists(eb.selectFrom('place_name as other').select(sql`1`.as('x')).whereRef('other.place_id', '=', 'p.id').where('other.search_text', 'like', sql<string>`rdk_fold(${needle})`)));
+    query = query.where((eb) =>
+      eb.exists(
+        eb
+          .selectFrom('place_name as other')
+          .select(sql`1`.as('x'))
+          .whereRef('other.place_id', '=', 'p.id')
+          .where('other.search_text', 'like', sql<string>`rdk_fold(${needle})`),
+      ),
+    );
   }
   const rows = await query.orderBy('pn.name').orderBy('p.id').limit(q.limit).offset(q.offset).execute();
   return rows.map(placeSummary);
@@ -46,7 +71,11 @@ async function housesOf(db: Db, where: { placeId?: string; houseIds?: string[] }
   const numbers = await db
     .selectFrom('house_number')
     .select(['id', 'version', 'house_id', 'number', 'period_from', 'period_to', 'valid_from'])
-    .where('house_id', 'in', houses.map((h) => h.id))
+    .where(
+      'house_id',
+      'in',
+      houses.map((h) => h.id),
+    )
     .orderBy('valid_from')
     .execute();
   const out = houses.map((h) => ({
@@ -55,7 +84,9 @@ async function housesOf(db: Db, where: { placeId?: string; houseIds?: string[] }
     placeId: h.place_id,
     location: geoPoint(h),
     note: h.note,
-    numbers: numbers.filter((n) => n.house_id === h.id).map((n) => ({ id: n.id, version: n.version, houseId: n.house_id, number: n.number, period: periodOf(n) })),
+    numbers: numbers
+      .filter((n) => n.house_id === h.id)
+      .map((n) => ({ id: n.id, version: n.version, houseId: n.house_id, number: n.number, period: periodOf(n) })),
   }));
   // Order by the current (latest) house number, numerically.
   const current = (h: HouseSummary) => Number.parseInt(h.numbers.at(-1)?.number ?? '0', 10);
@@ -82,9 +113,27 @@ export async function getPlace(db: Db, id: string): Promise<PlaceDetail | null> 
     .execute();
   return {
     ...placeSummary(row),
-    names: names.map((n) => ({ id: n.id, version: n.version, placeId: n.place_id, name: n.name, language: n.language, primary: n.is_primary, period: periodOf(n) })),
-    parishes: parishes.map((p) => ({ linkId: p.linkId, linkVersion: p.linkVersion, period: periodOf(p), parish: { id: p.id, version: p.version, name: p.name } })),
-    estates: estates.map((e) => ({ linkId: e.linkId, linkVersion: e.linkVersion, period: periodOf(e), estate: { id: e.id, version: e.version, name: e.name } })),
+    names: names.map((n) => ({
+      id: n.id,
+      version: n.version,
+      placeId: n.place_id,
+      name: n.name,
+      language: n.language,
+      primary: n.is_primary,
+      period: periodOf(n),
+    })),
+    parishes: parishes.map((p) => ({
+      linkId: p.linkId,
+      linkVersion: p.linkVersion,
+      period: periodOf(p),
+      parish: { id: p.id, version: p.version, name: p.name },
+    })),
+    estates: estates.map((e) => ({
+      linkId: e.linkId,
+      linkVersion: e.linkVersion,
+      period: periodOf(e),
+      estate: { id: e.id, version: e.version, name: e.name },
+    })),
     houses: await housesOf(db, { placeId: id }),
   };
 }
@@ -147,8 +196,16 @@ export async function estatesAt(db: Db, placeId: string, earliest: string | null
 }
 
 async function linkedPlaces(db: Db, table: 'place_parish' | 'place_estate', column: 'parish_id' | 'estate_id', id: string) {
-  const links = await db.selectFrom(table).select(['id', 'place_id', 'period_from', 'period_to', 'valid_from']).where(column, '=', id).orderBy('valid_from').execute();
-  const places = await placeRefs(db, links.map((l) => l.place_id));
+  const links = await db
+    .selectFrom(table)
+    .select(['id', 'place_id', 'period_from', 'period_to', 'valid_from'])
+    .where(column, '=', id)
+    .orderBy('valid_from')
+    .execute();
+  const places = await placeRefs(
+    db,
+    links.map((l) => l.place_id),
+  );
   return links.map((l) => ({ linkId: l.id, period: periodOf(l), place: places.get(l.place_id)! }));
 }
 

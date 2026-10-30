@@ -150,7 +150,9 @@ export function trackedRows(db: Db, changes: ChangeSet): Rows {
 /** Snapshots of many records of one table in one query, keyed by id (no lock). */
 export async function snapshotsMany(db: Db, name: RestorableTable, ids: readonly string[]): Promise<Map<string, Snapshot>> {
   if (ids.length === 0) return new Map();
-  const { rows } = await sql<{ row: Snapshot }>`select to_jsonb(t.*) as row from ${sql.table(table(name))} t where t.id = any(${[...new Set(ids)]}::uuid[])`.execute(db);
+  const { rows } = await sql<{
+    row: Snapshot;
+  }>`select to_jsonb(t.*) as row from ${sql.table(table(name))} t where t.id = any(${[...new Set(ids)]}::uuid[])`.execute(db);
   return new Map(rows.map((r) => [r.row.id, r.row]));
 }
 

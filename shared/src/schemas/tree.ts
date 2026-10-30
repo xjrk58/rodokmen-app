@@ -59,9 +59,7 @@ export const PersonWithNames = z
 
 // ---------------------------------------------------------------- Families
 
-export const ChildLinkType = z
-  .enum(['birth', 'adoptive', 'foster', 'step'])
-  .meta({ id: 'ChildLinkType', description: 'How a child belongs to a Family' });
+export const ChildLinkType = z.enum(['birth', 'adoptive', 'foster', 'step']).meta({ id: 'ChildLinkType', description: 'How a child belongs to a Family' });
 
 export const FamilyRecord = z
   .object({
@@ -85,9 +83,7 @@ export const ChildLinkRecord = z
 
 // ---------------------------------------------------------------- Events and Roles
 
-export const EventType = z
-  .enum(['birth', 'baptism', 'marriage', 'death', 'burial', 'residence', 'census', 'other'])
-  .meta({ id: 'EventType' });
+export const EventType = z.enum(['birth', 'baptism', 'marriage', 'death', 'burial', 'residence', 'census', 'other']).meta({ id: 'EventType' });
 
 export const EventRecord = z
   .object({
@@ -185,23 +181,17 @@ export const ParishRecord = z
   })
   .meta({ id: 'ParishRecord' });
 
-export const PlaceParishRecord = z
-  .object({ id: Id, version: Version, placeId: Id, parishId: Id, period: Period })
-  .meta({ id: 'PlaceParishRecord' });
+export const PlaceParishRecord = z.object({ id: Id, version: Version, placeId: Id, parishId: Id, period: Period }).meta({ id: 'PlaceParishRecord' });
 
 export const EstateRecord = z
   .object({ id: Id, version: Version, name: nonEmpty(200) })
   .meta({ id: 'EstateRecord', description: 'A manorial domain (panství)' });
 
-export const PlaceEstateRecord = z
-  .object({ id: Id, version: Version, placeId: Id, estateId: Id, period: Period })
-  .meta({ id: 'PlaceEstateRecord' });
+export const PlaceEstateRecord = z.object({ id: Id, version: Version, placeId: Id, estateId: Id, period: Period }).meta({ id: 'PlaceEstateRecord' });
 
 // ---------------------------------------------------------------- Sources and Citations
 
-export const SourceType = z
-  .enum(['parish_register', 'census', 'land_book', 'family_account', 'other'])
-  .meta({ id: 'SourceType' });
+export const SourceType = z.enum(['parish_register', 'census', 'land_book', 'family_account', 'other']).meta({ id: 'SourceType' });
 
 export const FamilyAccount = z
   .object({

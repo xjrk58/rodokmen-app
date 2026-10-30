@@ -24,7 +24,10 @@ export function polygonsOf(geometry) {
  * @returns {BBox}
  */
 export function bboxOf(polygons) {
-  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  let w = Infinity,
+    s = Infinity,
+    e = -Infinity,
+    n = -Infinity;
   for (const rings of polygons) {
     for (const [x, y] of rings[0]) {
       if (x < w) w = x;
@@ -57,8 +60,10 @@ export function bboxContains(bbox, lon, lat, marginKm = 0) {
 export function ringContains(ring, lon, lat) {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0], yi = ring[i][1];
-    const xj = ring[j][0], yj = ring[j][1];
+    const xi = ring[i][0],
+      yi = ring[i][1];
+    const xj = ring[j][0],
+      yj = ring[j][1];
     if (yi > lat !== yj > lat && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;
@@ -97,14 +102,18 @@ export function distanceToEdgesKm(polygons, lon, lat) {
   for (const rings of polygons) {
     for (const ring of rings) {
       for (let i = 1; i < ring.length; i++) {
-        const ax = (ring[i - 1][0] - lon) * kx, ay = (ring[i - 1][1] - lat) * ky;
-        const bx = (ring[i][0] - lon) * kx, by = (ring[i][1] - lat) * ky;
-        const dx = bx - ax, dy = by - ay;
+        const ax = (ring[i - 1][0] - lon) * kx,
+          ay = (ring[i - 1][1] - lat) * ky;
+        const bx = (ring[i][0] - lon) * kx,
+          by = (ring[i][1] - lat) * ky;
+        const dx = bx - ax,
+          dy = by - ay;
         const len2 = dx * dx + dy * dy;
         let t = len2 === 0 ? 0 : -(ax * dx + ay * dy) / len2;
         if (t < 0) t = 0;
         else if (t > 1) t = 1;
-        const px = ax + t * dx, py = ay + t * dy;
+        const px = ax + t * dx,
+          py = ay + t * dy;
         const d2 = px * px + py * py;
         if (d2 < best) best = d2;
       }

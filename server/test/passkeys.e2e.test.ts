@@ -27,7 +27,14 @@ async function phone(browser: Browser): Promise<{ context: BrowserContext; page:
   const cdp = await context.newCDPSession(page);
   await cdp.send('WebAuthn.enable');
   const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', {
-    options: { protocol: 'ctap2', transport: 'internal', hasResidentKey: true, hasUserVerification: true, isUserVerified: true, automaticPresenceSimulation: true },
+    options: {
+      protocol: 'ctap2',
+      transport: 'internal',
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+    },
   });
   return { context, page, cdp, authenticatorId };
 }
@@ -59,7 +66,12 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
 
   it('accepting an invitation on a phone: set name and language, register a passkey, become a Contributor; then sign in with it', async () => {
     const ownerCookie = await signIn(t.db, clock, owner);
-    const invited = await app.inject({ method: 'POST', url: '/api/invitations', headers: { cookie: ownerCookie }, payload: { email: 'marta@example.test', language: 'cs' } });
+    const invited = await app.inject({
+      method: 'POST',
+      url: '/api/invitations',
+      headers: { cookie: ownerCookie },
+      payload: { email: 'marta@example.test', language: 'cs' },
+    });
     expect(invited.statusCode).toBe(201);
     const token = tokenFromEmail(mailer.lastTo('marta@example.test')!.text);
 
@@ -95,7 +107,9 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
     await page.locator('#done').waitFor();
     const me = Me.parse(await page.evaluate(async (): Promise<unknown> => (await fetch('/api/me')).json()));
     expect(me).toMatchObject({ email: 'marta@example.test', displayName: 'Marta', role: 'contributor', passkeyCount: 1 });
-    expect((await t.db.selectFrom('passkey').select(['last_used_at', 'counter']).where('account_id', '=', account.id).executeTakeFirstOrThrow()).last_used_at).not.toBeNull();
+    expect(
+      (await t.db.selectFrom('passkey').select(['last_used_at', 'counter']).where('account_id', '=', account.id).executeTakeFirstOrThrow()).last_used_at,
+    ).not.toBeNull();
     const sessions = SessionList.parse(await page.evaluate(async (): Promise<unknown> => (await fetch('/api/me/sessions')).json()));
     expect(sessions.items.find((s) => s.current)!.method).toBe('passkey');
     await context.close();
@@ -131,7 +145,11 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
   it('a passkey of a disabled Member no longer signs in', async () => {
     const { context, page, cdp, authenticatorId } = await phone(browser);
     // Register a passkey for a fresh Member through an emailed link.
-    const member = await t.db.insertInto('account').values({ email: 'leaving@example.test', display_name: 'Leaving', language: 'en' }).returningAll().executeTakeFirstOrThrow();
+    const member = await t.db
+      .insertInto('account')
+      .values({ email: 'leaving@example.test', display_name: 'Leaving', language: 'en' })
+      .returningAll()
+      .executeTakeFirstOrThrow();
     await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: member.email } });
     await page.goto(`${origin}/auth/link#token=${tokenFromEmail(mailer.lastTo(member.email)!.text)}`);
     await page.click('#link-sign-in');

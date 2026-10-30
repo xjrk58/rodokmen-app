@@ -52,7 +52,11 @@ describe('emailed sign-in links', () => {
     expect(options.headers['set-cookie']).toMatch(/rdk_webauthn=.*HttpOnly.*SameSite=Strict/);
 
     const sessions = await a.app.inject({ method: 'GET', url: '/api/me/sessions', headers: { cookie: newPhone } });
-    expect(SessionList.parse(sessions.json()).items.map((s) => [s.method, s.current]).sort()).toEqual([
+    expect(
+      SessionList.parse(sessions.json())
+        .items.map((s) => [s.method, s.current])
+        .sort(),
+    ).toEqual([
       ['email_link', true],
       ['passkey', false],
     ]);

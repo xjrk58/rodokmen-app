@@ -34,7 +34,10 @@ test('never holds more than its capacity, evicting in use order', () => {
   const evicted = [];
   for (let i = 0; i < 2500; i++) evicted.push(...lru.touch(`tile/${i}`));
   assert.equal(lru.size, 2000);
-  assert.deepEqual(evicted, Array.from({ length: 500 }, (_, i) => `tile/${i}`));
+  assert.deepEqual(
+    evicted,
+    Array.from({ length: 500 }, (_, i) => `tile/${i}`),
+  );
   assert.equal(lru.keys()[0], 'tile/500');
 });
 

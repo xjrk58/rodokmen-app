@@ -10,7 +10,17 @@ import { APP } from './helpers.mjs';
 
 test('the site has the shell and its data, and no tests, scripts, package files or type declarations', async () => {
   const files = await siteFiles();
-  for (const needed of ['index.html', 'app.js', 'sw.js', 'src/work.js', 'i18n/cs.json', 'data/municipalities.json', 'vendor/leaflet/leaflet-src.esm.js', 'vendor/leaflet/LICENSE']) assert.ok(files.includes(needed), needed);
+  for (const needed of [
+    'index.html',
+    'app.js',
+    'sw.js',
+    'src/work.js',
+    'i18n/cs.json',
+    'data/municipalities.json',
+    'vendor/leaflet/leaflet-src.esm.js',
+    'vendor/leaflet/LICENSE',
+  ])
+    assert.ok(files.includes(needed), needed);
   for (const file of files) {
     assert.doesNotMatch(file, /^(tests|scripts|node_modules)\/|^package\.json$|^tsconfig|^playwright\.config|\.d\.ts$/, file);
   }
@@ -25,7 +35,9 @@ test('--copy copies exactly the site', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'site-'));
   try {
     await copySite(dir);
-    const copied = (await readdir(dir, { recursive: true, withFileTypes: true })).filter((e) => e.isFile()).map((e) => relative(dir, join(e.parentPath, e.name)).split(sep).join('/'));
+    const copied = (await readdir(dir, { recursive: true, withFileTypes: true }))
+      .filter((e) => e.isFile())
+      .map((e) => relative(dir, join(e.parentPath, e.name)).split(sep).join('/'));
     assert.deepEqual(copied.sort(), await siteFiles());
   } finally {
     await rm(dir, { recursive: true, force: true });

@@ -256,7 +256,12 @@ function withOverrides(archives, reassigned, districtNames) {
   /** @type {Record<string, { name: string, archive: string, district: string, reason: string }>} */
   const municipalityOverrides = {};
   for (const r of [...reassigned].sort((a, b) => a.code.localeCompare(b.code))) {
-    municipalityOverrides[r.code] = { name: r.name, archive: archiveIdByDistrict.get(r.listedDistrict) ?? '', district: r.listedDistrict, reason: OVERRIDE_REASON };
+    municipalityOverrides[r.code] = {
+      name: r.name,
+      archive: archiveIdByDistrict.get(r.listedDistrict) ?? '',
+      district: r.listedDistrict,
+      reason: OVERRIDE_REASON,
+    };
   }
   const { municipalityOverrides: _previous, ...archiveInput } = archives;
   const archivesOut = { ...archiveInput, municipalityOverrides };

@@ -31,7 +31,8 @@ const SAMPLE_MUNICIPALITY = 'Pardubice';
  */
 
 const WARN_HTTP = new Set([401, 403, 408, 429]);
-const WARN_CODES = /^(UND_ERR_CONNECT_TIMEOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|ETIMEDOUT|ECONNRESET|EAI_AGAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT(_LOCALLY)?|SELF_SIGNED_CERT_IN_CHAIN|DEPTH_ZERO_SELF_SIGNED_CERT|CERT_[A-Z_]+|ERR_TLS_CERT_ALTNAME_INVALID)$/;
+const WARN_CODES =
+  /^(UND_ERR_CONNECT_TIMEOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|ETIMEDOUT|ECONNRESET|EAI_AGAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT(_LOCALLY)?|SELF_SIGNED_CERT_IN_CHAIN|DEPTH_ZERO_SELF_SIGNED_CERT|CERT_[A-Z_]+|ERR_TLS_CERT_ALTNAME_INVALID)$/;
 
 /**
  * How serious a failed probe is.
@@ -94,7 +95,12 @@ async function probe(url, timeoutMs) {
       signal: AbortSignal.timeout(timeoutMs),
     });
     await response.body?.cancel();
-    return { ok: response.status < 400, status: `HTTP ${response.status}`, retry: response.status >= 500 || response.status === 429, httpStatus: response.status };
+    return {
+      ok: response.status < 400,
+      status: `HTTP ${response.status}`,
+      retry: response.status >= 500 || response.status === 429,
+      httpStatus: response.status,
+    };
   } catch (error) {
     const cause = error instanceof Error ? error.cause : undefined;
     const timedOut = error instanceof Error && error.name === 'TimeoutError';
@@ -149,7 +155,10 @@ async function main() {
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
     const rows = results.map((r) => `| ${icon[r.severity]} | ${r.archive} | ${r.kind} | ${r.url} | ${r.status} |`);
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, ['## Archive portal links', '', '| | Archive | Link | URL | Result |', '|---|---|---|---|---|', ...rows, ''].join('\n'));
+    await appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
+      ['## Archive portal links', '', '| | Archive | Link | URL | Result |', '|---|---|---|---|---|', ...rows, ''].join('\n'),
+    );
   }
   if (failed.length) {
     console.error(`\n${failed.length} of ${results.length} archive links failed:`);

@@ -9,13 +9,9 @@ import { Confidence, IMAGE_CONTENT_TYPES, ImageKind } from './tree.js';
 
 const Sentence = z.object({ cs: z.string(), en: z.string() }).meta({ id: 'Sentence', description: 'The same sentence in Czech and English' });
 
-export const AuthorRef = z
-  .object({ id: Id, displayName: z.string(), isAgent: z.boolean().describe('True for an Agent account') })
-  .meta({ id: 'AuthorRef' });
+export const AuthorRef = z.object({ id: Id, displayName: z.string(), isAgent: z.boolean().describe('True for an Agent account') }).meta({ id: 'AuthorRef' });
 
-export const FieldConflict = z
-  .object({ field: z.string(), proposed: z.unknown(), current: z.unknown() })
-  .meta({ id: 'FieldConflict' });
+export const FieldConflict = z.object({ field: z.string(), proposed: z.unknown(), current: z.unknown() }).meta({ id: 'FieldConflict' });
 
 export const ConflictView = z
   .object({
@@ -24,7 +20,7 @@ export const ConflictView = z
     label: Sentence,
     baseVersion: z.number().int(),
     currentVersion: z.number().int().nullable().describe('Null when the record no longer exists'),
-    fields: z.array(FieldConflict).describe('For changed fields: the Proposal\'s value next to the current one'),
+    fields: z.array(FieldConflict).describe("For changed fields: the Proposal's value next to the current one"),
   })
   .meta({ id: 'ConflictView', description: 'The operation was based on an older version of the record' });
 
@@ -102,21 +98,32 @@ export const ReviewQuery = z.object({
 
 export const ProposalListQuery = z.object({
   status: ProposalStatus.optional(),
-  mine: z.enum(['true', 'false']).transform((v) => v === 'true').optional().describe('Only your own Proposals (Editors see everyone\'s otherwise)'),
+  mine: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional()
+    .describe("Only your own Proposals (Editors see everyone's otherwise)"),
   limit: z.coerce.number().int().min(1).max(200).default(50),
 });
 
 export const Resolution = z
   .object({
     position: z.number().int().min(0),
-    fields: z.record(z.string(), z.enum(['proposal', 'current'])).default({}).describe('Per field: keep the Proposal\'s value or the current one'),
+    fields: z
+      .record(z.string(), z.enum(['proposal', 'current']))
+      .default({})
+      .describe("Per field: keep the Proposal's value or the current one"),
   })
   .meta({ id: 'Resolution' });
 
 export const AcceptBody = z
   .object({
     note: z.string().max(4000).nullable().default(null),
-    corrections: z.array(z.object({ position: z.number().int().min(0), operation: z.unknown() })).max(300).default([]).describe('Editor corrections: replacement operations'),
+    corrections: z
+      .array(z.object({ position: z.number().int().min(0), operation: z.unknown() }))
+      .max(300)
+      .default([])
+      .describe('Editor corrections: replacement operations'),
     resolutions: z.array(Resolution).max(300).default([]).describe('Choices for operations in conflict'),
   })
   .meta({ id: 'AcceptBody' });
@@ -168,7 +175,9 @@ export const HistoryEntry = z
     citations: z.array(z.object({ id: Id, sourceTitle: z.string(), page: z.string().nullable() })),
     summaries: z.array(Sentence),
     corrections: z.array(z.object({ position: z.number().int(), by: AuthorRef, summary: Sentence, original: Sentence })),
-    changes: z.array(z.object({ table: z.string(), id: Id, before: z.record(z.string(), z.unknown()).nullable(), after: z.record(z.string(), z.unknown()).nullable() })),
+    changes: z.array(
+      z.object({ table: z.string(), id: Id, before: z.record(z.string(), z.unknown()).nullable(), after: z.record(z.string(), z.unknown()).nullable() }),
+    ),
     undoneBy: Id.nullable(),
   })
   .meta({ id: 'HistoryEntry' });

@@ -39,9 +39,7 @@ export const PersonSummary = z
   })
   .meta({ id: 'PersonSummary' });
 
-export const PlaceRef = z
-  .object({ id: Id, version: Version, name: z.string(), location: GeoPoint.nullable() })
-  .meta({ id: 'PlaceRef' });
+export const PlaceRef = z.object({ id: Id, version: Version, name: z.string(), location: GeoPoint.nullable() }).meta({ id: 'PlaceRef' });
 
 export const HouseRef = z
   .object({
@@ -105,9 +103,7 @@ export const PersonSearchResult = z
   .object({ items: z.array(PersonSearchHit), limit: z.number().int(), offset: z.number().int() })
   .meta({ id: 'PersonSearchResult' });
 
-export const PersonEventView = z
-  .object({ roleId: Id, role: RoleType, roleDetail: z.string().nullable(), event: EventSummary })
-  .meta({ id: 'PersonEventView' });
+export const PersonEventView = z.object({ roleId: Id, role: RoleType, roleDetail: z.string().nullable(), event: EventSummary }).meta({ id: 'PersonEventView' });
 
 export const PartnerFamilyView = z
   .object({
@@ -261,7 +257,10 @@ export const PlaceDetail = PlaceSummary.safeExtend({
 }).meta({ id: 'PlaceDetail' });
 
 export const HouseLookupQuery = z.object({
-  number: z.string().regex(/^\d{1,5}[a-z]?$/).describe('House number (čp.)'),
+  number: z
+    .string()
+    .regex(/^\d{1,5}[a-z]?$/)
+    .describe('House number (čp.)'),
   at: EdtfDate.describe('Date at which the number was carried'),
 });
 
@@ -319,14 +318,11 @@ export const CitationDetail = CitationRecord.safeExtend({
   images: z.array(ImageView),
 }).meta({ id: 'CitationDetail' });
 
-
 export const ImageLinkQuery = z.object({ full: z.enum(['true', 'false']).optional().describe('true: the original file instead of the display copy') });
 
 export const IdParams = z.object({ id: Id });
 
-export const Health = z
-  .object({ status: z.enum(['ok', 'degraded']), database: z.enum(['ok', 'unreachable']), release: z.string() })
-  .meta({ id: 'Health' });
+export const Health = z.object({ status: z.enum(['ok', 'degraded']), database: z.enum(['ok', 'unreachable']), release: z.string() }).meta({ id: 'Health' });
 
 export type PersonSummary = z.infer<typeof PersonSummary>;
 export type PlaceRef = z.infer<typeof PlaceRef>;

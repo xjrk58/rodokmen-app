@@ -58,7 +58,11 @@ describe('Members and Agents only', () => {
   it('refuses tokens until Agent accounts exist, and unknown or ended sessions', async () => {
     const bearer = await a.app.inject({ method: 'GET', url: `/api/persons/${L.janNovak}`, headers: { authorization: 'Bearer rdk_ag_0000000000000000000000' } });
     expect(bearer.statusCode).toBe(401);
-    const forged = await a.app.inject({ method: 'GET', url: `/api/persons/${L.janNovak}`, headers: { cookie: 'rdk_session=forged-token-forged-token-forged' } });
+    const forged = await a.app.inject({
+      method: 'GET',
+      url: `/api/persons/${L.janNovak}`,
+      headers: { cookie: 'rdk_session=forged-token-forged-token-forged' },
+    });
     expect(forged.statusCode).toBe(401);
   });
 
@@ -77,9 +81,19 @@ describe('Members and Agents only', () => {
 
   it('refuses cookie-authenticated writes from another origin', async () => {
     const cookie = await signIn(t.db, a.clock, await ensureOwner(t.db));
-    const res = await a.app.inject({ method: 'POST', url: '/api/invitations', headers: { cookie, origin: 'https://evil.example' }, payload: { email: 'x@example.test', language: 'en' } });
+    const res = await a.app.inject({
+      method: 'POST',
+      url: '/api/invitations',
+      headers: { cookie, origin: 'https://evil.example' },
+      payload: { email: 'x@example.test', language: 'en' },
+    });
     expect(res.statusCode).toBe(403);
-    const sameOrigin = await a.app.inject({ method: 'POST', url: '/api/invitations', headers: { cookie, origin: a.config.publicOrigin }, payload: { email: 'x@example.test', language: 'en' } });
+    const sameOrigin = await a.app.inject({
+      method: 'POST',
+      url: '/api/invitations',
+      headers: { cookie, origin: a.config.publicOrigin },
+      payload: { email: 'x@example.test', language: 'en' },
+    });
     expect(sameOrigin.statusCode).toBe(201);
   });
 });
@@ -144,7 +158,16 @@ describe('odd encodings of API paths never skip the session check', () => {
 
     it(`anonymous: paths the router sends to an API route answer 401, ${setup}`, async () => {
       const { app } = setup === 'with the map app' ? withMap : bare;
-      for (const url of [`/%61pi${PERSON}`, `/ap%69${PERSON}`, '/%61pi/me', '/%61pi/members', `/%61pi/images/${L.pageImage}`, '/api/no-such-route', '/%61pi/no-such-route', '/api']) {
+      for (const url of [
+        `/%61pi${PERSON}`,
+        `/ap%69${PERSON}`,
+        '/%61pi/me',
+        '/%61pi/members',
+        `/%61pi/images/${L.pageImage}`,
+        '/api/no-such-route',
+        '/%61pi/no-such-route',
+        '/api',
+      ]) {
         expect((await app.inject({ method: 'GET', url })).statusCode, url).toBe(401);
       }
     });

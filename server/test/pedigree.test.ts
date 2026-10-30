@@ -15,7 +15,9 @@ const parentsOf = (id: string) =>
     .flatMap((l) => [familyById.get(l.familyId)!.partner1Id, familyById.get(l.familyId)!.partner2Id])
     .filter((x): x is string => x !== null);
 const childrenOf = (id: string) =>
-  model.families.filter((f) => f.partner1Id === id || f.partner2Id === id).flatMap((f) => model.childLinks.filter((l) => l.familyId === f.id).map((l) => l.childId));
+  model.families
+    .filter((f) => f.partner1Id === id || f.partner2Id === id)
+    .flatMap((f) => model.childLinks.filter((l) => l.familyId === f.id).map((l) => l.childId));
 
 function expected(rootId: string, generations: number, next: (id: string) => string[]): Map<string, number> {
   const found = new Map<string, number>([[rootId, 1]]);
@@ -64,7 +66,10 @@ describe('ancestors and descendants in one request', () => {
     expect(Math.max(...p.persons.map((x) => x.generation))).toBe(6);
     // Every child link between the returned Persons is there, and every Family it names.
     const ids = new Set(p.persons.map((x) => x.person.id));
-    const expectedLinks = model.childLinks.filter((l) => ids.has(l.childId) && known.get(l.childId)! < 6).map((l) => l.id).sort();
+    const expectedLinks = model.childLinks
+      .filter((l) => ids.has(l.childId) && known.get(l.childId)! < 6)
+      .map((l) => l.id)
+      .sort();
     expect(p.childLinks.map((l) => l.id).sort()).toEqual(expectedLinks);
     const familyIds = new Set(p.families.map((f) => f.id));
     for (const l of p.childLinks) expect(familyIds.has(l.familyId)).toBe(true);
