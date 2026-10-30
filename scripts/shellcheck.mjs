@@ -8,7 +8,7 @@ const OPTIONS = ['--external-sources', '--format=gcc'];
 /** `docker run` exits 125 when Docker itself fails (no daemon, image not pulled offline). */
 const DOCKER_FAILED = 125;
 
-const files = execFileSync('git', ['ls-files', '-z', '*.sh'], { encoding: 'utf8' }).split('\0').filter(Boolean);
+const files = execFileSync('git', ['ls-files', '-z', '*.sh', '.githooks/*'], { encoding: 'utf8' }).split('\0').filter(Boolean);
 
 let result = spawnSync('docker', ['run', '--rm', '-v', `${process.cwd()}:/mnt:ro`, '-w', '/mnt', IMAGE, ...OPTIONS, ...files], { stdio: 'inherit' });
 if (result.error || result.status === DOCKER_FAILED) {
