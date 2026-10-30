@@ -1,7 +1,7 @@
 // Settings: language, "Check map layers" and about.
 
-import { h } from './dom.js';
-import { language, setLanguage, t } from './i18n.js';
+import { h, required } from './dom.js';
+import { LANGUAGES, language, setLanguage, t } from './i18n.js';
 import { checkOverlays } from './layer-check.js';
 import { APP_VERSION } from './version.js';
 
@@ -17,8 +17,10 @@ export class Settings {
   constructor(dialog, openButton, deps) {
     this.dialog = dialog;
     this.deps = deps;
-    this.results = /** @type {HTMLUListElement} */ (dialog.querySelector('#check-results'));
-    this.checkButton = /** @type {HTMLButtonElement} */ (dialog.querySelector('#check-layers'));
+    this.results = required(dialog, '#check-results', HTMLUListElement);
+    this.checkButton = required(dialog, '#check-layers', HTMLButtonElement);
+    this.version = required(dialog, '#app-version', HTMLElement);
+    this.radios = [...dialog.querySelectorAll('input[name="language"]')].filter((el) => el instanceof HTMLInputElement);
     /** @type {{ overlay: OverlayConfig, working: boolean }[] | null} */
     this.lastCheck = null;
 
@@ -29,21 +31,23 @@ export class Settings {
     dialog.addEventListener('click', (event) => {
       if (event.target === dialog) dialog.close();
     });
-    for (const radio of dialog.querySelectorAll('input[name="language"]')) {
-      radio.addEventListener('change', (event) => {
-        const lang = /** @type {Language} */ (/** @type {HTMLInputElement} */ (event.target).value);
-        setLanguage(lang, { remember: true });
+    for (const radio of this.radios) {
+      radio.addEventListener('change', () => {
+        const lang = LANGUAGES.find((l) => l === radio.value);
+        if (!lang) return;
+        setLanguage(lang, { remember: true }).catch((error) => {
+          // The strings did not load: the page stays in its language, and so do the radios.
+          console.error(error);
+          this.syncLanguage();
+        });
       });
     }
-    this.checkButton.addEventListener('click', () => this.check());
+    this.checkButton.addEventListener('click', () => void this.check());
     this.render();
   }
 
   syncLanguage() {
-    for (const radio of this.dialog.querySelectorAll('input[name="language"]')) {
-      const input = /** @type {HTMLInputElement} */ (radio);
-      input.checked = input.value === language();
-    }
+    for (const radio of this.radios) radio.checked = radio.value === language();
   }
 
   async check() {
@@ -56,8 +60,7 @@ export class Settings {
 
   render() {
     this.syncLanguage();
-    const version = /** @type {HTMLElement} */ (this.dialog.querySelector('#app-version'));
-    version.textContent = t('settings.version', { version: APP_VERSION });
+    this.version.textContent = t('settings.version', { version: APP_VERSION });
     if (!this.lastCheck) return;
     this.results.replaceChildren(
       ...this.lastCheck.map(({ overlay, working }) =>

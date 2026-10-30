@@ -14,7 +14,6 @@ const PLACE_ZOOM = 12;
  * @typedef {object} MapView
  * @property {L.Map} map
  * @property {(on: boolean) => void} showRegions
- * @property {Map<string, L.TileLayer.WMS>} overlays enabled overlays by id
  * @property {(id: string, on: boolean) => void} showOverlay
  * @property {(id: string, opacity: number) => void} setOverlayOpacity
  * @property {(lat: number, lon: number) => void} setMarker
@@ -128,7 +127,6 @@ export function createMap(container, data) {
 
   return {
     map,
-    overlays,
     showRegions(on) {
       if (on) regions.addTo(map);
       else regions.remove();

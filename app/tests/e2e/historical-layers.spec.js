@@ -5,7 +5,14 @@ import { TILE, expect, openApp, test } from './fixtures.js';
 
 test.use({ locale: 'en-US' });
 
-const [survey2, survey3] = layers.overlays;
+/** @param {string} id */
+function overlay(id) {
+  const found = layers.overlays.find((o) => o.id === id);
+  if (!found) throw new Error(`layers.json has no overlay ${id}`);
+  return found;
+}
+const survey2 = overlay('survey2');
+const survey3 = overlay('survey3');
 
 test('"Check map layers" reports a blocked overlay as not working', async ({ page }) => {
   await openApp(page);

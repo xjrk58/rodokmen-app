@@ -4,6 +4,7 @@
 import { ArchiveIndex } from './src/archive-lookup.js';
 import { loadData } from './src/data.js';
 import { Gazetteer } from './src/gazetteer.js';
+import { required } from './src/dom.js';
 import { detectLanguage, onLanguageChange, setLanguage, t } from './src/i18n.js';
 import { LayersPanel } from './src/layers-panel.js';
 import { createMap } from './src/map.js';
@@ -14,20 +15,35 @@ import { registerServiceWorker } from './src/sw-client.js';
 import { WorkPanel } from './src/work.js';
 
 /**
- * @template {HTMLElement} T
+ * An element of index.html, checked to be of its type.
+ * @template {HTMLElement} E
  * @param {string} id
- * @returns {T}
+ * @param {new () => E} type
+ * @returns {E}
  */
-function byId(id) {
-  const el = document.getElementById(id);
-  if (!el) throw new Error(`#${id} missing from index.html`);
-  return /** @type {T} */ (el);
+const byId = (id, type) => required(document, `#${id}`, type);
+
+/**
+ * Shown when the app cannot start: in both languages, because the interface
+ * strings themselves may be what failed to load.
+ */
+const FATAL = 'Aplikaci se nepodařilo načíst. Zkontrolujte připojení a obnovte stránku. · The app could not be loaded. Check the connection and reload the page.';
+
+/** @param {unknown} error */
+function showFatal(error) {
+  console.error(error);
+  const message = document.getElementById('message');
+  if (message) {
+    message.textContent = FATAL;
+    message.hidden = false;
+  }
+  document.body.dataset.ready = 'error';
 }
 
 async function main() {
-  const message = byId('message');
-  const toast = byId('update-toast');
-  const reload = /** @type {HTMLButtonElement} */ (byId('update-reload'));
+  const message = byId('message', HTMLElement);
+  const toast = byId('update-toast', HTMLElement);
+  const reload = byId('update-reload', HTMLButtonElement);
 
   registerServiceWorker((apply) => {
     toast.hidden = false;
@@ -35,19 +51,19 @@ async function main() {
       reload.disabled = true;
       apply();
     };
-  });
+  }).catch((error) => console.warn('Service worker not registered; the app will not work offline.', error));
 
   await setLanguage(detectLanguage());
 
   // Drafts and the #work screens need no map data: they work even when it fails to load.
   new WorkPanel({
-    panel: byId('work'),
-    body: byId('work-body'),
-    nav: byId('work-nav'),
-    close: /** @type {HTMLButtonElement} */ (byId('work-close')),
-    button: /** @type {HTMLButtonElement} */ (byId('work-button')),
-    badge: byId('work-badge'),
-    toast: byId('drafts-toast'),
+    panel: byId('work', HTMLElement),
+    body: byId('work-body', HTMLElement),
+    nav: byId('work-nav', HTMLElement),
+    close: byId('work-close', HTMLButtonElement),
+    button: byId('work-button', HTMLButtonElement),
+    badge: byId('work-badge', HTMLElement),
+    toast: byId('drafts-toast', HTMLElement),
   });
 
   let data;
@@ -57,21 +73,22 @@ async function main() {
     console.error(error);
     message.textContent = t('error.data');
     message.hidden = false;
+    document.body.dataset.ready = 'error';
     return;
   }
 
   const index = new ArchiveIndex(data.districts, data.archives);
   const gazetteer = new Gazetteer(data.municipalities);
-  const mapView = createMap(byId('map'), data);
+  const mapView = createMap(byId('map', HTMLElement), data);
 
-  const sheet = new PlaceSheet(byId('place-sheet'), {
+  const sheet = new PlaceSheet(byId('place-sheet', HTMLElement), {
     index,
     gazetteer,
     viewers: data.layers.viewers,
     onClose: () => mapView.clearMarker(),
   });
 
-  const search = new SearchBox(/** @type {HTMLFormElement} */ (byId('search')), {
+  const search = new SearchBox(byId('search', HTMLFormElement), {
     gazetteer,
     onSelect: (m) => {
       layers.closePanel();
@@ -83,16 +100,16 @@ async function main() {
 
   const layers = new LayersPanel(
     {
-      panel: byId('layers-panel'),
-      button: /** @type {HTMLButtonElement} */ (byId('layers-button')),
-      close: /** @type {HTMLButtonElement} */ (byId('layers-close')),
-      regionsToggle: /** @type {HTMLInputElement} */ (byId('regions-toggle')),
-      overlayList: byId('overlay-list'),
+      panel: byId('layers-panel', HTMLElement),
+      button: byId('layers-button', HTMLButtonElement),
+      close: byId('layers-close', HTMLButtonElement),
+      regionsToggle: byId('regions-toggle', HTMLInputElement),
+      overlayList: byId('overlay-list', HTMLElement),
     },
     { mapView, archives: data.archives.archives, overlays: data.layers.overlays },
   );
 
-  const settings = new Settings(/** @type {HTMLDialogElement} */ (byId('settings')), /** @type {HTMLButtonElement} */ (byId('settings-button')), {
+  const settings = new Settings(byId('settings', HTMLDialogElement), byId('settings-button', HTMLButtonElement), {
     overlays: data.layers.overlays,
   });
 
@@ -108,7 +125,9 @@ async function main() {
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && sheet.open && !search.isOpen && !layers.isOpen) sheet.hide();
+    // Escape in an open dialog (Settings) closes only the dialog.
+    if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+    if (sheet.open && !search.isOpen && !layers.isOpen) sheet.hide();
   });
 
   onLanguageChange(() => {
@@ -121,4 +140,4 @@ async function main() {
   document.body.dataset.ready = 'true';
 }
 
-main();
+main().catch(showFatal);

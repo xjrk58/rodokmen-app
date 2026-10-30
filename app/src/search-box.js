@@ -1,7 +1,7 @@
 // Municipality search as a combobox: results appear as the reader types,
 // each with its district; arrow keys move, Enter or a tap chooses.
 
-import { h } from './dom.js';
+import { h, required } from './dom.js';
 import { t } from './i18n.js';
 
 /** @typedef {import('./gazetteer.js').Gazetteer} Gazetteer */
@@ -14,11 +14,11 @@ export class SearchBox {
    */
   constructor(form, deps) {
     this.deps = deps;
-    this.input = /** @type {HTMLInputElement} */ (form.querySelector('#search-input'));
-    this.clear = /** @type {HTMLButtonElement} */ (form.querySelector('#search-clear'));
-    this.box = /** @type {HTMLElement} */ (form.querySelector('#search-results-box'));
-    this.list = /** @type {HTMLUListElement} */ (form.querySelector('#search-results'));
-    this.note = /** @type {HTMLElement} */ (form.querySelector('#search-note'));
+    this.input = required(form, '#search-input', HTMLInputElement);
+    this.clear = required(form, '#search-clear', HTMLButtonElement);
+    this.box = required(form, '#search-results-box', HTMLElement);
+    this.list = required(form, '#search-results', HTMLUListElement);
+    this.note = required(form, '#search-note', HTMLElement);
     /** @type {Municipality[]} */
     this.results = [];
     this.active = -1;

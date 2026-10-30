@@ -52,6 +52,21 @@ export function externalLink(href, text, attrs = {}) {
 }
 
 /**
+ * The element `selector` finds in `root`, checked to be of `type`; throws when
+ * index.html has no such element (a broken page should fail loudly at start).
+ * @template {Element} E
+ * @param {ParentNode} root
+ * @param {string} selector
+ * @param {new () => E} type
+ * @returns {E}
+ */
+export function required(root, selector, type) {
+  const el = root.querySelector(selector);
+  if (!(el instanceof type)) throw new Error(`${selector} (${type.name}) is missing from index.html`);
+  return el;
+}
+
+/**
  * Reports a failure in a status line.
  * @param {HTMLElement} status
  * @returns {(error: unknown) => void}

@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
-import { checkArchiveCoverage } from '../../scripts/lib/archives-check.mjs';
+import { checkArchiveCoverage, checkLayers } from '../../scripts/lib/archives-check.mjs';
 import { parseCsv } from '../../scripts/lib/csv.mjs';
 import { APP, readJson } from './helpers.mjs';
 
@@ -93,6 +93,12 @@ test('committed data: 77 named districts and every municipality inside its distr
   assert.equal(municipalities.length, 6258);
   const known = new Set(names);
   for (const m of municipalities) assert.ok(known.has(m.district), `${m.name}: unknown district ${m.district}`);
+});
+
+test('every URL in layers.json is https', async () => {
+  assert.deepEqual(checkLayers(await readJson('data/layers.json')), []);
+  const plain = { base: { url: 'http://tiles.example/{z}/{x}/{y}.png' }, overlays: [{ id: 'o', url: 'https://wms.example/' }], viewers: [{ id: 'v', url: 'http://viewer.example/?q={name}' }] };
+  assert.deepEqual(checkLayers(plain), ['base.url must be an https URL', 'viewer v: url must be an https URL']);
 });
 
 test('CSV reader handles quotes, commas and CRLF', () => {
