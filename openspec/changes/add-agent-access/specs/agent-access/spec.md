@@ -14,7 +14,7 @@ Only the Owner SHALL create Agent accounts. Each Agent SHALL have a name and one
 - **THEN** the next request with that token is refused with 401
 
 ### Requirement: Read and propose only
-An Agent token SHALL allow reading the Tree and submitting Proposals, and nothing else. Accepting, rejecting, merging, undoing, direct edits and account management SHALL be refused.
+An Agent token SHALL allow reading the Tree and submitting Proposals, and no other change to the Tree. Accepting, rejecting, merging, undoing, direct edits and account management SHALL be refused. Records outside the Tree that other changes open to Agents, such as Research leads, are governed by those changes.
 
 #### Scenario: Agent tries to accept its own Proposal
 - **WHEN** an Agent sends an accept request for a Proposal

@@ -15,11 +15,7 @@
 - [ ] 3.1 Create `server/mcp` with tools for searching Persons and Places, reading records, reading ancestors and descendants, and submitting Proposals, calling the API with the Agent token; verify each tool against the fixture tree in an integration test
 - [ ] 3.2 Serve it over stdio and over streamable HTTP at `/mcp`; verify a client can connect both ways and that a tool call without a valid token fails
 
-## 4. Seeding
-
-- [ ] 4.1 Run a private seeding session in which an Agent submits the existing research as Proposals with Citations or Family accounts; verify that every seeded Proposal is in the queue, labelled as Agent work, and passes the evidence rule
-- [ ] 4.2 Owner reviews the seeded Proposals; verify the Tree contains the accepted findings and the log names the Agent as author
-
 ## Workflow follow-up
 
+- Seeding the Tree from the Owner's Vault is done by `add-vault-import`, which needs the Agent tokens from this change.
 - Archive this change after it ships so its specs move to `openspec/specs/`.

@@ -27,8 +27,8 @@ A token is a random 256-bit value with a short visible prefix (for example `rdk_
 ### Rate limiting
 A fixed-window limit is kept per token in Postgres. That is enough at family scale and avoids running a separate store.
 
-### Seeding run
-The existing research notes are private and never enter this repo. The seeding Agent runs in a private session, reads the notes there, and submits one Proposal per finding, citing a Family account for knowledge without a register entry. The Owner reviews them like any other Proposals.
+### Seeding
+The research done so far lives in the Owner's Vault and enters the Tree through `add-vault-import`, which uses an Agent token from this change.
 
 ## Risks / Trade-offs
 
