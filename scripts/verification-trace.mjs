@@ -52,6 +52,22 @@ const KNOWN_ISSUES = [
   total functions (at worst a proof fails), but their \`requires\` must hold on both branches.`,
   `**Regular expressions** cannot be extracted: put \`//@ skip\` before a regex constant.`,
   `**\`lsc regen\`** does not batch: give it the file (\`pnpm --filter @rodokmen/shared verify:regen src/x.ts\`).`,
+  `**\`unknown\`** becomes an opaque type without \`null\`: a function that returns \`null\` as an \`unknown\` cannot be
+  translated. Mark it \`//@ extern\` (as \`valueOf\` in rules.ts), so the proofs treat it as an unknown function.`,
+  `**Narrowing after an early \`=== null\` return** makes a later \`!== null\` test of the same variable a Dafny type error.`,
+  `**\`splice\`** is not supported: write \`[...a.slice(0, i), x, ...a.slice(i)]\`.`,
+  `**Existential goals (Dafny).** Dafny proves "there is a …" only when a witness is already a term in the proof, and it
+  rarely finds one inside a loop invariant. Name such a property with a \`.some(...)\` predicate (\`isBlocking\`,
+  \`hasProposal\` in rules.ts), so that it is proved from the element at hand, and give \`.dfy\` hints (\`var x :| …\`)
+  when a proof chains several.`,
+];
+
+// What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
+const SWAP_CHECK = [
+  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts and',
+  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
+  '(optionals occur only in `===` and `!==`, where order does not matter), and the generated `.dfy.gen` was read for it.',
+  'Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
 ];
 
 const problems = [];
@@ -156,6 +172,17 @@ function functionsOf(lines) {
 }
 
 /** Lines of the .dfy that are not in the .dfy.gen (the proof additions). */
+/** Production files other than `file` that import `name` and call it (`call` matches a call). */
+function callingFiles(name, file, call, sources) {
+  const importer = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`);
+  const found = [];
+  for (const [other, otherLines] of sources) {
+    if (other === file || /(^|\/)tests?\//.test(other)) continue;
+    if (importer.test(otherLines.join('\n')) && otherLines.some((l) => call.test(l))) found.push(other);
+  }
+  return found;
+}
+
 function proofAdditions(pkg, entry) {
   const config = join(ROOT, pkg, 'lemmascript.json');
   const proofDir = existsSync(config) ? (JSON.parse(readFileSync(config, 'utf8'))['proof-dir'] ?? '.') : '.';
@@ -175,17 +202,6 @@ function proofAdditions(pkg, entry) {
     else added.push(line);
   }
   return { dfy: rel(join(ROOT, dfy)), lines: added };
-}
-
-/** Production files (not tests) that import a function by name and call it. */
-function importingCallers(name, file, call) {
-  const importer = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`);
-  const out = [];
-  for (const [other, otherLines] of sources) {
-    if (other === file || /(^|\/)tests?\//.test(other)) continue;
-    if (importer.test(otherLines.join('\n')) && otherLines.some((l) => call.test(l))) out.push(other);
-  }
-  return out;
 }
 
 // ---------------------------------------------------------------- trace
@@ -252,6 +268,11 @@ for (const [file, info] of verifiedFiles) {
       .filter(Boolean)
       .map((m) => `\`//@ ${m[1]}${m[2] ? ` ${m[2]}` : ''}\``);
     if (fn.autohavoc) markers.push('`//@ autohavoc`');
+    for (const ext of lscView.externs ?? []) {
+      const extName = (ext.qualified ?? ext.name ?? '').split('.').pop();
+      if (extName && body.some((l) => new RegExp(`(?<![\\w$])${extName}\\s*\\(`).test(l)))
+        markers.push(`uses \`${ext.qualified ?? extName}\`, an extern (see below)`);
+    }
 
     // Unverified production code that calls it: there its requires are assumed, not checked.
     const callers = [];
@@ -260,7 +281,7 @@ for (const [file, info] of verifiedFiles) {
       if (other.name === fn.name || verifiedNames.has(other.name)) continue;
       if (lines.slice(other.start, other.end + 1).some((l) => call.test(l) && !/^\s*(\/\/|\*)/.test(l))) callers.push(`\`${other.name}\``);
     }
-    if (range?.exported) callers.push(...importingCallers(fn.name, file, call));
+    if (range?.exported) callers.push(...callingFiles(fn.name, file, call, sources));
     const assumed = [];
     if (requiresText.length > 0 && callers.length > 0) {
       assumed.push(`its requires, where unverified code calls it (${callers.join(', ')}): ${requiresText.map((r) => `\`${r}\``).join('; ')}`);
@@ -276,10 +297,14 @@ for (const [file, info] of verifiedFiles) {
   }
 
   for (const ext of lscView.externs ?? []) {
+    const contract =
+      (ext.requires?.length ?? 0) + (ext.ensures?.length ?? 0) > 0
+        ? 'its contract is assumed'
+        : 'it has no contract, so the proofs assume only that it is a deterministic function';
     assumptions.push({
-      name: ext.name ?? ext.qualified ?? '(extern)',
+      name: ext.qualified ?? ext.name ?? '(extern)',
       file,
-      assumed: ['an axiom: its contract is assumed (`//@ extern` or a call into another file)'],
+      assumed: [`an extern (\`//@ extern\`, or a call into another file): ${contract}`],
     });
   }
 
@@ -370,6 +395,8 @@ out.push('');
 out.push('Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and check the `.dfy.gen` when unsure.');
 out.push('');
 for (const issue of KNOWN_ISSUES) out.push(`- ${issue}`);
+out.push('');
+for (const line of SWAP_CHECK) out.push(line);
 out.push('');
 
 const text = `${out.join('\n')}`;

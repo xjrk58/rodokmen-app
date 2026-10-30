@@ -31,6 +31,12 @@ The reader returns hints ("parents married before 1801", "godparent from čp. 7"
 ### Switch, key and usage
 The API key lives in the server's environment only. The Owner's switch and daily limit are settings in the database. Usage is counted per Member per day. With the switch off, the route answers 404 and the app hides the entry point.
 
+### Rules proved with LemmaScript
+These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each lives in one file with everything its proof calls, and keeps optionals out of ordering comparisons (docs/verification.md, known issues). The model's reading, the candidate query and the API call are the trust boundary.
+- **Match scoring** (scan-reading: Names are matched, not duplicated): proved: a candidate with the read name, House and a year in the window scores above any candidate without them, and the score depends only on the read text and the Tree.
+- **The switch and the daily limit** (scan-reading: The Owner switches it on; evidence-media: Images sent for reading): proved: with the switch off nothing is read and no image is sent, and a Member at their daily limit is refused.
+- **The confidence cap** (scan-reading: The machine's reading is marked and modest): proved: a Citation the reader drafted has at most normal confidence, and a value the Member confirmed is no longer marked as read by AI.
+
 ## Risks / Trade-offs
 
 - [Private scans leave our servers] → off by default, an Owner decision stated in the switch, display copies or crops only, never Citations' metadata about Living people beyond the names on the page (ADR 0011).

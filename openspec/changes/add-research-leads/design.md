@@ -28,6 +28,13 @@ The server gathers, per Relative, which Events have Citations, their Parish over
 ### Link from Proposal to lead
 A Proposal carries an optional `answersLeads` list. Accepting it marks those leads found in the same transaction; undoing it reopens them.
 
+### Rules proved with LemmaScript
+These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each lives in one file with everything its proof calls, and keeps optionals out of ordering comparisons (docs/verification.md, known issues). The queries that gather the inputs are the trust boundary.
+- **The gap rule** (research-leads: Gap finder suggests leads): proved: every suggestion is a real gap of its kind (missing birth or baptism, unknown parents with known Parish and years, uncited marriage), every such gap is suggested, and a dismissed key is never suggested again.
+- **Closing as not found** (research-leads: What was searched is recorded): proved: a lead closes as not found only with at least one search record.
+- **Leads answered by a Proposal** (research-leads: Findings link back to leads): proved: accepting marks exactly the leads the Proposal answers as found, and undoing it reopens exactly those.
+- **Leads in an Export** (exports: Living people are reduced in every Export): proved: an exported lead links to no Living person.
+
 ## Risks / Trade-offs
 
 - [Unreviewed text could hold mistakes] → leads hold plans, never facts; anything they find still goes through review.
