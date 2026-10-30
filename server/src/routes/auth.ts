@@ -91,7 +91,7 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
     handler: async (_req, reply) => {
       const { options, challengeId } = await authenticationOptions(deps.passkeys);
       reply.setCookie(CHALLENGE_COOKIE, challengeId, challengeCookie(deps.cookieSecure));
-      return options as unknown as Record<string, unknown>;
+      return { ...options };
     },
   });
 
@@ -113,7 +113,7 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
       if (!req.member) return unauthorized(reply);
       const { options, challengeId } = await registrationOptions(deps.passkeys, req.member);
       reply.setCookie(CHALLENGE_COOKIE, challengeId, challengeCookie(deps.cookieSecure));
-      return options as unknown as Record<string, unknown>;
+      return { ...options };
     },
   });
 

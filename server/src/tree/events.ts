@@ -70,7 +70,8 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
  * House (else Place) lies inside the bounding box. Undated Events are left out.
  */
 export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsResult> {
-  const [minLon, minLat, maxLon, maxLat] = q.bbox.split(',').map(Number) as [number, number, number, number];
+  // MapEventsQuery checked that bbox is four numbers.
+  const [minLon = 0, minLat = 0, maxLon = 0, maxLat = 0] = q.bbox.split(',').map(Number);
   const from = isoDay(Math.min(q.from, q.to), 1, 1);
   const to = isoDay(Math.max(q.from, q.to), 12, 31);
   const envelope = sql`ST_MakeEnvelope(${minLon}, ${minLat}, ${maxLon}, ${maxLat}, 4326)`;

@@ -27,7 +27,9 @@ export async function pageRoutes(app: FastifyInstance, options: { appDir: string
     index: false,
     wildcard: false,
     allowedPath: (path) => path === '/auth.js' || path === '/auth.css',
-    setHeaders: (res) => res.header('cache-control', 'no-cache'),
+    setHeaders: (res) => {
+      res.header('cache-control', 'no-cache');
+    },
   });
 
   for (const page of ['/auth/invite', '/auth/link', '/auth/sign-in']) {
@@ -44,7 +46,9 @@ export async function pageRoutes(app: FastifyInstance, options: { appDir: string
       index: ['index.html'],
       // The service worker and the shell must revalidate so that new releases reach phones.
       cacheControl: false,
-      setHeaders: (res, path) => res.header('cache-control', /(index\.html|sw\.js|manifest\.webmanifest)$/.test(path) ? 'no-cache' : 'public, max-age=3600'),
+      setHeaders: (res, path) => {
+        res.header('cache-control', /(index\.html|sw\.js|manifest\.webmanifest)$/.test(path) ? 'no-cache' : 'public, max-age=3600');
+      },
       allowedPath: (path) => !path.startsWith('/api/') && !path.startsWith('/auth/'),
     });
   } else {

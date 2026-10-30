@@ -1,3 +1,4 @@
+import { Me, SessionList } from '@rodokmen/shared';
 import { createServer } from 'node:net';
 import { chromium, type Browser, type BrowserContext, type CDPSession, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -5,7 +6,7 @@ import { buildApp, type RodokmenApp } from '../src/app.js';
 import type { Account } from '../src/db/types.js';
 import { OutboxMailer } from '../src/mail/mailer.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { ensureOwner, signIn, TestClock, testConfig, tokenFromEmail } from './helpers.js';
+import { ensureOwner, portOf, signIn, TestClock, testConfig, tokenFromEmail } from './helpers.js';
 
 async function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -13,7 +14,7 @@ async function freePort(): Promise<number> {
     srv.unref();
     srv.on('error', reject);
     srv.listen(0, '127.0.0.1', () => {
-      const { port } = srv.address() as { port: number };
+      const port = portOf(srv.address());
       srv.close(() => resolve(port));
     });
   });
@@ -92,11 +93,11 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
     await page.goto(`${origin}/auth/sign-in`);
     await page.click('#passkey-sign-in');
     await page.locator('#done').waitFor();
-    const me = await page.evaluate(async () => (await fetch('/api/me')).json());
+    const me = Me.parse(await page.evaluate(async (): Promise<unknown> => (await fetch('/api/me')).json()));
     expect(me).toMatchObject({ email: 'marta@example.test', displayName: 'Marta', role: 'contributor', passkeyCount: 1 });
     expect((await t.db.selectFrom('passkey').select(['last_used_at', 'counter']).where('account_id', '=', account.id).executeTakeFirstOrThrow()).last_used_at).not.toBeNull();
-    const sessions = await page.evaluate(async () => (await fetch('/api/me/sessions')).json());
-    expect(sessions.items.find((s: { current: boolean }) => s.current).method).toBe('passkey');
+    const sessions = SessionList.parse(await page.evaluate(async (): Promise<unknown> => (await fetch('/api/me/sessions')).json()));
+    expect(sessions.items.find((s) => s.current)!.method).toBe('passkey');
     await context.close();
   }, 60_000);
 
@@ -115,7 +116,7 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
     await page.click('#register-passkey');
     await page.locator('#done').waitFor();
     expect((await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials).toHaveLength(1);
-    const me = await page.evaluate(async () => (await fetch('/api/me')).json());
+    const me = Me.parse(await page.evaluate(async (): Promise<unknown> => (await fetch('/api/me')).json()));
     expect(me.passkeyCount).toBe(2);
 
     // The new phone's passkey works on its own.
@@ -123,7 +124,7 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
     await page.goto(`${origin}/auth/sign-in`);
     await page.click('#passkey-sign-in');
     await page.locator('#done').waitFor();
-    expect((await page.evaluate(async () => (await fetch('/api/me')).json())).email).toBe('marta@example.test');
+    expect(Me.parse(await page.evaluate(async (): Promise<unknown> => (await fetch('/api/me')).json())).email).toBe('marta@example.test');
     await context.close();
   }, 60_000);
 

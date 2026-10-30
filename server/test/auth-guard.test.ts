@@ -8,6 +8,7 @@ import { createMember, ensureOwner, makeApp, signIn, type TestApp } from './help
 
 const L = generateFixture().landmarks;
 const UNKNOWN = '0192f0c4-7a1e-7c3b-9d2a-00000000beef';
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
 describe('Members and Agents only', () => {
   let t: TestDatabase;
@@ -39,7 +40,9 @@ describe('Members and Agents only', () => {
     let checked = 0;
     for (const r of routes) {
       const url = r.url.replace(/:id/g, UNKNOWN);
-      const res = await a.app.inject({ method: r.method as 'GET', url, payload: r.method === 'GET' || r.method === 'DELETE' ? undefined : {} });
+      const method = METHODS.find((m) => m === r.method);
+      if (!method) continue;
+      const res = await a.app.inject({ method, url, payload: method === 'GET' || method === 'DELETE' ? undefined : {} });
       const isPublic = url === '/api/health' || (url.startsWith('/api/auth/') && !url.startsWith('/api/auth/passkey/registration'));
       if (isPublic) {
         expect(res.statusCode, `${r.method} ${url}`).not.toBe(401);

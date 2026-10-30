@@ -93,7 +93,7 @@ describe('invented fixture Tree', () => {
       .select(['s.type', 's.account_given_by', 's.account_given_on', 'c.confidence'])
       .where('ec.event_id', '=', L.oralMarriage)
       .execute();
-    expect(rows).toEqual([{ type: 'family_account', account_given_by: expect.stringContaining('Ludmila'), account_given_on: '2026-05-01', confidence: 'low' }]);
+    expect(rows.map((r) => ({ ...r, account_given_by: r.account_given_by?.includes('Ludmila') }))).toEqual([{ type: 'family_account', account_given_by: true, account_given_on: '2026-05-01', confidence: 'low' }]);
   });
 
   it('stores dates as written with derived earliest and latest days', async () => {

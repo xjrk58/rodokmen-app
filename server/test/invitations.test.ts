@@ -1,9 +1,10 @@
-import { InvitationView, Me, SignedIn } from '@rodokmen/shared';
+import { InvitationList, InvitationView, Me, SignedIn } from '@rodokmen/shared';
+import { z } from 'zod';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashToken } from '../src/auth/sessions.js';
 import type { Account } from '../src/db/types.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { cookieFrom, createMember, DAY, ensureOwner, makeApp, MINUTE, signIn, tokenFromEmail, type TestApp } from './helpers.js';
+import { cookieFrom, createMember, DAY, ensureOwner, errorOf, makeApp, MINUTE, signIn, tokenFromEmail, type TestApp } from './helpers.js';
 
 describe('invitations', () => {
   let t: TestDatabase;
@@ -13,7 +14,7 @@ describe('invitations', () => {
 
   const invite = async (email: string, language: 'cs' | 'en', cookie = ownerCookie) =>
     a.app.inject({ method: 'POST', url: '/api/invitations', headers: { cookie }, payload: { email, language } });
-  const post = (url: string, payload: unknown, cookie?: string) => a.app.inject({ method: 'POST', url, payload: payload as object, headers: cookie ? { cookie } : {} });
+  const post = (url: string, payload: object, cookie?: string) => a.app.inject({ method: 'POST', url, payload, headers: cookie ? { cookie } : {} });
 
   beforeAll(async () => {
     t = await createTestDatabase();
@@ -80,12 +81,12 @@ describe('invitations', () => {
     // Next step on the page: register a passkey, which needs this session.
     const options = await a.app.inject({ method: 'POST', url: '/api/auth/passkey/registration/options', headers: { cookie: cookieFrom(accepted) } });
     expect(options.statusCode).toBe(200);
-    expect(options.json().rp).toEqual({ name: 'Rodokmen', id: 'localhost' });
+    expect(z.object({ rp: z.unknown() }).parse(options.json()).rp).toEqual({ name: 'Rodokmen', id: 'localhost' });
 
     // The link works once.
     const again = await post('/api/auth/invitation/accept', { token, displayName: 'Someone else', language: 'en' });
     expect(again.statusCode).toBe(410);
-    expect(again.json().code).toBe('invitation_accepted');
+    expect(errorOf(again).code).toBe('invitation_accepted');
   });
 
   it('expired invitation: refused after 7 days, and the relative is told to ask the Owner for a new one', async () => {
@@ -102,7 +103,7 @@ describe('invitations', () => {
     await invite('late-en@example.test', 'en');
     const tokenEn = tokenFromEmail(a.mailer.lastTo('late-en@example.test')!.text);
     a.clock.advance(8 * DAY);
-    expect((await post('/api/auth/invitation/accept', { token: tokenEn, displayName: 'Late', language: 'en' })).json().message).toBe('This invitation has expired. Ask the Owner for a new one.');
+    expect(errorOf(await post('/api/auth/invitation/accept', { token: tokenEn, displayName: 'Late', language: 'en' })).message).toBe('This invitation has expired. Ask the Owner for a new one.');
   });
 
   it('Czech invitation: the Owner picks Czech and the email is in Czech', async () => {
@@ -112,14 +113,27 @@ describe('invitations', () => {
     expect(email.text).toContain('Pozvánku přijmete tímto odkazem. Platí 7 dní a dá se použít jen jednou.');
   });
 
+  it('when the invitation email cannot be sent, no invitation is left behind', async () => {
+    const send = a.mailer.send.bind(a.mailer);
+    a.mailer.send = async () => {
+      throw new Error('SMTP is down');
+    };
+    try {
+      expect((await invite('unreached@example.test', 'en')).statusCode).toBe(500);
+    } finally {
+      a.mailer.send = send;
+    }
+    expect(await t.db.selectFrom('invitation').select('id').where('email', '=', 'unreached@example.test').execute()).toEqual([]);
+  });
+
   it('refuses an unknown token, a revoked invitation, and an address that is already a Member', async () => {
     expect((await post('/api/auth/invitation/check', { token: 'x'.repeat(43) })).statusCode).toBe(404);
     const created = InvitationView.parse((await invite('revoked@example.test', 'en')).json());
     const token = tokenFromEmail(a.mailer.lastTo('revoked@example.test')!.text);
     expect((await a.app.inject({ method: 'DELETE', url: `/api/invitations/${created.id}`, headers: { cookie: ownerCookie } })).statusCode).toBe(204);
-    expect((await post('/api/auth/invitation/accept', { token, displayName: 'R', language: 'en' })).json().code).toBe('invitation_revoked');
+    expect(errorOf(await post('/api/auth/invitation/accept', { token, displayName: 'R', language: 'en' })).code).toBe('invitation_revoked');
     expect((await invite(owner.email, 'en')).statusCode).toBe(409);
     const list = await a.app.inject({ method: 'GET', url: '/api/invitations', headers: { cookie: ownerCookie } });
-    expect(list.json().items.find((i: { id: string }) => i.id === created.id).status).toBe('revoked');
+    expect(InvitationList.parse(list.json()).items.find((i) => i.id === created.id)!.status).toBe('revoked');
   });
 });

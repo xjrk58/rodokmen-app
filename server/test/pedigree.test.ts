@@ -22,7 +22,13 @@ function expected(rootId: string, generations: number, next: (id: string) => str
   let frontier = [rootId];
   for (let g = 2; g <= generations; g++) {
     const nextFrontier: string[] = [];
-    for (const id of frontier) for (const p of next(id)) if (!found.has(p)) (found.set(p, g), nextFrontier.push(p));
+    for (const id of frontier) {
+      for (const p of next(id)) {
+        if (found.has(p)) continue;
+        found.set(p, g);
+        nextFrontier.push(p);
+      }
+    }
     frontier = nextFrontier;
   }
   return found;

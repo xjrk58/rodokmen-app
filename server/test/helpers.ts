@@ -1,4 +1,5 @@
 import { ApiError, type MemberRole, type UiLanguage } from '@rodokmen/shared';
+import type { AddressInfo } from 'node:net';
 import { z } from 'zod';
 import { buildApp, type RodokmenApp } from '../src/app.js';
 import { createSession, SESSION_COOKIE } from '../src/auth/sessions.js';
@@ -104,4 +105,10 @@ export function errorOf(res: { json(): unknown }): ApiError {
 /** The id of the record an API answer describes. */
 export function idOf(res: { json(): unknown }): string {
   return z.object({ id: z.string() }).parse(res.json()).id;
+}
+
+/** The port of a server listening on TCP. */
+export function portOf(address: AddressInfo | string | null): number {
+  if (address === null || typeof address === 'string') throw new Error('the server is not listening on a TCP port');
+  return address.port;
 }

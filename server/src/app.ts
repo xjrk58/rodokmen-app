@@ -39,12 +39,12 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   const clock = deps.clock ?? systemClock;
   const images = deps.images ?? createImageStorage(config.s3, clock);
 
-  const app = Fastify({
+  const fastify = Fastify({
     logger: deps.logger ?? false,
     trustProxy: config.trustProxy,
     bodyLimit: 1024 * 1024,
-  }) as unknown as RodokmenApp;
-  app.routeRecords = trackRoutes(app);
+  });
+  const app: RodokmenApp = Object.assign(fastify, { routeRecords: trackRoutes(fastify) });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

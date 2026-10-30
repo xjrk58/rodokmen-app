@@ -9,7 +9,7 @@ import { sendAlert } from '../src/ops/alerts.js';
 import { signInLinkEmail } from '../src/mail/templates.js';
 import { backupStatusReader, BACKUP_MAX_AGE_MS, HEALTH_ALERT_AFTER_MS, Watchdog } from '../src/ops/watchdog.js';
 import { createImageStorage, IMAGE_LINK_SECONDS } from '../src/storage/images.js';
-import { MINUTE, TestClock } from './helpers.js';
+import { MINUTE, portOf, TestClock } from './helpers.js';
 
 describe('presigned image links (no network)', () => {
   const clock = new TestClock(new Date('2026-10-29T10:00:00Z'));
@@ -73,7 +73,7 @@ describe('watchdog alerts for the Owner', () => {
   const okBackup = (finishedAt: string, ok = true) => ({ ok, startedAt: finishedAt, finishedAt, snapshot: ok ? 'abc123' : null, error: ok ? null : 'restic: wrong password' });
 
   it('alerts once when the health check fails for more than 5 minutes, and once on recovery', async () => {
-    const { clock, alerts, watchdog } = setup([...Array(13).fill(false), true]);
+    const { clock, alerts, watchdog } = setup([...Array<boolean>(13).fill(false), true]);
     for (let i = 0; i < 13; i++) {
       await watchdog.tick();
       clock.advance(30_000);
@@ -230,14 +230,14 @@ describe('SMTP transport', () => {
         let data = '';
         stream.on('data', (chunk: Buffer) => (data += chunk.toString('utf8')));
         stream.on('end', () => {
-          received.push({ from: session.envelope.mailFrom ? session.envelope.mailFrom.address : '', to: session.envelope.rcptTo.map((r) => r.address), data, secure: session.secure, user: session.user as string | undefined });
+          received.push({ from: session.envelope.mailFrom ? session.envelope.mailFrom.address : '', to: session.envelope.rcptTo.map((r) => r.address), data, secure: session.secure, user: typeof session.user === 'string' ? session.user : undefined });
           cb();
         });
       },
       logger: false,
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
-    port = (server.server.address() as { port: number }).port;
+    port = portOf(server.server.address());
   });
   afterAll(async () => new Promise<void>((resolve) => server.close(() => resolve())));
 
@@ -282,9 +282,7 @@ describe('watchdog alerts over SMTP when the mail service refuses at first', () 
       },
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
-    const address = server.server.address();
-    if (address === null || typeof address === 'string') throw new Error('the SMTP test server is not listening on a port');
-    port = address.port;
+    port = portOf(server.server.address());
   });
   afterAll(async () => new Promise<void>((resolve) => server.close(() => resolve())));
 

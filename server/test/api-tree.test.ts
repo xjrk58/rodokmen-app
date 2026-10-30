@@ -1,4 +1,5 @@
-import { CitationDetail, EventDetail, FamilyDetail, HouseDetail, PersonDetail, PlaceDetail, SourceDetail } from '@rodokmen/shared';
+import { CitationDetail, EstateDetail, EventDetail, FamilyDetail, HouseDetail, HouseSummary, ParishDetail, PersonDetail, PlaceDetail, PlaceSearchResult, SourceDetail, SourceSearchResult } from '@rodokmen/shared';
+import { z } from 'zod';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { generateFixture } from '../src/fixture/generate.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
@@ -6,6 +7,7 @@ import { createMember, ensureOwner, makeApp, signIn, type TestApp } from './help
 
 const model = generateFixture();
 const L = model.landmarks;
+const Houses = z.object({ items: z.array(HouseSummary) });
 
 describe('read API on the fixture Tree', () => {
   let t: TestDatabase;
@@ -92,13 +94,13 @@ describe('read API on the fixture Tree', () => {
       ['12', { from: null, to: '1805' }],
       ['15', { from: '1806', to: null }],
     ]);
-    const search = (await get('/api/places?q=lhota')).json();
-    expect(search.items.map((x: { id: string }) => x.id)).toContain(L.kamennaLhota);
-    expect((await get('/api/places?q=steinlhota')).json().items[0].id).toBe(L.kamennaLhota);
+    const search = PlaceSearchResult.parse((await get('/api/places?q=lhota')).json());
+    expect(search.items.map((x) => x.id)).toContain(L.kamennaLhota);
+    expect(PlaceSearchResult.parse((await get('/api/places?q=steinlhota')).json()).items[0]!.id).toBe(L.kamennaLhota);
   });
 
   it('GET /api/places/:id/houses finds the House by its number at a date', async () => {
-    const at = async (number: string, date: string) => (await get(`/api/places/${L.kamennaLhota}/houses?number=${number}&at=${date}`)).json().items.map((h: { id: string }) => h.id);
+    const at = async (number: string, date: string) => Houses.parse((await get(`/api/places/${L.kamennaLhota}/houses?number=${number}&at=${date}`)).json()).items.map((h) => h.id);
     expect(await at('12', '1801')).toEqual([L.houseA]);
     expect(await at('15', '1850')).toEqual([L.houseA]);
     expect(await at('12', '1850')).toEqual([L.houseB]);
@@ -115,10 +117,10 @@ describe('read API on the fixture Tree', () => {
   });
 
   it('GET /api/parishes/:id and /api/estates/:id list their Places with periods', async () => {
-    const parish = (await get(`/api/parishes/${L.parishVrbice}`)).json();
-    expect(parish.places.find((p: { place: { id: string } }) => p.place.id === L.kamennaLhota).period).toEqual({ from: '1858', to: null });
-    const estate = (await get(`/api/estates/${L.estateVrbice}`)).json();
-    expect(estate.places.map((p: { period: unknown }) => p.period)).toContain(estate.places[0].period);
+    const parish = ParishDetail.parse((await get(`/api/parishes/${L.parishVrbice}`)).json());
+    expect(parish.places.find((p) => p.place.id === L.kamennaLhota)!.period).toEqual({ from: '1858', to: null });
+    const estate = EstateDetail.parse((await get(`/api/estates/${L.estateVrbice}`)).json());
+    expect(estate.places.map((p) => p.period)).toContain(estate.places[0]!.period);
     expect(estate.places).toHaveLength(4);
   });
 
@@ -133,7 +135,7 @@ describe('read API on the fixture Tree', () => {
     expect(c.confidence).toBe('low');
     expect(c.page).toBeNull();
     expect(c.events.map((e) => e.id)).toEqual([L.oralMarriage]);
-    const registers = (await get('/api/sources?type=parish_register&q=kamenec')).json();
+    const registers = SourceSearchResult.parse((await get('/api/sources?type=parish_register&q=kamenec')).json());
     expect(registers.items.length).toBeGreaterThan(0);
   });
 
