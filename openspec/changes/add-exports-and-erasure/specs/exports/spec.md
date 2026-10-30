@@ -6,8 +6,8 @@ Keep a readable, portable copy of the Tree outside the server, and protect Livin
 
 ## ADDED Requirements
 
-### Requirement: Nightly Export to rodokmen-data
-Every night the system SHALL write an Export of the Tree to the private `rodokmen-data` repo. The Export holds one Markdown note per Person, Family, Place, House, Parish, Estate and Source, plus one GEDCOM 5.5.1 file. It SHALL commit only when something changed.
+### Requirement: Nightly Export to rodokmen-export
+Every night the system SHALL write an Export of the Tree to the private `rodokmen-export` repo. The Export holds one Markdown note per Person, Family, Place, House, Parish, Estate and Source, plus one GEDCOM 5.5.1 file. It SHALL commit only when something changed.
 
 #### Scenario: Night without changes
 - **WHEN** no Proposal was accepted since the last Export
@@ -18,10 +18,10 @@ Every night the system SHALL write an Export of the Tree to the private `rodokme
 - **THEN** one commit updates the affected notes and the GEDCOM file
 
 ### Requirement: The Export is one-way
-Changes made directly in `rodokmen-data` SHALL never flow back into the Tree. The next Export SHALL overwrite them.
+Changes made directly in `rodokmen-export` SHALL never flow back into the Tree. The next Export SHALL overwrite them.
 
 #### Scenario: Someone edits a note in the repo
-- **WHEN** a note in `rodokmen-data` is edited by hand
+- **WHEN** a note in `rodokmen-export` is edited by hand
 - **THEN** the Tree is unaffected and the next Export restores the note
 
 ### Requirement: Living people are reduced in every Export

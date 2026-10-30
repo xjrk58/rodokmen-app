@@ -2,14 +2,25 @@
 
 ## 1. Foundation
 
-- [ ] 1.1 Vendor Preact and htm into `app/vendor/` and add the signed-in shell with tabs for Map, People, Review (Editors) and Settings; verify the shell renders in Playwright at a 390 px wide viewport
+- [ ] 1.1 Vendor Preact and htm into `app/vendor/` and add the signed-in shell with the tree as home and tabs for Map, People, Review (Editors) and Settings; verify the opening-the-app scenario in Playwright at a 390 px wide viewport, and that a visitor who isn't signed in still lands on the map
 - [ ] 1.2 Build the sign-in screens (invitation, passkey registration, emailed link); verify the first-visit scenario with a virtual authenticator and the not-signed-in scenario
 
 ## 2. People
 
 - [ ] 2.1 Build the people list and search; verify the "dvorakova" scenario against the fixture tree
 - [ ] 2.2 Build the person page with Names, Events and Roles, Families, Citations with confidence and images, history and "Propose a change"; verify the godparent scenario
-- [ ] 2.3 Build the pedigree (SVG, 6 generations, tap to re-root) and the descendants list; verify the walking-up scenario and readability with a screenshot at 390 px
+- [ ] 2.3 Add "Show in tree" to search results and person pages; verify it opens the tree on that Person
+
+- [ ] 2.4 Build Owner settings (invitations, roles, disable and enable, Member–Person links, Family roots) and each Member's own settings; verify the inviting-a-cousin and Contributor's-settings scenarios, and move the minimal `/auth/` server pages' Owner functions into the app
+
+## 2a. The tree
+
+- [ ] 2a.1 Add the hourglass API query (ancestors and descendants with partners, 1–6 generations each way, in one request); verify against the fixture tree's known families, including a remarriage and an adoption
+- [ ] 2a.2 Draw the hourglass in SVG with 3 up and 2 down by default, adjustable depth, pan and pinch-zoom; verify the second-marriage and deeper-ancestry scenarios and readability with a screenshot at 390 px
+- [ ] 2a.3 Tap to refocus, and long press or second tap to open the person page; verify the moving-up-a-line scenario
+- [ ] 2a.4 Put the focus in the address and remember it per device; verify the shared-link scenario
+- [ ] 2a.5 Add the Owner's link from a Member to their Person, the "Me" button, and the Family-root fallback; verify the new-Member and not-linked scenarios
+- [ ] 2a.6 Mark Possible relatives and Living people in the tree and hide Unrelated people by default; verify the weak-link scenario
 
 ## 3. Family on the map
 

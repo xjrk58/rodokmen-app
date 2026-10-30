@@ -11,7 +11,7 @@ const HEALTH_TIMEOUT_MS = 3_000;
 export async function systemRoutes(fastify: FastifyInstance, deps: { db: Db; release: string }) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 
-  /** The only API route open to anyone (tree-read-api spec); used by Caddy, deploys and the watchdog. */
+  /** Open to anyone (tree-read-api spec), like the sign-in steps; used by Caddy, deploys and the watchdog. */
   app.get('/api/health', {
     config: { public: true },
     schema: { tags: ['System'], summary: 'Health check: the API answers and the database is reachable', response: { 200: Health, 503: Health } },
@@ -25,6 +25,14 @@ export async function systemRoutes(fastify: FastifyInstance, deps: { db: Db; rel
       return { status: 'ok' as const, database: 'ok' as const, release: deps.release };
     },
   });
+
+  // Unknown API paths. Without these the map app's catch-all file route (routes/pages.ts), which
+  // is public, would answer them; here they need a session like every API route, then say 404.
+  for (const url of ['/api', '/api/*']) {
+    app.get(url, { schema: { hide: true } }, (_req, reply) => {
+      reply.callNotFound();
+    });
+  }
 
   app.get('/api/openapi.json', {
     schema: { tags: ['System'], summary: 'This OpenAPI description (Members only)', response: { 200: z.record(z.string(), z.unknown()) } },

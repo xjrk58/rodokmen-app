@@ -8,6 +8,7 @@ This repo is public and holds code and public reference data only. Family data n
 
 - [`GLOSSARY.md`](GLOSSARY.md): the words we use, and the ones we avoid.
 - [`docs/adr/`](docs/adr/): decisions that are hard to reverse, and why we made them.
+- [`docs/architecture/`](docs/architecture/): C4 diagrams generated from one Structurizr model of the spec.
 - [`openspec/changes/`](openspec/changes/): what we are building, one OpenSpec change per milestone, each with proposal, specs, design and tasks.
 - [`openspec/specs/`](openspec/specs/): how the system behaves once changes are archived (empty until the first one ships).
 

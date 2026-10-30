@@ -12,13 +12,13 @@
 
 ## 3. Nightly Export and download
 
-- [ ] 3.1 Schedule the nightly Export with a deploy key limited to `rodokmen-data`, committing only on change; verify the quiet-night and busy-night scenarios
+- [ ] 3.1 Schedule the nightly Export with a deploy key limited to `rodokmen-export`, committing only on change; verify the quiet-night and busy-night scenarios
 - [ ] 3.2 Add the Owner's GEDCOM download; verify that only the Owner can call it and the file matches the nightly one
 
 ## 4. Erasure
 
 - [ ] 4.1 Implement erasure (Living only, named confirmation, dependent rows, orphaned Events, log markers, erasures table) in one transaction; verify the cousin, not-Living and history-after-erasure scenarios
-- [ ] 4.2 After an erasure, replace the `rodokmen-data` branch with a single orphan commit; verify the export-history scenario on a test repo
+- [ ] 4.2 After an erasure, replace the `rodokmen-export` branch with a single orphan commit; verify the export-history scenario on a test repo
 - [ ] 4.3 Reapply the erasures table during restore, before the API starts; verify the restore-from-old-Backup scenario in the monthly restore job
 
 ## Workflow follow-up

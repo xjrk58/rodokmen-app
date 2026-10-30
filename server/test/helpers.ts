@@ -5,6 +5,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db/db.js';
 import type { Account } from '../src/db/types.js';
 import { OutboxMailer } from '../src/mail/mailer.js';
+import type { ImageStorage } from '../src/storage/images.js';
 import type { Clock } from '../src/tree/summaries.js';
 import type { TestDatabase } from './db.js';
 
@@ -45,11 +46,14 @@ export interface TestApp {
   config: Config;
 }
 
-export async function makeApp(t: TestDatabase, options: { config?: Record<string, string>; extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes'] } = {}): Promise<TestApp> {
+export async function makeApp(
+  t: TestDatabase,
+  options: { config?: Record<string, string>; extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes']; clock?: TestClock; images?: (clock: TestClock) => ImageStorage } = {},
+): Promise<TestApp> {
   const config = testConfig(t.url, options.config);
   const mailer = new OutboxMailer();
-  const clock = new TestClock();
-  const app = await buildApp({ config, db: t.db, mailer, clock, extraRoutes: options.extraRoutes });
+  const clock = options.clock ?? new TestClock();
+  const app = await buildApp({ config, db: t.db, mailer, clock, images: options.images?.(clock), extraRoutes: options.extraRoutes });
   return { app, mailer, clock, config };
 }
 

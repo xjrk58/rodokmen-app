@@ -10,9 +10,8 @@ AI agents will do much of the slow work, such as reading register pages, transcr
 - Agents may read and propose only, and their Proposals are labelled as Agent work.
 - An MCP server over the same API, so assistants can search the Tree and submit Proposals.
 - Rate limits for Agent tokens.
-- A seeding run: an Agent turns the existing research notes into Proposals for the Owner to review.
 
-Out of scope: Agents accepting, merging or undoing anything; Agents without an Owner-issued token; reading or writing `rodokmen-data` (its role is set by ADR 0008).
+Out of scope: Agents accepting, merging or undoing anything; Agents without an Owner-issued token; importing the Owner's Vault (`add-vault-import`, ADR 0010).
 
 ## Capabilities
 

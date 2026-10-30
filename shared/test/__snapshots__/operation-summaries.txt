@@ -1,0 +1,48 @@
+createPerson
+  cs: přidává osobu: Václav Dvořák
+  en: adds the Person Václav Dvořák
+createEvent
+  cs: přidává událost: křest 1803-05-02, místo: Kamenná Lhota
+  en: adds the baptism on 1803-05-02 at Kamenná Lhota
+addRole
+  cs: přidává roli dítě: Václav Dvořák – křest 1803-05-02
+  en: adds child Václav Dvořák to the baptism of 1803-05-02
+addRole
+  cs: přidává roli kmotr: Anna Králová – křest 1803-05-02
+  en: adds godparent Anna Králová to the baptism of 1803-05-02
+linkChild
+  cs: připojuje vlastní dítě: Václav Dvořák (rodina Josef Dvořák a Marie Dvořáková)
+  en: links Václav Dvořák as birth child to the Family of Josef Dvořák and Marie Dvořáková
+createFamily
+  cs: přidává rodinu: Josef Dvořák a Marie Dvořáková
+  en: adds the Family of Josef Dvořák and Marie Dvořáková
+addName
+  cs: přidává jméno „Wenceslaus Dworžak“ (latinská podoba) osobě: Václav Dvořák
+  en: adds the Name “Wenceslaus Dworžak” (Latin form) to Václav Dvořák
+createSource
+  cs: přidává pramen: „Matrika N 1790–1820“
+  en: adds the Source “Matrika N 1790–1820”
+createSource
+  cs: přidává rodinné vyprávění: „Grandmother remembers“, vyprávěl(a) Eva Dvořáková, 2026-05
+  en: adds the Family account “Grandmother remembers”, given by Eva Dvořáková in 2026-05
+createCitation
+  cs: přidává citaci z pramene „Matrika N 1790–1820“, strana 12 (věrohodnost vysoká)
+  en: adds a Citation of “Matrika N 1790–1820”, page 12 (high confidence)
+attachCitation
+  cs: připojuje citaci „Matrika N 1790–1820“, s. 12 k: křest 1803-05-02
+  en: cites “Matrika N 1790–1820”, p. 12 for the baptism of 1803-05-02
+attachCitation
+  cs: připojuje citaci Matrika N, s. 12 k: „Joannes Nowak“
+  en: cites Register N, p. 12 for “Joannes Nowak”
+addImage
+  cs: přidává snímek stránky: „Matrika N 1790–1820“, s. 12
+  en: adds a page image to “Matrika N 1790–1820”, p. 12
+setField
+  cs: mění (událost) úmrtí 1850: datum → „1850-11-03“, místo → Kamenná Lhota
+  en: changes the death of 1850 (Event): date → “1850-11-03”, Place → Kamenná Lhota
+mergePersons
+  cs: slučuje osobu Jan Novák (2) do osoby Anna Králová
+  en: merges Jan Novák (2) into Anna Králová
+restoreRecord
+  cs: vrací záznam (person) Jan Novák (2) do dřívější podoby
+  en: restores the person record Jan Novák (2) to its earlier state

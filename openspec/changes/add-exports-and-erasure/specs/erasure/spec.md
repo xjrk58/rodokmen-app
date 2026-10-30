@@ -25,11 +25,11 @@ Erasure SHALL replace every log entry about the erased Person with a marker that
 - **THEN** entries that involved the cousin show "erased record" and none of the cousin's data
 
 ### Requirement: Erasure reaches Exports
-After an erasure, the next Export SHALL omit the Person and SHALL replace the history of `rodokmen-data` with a single fresh commit.
+After an erasure, the next Export SHALL omit the Person and SHALL replace the history of `rodokmen-export` with a single fresh commit.
 
 #### Scenario: Export history after erasure
 - **WHEN** the Export runs after an erasure
-- **THEN** `rodokmen-data` has a single commit, and no earlier commit containing the cousin remains reachable
+- **THEN** `rodokmen-export` has a single commit, and no earlier commit containing the cousin remains reachable
 
 ### Requirement: Restores keep erased people erased
 The system SHALL keep a list of erased record ids, without any personal data, and SHALL reapply every erasure after restoring a Backup. Backups older than the erasure SHALL be deleted when they reach the end of the 12-month retention.

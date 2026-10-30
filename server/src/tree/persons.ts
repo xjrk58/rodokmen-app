@@ -22,7 +22,11 @@ function likePattern(token: string): string {
  */
 export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuery): Promise<PersonSearchResult> {
   const tokens = q.q ? foldForSearch(q.q).split(' ').filter(Boolean) : [];
-  let query = db.selectFrom('person as p').innerJoin('name as pn', (j) => j.onRef('pn.person_id', '=', 'p.id').on('pn.is_primary', '=', true));
+  // Merged Persons have moved all their Names to the kept Person and never show in search.
+  let query = db
+    .selectFrom('person as p')
+    .innerJoin('name as pn', (j) => j.onRef('pn.person_id', '=', 'p.id').on('pn.is_primary', '=', true))
+    .where('p.merged_into_id', 'is', null);
 
   if (q.placeId) {
     const placeId = q.placeId;
@@ -64,9 +68,10 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
         'n.person_id',
         'n.as_found',
         'n.is_primary',
-        sql<number>`similarity(n.search_text, ${folded})`.as('score'),
+        sql<number>`similarity(n.search_text, rdk_fold(${folded}))`.as('score'),
       ])
-      .where(sql<boolean>`n.search_text like all(${sql.val(patterns)}::text[])`);
+      // rdk_fold, the fold behind search_text, also folds the query: both sides match by definition.
+      .where(sql<boolean>`n.search_text like all(array(select rdk_fold(p) from unnest(${sql.val(patterns)}::text[]) p))`);
     const best = db
       .selectFrom(matches.as('m'))
       .distinctOn('m.person_id')

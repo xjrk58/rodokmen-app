@@ -1,0 +1,58 @@
+graph TB
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["App (PWA): Proposals, Drafts and review"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    subgraph 6 ["Rodokmen"]
+      style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 25 ["API server"]
+        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        28["<div style='font-weight: bold'>Tree read API</div><div style='font-size: 70%; margin-top: 0px'>[Component: Recursive SQL, PostGIS]</div><div style='font-size: 80%; margin-top:10px'>Person search across Names,<br />records, ancestors and<br />descendants, and Events for a<br />map area and years.</div>"]
+        style 28 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        32["<div style='font-weight: bold'>Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/proposals.ts]</div><div style='font-size: 80%; margin-top:10px'>Takes Proposals as typed<br />operations with base<br />versions; requires a<br />Citation; private until<br />accepted.</div>"]
+        style 32 fill:#85bbf0,stroke:#c25e00,color:#000000
+        33["<div style='font-weight: bold'>Review</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/review.ts]</div><div style='font-size: 80%; margin-top:10px'>Accepts or rejects a whole<br />Proposal in one transaction,<br />with corrections, conflicts<br />and merges.</div>"]
+        style 33 fill:#85bbf0,stroke:#c25e00,color:#000000
+        34["<div style='font-weight: bold'>History and undo</div><div style='font-size: 70%; margin-top: 0px'>[Component: Kysely]</div><div style='font-size: 80%; margin-top:10px'>Append-only log of every<br />change before and after,<br />record history, and undo of a<br />whole Proposal.</div>"]
+        style 34 fill:#85bbf0,stroke:#c25e00,color:#000000
+        35["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks each upload and<br />makes a 2,000-pixel WebP<br />copy.</div>"]
+        style 35 fill:#85bbf0,stroke:#c25e00,color:#000000
+        36["<div style='font-weight: bold'>Notifications and daily jobs</div><div style='font-size: 70%; margin-top: 0px'>[Component: In-process scheduler, Prague time]</div><div style='font-size: 80%; margin-top:10px'>Editors' digest at 18:00,<br />outcome emails, and deleting<br />images of rejected Proposals<br />after 30 days.</div>"]
+        style 36 fill:#85bbf0,stroke:#c25e00,color:#000000
+      end
+
+      subgraph 7 ["App (PWA)"]
+        style 7 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        13["<div style='font-weight: bold'>Proposal forms</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/propose-form.js, pickers.js]</div><div style='font-size: 80%; margin-top:10px'>Phone-first forms that turn<br />one finding into typed<br />operations with a Citation<br />and photos.</div>"]
+        style 13 fill:#85bbf0,stroke:#c25e00,color:#000000
+        14["<div style='font-weight: bold'>Drafts</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/drafts.js]</div><div style='font-size: 80%; margin-top:10px'>Keeps Drafts and their photos<br />on the device until the<br />Member submits them.</div>"]
+        style 14 fill:#85bbf0,stroke:#c25e00,color:#000000
+        15["<div style='font-weight: bold'>Drafts list and my Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/work.js, api.js]</div><div style='font-size: 80%; margin-top:10px'>Submits Drafts once online<br />and shows each Proposal's<br />status and the Editor's note.</div>"]
+        style 15 fill:#85bbf0,stroke:#c25e00,color:#000000
+        16["<div style='font-weight: bold'>Review and history screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/review.js]</div><div style='font-size: 80%; margin-top:10px'>Review queue with conflicts<br />and corrections, merging,<br />record history and undo.</div>"]
+        style 16 fill:#85bbf0,stroke:#c25e00,color:#000000
+      end
+
+      22[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
+      style 22 fill:#438dd5,stroke:#c25e00,color:#ffffff
+      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: S3-compatible object storage]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads.</div>")]
+      style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    13-. "<div>Looks up Persons, Places and<br />Sources to link</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->28
+    13-. "<div>Saves each finding as a Draft</div><div style='font-size: 70%'>[JS call]</div>" .->14
+    14-. "<div>Keeps Drafts and photos as<br />blobs</div><div style='font-size: 70%'>[IndexedDB]</div>" .->22
+    15-. "<div>Lists Drafts; warns about old<br />ones</div><div style='font-size: 70%'>[JS call]</div>" .->14
+    15-. "<div>Gets an upload link per<br />photo, then completes it</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->35
+    15-. "<div>Uploads each photo to<br />pending/</div><div style='font-size: 70%'>[HTTPS PUT, presigned link]</div>" .->45
+    15-. "<div>Submits with an idempotency<br />key; lists my Proposals</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->32
+    15-. "<div>Turns outcome emails on or<br />off</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->36
+    16-. "<div>Loads the queue; accepts,<br />rejects or merges</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->33
+    16-. "<div>Shows record history; undoes<br />a Proposal</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->34
+    16-. "<div>Shows Citation images</div><div style='font-size: 70%'>[HTTPS GET, presigned link]</div>" .->45
+
+  end

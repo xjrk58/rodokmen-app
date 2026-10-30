@@ -1,0 +1,54 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["App (PWA): the map"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Visitor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Anyone using the public map<br />without an account.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+
+    49["<div style='font-weight: bold'>Archive portals</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Online parish-register<br />viewers of the archives that<br />hold the registers of the<br />Czech lands.</div>"]
+    style 49 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    59["<div style='font-weight: bold'>Historical map services</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Public services for<br />19th-century maps of the<br />Czech lands, run by several<br />providers.</div>"]
+    style 59 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    65["<div style='font-weight: bold'>OpenStreetMap tiles</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Today's base map; used<br />without prefetching and with<br />attribution.</div>"]
+    style 65 fill:#8c8c8c,stroke:#616161,color:#ffffff
+
+    subgraph 6 ["Rodokmen"]
+      style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 7 ["App (PWA)"]
+        style 7 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        10["<div style='font-weight: bold'>Archive lookup</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/archive-lookup.js, geo.js]</div><div style='font-size: 80%; margin-top:10px'>Finds the archive for a point<br />by its district, with<br />near-border and<br />Jewish-register hints.</div>"]
+        style 10 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        11["<div style='font-weight: bold'>Historical layers</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/layers-panel.js, layer-check.js]</div><div style='font-size: 80%; margin-top:10px'>Military survey overlays with<br />opacity, links to historical<br />map viewers, and the layer<br />check.</div>"]
+        style 11 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        8["<div style='font-weight: bold'>Map and place sheet</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/map.js, place-sheet.js, i18n.js]</div><div style='font-size: 80%; margin-top:10px'>Map with archive regions and<br />the place sheet; the home for<br />visitors, a tab for Members.</div>"]
+        style 8 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        9["<div style='font-weight: bold'>Place search</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/search-box.js, gazetteer.js]</div><div style='font-size: 80%; margin-top:10px'>Finds Municipalities by name<br />as the reader types, ignoring<br />case and diacritics.</div>"]
+        style 9 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      end
+
+      21["<div style='font-weight: bold'>Service worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Service Worker, Cache Storage]</div><div style='font-size: 80%; margin-top:10px'>Precaches the app and<br />reference data per release<br />and keeps up to 2,000 viewed<br />tiles, so the map works<br />offline.</div>"]
+      style 21 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      23[("<div style='font-weight: bold'>Reference data</div><div style='font-size: 70%; margin-top: 0px'>[Container: JSON and GeoJSON in app/data/]</div><div style='font-size: 80%; margin-top:10px'>Districts, Municipalities,<br />archives with portal links,<br />and map layers, built from<br />public sources.</div>")]
+      style 23 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    21-- "<div>Precaches with each release</div><div style='font-size: 70%'>[Cache Storage]</div>" -->23
+    21-- "<div>Fetches tiles not yet cached,<br />keeping at most 2,000</div><div style='font-size: 70%'>[HTTPS]</div>" -->65
+    1-- "<div>Types part of a<br />Municipality's name</div><div style='font-size: 70%'>[Browser]</div>" -->9
+    1-- "<div>Taps the map; opens archive<br />and map links</div><div style='font-size: 70%'>[Browser]</div>" -->8
+    8-- "<div>Requests tiles through the<br />tile cache</div><div style='font-size: 70%'>[fetch]</div>" -->21
+    8-- "<div>Draws borders and archive<br />regions</div><div style='font-size: 70%'>[GeoJSON]</div>" -->23
+    8-- "<div>Asks for the archive of the<br />tapped point</div><div style='font-size: 70%'>[JS call]</div>" -->10
+    8-- "<div>Shows overlays and map links</div><div style='font-size: 70%'>[JS call]</div>" -->11
+    9-- "<div>Searches the Municipality<br />list</div><div style='font-size: 70%'>[municipalities.json]</div>" -->23
+    9-- "<div>Centres the map and opens the<br />place sheet</div><div style='font-size: 70%'>[JS call]</div>" -->8
+    10-- "<div>Reads districts, archives and<br />overrides</div><div style='font-size: 70%'>[districts.geojson, archives.json]</div>" -->23
+    10-- "<div>Links to the archive's<br />register viewer</div><div style='font-size: 70%'>[HTTPS link]</div>" -->49
+    11-- "<div>Reads overlays and viewers</div><div style='font-size: 70%'>[layers.json]</div>" -->23
+    11-- "<div>Requests overlays; links to<br />viewers</div><div style='font-size: 70%'>[WMS, HTTPS links]</div>" -->59
+
+  end

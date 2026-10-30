@@ -1,0 +1,54 @@
+name: verify
+
+# Proves the pure rules of the Tree with LemmaScript and Dafny (ADR 0009): runs `lsc check` over
+# shared/LemmaScript-files.txt, fails when the committed Dafny (.dfy.gen, .dfy) is not what the
+# TypeScript generates or the proof additions are not additions only, and fails when a proof does
+# not trace to an OpenSpec requirement or docs/verification.md is out of date.
+#
+# Pinned: lemmascript in shared/package.json and pnpm-lock.yaml; Dafny below, by release and
+# SHA-256 of its zip (which bundles .NET and Z3). To upgrade Dafny, take the new zip's digest from
+# https://api.github.com/repos/dafny-lang/dafny/releases/tags/v<version> and check it locally.
+on:
+  push:
+  pull_request:
+  workflow_call:
+
+permissions:
+  contents: read
+
+env:
+  DAFNY_VERSION: 4.11.0
+  DAFNY_ZIP: dafny-4.11.0-x64-ubuntu-22.04.zip
+  DAFNY_SHA256: a46a9ff7cdd720f7955854c78e95df13f4cfe6b80691b05f8654fe19e8267179
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Dafny ${{ env.DAFNY_VERSION }}
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/$DAFNY_ZIP" "https://github.com/dafny-lang/dafny/releases/download/v$DAFNY_VERSION/$DAFNY_ZIP"
+          echo "$DAFNY_SHA256  $RUNNER_TEMP/$DAFNY_ZIP" | sha256sum --check --strict -
+          unzip -q "$RUNNER_TEMP/$DAFNY_ZIP" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/dafny" >> "$GITHUB_PATH"
+      - run: dafny --version
+      - name: Prove (lsc check, including the additions-only check of each .dfy)
+        run: pnpm --filter @rodokmen/shared verify
+      - name: Committed Dafny is what the TypeScript generates
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            git --no-pager diff
+            echo "::error::lsc check changed or created files: run 'pnpm verify' (or 'pnpm --filter @rodokmen/shared verify:regen <file>') and commit the result"
+            exit 1
+          fi
+      - name: Every proof traces to a requirement, and docs/verification.md is up to date
+        run: node scripts/verification-trace.mjs --check

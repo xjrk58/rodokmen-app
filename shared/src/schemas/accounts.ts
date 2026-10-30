@@ -2,6 +2,7 @@
  * Member accounts (member-accounts spec): invitations, sign-in, roles and sessions.
  */
 import { z } from 'zod';
+import { mayDecide } from '../rules.js';
 import { Id, UiLanguage, Version } from './common.js';
 
 /** Every Member has exactly one role. There is exactly one Owner. */
@@ -15,7 +16,7 @@ export const MEMBER_ROLE_RANK = { contributor: 0, editor: 1, owner: 2 } as const
 export function permissionsFor(role: z.infer<typeof MemberRole>) {
   return {
     propose: true,
-    review: MEMBER_ROLE_RANK[role] >= MEMBER_ROLE_RANK.editor,
+    review: mayDecide(role),
     inviteMembers: role === 'owner',
     changeRoles: role === 'owner',
     disableMembers: role === 'owner',

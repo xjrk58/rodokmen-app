@@ -1,0 +1,69 @@
+@startuml
+title <size:24>App (PWA): the map</size>\n<size:24>The public map: what works for anyone, online or offline.</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+
+AddBoundaryTag("Container,Built,Browser", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+Person(Visitor, "Visitor", $descr="Anyone using the public map without an account.", $tags="Person,Built", $link="")
+
+System(Archiveportals, "Archive portals", $descr="Online parish-register viewers of the archives that hold the registers of the Czech lands.", $tags="Software System,External,Built", $link="")
+System(Historicalmapservices, "Historical map services", $descr="Public services for 19th-century maps of the Czech lands, run by several providers.", $tags="Software System,External,Built", $link="")
+System(OpenStreetMaptiles, "OpenStreetMap tiles", $descr="Today's base map; used without prefetching and with attribution.", $tags="Software System,External,Built", $link="")
+
+System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
+  Container_Boundary("Rodokmen.AppPWA_boundary", "App (PWA)", $tags="Container,Built,Browser") {
+    Component(Rodokmen.AppPWA.Archivelookup, "Archive lookup", $techn="app/src/archive-lookup.js, geo.js", $descr="Finds the archive for a point by its district, with near-border and Jewish-register hints.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Historicallayers, "Historical layers", $techn="app/src/layers-panel.js, layer-check.js", $descr="Military survey overlays with opacity, links to historical map viewers, and the layer check.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Mapandplacesheet, "Map and place sheet", $techn="app/src/map.js, place-sheet.js, i18n.js", $descr="Map with archive regions and the place sheet; the home for visitors, a tab for Members.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Placesearch, "Place search", $techn="app/src/search-box.js, gazetteer.js", $descr="Finds Municipalities by name as the reader types, ignoring case and diacritics.", $tags="Component,Built", $link="")
+  }
+
+  Container(Rodokmen.Serviceworker, "Service worker", $techn="Service Worker, Cache Storage", $descr="Precaches the app and reference data per release and keeps up to 2,000 viewed tiles, so the map works offline.", $tags="Container,Built", $link="")
+  ContainerDb(Rodokmen.Referencedata, "Reference data", $techn="JSON and GeoJSON in app/data/", $descr="Districts, Municipalities, archives with portal links, and map layers, built from public sources.", $tags="Container,Built,Data store", $link="")
+}
+
+Rel(Rodokmen.Serviceworker, Rodokmen.Referencedata, "Precaches with each release", $techn="Cache Storage", $tags="Built", $link="")
+Rel(Rodokmen.Serviceworker, OpenStreetMaptiles, "Fetches tiles not yet cached, keeping at most 2,000", $techn="HTTPS", $tags="Built", $link="")
+Rel(Visitor, Rodokmen.AppPWA.Placesearch, "Types part of a Municipality's name", $techn="Browser", $tags="Built", $link="")
+Rel(Visitor, Rodokmen.AppPWA.Mapandplacesheet, "Taps the map; opens archive and map links", $techn="Browser", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Mapandplacesheet, Rodokmen.Serviceworker, "Requests tiles through the tile cache", $techn="fetch", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Mapandplacesheet, Rodokmen.Referencedata, "Draws borders and archive regions", $techn="GeoJSON", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Mapandplacesheet, Rodokmen.AppPWA.Archivelookup, "Asks for the archive of the tapped point", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Mapandplacesheet, Rodokmen.AppPWA.Historicallayers, "Shows overlays and map links", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Placesearch, Rodokmen.Referencedata, "Searches the Municipality list", $techn="municipalities.json", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Placesearch, Rodokmen.AppPWA.Mapandplacesheet, "Centres the map and opens the place sheet", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Archivelookup, Rodokmen.Referencedata, "Reads districts, archives and overrides", $techn="districts.geojson, archives.json", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Archivelookup, Archiveportals, "Links to the archive's register viewer", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Historicallayers, Rodokmen.Referencedata, "Reads overlays and viewers", $techn="layers.json", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Historicallayers, Historicalmapservices, "Requests overlays; links to viewers", $techn="WMS, HTTPS links", $tags="Built", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
