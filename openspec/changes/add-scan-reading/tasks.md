@@ -6,6 +6,7 @@
 - [ ] 1.2 Benchmark reading on 10 invented-or-public sample pages (Latin, Kurrent, Czech) with two Claude models, and set the default model; verify the benchmark results are recorded in design.md
 - [ ] 1.3 Add the reading job (`POST /api/readings`, queue, Anthropic Messages API with structured output, schema check, failure state); verify the baptism-page scenario against a recorded API response and the illegible-house-number scenario
 - [ ] 1.4 Add the Owner's switch, the daily limit and the usage view; verify the switched-off and daily-limit scenarios
+- [ ] 1.4a Send only the display copy or crop of the requested scans, and nothing while switched off; verify the reading-one-page and switched-off scenarios by inspecting the outgoing request in a test
 - [ ] 1.5 Refuse portal URLs as input and keep them as Citation links; verify the portal-link scenario
 
 ## 2. Draft, marking and matching

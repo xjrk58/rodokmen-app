@@ -21,6 +21,7 @@ Out of scope: downloading scans from archive portals (Members supply them); read
 - `scan-reading`: the Owner's switch and limits, reading scans into Drafts, matching names, and suggested leads.
 
 ### Modified Capabilities
+- `evidence-media`: which images may be sent for reading, and only while the Owner allows it.
 
 ## Impact
 

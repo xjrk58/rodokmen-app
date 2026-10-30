@@ -12,6 +12,7 @@ With the Tree on the server and Proposals flowing in, Members need to see their 
 - People list and search across all Names, ignoring diacritics.
 - Person page: Names, Events with Roles, Places and Houses, Families, Citations with confidence and images, "Show in tree", "Propose a change" and history.
 - The map becomes a tab, with family pins, a year slider, a person's life path, and a "Family here" section in the place sheet. Visitors who aren't signed in still get the map as their home screen.
+- Owner settings in the app: invitations, roles, Member–Person links and Family roots, with room for later settings (Agents, scan reading).
 - The last-loaded family data stays available offline.
 - Unrelated people (from `add-vault-import`) are hidden by default in search, lists, the tree and pins.
 

@@ -20,6 +20,7 @@ Out of scope: AI-suggested leads (they come with `add-scan-reading`); importing 
 - `research-leads`: Research leads, their lifecycle, search records, and the gap finder.
 
 ### Modified Capabilities
+- `agent-access`: Agents may write Research leads and search records.
 
 ## Impact
 

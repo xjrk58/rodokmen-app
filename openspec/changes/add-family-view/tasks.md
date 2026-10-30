@@ -11,6 +11,8 @@
 - [ ] 2.2 Build the person page with Names, Events and Roles, Families, Citations with confidence and images, history and "Propose a change"; verify the godparent scenario
 - [ ] 2.3 Add "Show in tree" to search results and person pages; verify it opens the tree on that Person
 
+- [ ] 2.4 Build Owner settings (invitations, roles, disable and enable, Member–Person links, Family roots) and each Member's own settings; verify the inviting-a-cousin and Contributor's-settings scenarios, and move the minimal `/auth/` server pages' Owner functions into the app
+
 ## 2a. The tree
 
 - [ ] 2a.1 Add the hourglass API query (ancestors and descendants with partners, 1–6 generations each way, in one request); verify against the fixture tree's known families, including a remarriage and an adoption

@@ -38,6 +38,17 @@ The person page SHALL show all Names, the Events the Person took part in with th
 - **WHEN** a Member opens the page of a woman who was godmother at a baptism
 - **THEN** that baptism appears in her Events with the Role "godparent"
 
+### Requirement: Owner settings in the app
+The Owner SHALL manage the family from the app: invite Members, change roles, disable and enable Members, link Members to their Persons, and mark Family roots. Settings that later changes add, such as Agent accounts and scan reading, SHALL appear in the same place. Other Members SHALL see only their own settings.
+
+#### Scenario: Inviting a cousin
+- **WHEN** the Owner enters a cousin's email and language in the app
+- **THEN** the invitation is sent, and the Owner sees it as pending until it is accepted
+
+#### Scenario: Contributor's settings
+- **WHEN** a Contributor opens settings
+- **THEN** they see their own language, sessions and passkeys and nothing about other Members
+
 ### Requirement: Family data offline
 The Tree data a Member last loaded SHALL stay readable offline, marked with the time it was loaded.
 
