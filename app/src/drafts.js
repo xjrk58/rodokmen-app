@@ -7,6 +7,7 @@ import { KINDS } from './proposal-build.js';
 import { hex } from './text.js';
 
 /** @typedef {import('./proposal-build.js').KindForm} KindForm */
+/** @typedef {import('./types.js').SubmitProposalBody} SubmitProposalBody */
 
 const DB_NAME = 'rodokmen-drafts';
 const DB_VERSION = 1;
@@ -24,8 +25,10 @@ export const QUOTA_WARNING = 0.8;
  */
 
 /**
- * A Draft: its kind and the form as the Member filled it in.
- * @typedef {DraftMeta & KindForm} Draft
+ * A Draft: its kind and the form as the Member filled it in. `pending` is the
+ * exact body of a submit whose answer was lost: the Proposal may exist, so
+ * only that body may be sent again (with the same idempotency key).
+ * @typedef {DraftMeta & KindForm & { pending?: SubmitProposalBody }} Draft
  */
 
 /**
@@ -40,37 +43,90 @@ export const QUOTA_WARNING = 0.8;
 /** @type {Promise<IDBDatabase> | null} */
 let opening = null;
 
-/** @returns {Promise<IDBDatabase>} */
-function open() {
-  opening ??= new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      db.createObjectStore('drafts', { keyPath: 'id' });
-      db.createObjectStore('photos', { keyPath: 'id' }).createIndex('draftId', 'draftId');
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error ?? new Error('IndexedDB did not open'));
-  });
-  return opening;
+/**
+ * Creates the stores a version needs. Each step runs only on devices older than
+ * its version, so a device on any older version is brought up to date.
+ * @param {IDBDatabase} db
+ * @param {number} oldVersion
+ */
+function upgrade(db, oldVersion) {
+  if (oldVersion < 1) {
+    db.createObjectStore('drafts', { keyPath: 'id' });
+    db.createObjectStore('photos', { keyPath: 'id' }).createIndex('draftId', 'draftId');
+  }
 }
 
 /**
- * One request in its own transaction; resolves with the request's result once the transaction completes.
+ * The database, opened once. A failed open is not kept, so the next call tries
+ * again; a newer version of the app in another tab may close it to upgrade.
+ * @returns {Promise<IDBDatabase>}
+ */
+function open() {
+  if (opening) return opening;
+  /** @type {Promise<IDBDatabase>} */
+  const attempt = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (event) => upgrade(request.result, event.oldVersion);
+    request.onblocked = () => reject(new Error('The Drafts storage is being upgraded; close the app\'s other tabs.'));
+    request.onsuccess = () => {
+      const db = request.result;
+      db.onversionchange = () => {
+        db.close();
+        if (opening === attempt) opening = null;
+      };
+      resolve(db);
+    };
+    request.onerror = () => reject(request.error ?? new Error('IndexedDB did not open'));
+  });
+  opening = attempt;
+  attempt.catch(() => {
+    if (opening === attempt) opening = null;
+  });
+  return attempt;
+}
+
+/**
+ * Runs requests in one transaction; resolves with the result of the request
+ * `fn` returns once the transaction completes, and rejects when it fails.
+ * @param {('drafts' | 'photos')[]} stores
+ * @param {IDBTransactionMode} mode
+ * @param {(tx: IDBTransaction) => IDBRequest | void} fn
+ * @param {boolean} [commit] commit as soon as `fn` has made its requests (none may follow from callbacks)
+ * @returns {Promise<unknown>}
+ */
+async function transact(stores, mode, fn, commit = false) {
+  const db = await open();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(stores, mode);
+    tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
+    tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
+    /** @type {IDBRequest | void} */
+    let request;
+    try {
+      request = fn(tx);
+    } catch (error) {
+      reject(error instanceof Error ? error : new Error(String(error)));
+      try {
+        tx.abort();
+      } catch {
+        // already finished
+      }
+      return;
+    }
+    tx.oncomplete = () => resolve(request ? request.result : undefined);
+    // Without an explicit commit, a write made while the page closes (pagehide) can be lost with the page.
+    if (commit) tx.commit();
+  });
+}
+
+/**
+ * One request on one store, in its own transaction.
  * @param {'drafts' | 'photos'} store
  * @param {IDBTransactionMode} mode
  * @param {(s: IDBObjectStore) => IDBRequest} fn
- * @returns {Promise<unknown>}
  */
-async function run(store, mode, fn) {
-  const db = await open();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, mode);
-    const request = fn(tx.objectStore(store));
-    tx.oncomplete = () => resolve(request.result);
-    tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
-    tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
-  });
+function run(store, mode, fn) {
+  return transact([store], mode, (tx) => fn(tx.objectStore(store)), true);
 }
 
 /**
@@ -121,10 +177,19 @@ export async function saveDraft(draft) {
   await run('drafts', 'readwrite', (s) => s.put({ ...draft, updatedAt: new Date().toISOString() }));
 }
 
-/** @param {string} id */
+/**
+ * Deletes a Draft and its photos, all or nothing.
+ * @param {string} id
+ */
 export async function deleteDraft(id) {
-  for (const photo of await draftPhotos(id)) await run('photos', 'readwrite', (s) => s.delete(photo.id));
-  await run('drafts', 'readwrite', (s) => s.delete(id));
+  await transact(['drafts', 'photos'], 'readwrite', (tx) => {
+    tx.objectStore('drafts').delete(id);
+    const photos = tx.objectStore('photos');
+    const keys = photos.index('draftId').getAllKeys(id);
+    keys.onsuccess = () => {
+      for (const key of keys.result) photos.delete(key);
+    };
+  });
 }
 
 /** @param {string} draftId @returns {Promise<DraftPhoto[]>} */

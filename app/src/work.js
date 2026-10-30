@@ -4,19 +4,20 @@
 //   #work/propose[/kind]  #work/draft/<id>  #work/drafts
 //   #work/mine[/<id>]     #work/review[/<id>]  #work/history[/person/<id>]
 
-import { ApiError, getMe, getPerson, myProposals, notificationSettings, setNotificationSettings, submitProposal, uploadImage } from './api.js';
-import { h } from './dom.js';
+import { ApiError, getMe, getPerson, messageOf, myProposals, notificationSettings, setNotificationSettings, submitProposal, uploadImage } from './api.js';
+import { guarded, h, showError } from './dom.js';
 import { deleteDraft, draftPhotos, getDraft, isStale, listDrafts, newDraft, QUOTA_WARNING, requestPersistence, saveDraft, savePhoto, storageEstimate } from './drafts.js';
 import { onLanguageChange, t } from './i18n.js';
 import { kindChooser, proposeForm } from './propose-form.js';
-import { buildOperations, draftTitle, emptyForm, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
-import { formatDate, messageOf, proposalCard, renderHistory, renderReview } from './review.js';
+import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
+import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
 /** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
 /** @typedef {import('./proposal-build.js').ProposeKind} ProposeKind */
 /** @typedef {import('./types.js').Me} Me */
 /** @typedef {import('./types.js').ProposalView} ProposalView */
+/** @typedef {import('./types.js').SubmitProposalBody} SubmitProposalBody */
 
 /** @param {number} bytes */
 const mb = (bytes) => `${(bytes / 1_048_576).toFixed(bytes < 10_485_760 ? 1 : 0)} MB`;
@@ -51,13 +52,12 @@ function draftFamily(draft) {
 }
 
 /**
- * Submits a Draft: photos first (each to its own presigned link), then the
- * Proposal with the Draft's idempotency key, so an interrupted submit can be
- * retried without a second Proposal. The Draft is deleted only on success.
+ * The body of a Draft's Proposal: photos first (each to its own presigned link,
+ * remembered so a retry does not upload them again), then the operations.
  * @param {Draft} draft
- * @returns {Promise<ProposalView>}
+ * @returns {Promise<SubmitProposalBody>}
  */
-export async function submitDraft(draft) {
+async function proposalBody(draft) {
   const uploadIds = [];
   for (const photo of await draftPhotos(draft.id)) {
     if (!photo.uploadId) {
@@ -68,7 +68,59 @@ export async function submitDraft(draft) {
   }
   const family = await draftFamily(draft);
   const operations = buildOperations(draft, { uploadIds, family });
-  const proposal = await submitProposal({ formatVersion: OPERATIONS_VERSION, idempotencyKey: draft.idempotencyKey, note: draft.form.note?.trim() || null, direct: false, operations });
+  return { formatVersion: OPERATIONS_VERSION, idempotencyKey: draft.idempotencyKey, note: draft.form.note?.trim() || null, direct: false, operations };
+}
+
+/**
+ * Sends a Draft's Proposal. When the answer is lost the Proposal may exist
+ * already, so the body is kept with the Draft and only it is sent again.
+ * @param {Draft} draft
+ */
+async function sendDraft(draft) {
+  const body = draft.pending ?? (await proposalBody(draft));
+  try {
+    return await submitProposal(body);
+  } catch (error) {
+    if (error instanceof ApiError && error.offline && !draft.pending) {
+      draft.pending = body;
+      await saveDraft(draft);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Forgets the uploads of a Draft's photos (and the body that names them), so they are uploaded again.
+ * @param {Draft} draft
+ */
+async function forgetUploads(draft) {
+  delete draft.pending;
+  await saveDraft(draft);
+  for (const photo of await draftPhotos(draft.id)) {
+    photo.uploadId = null;
+    await savePhoto(photo);
+  }
+}
+
+/**
+ * Submits a Draft with its idempotency key, so an interrupted submit can be
+ * retried without a second Proposal. The Draft is checked before anything is
+ * uploaded, and deleted only on success. The server deletes uploads unused for
+ * 30 days; a Draft that waited that long uploads its photos again, once.
+ * @param {Draft} draft
+ * @returns {Promise<ProposalView>}
+ */
+export async function submitDraft(draft) {
+  const problems = formProblems(draft);
+  if (problems.length) throw new Error(problems.map((p) => t(p)).join(' '));
+  let proposal;
+  try {
+    proposal = await sendDraft(draft);
+  } catch (error) {
+    if (!(error instanceof ApiError && error.code === 'upload_unusable')) throw error;
+    await forgetUploads(draft);
+    proposal = await sendDraft(draft);
+  }
   await deleteDraft(draft.id);
   return proposal;
 }
@@ -81,6 +133,10 @@ export class WorkPanel {
     this.els = els;
     /** @type {Me | null | undefined} undefined: not known yet or offline; null: signed out */
     this.me = undefined;
+    /** @type {AbortController | null} the screen shown; aborted when the Member moves on, so its late answers are dropped */
+    this.screen = null;
+    /** @type {(() => void) | null} stores what was typed into the open form, now */
+    this.flushForm = null;
     els.button.addEventListener('click', () => {
       location.hash = '#work/propose';
     });
@@ -90,6 +146,11 @@ export class WorkPanel {
     onLanguageChange(() => {
       if (this.isOpen) void this.route();
     });
+    // A phone may end the app at any time after it goes to the background.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.flushForm?.();
+    });
+    window.addEventListener('pagehide', () => this.flushForm?.());
     void requestPersistence();
     void this.refreshBadge();
     void this.route();
@@ -99,16 +160,29 @@ export class WorkPanel {
     return !this.els.panel.hidden;
   }
 
+  /** Stores the open form and drops the pending work of the screen shown. */
+  leaveScreen() {
+    this.flushForm?.();
+    this.flushForm = null;
+    this.screen?.abort();
+    this.screen = null;
+  }
+
   close() {
+    this.leaveScreen();
     this.els.panel.hidden = true;
     history.pushState(null, '', location.pathname + location.search);
   }
 
-  /** Signed-in Member, or null; undefined when the server cannot be reached. */
-  async loadMe() {
+  /**
+   * Signed-in Member, or null; undefined when the server cannot be reached.
+   * @param {AbortSignal} [signal]
+   */
+  async loadMe(signal) {
     try {
-      this.me = await getMe();
+      this.me = await getMe(signal);
     } catch (error) {
+      if (signal?.aborted) return this.me;
       this.me = error instanceof ApiError && (error.status === 401 || error.status === 404) ? null : undefined;
     }
     return this.me;
@@ -132,39 +206,46 @@ export class WorkPanel {
   }
 
   async route() {
+    this.leaveScreen();
     const match = /^#work(?:\/([a-z]+))?(?:\/([^/]+))?(?:\/([^/]+))?$/.exec(location.hash);
     if (!match) {
       if (this.isOpen) this.els.panel.hidden = true;
       return;
     }
+    const screen = new AbortController();
+    this.screen = screen;
+    const { signal } = screen;
     const [, view = 'propose', a, b] = match;
     this.els.panel.hidden = false;
     this.els.toast.hidden = true;
-    if (this.me === undefined) await this.loadMe();
+    if (this.me === undefined) await this.loadMe(signal);
+    if (signal.aborted) return;
     this.renderNav(view);
     const body = this.els.body;
     try {
-      await this.renderView(view, a, b);
+      await this.renderView(view, a, b, signal);
     } catch (error) {
+      if (signal.aborted) return;
       body.replaceChildren(h('p', { class: 'form-status error' }, error instanceof ApiError && error.offline ? t('work.offline') : messageOf(error)));
     }
-    body.scrollTop = 0;
+    if (!signal.aborted) body.scrollTop = 0;
   }
 
   /**
    * @param {string} view
    * @param {string | undefined} a
    * @param {string | undefined} b
+   * @param {AbortSignal} signal
    */
-  async renderView(view, a, b) {
+  async renderView(view, a, b, signal) {
     const body = this.els.body;
     if (view === 'propose') this.renderPropose(a);
-    else if (view === 'draft' && a) await this.renderDraft(a);
-    else if (view === 'drafts') await this.renderDrafts();
+    else if (view === 'draft' && a) await this.renderDraft(a, signal);
+    else if (view === 'drafts') await this.renderDrafts(signal);
     else if (!this.me) body.replaceChildren(this.signInPrompt());
-    else if (view === 'mine') await this.renderMine(a);
-    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a);
-    else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review });
+    else if (view === 'mine') await this.renderMine(a, signal);
+    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal);
+    else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review }, signal);
     else this.renderPropose(undefined);
   }
 
@@ -197,9 +278,13 @@ export class WorkPanel {
     this.showForm(newDraft(emptyForm(kind)), false);
   }
 
-  /** @param {string} id */
-  async renderDraft(id) {
+  /**
+   * @param {string} id
+   * @param {AbortSignal} signal
+   */
+  async renderDraft(id, signal) {
     const draft = await getDraft(id);
+    if (signal.aborted) return;
     if (!draft) {
       location.hash = '#work/drafts';
       return;
@@ -212,16 +297,18 @@ export class WorkPanel {
    * @param {boolean} stored
    */
   showForm(draft, stored) {
+    const address = location.hash;
     let saved = stored;
     const save = async () => {
-      await saveDraft(draft);
       if (!saved) {
         saved = true;
-        history.replaceState(null, '', `#work/draft/${draft.id}`);
+        // From now on the address names the stored Draft, so a reload or a language change reopens it.
+        if (location.hash === address) history.replaceState(null, '', `#work/draft/${draft.id}`);
       }
+      await saveDraft(draft);
       void this.refreshBadge();
     };
-    const form = proposeForm(draft, {
+    const { element, flush } = proposeForm(draft, {
       save,
       submit: async () => {
         await save();
@@ -230,7 +317,8 @@ export class WorkPanel {
         location.hash = `#work/mine/${p.id}`;
       },
     });
-    this.els.body.replaceChildren(form);
+    this.flushForm = flush;
+    this.els.body.replaceChildren(element);
   }
 
   /** @param {Draft} draft */
@@ -249,8 +337,9 @@ export class WorkPanel {
   /**
    * One Draft in the list, with submit and delete.
    * @param {Draft} d
+   * @param {AbortSignal} signal
    */
-  async draftCard(d) {
+  async draftCard(d, signal) {
     const photos = await draftPhotos(d.id);
     const status = h('p', { class: 'form-status', role: 'status' });
     const submit = h('button', { type: 'button', class: 'button primary', 'data-testid': 'submit-draft', disabled: !navigator.onLine }, t('drafts.submit'));
@@ -261,33 +350,34 @@ export class WorkPanel {
       status.textContent = t('drafts.submitting');
       try {
         await this.submitWithMessages(d);
-        await this.renderDrafts();
+        await this.renderDrafts(signal);
       } catch (error) {
-        status.textContent = messageOf(error);
-        status.classList.add('error');
+        showError(status)(error);
         submit.disabled = false;
       }
     };
     submit.addEventListener('click', () => void send());
-    const drop = async () => {
+    remove.addEventListener('click', guarded(showError(status), async () => {
       if (!confirm(t('drafts.confirmDelete'))) return;
       await deleteDraft(d.id);
       void this.refreshBadge();
-      await this.renderDrafts();
-    };
-    remove.addEventListener('click', () => void drop());
+      await this.renderDrafts(signal);
+    }));
     return h('article', { class: 'card draft', 'data-testid': 'draft', 'data-id': d.id },
       h('header', { class: 'card-head' }, h('a', { href: `#work/draft/${d.id}`, 'data-testid': 'draft-title' }, draftTitle(d, t))),
       h('p', { class: 'muted small' }, t('drafts.meta', { date: formatDate(d.updatedAt), photos: photos.length })),
       isStale(d) ? h('p', { class: 'warning small' }, t('drafts.stale')) : null,
+      d.pending ? h('p', { class: 'warning small' }, t('drafts.pending')) : null,
       status,
       h('div', { class: 'form-actions' }, remove, submit));
   }
 
-  async renderDrafts() {
+  /** @param {AbortSignal} signal */
+  async renderDrafts(signal) {
     const drafts = await listDrafts();
     const estimate = await storageEstimate();
-    const items = await Promise.all(drafts.map((d) => this.draftCard(d)));
+    const items = await Promise.all(drafts.map((d) => this.draftCard(d, signal)));
+    if (signal.aborted) return;
     const full = estimate ? estimate.usage / estimate.quota > QUOTA_WARNING : false;
     const quota = estimate
       ? h('p', { class: `small ${full ? 'warning' : 'muted'}`, 'data-testid': 'storage' }, t(full ? 'drafts.storageFull' : 'drafts.storage', { used: mb(estimate.usage), quota: mb(estimate.quota) }))
@@ -300,21 +390,28 @@ export class WorkPanel {
     );
   }
 
-  /** @param {string | undefined} focusId */
-  async renderMine(focusId) {
-    const [{ items }, settings] = await Promise.all([myProposals(), notificationSettings()]);
+  /**
+   * @param {string | undefined} focusId
+   * @param {AbortSignal} signal
+   */
+  async renderMine(focusId, signal) {
+    const [{ items }, settings] = await Promise.all([myProposals(signal), notificationSettings(signal)]);
+    if (signal.aborted) return;
     const toggle = h('input', { type: 'checkbox', checked: settings.outcomeEmails, 'data-testid': 'outcome-emails' });
-    const change = async () => {
+    const status = h('p', { class: 'form-status', role: 'status', 'data-testid': 'outcome-status' });
+    toggle.addEventListener('change', guarded(showError(status), async () => {
+      status.textContent = '';
       try {
         await setNotificationSettings({ outcomeEmails: toggle.checked });
-      } catch {
+      } catch (error) {
         toggle.checked = !toggle.checked;
+        throw error;
       }
-    };
-    toggle.addEventListener('change', () => void change());
+    }));
     this.els.body.replaceChildren(
       h('h2', {}, t('mine.title')),
       h('label', { class: 'switch-row' }, toggle, h('span', {}, t('mine.outcomeEmails'))),
+      status,
       ...(items.length ? items.map((p) => proposalCard(p)) : [h('p', { class: 'empty' }, t('mine.none'))]),
     );
     if (focusId) this.els.body.querySelector(`[data-id="${focusId}"]`)?.scrollIntoView({ block: 'start' });

@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp, type RodokmenApp } from '../src/app.js';
 import type { Account } from '../src/db/types.js';
 import { generateFixture } from '../src/fixture/generate.js';
+import { deleteUnusedImages } from '../src/jobs/daily.js';
 import { OutboxMailer } from '../src/mail/mailer.js';
 import { DEFAULT_APP_DIR } from '../src/routes/pages.js';
 import { MemoryImageStorage } from '../src/storage/images.js';
@@ -329,5 +330,38 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     const card = page.locator(`[data-id="${id}"]`);
     await expect.poll(() => card.getByTestId('status').textContent()).toBe('rejected');
     expect(await card.getByTestId('decision-note').textContent()).toBe("Editor's note (Eva Editor): wrong parish, see 1820 register");
+  });
+
+  it('a Draft that waited more than 30 days uploads its photo again: the server deleted the unused upload', async () => {
+    const patient = await createMember(t.db, 'contributor', { displayName: 'Petr Patient' });
+    const { page } = await phoneAs(patient);
+    await page.goto(`${origin}/#work/propose/death`);
+    await page.getByTestId('person-new').click();
+    await page.getByTestId('person-given').fill('Ludmila');
+    await page.getByTestId('person-surname').fill('Invented');
+    await page.getByTestId('source-title').fill('Invented burial register 1820–1840');
+    await page.getByTestId('transcription').fill('Ludmilla, vidua, sepulta');
+    await page.getByTestId('photo-input').setInputFiles({ name: 'grave.jpg', mimeType: 'image/jpeg', buffer: await photo('Burial 1831') });
+    await expect.poll(() => page.getByTestId('photos').locator('img').count()).toBe(1);
+    // The connection drops after the photo is uploaded, before the Proposal reaches the server.
+    await page.route(`${origin}/api/proposals`, (route) => (route.request().method() === 'POST' ? route.abort('internetdisconnected') : route.fallback()), { times: 1 });
+    await page.getByTestId('submit').click();
+    await expect.poll(() => page.getByTestId('form-status').textContent()).toContain('The submit was interrupted');
+    const uploads = () => t.db.selectFrom('upload').select(['id', 'status']).where('author_id', '=', patient.id).orderBy('created_at').execute();
+    const [first] = await uploads();
+
+    // Thirty-one days later the daily job has deleted the upload no Proposal uses.
+    await deleteUnusedImages({ db: t.db, clock, mailer, images: storage, publicOrigin: origin }, new Date(clock.now().getTime() + 31 * 86_400_000));
+    expect((await uploads()).map((u) => u.status)).toEqual(['deleted']);
+    await page.getByTestId('submit').click();
+    await page.waitForURL(/#work\/mine\//, { timeout: 15_000 });
+    const proposalId = page.url().split('/').at(-1)!;
+    const images = (await t.db.selectFrom('proposal_operation').select('operation').where('proposal_id', '=', proposalId).execute())
+      .map((r) => Operation.parse(r.operation))
+      .flatMap((o) => (o.op === 'addImage' ? [o.uploadId] : []));
+    const now = await uploads();
+    expect(now.map((u) => u.status)).toEqual(['deleted', 'ready']);
+    expect(images).toEqual([now[1]!.id]);
+    expect(images).not.toContain(first!.id);
   });
 });

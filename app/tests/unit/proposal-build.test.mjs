@@ -125,3 +125,46 @@ test('Drafts have readable titles', () => {
   assert.equal(draftTitle({ kind: 'marriage', form: { ...empty.form, partner1: father, partner2: { mode: 'new', given: 'Eva', surname: 'Invented', sex: 'female' } } }, t), 'Marriage: Josef Dvořák & Eva Invented');
   assert.equal(draftTitle(empty, t), 'Marriage: unnamed');
 });
+
+test('a Citation read after midnight in Czechia is dated that day, not the UTC day before', (t) => {
+  const zone = process.env.TZ;
+  process.env.TZ = 'Europe/Prague';
+  t.after(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  });
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse('2026-10-29T23:30:00Z') });
+  const empty = emptyForm('death');
+  assert.ok(empty.kind === 'death');
+  assert.equal(empty.form.citation.readOn, '2026-10-30');
+  const ops = buildOperations({ kind: 'death', form: { ...empty.form, person: anna, citation: { ...citation, readOn: '' } } }, { uploadIds: [] });
+  assert.equal(only(ops, 'createCitation').readOn, '2026-10-30');
+});
+
+test('a photo cited from an existing Source is a page image when the Source is a register', () => {
+  /** @param {import('../../src/types.js').SourceType} type */
+  const kindFor = (type) => {
+    const existing = { sourceMode: /** @type {const} */ ('existing'), source: { id: '0192f0c4-7a1e-7c3b-9d2a-000000000050', label: 'Invented register', type }, transcription: 'Anna nata' };
+    const ops = buildOperations({ kind: 'death', form: { eventType: 'death', date: '', place: null, person: anna, citation: existing, note: '' } }, { uploadIds: ['0192f0c4-7a1e-7c3b-9d2a-0000000000aa'] });
+    return only(ops, 'addImage').kind;
+  };
+  assert.equal(kindFor('parish_register'), 'page');
+  assert.equal(kindFor('census'), 'page');
+  assert.equal(kindFor('other'), 'photo');
+  assert.equal(kindFor('family_account'), 'photo');
+});
+
+test('a Name correction keeps the spelling as found: emptied, it is refused, never sent as null', () => {
+  /** @type {CorrectionTarget} */
+  const target = { record: 'name', id: '0192f0c4-7a1e-7c3b-9d2a-000000000008', version: 2, label: 'Name', current: { given: 'Anna', surname: 'Králová', asFound: 'Anna Králová' } };
+  /** @param {Record<string, string>} set */
+  const draft = (set) => ({ kind: /** @type {const} */ ('correction'), form: { person: anna, target, set, citation, note: '' } });
+  assert.deepEqual(formProblems(draft({ asFound: ' ' })), ['propose.needAsFound']);
+  assert.deepEqual(formProblems(draft({ surname: '' })), []);
+  assert.deepEqual(only(buildOperations(draft({ surname: '', asFound: 'Anna' }), { uploadIds: [] }), 'setField').set, { surname: '', asFound: 'Anna' });
+  // An Event's emptied date or description is cleared (null).
+  /** @type {CorrectionTarget} */
+  const event = { record: 'event', id: '0192f0c4-7a1e-7c3b-9d2a-000000000007', version: 5, label: 'death', current: { date: '1850', description: 'x' } };
+  const cleared = buildOperations({ kind: 'correction', form: { person: anna, target: event, set: { description: ' ' }, citation, note: '' } }, { uploadIds: [] });
+  assert.deepEqual(only(cleared, 'setField').set, { description: null });
+});

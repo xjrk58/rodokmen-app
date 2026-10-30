@@ -3,8 +3,8 @@
 // with the Citation (the register entry, a document or a Family account) and
 // its photos. The form lives in a Draft, so it can be written offline.
 
-import { getPerson } from './api.js';
-import { h } from './dom.js';
+import { ApiError, getPerson, messageOf } from './api.js';
+import { guarded, h, showError } from './dom.js';
 import { draftPhotos, deletePhoto, savePhoto, newKey } from './drafts.js';
 import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
@@ -152,7 +152,10 @@ function correctionFields(form) {
       }
     }
   };
+  // Only the answer for the Person picked last is shown: the Member may change the Person while one loads.
+  let loads = 0;
   const load = async () => {
+    const mine = ++loads;
     if (form.person?.mode !== 'existing') {
       targets.replaceChildren();
       return;
@@ -160,11 +163,11 @@ function correctionFields(form) {
     let person;
     try {
       person = await getPerson(form.person.id);
-    } catch {
-      targets.replaceChildren(h('p', { class: 'muted' }, t('picker.offline')));
+    } catch (error) {
+      if (mine === loads) targets.replaceChildren(h('p', { class: 'muted' }, error instanceof ApiError && error.offline ? t('picker.offline') : messageOf(error)));
       return;
     }
-    showTargets(correctionTargets(person));
+    if (mine === loads) showTargets(correctionTargets(person));
   };
   const picker = personPicker({
     value: form.person,
@@ -186,28 +189,36 @@ function correctionFields(form) {
  * The photos of a Draft, with a button to add more.
  * @param {Draft} draft
  * @param {() => Promise<void>} ensureSaved stores the Draft before its first photo
+ * @param {(error: unknown) => void} report shows a failure
  */
-function photoFields(draft, ensureSaved) {
+function photoFields(draft, ensureSaved, report) {
   const photos = h('div', { class: 'photos', 'data-testid': 'photos' });
   const renderPhotos = async () => {
     const list = await draftPhotos(draft.id);
     photos.replaceChildren(
       ...list.map((p) => {
         const remove = h('button', { type: 'button', class: 'icon-button small', 'aria-label': t('photos.remove') }, '×');
-        remove.addEventListener('click', () => void deletePhoto(p.id).then(renderPhotos));
-        return h('figure', { class: 'thumb' }, h('img', { src: URL.createObjectURL(p.blob), alt: p.name }), remove);
+        remove.addEventListener('click', guarded(report, async () => {
+          await deletePhoto(p.id);
+          await renderPhotos();
+        }));
+        const url = URL.createObjectURL(p.blob);
+        const img = h('img', { src: url, alt: p.name });
+        // The thumbnail keeps its pixels; the blob URL would hold the photo in memory until the page closes.
+        img.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+        img.addEventListener('error', () => URL.revokeObjectURL(url), { once: true });
+        return h('figure', { class: 'thumb' }, img, remove);
       }),
     );
   };
   const file = h('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp,image/heic,image/heif', capture: 'environment', multiple: true, 'data-testid': 'photo-input', class: 'visually-hidden', id: 'photo-input' });
-  const addPhotos = async () => {
+  file.addEventListener('change', guarded(report, async () => {
     await ensureSaved();
     for (const f of file.files ?? []) await savePhoto({ id: newKey(), draftId: draft.id, blob: f, name: f.name, uploadId: null });
     file.value = '';
     await renderPhotos();
-  };
-  file.addEventListener('change', () => void addPhotos());
-  void renderPhotos();
+  }));
+  renderPhotos().catch(report);
   return [h('div', { class: 'photo-row' }, h('label', { class: 'button', for: 'photo-input' }, t('photos.add')), file), photos];
 }
 
@@ -215,8 +226,9 @@ function photoFields(draft, ensureSaved) {
  * The Citation: which Source, the page, the transcription, the confidence and the photos.
  * @param {Draft} draft
  * @param {() => Promise<void>} ensureSaved stores the Draft before its first photo
+ * @param {(error: unknown) => void} report shows a failure
  */
-function citationFields(draft, ensureSaved) {
+function citationFields(draft, ensureSaved, report) {
   const c = draft.form.citation;
   const box = h('div', { class: 'citation-source' });
   const renderSource = () => {
@@ -263,7 +275,7 @@ function citationFields(draft, ensureSaved) {
     field(t('citation.transcription'), transcription),
     field(t('citation.confidence'), select(c, 'confidence', CONFIDENCES, (v) => t(`confidence.${v}`), { 'data-testid': 'confidence' })),
     field(t('citation.readOn'), textInput(c, 'readOn', { type: 'date', 'data-testid': 'read-on' })),
-    ...photoFields(draft, ensureSaved),
+    ...photoFields(draft, ensureSaved, report),
   );
 }
 
@@ -317,10 +329,15 @@ function findingFields(draft) {
   }
 }
 
+/** Typing is stored this long after the Member stops, and at once when the form is left. */
+const AUTOSAVE_MS = 500;
+
 /**
- * Renders the form of a Draft.
+ * Renders the form of a Draft. The Draft is stored as the Member types (see
+ * `flush`); a Draft with a pending submit is shown locked, for sending again only.
  * @param {Draft} draft
  * @param {{ save: () => Promise<void>, submit: () => Promise<void> }} actions
+ * @returns {{ element: HTMLFormElement, flush: () => void }} flush stores unsaved typing now
  */
 export function proposeForm(draft, actions) {
   const form = draft.form;
@@ -331,13 +348,51 @@ export function proposeForm(draft, actions) {
   });
 
   const status = h('p', { class: 'form-status', role: 'status', 'data-testid': 'form-status' });
+  const report = showError(status);
+  const notice = h('p', { class: 'warning small', 'data-testid': 'pending-notice', hidden: true }, t('drafts.pending'));
   const saveButton = h('button', { type: 'button', class: 'button', 'data-testid': 'save-draft' }, t('propose.saveDraft'));
   const submitButton = h('button', { type: 'button', class: 'button primary', 'data-testid': 'submit' }, t('propose.submit'));
-  saveButton.addEventListener('click', () => {
-    void actions.save().then(() => {
-      status.textContent = t('propose.saved');
-    });
-  });
+  const element = h('form', { class: 'propose-form', 'data-kind': draft.kind, 'data-testid': 'propose-form', novalidate: true },
+    h('h2', {}, t(`propose.kind.${draft.kind}`)),
+    notice,
+    h('section', { class: 'form-section' }, ...findingFields(draft)),
+    citationFields(draft, actions.save, report),
+    h('section', { class: 'form-section' }, field(t('propose.note'), note)),
+    status,
+    h('div', { class: 'form-actions' }, saveButton, submitButton),
+  );
+
+  let snapshot = JSON.stringify(form);
+  let done = false;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timer;
+  const flush = () => {
+    clearTimeout(timer);
+    if (done || draft.pending || JSON.stringify(form) === snapshot) return;
+    snapshot = JSON.stringify(form);
+    actions.save().catch(report);
+  };
+  const soon = () => {
+    clearTimeout(timer);
+    timer = setTimeout(flush, AUTOSAVE_MS);
+  };
+  for (const type of ['input', 'change', 'click']) element.addEventListener(type, soon);
+
+  const lock = () => {
+    notice.hidden = false;
+    for (const control of element.querySelectorAll('input, select, textarea, button')) {
+      if (control !== submitButton && 'disabled' in control) control.disabled = true;
+    }
+  };
+  if (draft.pending) lock();
+
+  saveButton.addEventListener('click', guarded(report, async () => {
+    clearTimeout(timer);
+    snapshot = JSON.stringify(form);
+    await actions.save();
+    status.classList.remove('error');
+    status.textContent = t('propose.saved');
+  }));
   const submit = async () => {
     const problems = formProblems(draft);
     if (problems.length) {
@@ -347,23 +402,18 @@ export function proposeForm(draft, actions) {
     }
     status.classList.remove('error');
     submitButton.disabled = true;
+    clearTimeout(timer);
+    snapshot = JSON.stringify(form);
     try {
       await actions.submit();
+      done = true;
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : String(error);
-      status.classList.add('error');
+      report(error);
+      if (draft.pending) lock();
     } finally {
       submitButton.disabled = false;
     }
   };
   submitButton.addEventListener('click', () => void submit());
-
-  return h('form', { class: 'propose-form', 'data-kind': draft.kind, 'data-testid': 'propose-form', novalidate: true },
-    h('h2', {}, t(`propose.kind.${draft.kind}`)),
-    h('section', { class: 'form-section' }, ...findingFields(draft)),
-    citationFields(draft, actions.save),
-    h('section', { class: 'form-section' }, field(t('propose.note'), note)),
-    status,
-    h('div', { class: 'form-actions' }, saveButton, submitButton),
-  );
+  return { element, flush };
 }

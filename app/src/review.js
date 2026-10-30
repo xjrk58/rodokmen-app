@@ -2,7 +2,7 @@
 // tool, record history and undo. Phone-first: one card per Proposal, the
 // changes as sentences, conflicts with a choice per field, and one tap to accept.
 
-import { acceptProposal, getHistory, mergePersons, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
+import { acceptProposal, getHistory, mergePersons, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
 import { h } from './dom.js';
 import { language, t } from './i18n.js';
 import { personPicker } from './pickers.js';
@@ -28,6 +28,8 @@ import { personPicker } from './pickers.js';
 
 /** Fields an Editor may correct in place. */
 const EDITABLE = ['date', 'given', 'surname', 'asFound', 'page', 'transcription', 'title', 'typeDetail', 'description', 'roleDetail', 'caption'];
+/** Text fields that are never null: emptied, they stay an empty text (and the server says what is missing). */
+const NOT_NULL = new Set(['given', 'surname', 'asFound', 'transcription', 'title']);
 
 /** @param {string} iso */
 export function formatDate(iso) {
@@ -46,9 +48,6 @@ function show(v) {
  * @returns {v is Record<string, unknown>}
  */
 const isRecord = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
-
-/** @param {unknown} error */
-export const messageOf = (error) => (error instanceof Error ? error.message : String(error));
 
 /** @param {AuthorRef} author */
 function authorLine(author) {
@@ -83,6 +82,7 @@ function conflictBlock(p, o, c, state, lang) {
   const box = h('div', { class: 'conflict-box', 'data-testid': 'conflict' }, h('p', { class: 'small' }, t('review.conflict', { record: c.label[lang] })));
   if (c.fields.length === 0) {
     const ack = h('input', { type: 'checkbox', 'data-testid': 'conflict-ack' });
+    ack.checked = state.choices.has(o.position);
     ack.addEventListener('change', () => (ack.checked ? state.choices.set(o.position, {}) : state.choices.delete(o.position)));
     box.append(h('label', { class: 'radio-row' }, ack, h('span', {}, t('review.conflictAck'))));
     return box;
@@ -91,7 +91,8 @@ function conflictBlock(p, o, c, state, lang) {
     const name = `c-${p.id}-${o.position}-${f.field}`;
     const row = h('div', { class: 'choice' }, h('div', { class: 'small' }, t(`field.${f.field}`)));
     for (const [which, value] of /** @type {const} */ ([['proposal', f.proposed], ['current', f.current]])) {
-      const radio = h('input', { type: 'radio', name, value: which, 'data-testid': `choose-${which}-${f.field}` });
+      // Drawn again when the corrections open or close: show the choice already made.
+      const radio = h('input', { type: 'radio', name, value: which, checked: state.choices.get(o.position)?.[f.field] === which, 'data-testid': `choose-${which}-${f.field}` });
       radio.addEventListener('change', () => {
         const picked = state.choices.get(o.position) ?? {};
         picked[f.field] = which;
@@ -118,7 +119,7 @@ function correctionInputs(o, state) {
     const current = obj[key];
     const input = h('input', { type: 'text', value: typeof current === 'string' ? current : '', 'data-testid': `correct-${o.position}-${key}` });
     input.addEventListener('input', () => {
-      obj[key] = input.value === '' && key !== 'given' && key !== 'surname' ? null : input.value;
+      obj[key] = input.value === '' && !NOT_NULL.has(key) ? null : input.value;
       state.corrections.set(o.position, op);
     });
     box.append(h('label', { class: 'field small' }, h('span', {}, t(`field.${key}`)), input));
@@ -170,6 +171,8 @@ function reviewActions(p, state, renderChanges, onDone) {
   const correct = h('button', { type: 'button', class: 'link-button', 'data-testid': 'correct' }, t('review.correct'));
   correct.addEventListener('click', () => {
     state.editing = !state.editing;
+    // Closing the corrections drops them: what is not shown is not sent.
+    if (!state.editing) state.corrections.clear();
     renderChanges();
   });
   /** @param {() => Promise<unknown>} fn */
@@ -223,12 +226,16 @@ export function proposalCard(p, options = {}) {
  * The review queue: pending Proposals, oldest first.
  * @param {HTMLElement} root
  * @param {string | undefined} focusId
+ * @param {AbortSignal} signal aborted when the Member leaves the screen; nothing is drawn after that
  */
-export async function renderReview(root, focusId) {
+export async function renderReview(root, focusId, signal) {
   root.replaceChildren(h('p', { class: 'muted' }, t('work.loading')));
-  const { items, total } = await reviewQueue();
+  const { items, total } = await reviewQueue(signal);
+  if (signal.aborted) return;
   const reload = () => {
-    renderReview(root, undefined).catch((/** @type {unknown} */ e) => root.replaceChildren(h('p', { class: 'form-status error' }, messageOf(e))));
+    renderReview(root, undefined, signal).catch((/** @type {unknown} */ e) => {
+      if (!signal.aborted) root.replaceChildren(h('p', { class: 'form-status error' }, messageOf(e)));
+    });
   };
   root.replaceChildren(
     h('h2', {}, t('review.title')),
@@ -252,12 +259,15 @@ function mergeTool(onDone) {
       status.textContent = t('merge.pickTwo');
       return;
     }
+    button.disabled = true;
     try {
       await mergePersons(keep.id, { mergeId: gone.id, keepBaseVersion: keep.version, mergeBaseVersion: gone.version, note: null });
       status.textContent = t('merge.done');
       onDone();
     } catch (error) {
       status.textContent = messageOf(error);
+    } finally {
+      button.disabled = false;
     }
   };
   button.addEventListener('click', () => void merge());
@@ -302,8 +312,9 @@ function historyEntry(e, canUndo, onUndone) {
  * The history of a Person, newest first, with undo for Editors.
  * @param {HTMLElement} root
  * @param {{ kind?: string, id?: string, canUndo: boolean }} o
+ * @param {AbortSignal} signal aborted when the Member leaves the screen
  */
-export async function renderHistory(root, o) {
+export async function renderHistory(root, o, signal) {
   const picker = personPicker({
     value: null,
     label: t('history.which'),
@@ -317,8 +328,13 @@ export async function renderHistory(root, o) {
   root.replaceChildren(h('h2', {}, t('history.title')), picker, list);
   if (!o.kind || !o.id) return;
   list.replaceChildren(h('p', { class: 'muted' }, t('work.loading')));
-  const { items } = await getHistory(o.kind, o.id);
-  const again = () => void renderHistory(root, o);
+  const { items } = await getHistory(o.kind, o.id, signal);
+  if (signal.aborted) return;
+  const again = () => {
+    renderHistory(root, o, signal).catch((/** @type {unknown} */ e) => {
+      if (!signal.aborted) list.replaceChildren(h('p', { class: 'form-status error' }, messageOf(e)));
+    });
+  };
   list.replaceChildren(...(items.length ? items.map((e) => historyEntry(e, o.canUndo, again)) : [h('p', { class: 'empty' }, t('history.none'))]));
 }
 

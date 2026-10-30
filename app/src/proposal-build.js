@@ -21,7 +21,7 @@ export const OPERATIONS_VERSION = 1;
  */
 
 /** @typedef {{ id: string, label: string }} PlaceChoice a Place of the Tree */
-/** @typedef {{ id: string, label: string }} SourceChoice a Source of the Tree */
+/** @typedef {{ id: string, label: string, type?: SourceType }} SourceChoice a Source of the Tree (Drafts from before 2026-10 have no type) */
 
 /**
  * @typedef {object} CitationForm
@@ -92,8 +92,24 @@ function present(value, what) {
 /** @param {string | undefined | null} s */
 const orNull = (s) => (clean(s) === '' ? null : clean(s));
 
-/** Today as an ISO day. */
-export const today = () => new Date().toISOString().slice(0, 10);
+/** Today as an ISO day where the Member is (not in UTC, which is yesterday in Czechia until 1 or 2 a.m.). */
+export function today() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/** Source types whose images show pages of the Source itself; images of other Sources are photos. */
+const PAGED_SOURCES = new Set(['parish_register', 'census', 'land_book']);
+
+/**
+ * @param {CitationForm} c
+ * @returns {SourceType | undefined}
+ */
+function sourceTypeOf(c) {
+  if (c.sourceMode === 'existing') return c.source?.type;
+  if (c.sourceMode === 'account') return 'family_account';
+  return c.sourceType || 'parish_register';
+}
 
 /**
  * An empty form of a kind.
@@ -152,8 +168,11 @@ function kindProblems(draft) {
       const f = draft.form;
       return f.person?.mode === 'existing' && (clean(f.given) !== '' || clean(f.surname) !== '') ? [] : ['propose.needName'];
     }
-    case 'correction':
-      return draft.form.target && Object.keys(draft.form.set ?? {}).length > 0 ? [] : ['propose.needCorrection'];
+    case 'correction': {
+      const { target, set } = draft.form;
+      if (!target || Object.keys(set ?? {}).length === 0) return ['propose.needCorrection'];
+      return target.record === 'name' && set.asFound !== undefined && clean(set.asFound) === '' ? ['propose.needAsFound'] : [];
+    }
   }
 }
 
@@ -258,7 +277,8 @@ class Builder {
       readOn: c.readOn || today(),
       confidence: c.confidence || 'normal',
     });
-    const kind = c.sourceMode === 'new' && (c.sourceType ?? 'parish_register') !== 'other' ? 'page' : 'photo';
+    const type = sourceTypeOf(c);
+    const kind = type && PAGED_SOURCES.has(type) ? 'page' : 'photo';
     for (const uploadId of uploadIds) this.ops.push({ op: 'addImage', uploadId, kind, citationId });
     return citationId;
   }
@@ -360,7 +380,8 @@ function buildCorrection(b, form, ctx) {
   const target = present(form.target, 'record to correct');
   /** @type {Record<string, unknown>} */
   const set = {};
-  for (const [field, value] of Object.entries(form.set ?? {})) set[field] = value.trim() === '' && field !== 'given' && field !== 'surname' ? null : value;
+  // An emptied Event field is cleared; a Name's fields are text and stay text (formProblems refuses an empty spelling as found).
+  for (const [field, value] of Object.entries(form.set ?? {})) set[field] = target.record === 'event' && value.trim() === '' ? null : value;
   b.ops.push({ op: 'setField', record: target.record, id: target.id, baseVersion: target.version, set });
   b.cite(form.citation, ctx, target.record === 'event' ? { eventId: target.id } : { nameId: target.id }, target.version);
 }

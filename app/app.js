@@ -39,6 +39,17 @@ async function main() {
 
   await setLanguage(detectLanguage());
 
+  // Drafts and the #work screens need no map data: they work even when it fails to load.
+  new WorkPanel({
+    panel: byId('work'),
+    body: byId('work-body'),
+    nav: byId('work-nav'),
+    close: /** @type {HTMLButtonElement} */ (byId('work-close')),
+    button: /** @type {HTMLButtonElement} */ (byId('work-button')),
+    badge: byId('work-badge'),
+    toast: byId('drafts-toast'),
+  });
+
   let data;
   try {
     data = await loadData();
@@ -105,16 +116,6 @@ async function main() {
     search.refresh();
     layers.render();
     settings.render();
-  });
-
-  new WorkPanel({
-    panel: byId('work'),
-    body: byId('work-body'),
-    nav: byId('work-nav'),
-    close: /** @type {HTMLButtonElement} */ (byId('work-close')),
-    button: /** @type {HTMLButtonElement} */ (byId('work-button')),
-    badge: byId('work-badge'),
-    toast: byId('drafts-toast'),
   });
 
   document.body.dataset.ready = 'true';

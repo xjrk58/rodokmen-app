@@ -44,6 +44,12 @@ export class ApiError extends Error {
 }
 
 /**
+ * What to tell the Member about a failure.
+ * @param {unknown} error
+ */
+export const messageOf = (error) => (error instanceof Error ? error.message : String(error));
+
+/**
  * The code and message of an API error body ({ code, message }), when it has them.
  * @param {unknown} data
  * @returns {{ code?: string, message?: string }}

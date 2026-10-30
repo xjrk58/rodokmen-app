@@ -50,3 +50,28 @@ export const closeIcon = () => icon('M6 6l12 12M18 6 6 18');
 export function externalLink(href, text, attrs = {}) {
   return h('a', { href, target: '_blank', rel: 'noopener noreferrer', ...attrs }, h('span', {}, text), externalIcon());
 }
+
+/**
+ * Reports a failure in a status line.
+ * @param {HTMLElement} status
+ * @returns {(error: unknown) => void}
+ */
+export function showError(status) {
+  return (error) => {
+    status.textContent = error instanceof Error ? error.message : String(error);
+    status.classList.add('error');
+  };
+}
+
+/**
+ * An event listener that runs an async action and hands any failure to
+ * `report`, so a failed action is never silent.
+ * @param {(error: unknown) => void} report
+ * @param {() => Promise<unknown>} action
+ * @returns {() => void}
+ */
+export function guarded(report, action) {
+  return () => {
+    action().catch(report);
+  };
+}
