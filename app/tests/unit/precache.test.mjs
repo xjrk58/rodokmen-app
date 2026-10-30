@@ -2,45 +2,30 @@
 // version stamp matches the files (so a changed file means a new version).
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { readdir, stat } from 'node:fs/promises';
-import { join, relative, sep } from 'node:path';
+import { join } from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
+import { siteFiles } from '../../scripts/site-files.mjs';
 import { PRECACHE } from '../../src/precache.js';
 import { APP } from './helpers.mjs';
 
-const NOT_SHELL_DIRS = new Set(['node_modules', 'tests', 'scripts', '.cache', 'test-results', 'playwright-report']);
-const NOT_SHELL_FILES = new Set(['sw.js', 'package.json', 'tsconfig.json', 'tsconfig.sw.json', 'tsconfig.node.json', 'playwright.config.js', 'data/build-info.json']);
-const NOT_SHELL_PATTERN = /\.(map|d\.ts)$|(^|\/)(LICENSE|VERSION)$/;
+/** Deployed but not needed offline: the worker itself, build notes, source maps and licence files. */
+const NOT_PRECACHED = new Set(['sw.js', 'data/build-info.json']);
+const NOT_PRECACHED_PATTERN = /\.map$|(^|\/)(LICENSE|VERSION)$/;
 
-/**
- * @param {string} dir
- * @returns {AsyncGenerator<string>}
- */
-async function* walk(dir) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    const rel = relative(APP, path).split(sep).join('/');
-    if (entry.isDirectory()) {
-      if (!NOT_SHELL_DIRS.has(rel.split('/')[0])) yield* walk(path);
-    } else {
-      yield rel;
-    }
-  }
-}
-
-test('every shell and data file is precached', async () => {
+test('every deployed shell and data file is precached', async () => {
   const listed = new Set(PRECACHE);
-  for await (const file of walk(APP)) {
-    if (NOT_SHELL_FILES.has(file) || NOT_SHELL_PATTERN.test(file)) continue;
+  for (const file of await siteFiles()) {
+    if (NOT_PRECACHED.has(file) || NOT_PRECACHED_PATTERN.test(file)) continue;
     assert.ok(listed.has(file), `${file} is not in src/precache.js`);
   }
 });
 
-test('every precached file exists', async () => {
+test('every precached file is deployed', async () => {
+  const site = new Set(await siteFiles());
   for (const path of PRECACHE) {
     if (path === './') continue;
-    assert.ok((await stat(join(APP, path))).isFile(), path);
+    assert.ok(site.has(path), `${path} is precached but not deployed (scripts/site-files.mjs)`);
   }
   assert.equal(new Set(PRECACHE).size, PRECACHE.length, 'no duplicates');
 });
