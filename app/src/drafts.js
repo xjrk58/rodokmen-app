@@ -3,6 +3,11 @@
 // work without network. Each Draft has an idempotency key, so a submit that
 // was interrupted can be retried without creating a second Proposal.
 
+import { KINDS } from './proposal-build.js';
+import { hex } from './text.js';
+
+/** @typedef {import('./proposal-build.js').KindForm} KindForm */
+
 const DB_NAME = 'rodokmen-drafts';
 const DB_VERSION = 1;
 /** Unsubmitted Drafts older than this get a warning (browsers may evict storage). */
@@ -11,13 +16,16 @@ export const STALE_DRAFT_DAYS = 7;
 export const QUOTA_WARNING = 0.8;
 
 /**
- * @typedef {object} Draft
+ * @typedef {object} DraftMeta
  * @property {string} id
- * @property {string} kind baptism, marriage, death, name or correction
  * @property {string} idempotencyKey
  * @property {string} createdAt ISO time
  * @property {string} updatedAt ISO time
- * @property {Record<string, any>} form the form as the Member filled it in
+ */
+
+/**
+ * A Draft: its kind and the form as the Member filled it in.
+ * @typedef {DraftMeta & KindForm} Draft
  */
 
 /**
@@ -42,17 +50,17 @@ function open() {
       db.createObjectStore('photos', { keyPath: 'id' }).createIndex('draftId', 'draftId');
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => reject(request.error ?? new Error('IndexedDB did not open'));
   });
   return opening;
 }
 
 /**
- * @template T
+ * One request in its own transaction; resolves with the request's result once the transaction completes.
  * @param {'drafts' | 'photos'} store
  * @param {IDBTransactionMode} mode
- * @param {(s: IDBObjectStore) => IDBRequest<T>} fn
- * @returns {Promise<T>}
+ * @param {(s: IDBObjectStore) => IDBRequest} fn
+ * @returns {Promise<unknown>}
  */
 async function run(store, mode, fn) {
   const db = await open();
@@ -60,37 +68,52 @@ async function run(store, mode, fn) {
     const tx = db.transaction(store, mode);
     const request = fn(tx.objectStore(store));
     tx.oncomplete = () => resolve(request.result);
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
+    tx.onerror = () => reject(tx.error ?? new Error('IndexedDB transaction failed'));
+    tx.onabort = () => reject(tx.error ?? new Error('IndexedDB transaction aborted'));
   });
+}
+
+/**
+ * Records read back from IndexedDB are checked, not trusted: an older version of the app may have written them.
+ * @param {unknown} v
+ * @returns {v is Draft}
+ */
+function isDraft(v) {
+  return typeof v === 'object' && v !== null && 'id' in v && typeof v.id === 'string' && 'kind' in v && KINDS.some((k) => k === v.kind) && 'form' in v && typeof v.form === 'object' && v.form !== null;
+}
+
+/**
+ * @param {unknown} v
+ * @returns {v is DraftPhoto}
+ */
+function isPhoto(v) {
+  return typeof v === 'object' && v !== null && 'id' in v && typeof v.id === 'string' && 'blob' in v && v.blob instanceof Blob;
 }
 
 /** A random key, URL-safe. */
 export function newKey() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+  return hex(crypto.getRandomValues(new Uint8Array(16)));
 }
 
 /**
- * @param {string} kind
- * @param {Record<string, any>} form
+ * @param {KindForm} kindForm
  * @returns {Draft}
  */
-export function newDraft(kind, form) {
+export function newDraft(kindForm) {
   const now = new Date().toISOString();
-  return { id: newKey(), kind, idempotencyKey: newKey(), createdAt: now, updatedAt: now, form };
+  return { id: newKey(), idempotencyKey: newKey(), createdAt: now, updatedAt: now, ...kindForm };
 }
 
 /** @returns {Promise<Draft[]>} newest first */
 export async function listDrafts() {
-  /** @type {Draft[]} */
   const all = await run('drafts', 'readonly', (s) => s.getAll());
-  return all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  return (Array.isArray(all) ? all.filter(isDraft) : []).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
 /** @param {string} id @returns {Promise<Draft | undefined>} */
-export function getDraft(id) {
-  return run('drafts', 'readonly', (s) => s.get(id));
+export async function getDraft(id) {
+  const draft = await run('drafts', 'readonly', (s) => s.get(id));
+  return isDraft(draft) ? draft : undefined;
 }
 
 /** @param {Draft} draft */
@@ -105,8 +128,9 @@ export async function deleteDraft(id) {
 }
 
 /** @param {string} draftId @returns {Promise<DraftPhoto[]>} */
-export function draftPhotos(draftId) {
-  return run('photos', 'readonly', (s) => s.index('draftId').getAll(draftId));
+export async function draftPhotos(draftId) {
+  const photos = await run('photos', 'readonly', (s) => s.index('draftId').getAll(draftId));
+  return Array.isArray(photos) ? photos.filter(isPhoto) : [];
 }
 
 /** @param {DraftPhoto} photo */

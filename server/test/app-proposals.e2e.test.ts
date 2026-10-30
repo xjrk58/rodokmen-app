@@ -1,3 +1,4 @@
+import { CitationDetail, EventDetail, Operation, PersonDetail, PersonSearchResult, ProposalView, UploadTicket } from '@rodokmen/shared';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
@@ -29,8 +30,9 @@ async function freePort(): Promise<number> {
     srv.unref();
     srv.on('error', reject);
     srv.listen(0, '127.0.0.1', () => {
-      const { port } = srv.address() as { port: number };
-      srv.close(() => resolve(port));
+      const address = srv.address();
+      if (address === null || typeof address === 'string') return reject(new Error('no TCP port'));
+      srv.close(() => resolve(address.port));
     });
   });
 }
@@ -80,7 +82,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     if (withImage) {
       const body = await photo(`${given}, 1842`);
       const sha256 = createHash('sha256').update(body).digest('hex');
-      const ticket = (await inject(member, 'POST', '/api/uploads', { contentType: 'image/jpeg', byteSize: body.length, sha256 })).json();
+      const ticket = UploadTicket.parse((await inject(member, 'POST', '/api/uploads', { contentType: 'image/jpeg', byteSize: body.length, sha256 })).json());
       await storage.put(`pending/${ticket.upload.id}/original`, body, 'image/jpeg');
       expect((await inject(member, 'POST', `/api/uploads/${ticket.upload.id}/complete`)).statusCode).toBe(200);
       ops.push({ op: 'addImage', uploadId: ticket.upload.id, kind: 'page', citationId: 'tmp:c' });
@@ -88,7 +90,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     const res = await inject(member, 'POST', '/api/proposals', { formatVersion: 1, idempotencyKey: `e2e-${randomUUID()}`, note: `Baptism of ${given}, found in the 1842 register`, operations: ops });
     expect(res.statusCode, res.body).toBe(201);
     clock.advance(60_000);
-    return res.json().id;
+    return ProposalView.parse(res.json()).id;
   }
 
   beforeAll(async () => {
@@ -106,7 +108,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
         scope.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp', 'image/heic'], { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 }, (_req, body, done) => done(null, body));
         scope.put('/test-storage/*', { schema: { hide: true } }, async (req, reply) => {
           const key = new URL(req.url, origin).pathname.replace('/test-storage/', '');
-          await storage.put(key, req.body as Buffer, req.headers['content-type'] ?? 'application/octet-stream');
+          await storage.put(key, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.headers['content-type'] ?? 'application/octet-stream');
           return reply.code(200).send();
         });
         scope.get('/test-storage/*', { schema: { hide: true } }, async (req, reply) => {
@@ -154,7 +156,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     }
     await first.getByTestId('accept').click();
     await expect.poll(() => cards.count()).toBe(2);
-    expect((await inject(editor, 'GET', `/api/proposals/${ids[0]}`)).json().status).toBe('accepted');
+    expect(ProposalView.parse((await inject(editor, 'GET', `/api/proposals/${ids[0]}`)).json()).status).toBe('accepted');
   });
 
   it('baptism entry end to end: one Proposal adds the child and the baptism, links the parents\' Family and the godparents, and attaches the Citation with its page image', async () => {
@@ -180,7 +182,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       await page.getByTestId(`${testid}-search`).fill(`${person.given} ${person.surname}`);
       const results = page.getByTestId(`${testid}-results`).getByRole('button');
       await results.first().waitFor();
-      const hits = (await inject(contributor, 'GET', `/api/persons?q=${encodeURIComponent(`${person.given} ${person.surname}`)}&limit=8`)).json().items as Array<{ person: { id: string } }>;
+      const hits = PersonSearchResult.parse((await inject(contributor, 'GET', `/api/persons?q=${encodeURIComponent(`${person.given} ${person.surname}`)}&limit=8`)).json()).items;
       await results.nth(hits.findIndex((h) => h.person.id === person.person_id)).click();
       await page.getByTestId(`${testid}-picked`).waitFor();
     };
@@ -206,10 +208,11 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     const proposalId = page.url().split('/').at(-1)!;
     await expect.poll(() => page.locator(`[data-id="${proposalId}"]`).getByTestId('status').textContent()).toBe('pending');
 
-    const ops = (await t.db.selectFrom('proposal_operation').select('operation').where('proposal_id', '=', proposalId).orderBy('position').execute()).map((r) => r.operation as Record<string, any>);
-    const roles = ops.filter((o) => o.op === 'addRole').map((o) => [o.role, o.personId]);
-    const child = ops.find((o) => o.op === 'createPerson' && o.name.given === 'Vojtěch')!;
-    const newGodparent = ops.find((o) => o.op === 'createPerson' && o.name.given === 'Rozálie')!;
+    const ops = (await t.db.selectFrom('proposal_operation').select('operation').where('proposal_id', '=', proposalId).orderBy('position').execute()).map((r) => Operation.parse(r.operation));
+    const roles = ops.flatMap((o) => (o.op === 'addRole' ? [[o.role, o.personId]] : []));
+    const created = (given: string) => ops.flatMap((o) => (o.op === 'createPerson' && o.name.given === given ? [o] : []))[0]!;
+    const child = created('Vojtěch');
+    const newGodparent = created('Rozálie');
     expect(roles).toEqual([
       ['child', child.tempId],
       ['father', family.partner1_id],
@@ -220,7 +223,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
     expect(ops.find((o) => o.op === 'createEvent')).toMatchObject({ type: 'baptism', date: '1830-02-14', placeId: L.kamennaLhota });
     expect(ops.find((o) => o.op === 'linkChild')).toMatchObject({ familyId: L.janFirstFamily, childId: child.tempId, linkType: 'birth', baseVersion: family.version });
     expect(ops.find((o) => o.op === 'createCitation')).toMatchObject({ page: '58', confidence: 'high' });
-    const image = ops.find((o) => o.op === 'addImage')!;
+    const image = ops.flatMap((o) => (o.op === 'addImage' ? [o] : []))[0]!;
     expect(image).toMatchObject({ kind: 'page' });
     expect(storage.objects.has(`pending/${image.uploadId}/display.webp`)).toBe(true);
 
@@ -237,11 +240,11 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
         .orderBy('c.seq')
         .executeTakeFirstOrThrow()
     ).record_id;
-    const detail = (await inject(contributor, 'GET', `/api/persons/${childId}`)).json();
-    expect(detail.familiesAsChild.map((f: { id: string }) => f.id)).toEqual([L.janFirstFamily]);
-    const baptism = (await inject(contributor, 'GET', `/api/events/${detail.events[0].event.id}`)).json();
-    expect(baptism.roles.map((r: { role: string }) => r.role)).toEqual(['child', 'father', 'mother', 'godparent', 'godparent']);
-    const citation = (await inject(contributor, 'GET', `/api/citations/${baptism.citations[0].id}`)).json();
+    const detail = PersonDetail.parse((await inject(contributor, 'GET', `/api/persons/${childId}`)).json());
+    expect(detail.familiesAsChild.map((f) => f.id)).toEqual([L.janFirstFamily]);
+    const baptism = EventDetail.parse((await inject(contributor, 'GET', `/api/events/${detail.events[0]!.event.id}`)).json());
+    expect(baptism.roles.map((r) => r.role)).toEqual(['child', 'father', 'mother', 'godparent', 'godparent']);
+    const citation = CitationDetail.parse((await inject(contributor, 'GET', `/api/citations/${baptism.citations[0]!.id}`)).json());
     expect(citation.images).toHaveLength(1);
   });
 

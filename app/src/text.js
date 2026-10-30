@@ -18,3 +18,20 @@ export function normalize(text) {
 
 /** Czech collation, so "Ch" sorts after "H" and "Š" after "S". */
 export const czechCollator = new Intl.Collator('cs', { sensitivity: 'base' });
+
+/**
+ * Bytes as lower-case hexadecimal, two digits each.
+ * @param {Uint8Array} bytes
+ */
+export function hex(bytes) {
+  return [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * A URL template with the Municipality name filled in: every "{name}" becomes the encoded name.
+ * @param {string} template
+ * @param {string} name
+ */
+export function withName(template, name) {
+  return template.replaceAll('{name}', encodeURIComponent(name));
+}

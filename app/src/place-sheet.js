@@ -5,6 +5,7 @@
 import { scansUrl } from './archive-lookup.js';
 import { closeIcon, externalLink, h } from './dom.js';
 import { formatKm, t } from './i18n.js';
+import { withName } from './text.js';
 
 /** @typedef {import('./archive-lookup.js').ArchiveIndex} ArchiveIndex */
 /** @typedef {import('./gazetteer.js').Gazetteer} Gazetteer */
@@ -29,14 +30,6 @@ function formatCoordinates(lat, lon) {
   const ns = lat >= 0 ? 'N' : 'S';
   const ew = lon >= 0 ? 'E' : 'W';
   return `${Math.abs(lat).toFixed(4)}° ${ns}, ${Math.abs(lon).toFixed(4)}° ${ew}`;
-}
-
-/**
- * @param {ViewerLink} viewer
- * @param {string} name
- */
-function viewerUrl(viewer, name) {
-  return viewer.url.replaceAll('{name}', encodeURIComponent(name));
 }
 
 export class PlaceSheet {
@@ -137,7 +130,7 @@ export class PlaceSheet {
       h('h3', {}, t('sheet.historical')),
       h('ul', { class: 'link-list' },
         ...this.deps.viewers.map((viewer) =>
-          h('li', {}, externalLink(viewerUrl(viewer, name), t(`viewer.${viewer.id}`, { name }), { 'data-viewer': viewer.id })))),
+          h('li', {}, externalLink(withName(viewer.url, name), t(`viewer.${viewer.id}`, { name }), { 'data-viewer': viewer.id })))),
     );
 
     this.el.replaceChildren(head, registers, jewishSection, historical);
