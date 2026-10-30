@@ -39,6 +39,8 @@ export function checkRouteCoverage(routes: readonly RouteRecord[], doc: { paths?
   const problems: string[] = [];
   for (const r of routes) {
     if (!r.url.startsWith('/api/') || r.method === 'HEAD' || r.method === 'OPTIONS') continue;
+    // The catch-all for unknown API paths (routes/system.ts) only ever answers 404.
+    if (r.url === '/api/*') continue;
     const label = `${r.method} ${r.url}`;
     if (!r.hasResponseSchema) problems.push(`${label} has no response schema`);
     const operation = doc.paths?.[toOpenApiPath(r.url)]?.[r.method.toLowerCase()];

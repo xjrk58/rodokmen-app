@@ -39,6 +39,22 @@ test('a query that matches nothing says so', async ({ page }) => {
   await expect(page.locator('#search-note')).toContainText('No municipality matches');
 });
 
+test('Enter in an emptied search box opens nothing', async ({ page }) => {
+  await openApp(page);
+  const input = page.locator('#search-input');
+  await input.fill('Adamov');
+  await expect(page.locator('#search-results li').first()).toBeVisible();
+  // Emptied with the clear button, and with the keyboard.
+  await page.locator('#search-clear').click();
+  await input.press('Enter');
+  await input.fill('Adamov');
+  await expect(page.locator('#search-results li').first()).toBeVisible();
+  await input.fill('');
+  await input.press('Enter');
+  await expect(page.locator('#search-results-box')).toBeHidden();
+  await expect(page.locator('#place-sheet')).toBeHidden();
+});
+
 test('choosing a result centres the map on it and opens its place sheet', async ({ page }) => {
   const target = municipality('Adamov', 'Blansko');
   await openApp(page);

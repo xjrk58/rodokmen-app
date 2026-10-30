@@ -5,6 +5,7 @@ import { SMTPServer } from 'smtp-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config.js';
 import { SmtpMailer } from '../src/mail/mailer.js';
+import { sendAlert } from '../src/ops/alerts.js';
 import { signInLinkEmail } from '../src/mail/templates.js';
 import { backupStatusReader, BACKUP_MAX_AGE_MS, HEALTH_ALERT_AFTER_MS, Watchdog } from '../src/ops/watchdog.js';
 import { createImageStorage, IMAGE_LINK_SECONDS } from '../src/storage/images.js';
@@ -113,6 +114,80 @@ describe('watchdog alerts for the Owner', () => {
     expect(alerts.map((a) => a.subject)).toEqual(['Nightly Backup missing']);
   });
 
+  it('an alert that could not be sent is sent on a later tick, once', async () => {
+    const clock = new TestClock(new Date('2026-10-29T02:00:00Z'));
+    const sent: string[] = [];
+    const refused = new Set<string>();
+    const watchdog = new Watchdog({
+      clock,
+      checkHealth: async () => ({ ok: false, detail: 'HTTP 502' }),
+      readBackupStatus: async () => okBackup('2026-10-29T02:31:00Z', false),
+      // The mail service refuses the first attempt of each alert.
+      alert: async (subject) => {
+        const kind = subject.split(' ')[0]!;
+        if (!refused.has(kind)) {
+          refused.add(kind);
+          throw new Error('421 try again later');
+        }
+        sent.push(subject);
+      },
+    });
+    // The Backup alert is due at once, the health alert after 5 minutes.
+    await expect(watchdog.tick()).rejects.toThrow(AggregateError);
+    expect(sent).toEqual([]);
+    for (let i = 0; i < 12; i++) {
+      clock.advance(30_000);
+      await watchdog.tick().catch(() => undefined);
+    }
+    expect(sent).toEqual(['Nightly Backup failed', 'Health check failing for 6 minutes']);
+  });
+
+  it('a failing alert does not keep the other check from running', async () => {
+    const { alerts, watchdog } = setup([true], [okBackup('2026-10-29T02:31:00Z', false)]);
+    const failing = new Watchdog({
+      clock: new TestClock(new Date('2026-10-29T02:00:00Z')),
+      checkHealth: async () => {
+        throw new Error('no answer');
+      },
+      readBackupStatus: async () => okBackup('2026-10-29T02:31:00Z', false),
+      healthAlertAfterMs: 0,
+      alert: async (subject) => {
+        if (subject.startsWith('Health')) throw new Error('421');
+        alerts.push({ subject, details: '', at: '' });
+      },
+    });
+    await expect(failing.tick()).rejects.toThrow(AggregateError);
+    expect(alerts.map((a) => a.subject)).toEqual(['Nightly Backup failed']);
+    await watchdog.tick();
+    expect(alerts.map((a) => a.subject)).toEqual(['Nightly Backup failed', 'Nightly Backup failed']);
+  });
+
+  it('a recovery alert that could not be sent is sent on a later tick', async () => {
+    const clock = new TestClock(new Date('2026-10-29T02:00:00Z'));
+    const sent: string[] = [];
+    let healthy = false;
+    let failNext = false;
+    const watchdog = new Watchdog({
+      clock,
+      checkHealth: async () => ({ ok: healthy, detail: 'HTTP 502' }),
+      healthAlertAfterMs: 0,
+      alert: async (subject) => {
+        if (failNext) {
+          failNext = false;
+          throw new Error('421');
+        }
+        sent.push(subject);
+      },
+    });
+    await watchdog.tick();
+    healthy = true;
+    failNext = true;
+    await expect(watchdog.tick()).rejects.toThrow(AggregateError);
+    await watchdog.tick();
+    await watchdog.tick();
+    expect(sent).toEqual(['Health check failing for 0 minutes', 'Health check recovered']);
+  });
+
   it('reads the status file written by the backup script', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'rdk-status-'));
     const file = join(dir, 'backup.json');
@@ -161,5 +236,55 @@ describe('SMTP transport', () => {
       .join('');
     expect(subject).toBe('Přihlášení do Rodokmenu');
     expect(m.data).toContain('multipart/alternative');
+  });
+});
+
+describe('watchdog alerts over SMTP when the mail service refuses at first', () => {
+  const accepted: string[] = [];
+  let refusals = 1;
+  let server: SMTPServer;
+  let port: number;
+
+  beforeAll(async () => {
+    server = new SMTPServer({
+      authOptional: true,
+      logger: false,
+      onData: (stream, _session, cb) => {
+        let data = '';
+        stream.on('data', (chunk: Buffer) => (data += chunk.toString('utf8')));
+        stream.on('end', () => {
+          if (refusals > 0) {
+            refusals--;
+            cb(Object.assign(new Error('Service busy, try again later'), { responseCode: 421 }));
+            return;
+          }
+          accepted.push(data);
+          cb();
+        });
+      },
+    });
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    const address = server.server.address();
+    if (address === null || typeof address === 'string') throw new Error('the SMTP test server is not listening on a port');
+    port = address.port;
+  });
+  afterAll(async () => new Promise<void>((resolve) => server.close(() => resolve())));
+
+  it('a failed Backup: the first send is refused with 421, the next tick delivers the alert, and only once', async () => {
+    const config = loadConfig({ NODE_ENV: 'test', ALERT_EMAIL: 'owner@example.test', PUBLIC_ORIGIN: 'https://rodokmen.example' });
+    const mailer = new SmtpMailer('Rodokmen <noreply@rodokmen.example>', { host: '127.0.0.1', port, secure: false, user: undefined, password: undefined, insecureTls: true }, { rejectUnauthorized: false });
+    const watchdog = new Watchdog({
+      clock: new TestClock(new Date('2026-10-29T02:40:00Z')),
+      checkHealth: async () => ({ ok: true, detail: 'HTTP 200' }),
+      readBackupStatus: async () => ({ ok: false, startedAt: '2026-10-29T02:30:00Z', finishedAt: '2026-10-29T02:31:00Z', error: 'restic: wrong password' }),
+      alert: (subject, details) => sendAlert(config, mailer, subject, details),
+    });
+    await expect(watchdog.tick()).rejects.toThrow(/could not be sent/);
+    expect(accepted).toHaveLength(0);
+    await watchdog.tick();
+    await watchdog.tick();
+    expect(accepted).toHaveLength(1);
+    expect(accepted[0]).toContain('Nightly Backup failed');
+    expect(accepted[0]).toContain('restic: wrong password');
   });
 });

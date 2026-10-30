@@ -13,7 +13,10 @@ export async function registerServiceWorker(onUpdateReady) {
   const offer = (worker) =>
     onUpdateReady(() => {
       accepted = true;
-      worker.postMessage({ type: 'SKIP_WAITING' });
+      // Still waiting: activate it, and reload on the controllerchange that follows. Otherwise
+      // another tab activated it already, and that controllerchange has passed here unheeded.
+      if (worker.state === 'installed') worker.postMessage({ type: 'SKIP_WAITING' });
+      else location.reload();
     });
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
