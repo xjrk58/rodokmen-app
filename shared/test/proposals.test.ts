@@ -127,7 +127,7 @@ describe('typed operations', () => {
       expect(issues[0]!.message).toContain(`no settable field "${key}"`);
     }
     // As JSON.parse leaves it: an own property named __proto__.
-    const raw = JSON.parse(`{"op":"setField","record":"name","id":"${ids.name}","baseVersion":1,"set":{"__proto__":{"polluted":true}}}`);
+    const raw: unknown = JSON.parse(`{"op":"setField","record":"name","id":"${ids.name}","baseVersion":1,"set":{"__proto__":{"polluted":true}}}`);
     const { issues } = checkOperations([raw], { editor: true });
     expect(issues.length).toBeGreaterThan(0);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();

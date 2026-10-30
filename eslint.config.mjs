@@ -44,6 +44,7 @@ export default defineConfig(
       '**/test-results/**',
       '**/playwright-report/**',
       '**/.cache/**',
+      '**/.lemmascript/**',
       'app/vendor/**',
       'app/data/**',
       '.claude/**',

@@ -5,7 +5,7 @@ import type { Account } from '../src/db/types.js';
 import { DailyScheduler, pragueTime } from '../src/jobs/daily.js';
 import { MemoryImageStorage } from '../src/storage/images.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { createMember, ensureOwner, makeApp, MINUTE, signIn, type TestApp } from './helpers.js';
+import { createMember, ensureOwner, idOf, makeApp, MINUTE, signIn, type TestApp } from './helpers.js';
 
 const evidence = (tag: string): OperationInput[] => [
   { op: 'createSource', tempId: `tmp:s${tag}`, type: 'parish_register', title: `Invented register ${tag}` },
@@ -21,7 +21,7 @@ describe('notifications: the daily Editor digest and outcome emails', () => {
   let karel: Account;
   let jana: Account;
   const cookies = new Map<string, string>();
-  const call = (m: Account, method: 'GET' | 'POST' | 'PUT', url: string, payload?: unknown) => a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload: payload as object }) });
+  const call = (m: Account, method: 'GET' | 'POST' | 'PUT', url: string, payload?: object) => a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload }) });
   const propose = async (m: Account, tag: string) => {
     const res = await call(m, 'POST', '/api/proposals', {
       formatVersion: 1,
@@ -30,7 +30,7 @@ describe('notifications: the daily Editor digest and outcome emails', () => {
       operations: [{ op: 'createPerson', tempId: `tmp:p${tag}`, sex: 'female', name: { given: `Person ${tag}`, surname: 'Invented', type: 'birth', asFound: `Person ${tag}` } }, ...evidence(tag)],
     });
     expect(res.statusCode, res.body).toBe(201);
-    return res.json().id as string;
+    return idOf(res);
   };
   const at = (iso: string) => {
     a.clock.current = new Date(iso);

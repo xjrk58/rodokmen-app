@@ -7,7 +7,7 @@ import { DailyScheduler } from '../src/jobs/daily.js';
 import { createImageStorage, MemoryImageStorage } from '../src/storage/images.js';
 import { HEIC_MESSAGE, processImage, sniffImageType } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { createMember, DAY, ensureOwner, makeApp, signIn, TestClock, testConfig, type TestApp } from './helpers.js';
+import { createMember, DAY, ensureOwner, errorOf, makeApp, signIn, TestClock, testConfig, type TestApp } from './helpers.js';
 
 const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 
@@ -35,7 +35,7 @@ describe('images: uploads, display copies, privacy and deletion', () => {
   let editor: Account;
   let stranger: Account;
   const cookies = new Map<string, string>();
-  const call = (m: Account, method: 'GET' | 'POST', url: string, payload?: unknown) => a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload: payload as object }) });
+  const call = (m: Account, method: 'GET' | 'POST', url: string, payload?: object) => a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload }) });
 
   /** What the app does: ask for a link, PUT the bytes there, then ask the server to finish. */
   async function upload(m: Account, body: Buffer, contentType = 'image/jpeg') {
@@ -91,7 +91,7 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     expect(ok.statusCode).toBe(201);
     const tooBig = await call(author, 'POST', '/api/uploads', { contentType: 'image/jpeg', byteSize: limit + 1, sha256: 'a'.repeat(64) });
     expect(tooBig.statusCode).toBe(413);
-    expect(tooBig.json().message).toMatch(/at most 25 MB/);
+    expect(errorOf(tooBig).message).toMatch(/at most 25 MB/);
     // A file larger than announced is refused when it is checked.
     const big = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(limit + 10)]);
     await expect(processImage(big)).rejects.toMatchObject({ statusCode: 413, code: 'too_large' });
@@ -178,7 +178,7 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     }
     expect([...storage.objects.keys()].filter((k) => k.startsWith('images/')).sort()).toEqual(before);
     expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(true);
-    expect((await call(editor, 'GET', `/api/proposals/${proposal.id}`)).json().status).toBe('pending');
+    expect(ProposalView.parse((await call(editor, 'GET', `/api/proposals/${proposal.id}`)).json()).status).toBe('pending');
     expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/accept`, {})).statusCode).toBe(200);
   });
 

@@ -1,4 +1,5 @@
-import type { MemberRole, UiLanguage } from '@rodokmen/shared';
+import { ApiError, type MemberRole, type UiLanguage } from '@rodokmen/shared';
+import { z } from 'zod';
 import { buildApp, type RodokmenApp } from '../src/app.js';
 import { createSession, SESSION_COOKIE } from '../src/auth/sessions.js';
 import { loadConfig, type Config } from '../src/config.js';
@@ -93,4 +94,14 @@ export function tokenFromEmail(text: string): string {
   const m = /#token=([A-Za-z0-9_-]+)/.exec(text);
   if (!m) throw new Error(`no token link in email:\n${text}`);
   return m[1]!;
+}
+
+/** The error an API answer carries, parsed. */
+export function errorOf(res: { json(): unknown }): ApiError {
+  return ApiError.parse(res.json());
+}
+
+/** The id of the record an API answer describes. */
+export function idOf(res: { json(): unknown }): string {
+  return z.object({ id: z.string() }).parse(res.json()).id;
 }
