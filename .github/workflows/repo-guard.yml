@@ -16,3 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: .github/scripts/repo-guard.sh
+      # The Vault-name guard itself (scripts/vault-guard.mjs); its denylist is private, so CI only tests it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node --test 'scripts/test/*.test.mjs'

@@ -27,6 +27,15 @@ For code quality, use a deterministic, reliable tool wherever one can do the job
 - When a review by an agent finds a problem a tool could have caught, the fix includes that tool or rule (as a backlog change if it is not really small), so the same problem cannot come back.
 - Agent reviews are for what tools cannot judge: logic, design, and whether the code does what the spec says.
 
+## Keeping Vault names out
+
+The Owner's research lives in a private Vault (ADR 0010). Its names must never reach this repo, its issues or its PRs, all of which are public.
+
+- **Hooks:** `pnpm install` sets `core.hooksPath` to `.githooks`. The pre-commit and pre-push hooks run `scripts/vault-guard.mjs` against a private denylist and refuse changes, file names or commit messages containing a listed name.
+- **Issues and PRs:** before posting text to GitHub, check it with `node scripts/vault-guard.mjs --text -` (text on stdin).
+- **The denylist** is never committed. It lives at `~/.config/rodokmen/vault-denylist.txt`, or wherever `$RODOKMEN_DENYLIST` points. The Owner builds it from a Vault checkout with `node scripts/vault-guard.mjs --build-from-vault <path>`. The result holds full names, Places and document names, minus terms already public in this repo. Edit it freely.
+- **Without a denylist** the guard warns and passes, so contributors without the Vault aren't blocked. CI can't see the list, so it only tests the guard itself.
+
 ## Conventions
 
 - Use the terms in [`GLOSSARY.md`](GLOSSARY.md) exactly; decisions are in [`docs/adr/`](docs/adr/).
