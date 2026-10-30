@@ -23,6 +23,8 @@ interface PeriodColumns {
 
 export interface PersonTable extends RecordColumns {
   sex: Generated<'female' | 'male' | 'unknown'>;
+  /** Set when the Person was merged into another; the record stays as a redirect. */
+  merged_into_id: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 export interface NameTable extends RecordColumns {
@@ -152,6 +154,7 @@ export interface ImageTable extends RecordColumns {
   height: number | null;
   sha256: string;
   caption: string | null;
+  display_key: ColumnType<string | null, string | null | undefined, string | null>;
 }
 
 export interface ImagePersonTable extends RecordColumns {
@@ -171,6 +174,7 @@ export interface AccountTable {
   disabled_at: Timestamp | null;
   invited_by: string | null;
   last_seen_at: Timestamp | null;
+  outcome_emails: Generated<boolean>;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -232,6 +236,104 @@ export interface SignInLinkTable {
   used_at: Timestamp | null;
 }
 
+type Json = ColumnType<Record<string, unknown>, string, string>;
+type NullableJson = ColumnType<Record<string, unknown> | null, string | null, string | null>;
+
+export interface ProposalTable {
+  id: Generated<string>;
+  version: Generated<number>;
+  kind: Generated<'contribution' | 'direct' | 'undo'>;
+  status: Generated<'pending' | 'accepted' | 'rejected'>;
+  author_id: string;
+  note: string | null;
+  format_version: number;
+  idempotency_key: string;
+  submitted_at: Timestamp;
+  decided_at: Timestamp | null;
+  decided_by: string | null;
+  decision_note: string | null;
+  undoes_proposal_id: string | null;
+  undone_by_proposal_id: string | null;
+  created_at: CreatedAt;
+  updated_at: Generated<Date>;
+}
+
+export interface ProposalOperationTable {
+  proposal_id: string;
+  position: number;
+  op: string;
+  operation: Json;
+  target_table: string | null;
+  target_id: string | null;
+  base_version: number | null;
+  corrected: NullableJson;
+  corrected_by: string | null;
+  corrected_at: Timestamp | null;
+}
+
+export interface LogEntryTable {
+  id: Generated<string>;
+  proposal_id: string;
+  kind: 'contribution' | 'direct' | 'undo';
+  author_id: string;
+  accepted_by: string;
+  accepted_at: Timestamp;
+  citation_ids: ColumnType<string[], string[] | undefined, never>;
+  created_at: CreatedAt;
+}
+
+export interface LogChangeTable {
+  id: Generated<number>;
+  log_entry_id: string;
+  seq: number;
+  record_table: string;
+  record_id: string;
+  before: NullableJson;
+  after: NullableJson;
+}
+
+export interface UploadTable {
+  id: Generated<string>;
+  version: Generated<number>;
+  author_id: string;
+  status: Generated<'waiting' | 'ready' | 'deleted'>;
+  storage_key: string;
+  display_key: string;
+  declared_type: string;
+  declared_size: number;
+  declared_sha256: string;
+  content_type: ImageTable['content_type'] | null;
+  byte_size: number | null;
+  sha256: string | null;
+  width: number | null;
+  height: number | null;
+  proposal_id: string | null;
+  image_id: string | null;
+  orphaned_at: Timestamp | null;
+  deleted_at: Timestamp | null;
+  created_at: CreatedAt;
+  updated_at: Generated<Date>;
+}
+
+export interface JobRunTable {
+  job: string;
+  day: string;
+  status: 'running' | 'done' | 'failed';
+  attempts: Generated<number>;
+  claimed_at: Timestamp;
+  finished_at: Timestamp | null;
+  detail: string | null;
+}
+
+export interface JobDeliveryTable {
+  job: string;
+  day: string;
+  account_id: string;
+  sent_at: Timestamp | null;
+  attempts: Generated<number>;
+  last_error: string | null;
+}
+
 export interface Database {
   person: PersonTable;
   name: NameTable;
@@ -259,7 +361,17 @@ export interface Database {
   webauthn_challenge: WebauthnChallengeTable;
   invitation: InvitationTable;
   sign_in_link: SignInLinkTable;
+  proposal: ProposalTable;
+  proposal_operation: ProposalOperationTable;
+  log_entry: LogEntryTable;
+  log_change: LogChangeTable;
+  upload: UploadTable;
+  job_run: JobRunTable;
+  job_delivery: JobDeliveryTable;
 }
+
+export type Proposal = Selectable<ProposalTable>;
+export type Upload = Selectable<UploadTable>;
 
 export type Account = Selectable<AccountTable>;
 export type NewEvent = Insertable<EventTable>;

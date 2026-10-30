@@ -1,0 +1,71 @@
+graph LR
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["API server: accounts, Tree read API and operations"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    style 4 fill:#08427b,stroke:#052e56,color:#ffffff
+
+    66["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
+    style 66 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    70["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
+    style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
+
+    subgraph 6 ["Rodokmen"]
+      style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph 25 ["API server"]
+        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        26["<div style='font-weight: bold'>Pages</div><div style='font-size: 70%; margin-top: 0px'>[Component: @fastify/static]</div><div style='font-size: 80%; margin-top:10px'>Serves app/ at / and the<br />sign-in pages at /auth/ from<br />the API's own origin.</div>"]
+        style 26 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        27["<div style='font-weight: bold'>Accounts and sign-in</div><div style='font-size: 70%; margin-top: 0px'>[Component: @simplewebauthn/server]</div><div style='font-size: 80%; margin-top:10px'>Invitations, passkeys,<br />emailed links, sessions and<br />roles; checks the session on<br />every request.</div>"]
+        style 27 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        28["<div style='font-weight: bold'>Tree read API</div><div style='font-size: 70%; margin-top: 0px'>[Component: Recursive SQL, PostGIS]</div><div style='font-size: 80%; margin-top:10px'>Person search across Names,<br />records, ancestors and<br />descendants, and Events for a<br />map area and years.</div>"]
+        style 28 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        29["<div style='font-weight: bold'>OpenAPI</div><div style='font-size: 70%; margin-top: 0px'>[Component: @fastify/swagger, Zod]</div><div style='font-size: 80%; margin-top:10px'>Publishes /api/openapi.json,<br />generated from the same<br />shared schemas that check<br />requests.</div>"]
+        style 29 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        30["<div style='font-weight: bold'>Health</div><div style='font-size: 70%; margin-top: 0px'>[Component: Fastify route]</div><div style='font-size: 80%; margin-top:10px'>Health check at /api/health,<br />used by deploys, the watchdog<br />and outside monitors.</div>"]
+        style 30 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        31["<div style='font-weight: bold'>Mailer</div><div style='font-size: 70%; margin-top: 0px'>[Component: nodemailer]</div><div style='font-size: 80%; margin-top:10px'>Writes each email in the<br />recipient's language and<br />sends it over SMTP.</div>"]
+        style 31 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        35["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks each upload and<br />makes a 2,000-pixel WebP<br />copy.</div>"]
+        style 35 fill:#85bbf0,stroke:#c25e00,color:#000000
+      end
+
+      subgraph 7 ["App (PWA)"]
+        style 7 fill:#ffffff,stroke:#2e6295,color:#2e6295
+
+        12["<div style='font-weight: bold'>Sign-in pages</div><div style='font-size: 70%; margin-top: 0px'>[Component: server/public/auth]</div><div style='font-size: 80%; margin-top:10px'>Accept an invitation,<br />register a passkey, or use an<br />emailed link; served at<br />/auth/.</div>"]
+        style 12 fill:#85bbf0,stroke:#5d82a8,color:#000000
+      end
+
+      21["<div style='font-weight: bold'>Service worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Service Worker, Cache Storage]</div><div style='font-size: 80%; margin-top:10px'>Precaches the app and<br />reference data per release<br />and keeps up to 2,000 viewed<br />tiles, so the map works<br />offline.</div>"]
+      style 21 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      42["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API.</div>"]
+      style 42 fill:#ffffff,stroke:#777777,color:#555555
+      44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
+      style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: S3-compatible object storage]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads.</div>")]
+      style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      46["<div style='font-weight: bold'>Watchdog</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, API image, cli.js watchdog]</div><div style='font-size: 80%; margin-top:10px'>Emails the Owner when the<br />health check fails for over 5<br />minutes or a Backup fails or<br />is missing.</div>"]
+      style 46 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    12-- "<div>Accepts invitations,<br />registers passkeys, verifies<br />emailed links</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->27
+    21-- "<div>Precaches the app at each<br />release</div><div style='font-size: 70%'>[HTTPS GET]</div>" -->26
+    27-- "<div>Stores accounts, passkeys,<br />sessions and hashed tokens</div><div style='font-size: 70%'>[SQL]</div>" -->44
+    27-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[JS call]</div>" -->31
+    28-- "<div>Searches Names; walks<br />ancestors with recursive SQL</div><div style='font-size: 70%'>[SQL, PostGIS]</div>" -->44
+    28-- "<div>Gets view links for images</div><div style='font-size: 70%'>[JS call]</div>" -->35
+    30-- "<div>Checks the database answers</div><div style='font-size: 70%'>[SQL]</div>" -->44
+    31-- "<div>Sends from the Rodokmen<br />domain</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->66
+    35-. "<div>Presigns links; writes, moves<br />and deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->45
+    4-- "<div>Invites Members, assigns<br />roles, disables accounts</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->27
+    42-. "<div>Searches Persons and Places;<br />reads records and pedigrees</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->28
+    46-- "<div>Checks /api/health through<br />the public URL</div><div style='font-size: 70%'>[HTTPS]</div>" -->30
+    70-- "<div>Checks /api/health after each<br />deploy</div><div style='font-size: 70%'>[HTTPS]</div>" -->30
+    70-- "<div>Fails CI when routes and<br />description disagree</div><div style='font-size: 70%'>[cli.js openapi check]</div>" -->29
+
+  end

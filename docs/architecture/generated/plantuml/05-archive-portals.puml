@@ -1,0 +1,56 @@
+@startuml
+title <size:24>Archive portals</size>\n<size:24>The register viewers the place sheet links to (app/data/archives.json).</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,Built", $bgColor="#1168bd", $borderColor="#0b4884", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+
+AddBoundaryTag("Software System,External,Built", $bgColor="#ffffff", $borderColor="#616161", $fontColor="#616161", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+System(Rodokmen, "Rodokmen", $descr="A private, shared family Tree for one extended family, shown on a map of the Czech lands; the map works for anyone.", $tags="Software System,Built", $link="")
+
+System_Boundary("Archiveportals_boundary", "Archive portals", $tags="Software System,External,Built") {
+  Container(Archiveportals.SOAPrahaeBadatelna, "SOA Praha: eBadatelna", $techn="Web register viewer", $descr="Registers of Central Bohemia.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.AHMPPragaPublica, "AHMP: Praga Publica", $techn="Web register viewer", $descr="Registers of the city of Prague.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.SOATřeboňDigitálníarchiv, "SOA Třeboň: Digitální archiv", $techn="Web register viewer", $descr="Registers of South Bohemia.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.SOAPlzeňPortafontium, "SOA Plzeň: Porta fontium", $techn="Web register viewer", $descr="Registers of West Bohemia.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.SOALitoměřiceVademecum, "SOA Litoměřice: Vademecum", $techn="Web register viewer", $descr="Registers of North Bohemia.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.SOAZámrskARON, "SOA Zámrsk: ARON", $techn="Web register viewer", $descr="Registers of East Bohemia.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.MZABrnoActaPublica, "MZA Brno: Acta Publica", $techn="Web register viewer", $descr="Registers of South Moravia and the Vysočina districts.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.ZAOpavaDigitálníarchiv, "ZA Opava: Digitální archiv", $techn="Web register viewer", $descr="Registers of North Moravia and Czech Silesia.", $tags="Container,External,Built", $link="")
+  Container(Archiveportals.NárodníarchivVademecum, "Národní archiv: Vademecum", $techn="Web register viewer", $descr="Jewish registers for the whole of the Czech lands.", $tags="Container,External,Built", $link="")
+}
+
+Rel(Rodokmen, Archiveportals.MZABrnoActaPublica, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.ZAOpavaDigitálníarchiv, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.NárodníarchivVademecum, "Jewish registers, on every place sheet", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.SOAPrahaeBadatelna, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.AHMPPragaPublica, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.SOATřeboňDigitálníarchiv, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.SOAPlzeňPortafontium, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.SOALitoměřiceVademecum, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.SOAZámrskARON, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

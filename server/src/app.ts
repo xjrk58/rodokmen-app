@@ -12,6 +12,7 @@ import { trackRoutes, transform, type RouteRecord } from './openapi.js';
 import { accountRoutes } from './routes/accounts.js';
 import { authRoutes } from './routes/auth.js';
 import { pageRoutes } from './routes/pages.js';
+import { proposalRoutes } from './routes/proposals.js';
 import { systemRoutes } from './routes/system.js';
 import { treeRoutes } from './routes/tree.js';
 import { createImageStorage, type ImageStorage } from './storage/images.js';
@@ -54,7 +55,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
       info: {
         title: 'Rodokmen API',
         version: '0.1.0',
-        description: 'Read API of the Rodokmen Tree, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member.',
+        description: 'Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member.',
       },
       // Relative, so the committed description does not depend on where it was generated.
       servers: [{ url: '/' }],
@@ -96,6 +97,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   const accountDeps: AccountDeps = { db, clock, mailer, publicOrigin: config.publicOrigin, session: { idleDays: config.sessionIdleDays } };
   await app.register(systemRoutes, { db, release: config.release });
   await app.register(treeRoutes, { db, clock, images });
+  await app.register(proposalRoutes, { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) });
   await app.register(accountRoutes, accountDeps);
   await app.register(authRoutes, {
     ...accountDeps,

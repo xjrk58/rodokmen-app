@@ -8,6 +8,7 @@ import {
   HouseLookupQuery,
   HouseSummary,
   IdParams,
+  ImageLinkQuery,
   MapEventsQuery,
   MapEventsResult,
   ParishDetail,
@@ -23,10 +24,11 @@ import {
   SourceSearchQuery,
   SourceSearchResult,
 } from '@rodokmen/shared';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { ApiProblem } from '../auth/problem.js';
+import { imageLink } from '../storage/images.js';
 import { getEvent, getFamily, mapEvents } from '../tree/events.js';
 import { ancestors, descendants } from '../tree/pedigree.js';
 import { getPerson, searchPersons, type TreeDeps } from '../tree/persons.js';
@@ -41,9 +43,21 @@ function found<T>(value: T | null, what: string): T {
   return value;
 }
 
+const mergedRedirect = { 308: z.null().describe('Location: the same route for the Person this one was merged into') };
+
 /** The read-only Tree API (tree-read-api spec). Members only; see auth/plugin.ts. */
 export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
+
+  /**
+   * A merged Person stays as a redirect to the kept one (review spec, "Merging duplicate
+   * Persons"): every /api/persons/:id… route answers 308 with the same route for the kept Person.
+   */
+  const followMerge = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { id } = req.params as { id: string };
+    const row = await deps.db.selectFrom('person').select('merged_into_id').where('id', '=', id).executeTakeFirst();
+    if (row?.merged_into_id) return reply.redirect(req.url.replace(`/api/persons/${id}`, `/api/persons/${row.merged_into_id}`), 308);
+  };
 
   app.get('/api/persons', {
     schema: { tags: ['Persons'], summary: 'Search Persons by any Name, ignoring case and diacritics; narrow by Place and years', querystring: PersonSearchQuery, response: { 200: PersonSearchResult, 400: ApiError, ...read } },
@@ -51,17 +65,25 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   });
 
   app.get('/api/persons/:id', {
-    schema: { tags: ['Persons'], summary: 'A Person with Names, Events, Families and portraits', params: IdParams, response: { 200: PersonDetail, ...detail } },
+    preHandler: followMerge,
+    schema: {
+      tags: ['Persons'],
+      summary: 'A Person with Names, Events, Families and portraits. A Person merged into another redirects to it',
+      params: IdParams,
+      response: { 200: PersonDetail, ...mergedRedirect, ...detail },
+    },
     handler: async (req) => found(await getPerson(deps, req.params.id), 'Person'),
   });
 
   app.get('/api/persons/:id/ancestors', {
-    schema: { tags: ['Persons'], summary: 'Every known ancestor up to the given number of generations, with the links between them', params: IdParams, querystring: PedigreeQuery, response: { 200: Pedigree, ...detail } },
+    preHandler: followMerge,
+    schema: { tags: ['Persons'], summary: 'Every known ancestor up to the given number of generations, with the links between them', params: IdParams, querystring: PedigreeQuery, response: { 200: Pedigree, ...mergedRedirect, ...detail } },
     handler: async (req) => found(await ancestors(deps, req.params.id, req.query.generations), 'Person'),
   });
 
   app.get('/api/persons/:id/descendants', {
-    schema: { tags: ['Persons'], summary: 'Every known descendant up to the given number of generations, with partners and links', params: IdParams, querystring: PedigreeQuery, response: { 200: Pedigree, ...detail } },
+    preHandler: followMerge,
+    schema: { tags: ['Persons'], summary: 'Every known descendant up to the given number of generations, with partners and links', params: IdParams, querystring: PedigreeQuery, response: { 200: Pedigree, ...mergedRedirect, ...detail } },
     handler: async (req) => found(await descendants(deps, req.params.id, req.query.generations), 'Person'),
   });
 
@@ -135,10 +157,16 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   });
 
   app.get('/api/images/:id', {
-    schema: { tags: ['Sources'], summary: 'Redirects to an expiring link to the image', params: IdParams, response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), ...detail } },
+    schema: {
+      tags: ['Sources'],
+      summary: 'Redirects to an expiring link to the image: the display copy, or with full=true the original file',
+      params: IdParams,
+      querystring: ImageLinkQuery,
+      response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), ...detail },
+    },
     handler: async (req, reply) => {
-      const image = found(await deps.db.selectFrom('image').select(['storage_key', 'content_type']).where('id', '=', req.params.id).executeTakeFirst() ?? null, 'image');
-      const link = await deps.images.link(image.storage_key, image.content_type);
+      const image = found(await deps.db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', req.params.id).executeTakeFirst() ?? null, 'image');
+      const link = await imageLink(deps.images, image, req.query.full === 'true');
       return reply.header('cache-control', 'no-store').redirect(link.url, 302);
     },
   });

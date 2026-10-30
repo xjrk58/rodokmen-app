@@ -1,0 +1,69 @@
+@startuml
+title <size:24>App (PWA): Proposals, Drafts and review</size>\n<size:24>Proposal, Draft and review screens and the API components they call (add-proposals-and-review).</size>
+
+set separator none
+top to bottom direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+!include ../../legend.puml
+
+AddElementTag("Component,In progress", $bgColor="#85bbf0", $borderColor="#c25e00", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
+AddElementTag("Container,In progress,Data store", $bgColor="#438dd5", $borderColor="#c25e00", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
+AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
+
+AddBoundaryTag("Container,Built,Browser", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddBoundaryTag("Container,Built", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
+  Container_Boundary("Rodokmen.APIserver_boundary", "API server", $tags="Container,Built") {
+    Component(Rodokmen.APIserver.TreereadAPI, "Tree read API", $techn="Recursive SQL, PostGIS", $descr="Person search across Names, records, ancestors and descendants, and Events for a map area and years.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Proposals, "Proposals", $techn="shared/src/schemas/proposals.ts", $descr="Takes Proposals as typed operations with base versions; requires a Citation; private until accepted.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.APIserver.Review, "Review", $techn="shared/src/schemas/review.ts", $descr="Accepts or rejects a whole Proposal in one transaction, with corrections, conflicts and merges.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.APIserver.Historyandundo, "History and undo", $techn="Kysely", $descr="Append-only log of every change before and after, record history, and undo of a whole Proposal.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.APIserver.Evidencemedia, "Evidence media", $techn="sharp, S3 presigner", $descr="Presigned upload and view links; checks each upload and makes a 2,000-pixel WebP copy.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.APIserver.Notificationsanddailyjobs, "Notifications and daily jobs", $techn="In-process scheduler, Prague time", $descr="Editors' digest at 18:00, outcome emails, and deleting images of rejected Proposals after 30 days.", $tags="Component,In progress", $link="")
+  }
+
+  Container_Boundary("Rodokmen.AppPWA_boundary", "App (PWA)", $tags="Container,Built,Browser") {
+    Component(Rodokmen.AppPWA.Proposalforms, "Proposal forms", $techn="app/src/propose-form.js, pickers.js", $descr="Phone-first forms that turn one finding into typed operations with a Citation and photos.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.AppPWA.Drafts, "Drafts", $techn="app/src/drafts.js", $descr="Keeps Drafts and their photos on the device until the Member submits them.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.AppPWA.DraftslistandmyProposals, "Drafts list and my Proposals", $techn="app/src/work.js, api.js", $descr="Submits Drafts once online and shows each Proposal's status and the Editor's note.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.AppPWA.Reviewandhistoryscreens, "Review and history screens", $techn="app/src/review.js", $descr="Review queue with conflicts and corrections, merging, record history and undo.", $tags="Component,In progress", $link="")
+  }
+
+  ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
+  ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="S3-compatible object storage", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads.", $tags="Container,Built,Data store", $link="")
+}
+
+Rel(Rodokmen.AppPWA.Proposalforms, Rodokmen.APIserver.TreereadAPI, "Looks up Persons, Places and Sources to link", $techn="JSON/HTTPS", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.Proposalforms, Rodokmen.AppPWA.Drafts, "Saves each finding as a Draft", $techn="JS call", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.Drafts, Rodokmen.Ondevicestore, "Keeps Drafts and photos as blobs", $techn="IndexedDB", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.DraftslistandmyProposals, Rodokmen.AppPWA.Drafts, "Lists Drafts; warns about old ones", $techn="JS call", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.DraftslistandmyProposals, Rodokmen.APIserver.Evidencemedia, "Gets an upload link per photo, then completes it", $techn="JSON/HTTPS", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.DraftslistandmyProposals, Rodokmen.Imagebucket, "Uploads each photo to pending/", $techn="HTTPS PUT, presigned link", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.DraftslistandmyProposals, Rodokmen.APIserver.Proposals, "Submits with an idempotency key; lists my Proposals", $techn="JSON/HTTPS", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.DraftslistandmyProposals, Rodokmen.APIserver.Notificationsanddailyjobs, "Turns outcome emails on or off", $techn="JSON/HTTPS", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.Reviewandhistoryscreens, Rodokmen.APIserver.Review, "Loads the queue; accepts, rejects or merges", $techn="JSON/HTTPS", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.Reviewandhistoryscreens, Rodokmen.APIserver.Historyandundo, "Shows record history; undoes a Proposal", $techn="JSON/HTTPS", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.Reviewandhistoryscreens, Rodokmen.Imagebucket, "Shows Citation images", $techn="HTTPS GET, presigned link", $tags="In progress", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

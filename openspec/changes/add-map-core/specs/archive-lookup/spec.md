@@ -54,8 +54,12 @@ For every location in the Czech lands, the system SHALL also point to the Nation
 - **THEN** the sheet includes a secondary link to the National Archives for Jewish registers
 
 ### Requirement: Archive list is data, not code
-Archive names, regions and portal URLs SHALL live only in `app/data/archives.json`, and a scheduled check SHALL report any portal URL that stops answering.
+Archive names, regions and portal URLs SHALL live only in `app/data/archives.json`, and a scheduled check SHALL report any portal URL that stops answering. The check SHALL fail only when a link is definitely broken (a missing page, a host that no longer exists, a refused connection). It SHALL warn, without failing, when a portal only can't be reached from the check's network (timeouts, certificate-chain problems, blocked or overloaded servers).
 
 #### Scenario: Portal moves
-- **WHEN** an archive portal URL returns an error on the weekly check
+- **WHEN** an archive portal URL answers 404 on the weekly check
 - **THEN** the check fails and names the archive and URL, without changing the app
+
+#### Scenario: Portal unreachable from the check's network
+- **WHEN** an archive portal times out or presents an incomplete certificate chain on the weekly check
+- **THEN** the check passes with a warning naming the archive and URL

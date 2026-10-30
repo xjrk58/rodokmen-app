@@ -35,6 +35,11 @@
       data-i18n-attr="aria-label:layers.open;title:layers.open" aria-label="Map layers" title="Map layers">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg>
     </button>
+    <button type="button" class="round-button" id="work-button"
+      data-i18n-attr="aria-label:work.open;title:work.open" aria-label="Contribute" title="Contribute">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>
+      <span class="count-badge" id="work-badge" hidden>0</span>
+    </button>
     <button type="button" class="round-button" id="settings-button"
       data-i18n-attr="aria-label:settings.open;title:settings.open" aria-label="Settings" title="Settings">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg>
@@ -85,6 +90,18 @@
     </form>
   </dialog>
 
+  <section class="work" id="work" hidden aria-labelledby="work-title">
+    <header class="work-head">
+      <h1 id="work-title" data-i18n="work.title">Tree</h1>
+      <button type="button" class="icon-button" id="work-close" data-i18n-attr="aria-label:work.close" aria-label="Back to the map">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+    <nav class="work-tabs" id="work-nav" data-i18n-attr="aria-label:work.title" aria-label="Tree"></nav>
+    <div class="work-body" id="work-body"></div>
+  </section>
+
+  <div class="toast drafts-toast" id="drafts-toast" hidden></div>
   <div class="toast" id="update-toast" hidden>
     <button type="button" class="button primary" id="update-reload" data-i18n="update.reload">New version, reload</button>
   </div>

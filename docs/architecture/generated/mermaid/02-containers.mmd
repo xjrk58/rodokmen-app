@@ -1,0 +1,81 @@
+graph TB
+  linkStyle default fill:#ffffff
+
+  subgraph diagram ["Rodokmen: Containers (request path)"]
+    style diagram fill:#ffffff,stroke:#ffffff
+
+    1["<div style='font-weight: bold'>Visitor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>Anyone using the public map<br />without an account.</div>"]
+    style 1 fill:#08427b,stroke:#052e56,color:#ffffff
+    2["<div style='font-weight: bold'>Contributor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>A Member who reads the Tree<br />and submits Proposals; every<br />new Member starts here.</div>"]
+    style 2 fill:#08427b,stroke:#052e56,color:#ffffff
+    3["<div style='font-weight: bold'>Editor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>A Member who reviews<br />Proposals and may change the<br />Tree directly.</div>"]
+    style 3 fill:#08427b,stroke:#052e56,color:#ffffff
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    style 4 fill:#08427b,stroke:#052e56,color:#ffffff
+    5["<div style='font-weight: bold'>Agent</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>An AI assistant with its own<br />Owner-issued account that<br />contributes only through<br />Proposals.</div>"]
+    style 5 fill:#ffffff,stroke:#777777,color:#555555
+    49["<div style='font-weight: bold'>Archive portals</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Online parish-register<br />viewers of the archives that<br />hold the registers of the<br />Czech lands.</div>"]
+    style 49 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    59["<div style='font-weight: bold'>Historical map services</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Public services for<br />19th-century maps of the<br />Czech lands, run by several<br />providers.</div>"]
+    style 59 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    65["<div style='font-weight: bold'>OpenStreetMap tiles</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Today's base map; used<br />without prefetching and with<br />attribution.</div>"]
+    style 65 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    66["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
+    style 66 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    68["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
+    style 68 fill:#ffffff,stroke:#777777,color:#555555
+
+    subgraph 6 ["Rodokmen"]
+      style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
+
+      subgraph group1 ["In the browser"]
+        style group1 fill:#ffffff,stroke:#555555,color:#555555,stroke-dasharray:5
+
+        21["<div style='font-weight: bold'>Service worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Service Worker, Cache Storage]</div><div style='font-size: 80%; margin-top:10px'>Precaches the app and<br />reference data per release<br />and keeps up to 2,000 viewed<br />tiles, so the map works<br />offline.</div>"]
+        style 21 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        22[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
+        style 22 fill:#438dd5,stroke:#c25e00,color:#ffffff
+        7["<div style='font-weight: bold'>App (PWA)</div><div style='font-size: 70%; margin-top: 0px'>[Container: HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9]</div><div style='font-size: 80%; margin-top:10px'>The only interface: the map<br />for anyone; for Members a<br />Tree home, Proposals and<br />review.</div>"]
+        style 7 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      end
+
+      23[("<div style='font-weight: bold'>Reference data</div><div style='font-size: 70%; margin-top: 0px'>[Container: JSON and GeoJSON in app/data/]</div><div style='font-size: 80%; margin-top:10px'>Districts, Municipalities,<br />archives with portal links,<br />and map layers, built from<br />public sources.</div>")]
+      style 23 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      24["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates and forwards to<br />the active API slot.</div>"]
+      style 24 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      25["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
+      style 25 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      42["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API.</div>"]
+      style 42 fill:#ffffff,stroke:#777777,color:#555555
+      44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
+      style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: S3-compatible object storage]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads.</div>")]
+      style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
+    end
+
+    1-- "<div>Searches Municipalities,<br />opens place sheets and<br />archive links</div><div style='font-size: 70%'>[Browser]</div>" -->7
+    2-. "<div>Signs in, writes Drafts<br />offline and submits Proposals</div><div style='font-size: 70%'>[Browser]</div>" .->7
+    3-. "<div>Reviews Proposals, resolves<br />conflicts, merges and undoes</div><div style='font-size: 70%'>[Browser]</div>" .->7
+    4-- "<div>Invites Members, assigns<br />roles and disables accounts</div><div style='font-size: 70%'>[JSON/HTTPS API, no app screens yet]</div>" -->25
+    5-. "<div>Searches the Tree and submits<br />Proposals</div><div style='font-size: 70%'>[MCP: stdio, or streamable HTTP at /mcp]</div>" .->42
+    7-- "<div>Fetches the app, data and<br />tiles through it</div><div style='font-size: 70%'>[Service Worker API]</div>" -->21
+    7-- "<div>Loads borders,<br />Municipalities, archives and<br />layers</div><div style='font-size: 70%'>[JSON, GeoJSON]</div>" -->23
+    7-. "<div>Keeps Drafts and photos;<br />later caches Tree records</div><div style='font-size: 70%'>[IndexedDB]</div>" .->22
+    7-- "<div>Loads the app and calls the<br />JSON API</div><div style='font-size: 70%'>[HTTPS, session cookie]</div>" -->24
+    7-. "<div>Uploads photos and shows<br />images</div><div style='font-size: 70%'>[HTTPS PUT and GET, presigned links]</div>" .->45
+    7-- "<div>Opens the archive's register<br />viewer</div><div style='font-size: 70%'>[HTTPS link, new browser context]</div>" -->49
+    7-- "<div>Shows survey overlays; links<br />to map viewers</div><div style='font-size: 70%'>[WMS 1.3.0, HTTPS links]</div>" -->59
+    21-- "<div>Precaches with each release</div><div style='font-size: 70%'>[Cache Storage]</div>" -->23
+    21-- "<div>Fetches tiles not yet cached,<br />keeping at most 2,000</div><div style='font-size: 70%'>[HTTPS]</div>" -->65
+    24-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->25
+    24-. "<div>Forwards /mcp</div><div style='font-size: 70%'>[Streamable HTTP]</div>" .->42
+    42-. "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->25
+    25-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->44
+    25-. "<div>Stores Proposals; applies<br />accepted ones with the log in<br />one transaction</div><div style='font-size: 70%'>[SQL]</div>" .->44
+    25-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->45
+    25-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->45
+    25-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->66
+    25-. "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" .->68
+    25-. "<div>Sends the Editors' digest and<br />outcome emails</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" .->66
+
+  end
