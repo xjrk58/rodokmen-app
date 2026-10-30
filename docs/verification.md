@@ -14,6 +14,12 @@ this page with `node scripts/verification-trace.mjs`.
 
 | Requirement | Specified in | Function | File | Assumed, not proved |
 |---|---|---|---|---|
+| proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
+| proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
+| review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
+| review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
+| review: Decide on the whole Proposal | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
+| tree-history: Undo a whole Proposal | openspec/changes/add-proposals-and-review/specs/tree-history/spec.md | `undoBlockers` | shared/src/rules.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `compareByEarliest` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `dayDate` | shared/src/edtf.ts | see below |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `monthDate` | shared/src/edtf.ts | see below |
@@ -35,6 +41,10 @@ A verified function's `requires` are proved wherever a verified function calls i
   - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)`; `s.kind === 'before' ==> isValidDay(s.end.last)`; `s.kind === 'after' ==> isValidDay(s.start.first)`
 - `isLivingOn` (shared/src/living.ts):
   - its requires, where unverified code calls it (`isLiving`): `1 <= today.month && today.month <= 12 && 1 <= today.day && today.day <= 31`; `forall(i: nat, i < birthLatest.length ==> 1 <= birthLatest[i].month && birthLatest[i].month <= 12 && 1 <= birthLatest[i].day && birthLatest[i].day <= 31)`
+- `detectConflict` (shared/src/rules.ts):
+  - uses `valueOf`, an extern (see below)
+- `valueOf` (shared/src/rules.ts):
+  - an extern (`//@ extern`, or a call into another file): it has no contract, so the proofs assume only that it is a deterministic function
 - `daysInMonth` (shared/src/edtf.ts), supporting:
   - its requires, where unverified code calls it (server/src/fixture/generate.ts): `1 <= month && month <= 12`
 
@@ -43,12 +53,14 @@ A verified function's `requires` are proved wherever a verified function calls i
 Also proved, with no requirement of their own; the traced functions rely on their contracts.
 
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
+- shared/src/rules.ts: `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
 ## Proof additions
 
 Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
 - shared/proofs/src/edtf.dfy: `JSStringLtAsymmetric`, `JSStringLtTotal`, `JSStringLtTransitive`, `compareByEarliest_transitive`
+- shared/proofs/src/rules.dfy: assertions only
 
 ## Trusted base
 
@@ -80,3 +92,16 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   total functions (at worst a proof fails), but their `requires` must hold on both branches.
 - **Regular expressions** cannot be extracted: put `//@ skip` before a regex constant.
 - **`lsc regen`** does not batch: give it the file (`pnpm --filter @rodokmen/shared verify:regen src/x.ts`).
+- **`unknown`** becomes an opaque type without `null`: a function that returns `null` as an `unknown` cannot be
+  translated. Mark it `//@ extern` (as `valueOf` in rules.ts), so the proofs treat it as an unknown function.
+- **Narrowing after an early `=== null` return** makes a later `!== null` test of the same variable a Dafny type error.
+- **`splice`** is not supported: write `[...a.slice(0, i), x, ...a.slice(i)]`.
+- **Existential goals (Dafny).** Dafny proves "there is a …" only when a witness is already a term in the proof, and it
+  rarely finds one inside a loop invariant. Name such a property with a `.some(...)` predicate (`isBlocking`,
+  `hasProposal` in rules.ts), so that it is proved from the element at hand, and give `.dfy` hints (`var x :| …`)
+  when a proof chains several.
+
+Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts and
+shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
+(optionals occur only in `===` and `!==`, where order does not matter), and the generated `.dfy.gen` was read for it.
+Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.
