@@ -1,2 +1,3 @@
 src/edtf.ts
 src/living.ts
+src/rules.ts
