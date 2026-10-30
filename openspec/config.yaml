@@ -9,9 +9,13 @@ context: |
   The Tree backend is built from scratch (ADR 0004): TypeScript on Node, one PostgreSQL + PostGIS database (ADR 0005), current state plus a log of accepted Proposals (ADR 0006).
   One public monorepo with app/, server/ and shared/; the PWA is the only interface; app and API share one domain on an EU VPS (ADR 0007).
   rodokmen-data is a nightly one-way Export, never edited by hand (ADR 0008).
+  Pure rules are proved with LemmaScript and traced to their requirement with `//@ contract <capability>: <Requirement>` (ADR 0009, docs/verification.md).
 
 rules:
   proposal:
     - State what is out of scope.
+  design:
+    - "Under \"Rules proved with LemmaScript\", name each pure rule of the change (a decision with no I/O, clock, `await` or regex), the requirement it serves and the file it will live in, or say that none qualifies (ADR 0009)."
   tasks:
     - Every task names how it is verified.
+    - "For each rule under \"Rules proved with LemmaScript\" in design.md, include a task to prove it with `lsc check`, its ensures stating the requirement's scenarios and a `//@ contract <capability>: <Requirement>` line per requirement; verify with `pnpm verify` and `pnpm verify:trace`, and by a deliberate bug that makes `lsc check` fail."

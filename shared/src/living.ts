@@ -1,4 +1,4 @@
-import { parseEdtf } from './edtf.js';
+import { parseEdtf, type CalendarDay } from './edtf.js';
 
 /**
  * The Living rule (tree-model spec, "Living people are computed"; GLOSSARY "Living person").
@@ -15,6 +15,10 @@ import { parseEdtf } from './edtf.js';
  *
  * When in doubt the rule says Living: an undated birth, or a date range open towards
  * today (`1790/..`), could fall within the last 100 years.
+ *
+ * The decision itself, {@link isLivingOn}, is proved with LemmaScript (ADR 0009,
+ * docs/verification.md). Collecting the facts from Events, reading the EDTF dates and
+ * reading today's date from the clock are not; the tests cover them.
  */
 export const LIVING_YEARS = 100;
 
@@ -52,17 +56,56 @@ export function livingCutoff(today: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * The Living rule on calendar days. `birthLatest` holds, for each piece of birth evidence
+ * whose date bounds the birth, the last day the birth could have been. Undated evidence
+ * and dates open towards today bound nothing, so they are left out and never make a
+ * Person not Living.
+ *
+ * The cutoff is the same calendar day {@link LIVING_YEARS} years before `today`. When
+ * that is 29 February of a common year, born on 1 March or later still counts as within
+ * the 100 years, as with {@link livingCutoff}.
+ */
+function isLivingOn(deathRecorded: boolean, birthLatest: ReadonlyArray<CalendarDay>, today: CalendarDay): boolean {
+  //@ verify
+  //@ contract tree-model: Living people are computed
+  //@ requires 1 <= today.month && today.month <= 12 && 1 <= today.day && today.day <= 31
+  //@ requires forall(i: nat, i < birthLatest.length ==> 1 <= birthLatest[i].month && birthLatest[i].month <= 12 && 1 <= birthLatest[i].day && birthLatest[i].day <= 31)
+  // The rule: Living exactly when no death is recorded and every bounded birth could have been on or after the cutoff day.
+  //@ ensures \result === (!deathRecorded && forall(i: nat, i < birthLatest.length ==> birthLatest[i].year > today.year - LIVING_YEARS || (birthLatest[i].year === today.year - LIVING_YEARS && (birthLatest[i].month > today.month || (birthLatest[i].month === today.month && birthLatest[i].day >= today.day)))))
+  // A recorded death means not Living, whatever the birth dates say.
+  //@ ensures deathRecorded ==> !\result
+  // Scenario "No dates at all": no birth and no death Event means Living.
+  //@ ensures !deathRecorded && birthLatest.length === 0 ==> \result
+  // Scenario "Born more than 100 years ago": born in 1920, no recorded death, current year 2026 means not Living.
+  //@ ensures exists(i: nat, i < birthLatest.length && birthLatest[i].year < today.year - LIVING_YEARS) ==> !\result
+  // Scenario "Born less than 100 years ago": born in 1950, no recorded death means Living.
+  //@ ensures !deathRecorded && forall(i: nat, i < birthLatest.length ==> birthLatest[i].year > today.year - LIVING_YEARS) ==> \result
+  if (deathRecorded) return false;
+  const cutoff = (today.year - LIVING_YEARS) * 10000 + today.month * 100 + today.day;
+  for (const latest of birthLatest) {
+    //@ invariant forall(j: nat, j < _latest_idx ==> birthLatest[j].year * 10000 + birthLatest[j].month * 100 + birthLatest[j].day >= cutoff)
+    if (latest.year * 10000 + latest.month * 100 + latest.day < cutoff) return false;
+  }
+  return true;
+}
+
+/** The calendar day of an ISO day written by parseEdtf (the inverse of isoDay). */
+function dayOfIso(iso: string): CalendarDay {
+  const [year, month, day] = iso.split('-').map(Number) as [number, number, number];
+  return { year, month, day };
+}
+
 /** Pure Living rule. `today` is passed in so that callers and tests control the clock. */
 export function isLiving(facts: LivingFacts, today: Date): boolean {
-  if (facts.deathRecorded) return false;
-  if (facts.birthDates.length === 0) return true;
-  let latestBirth: string | null = null;
-  for (const date of facts.birthDates) {
-    if (date === null) continue;
-    const latest = parseEdtf(date).latest;
-    if (latest !== null && (latestBirth === null || latest < latestBirth)) latestBirth = latest;
+  // A recorded death decides alone: the birth dates are not even read.
+  const birthLatest: CalendarDay[] = [];
+  if (!facts.deathRecorded) {
+    for (const date of facts.birthDates) {
+      if (date === null) continue;
+      const latest = parseEdtf(date).latest;
+      if (latest !== null) birthLatest.push(dayOfIso(latest));
+    }
   }
-  // No bounded birth date: the birth could be recent.
-  if (latestBirth === null) return true;
-  return latestBirth >= livingCutoff(today);
+  return isLivingOn(facts.deathRecorded, birthLatest, { year: today.getUTCFullYear(), month: today.getUTCMonth() + 1, day: today.getUTCDate() });
 }

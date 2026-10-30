@@ -7,3 +7,6 @@ playwright-report/
 .env.*
 !.env.example
 .cache/
+# LemmaScript regen state (lsc regen keeps these only while a merge is unfinished)
+*.dfy.base
+*.dfy.merged

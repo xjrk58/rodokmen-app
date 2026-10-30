@@ -6,6 +6,8 @@
   "scripts": {
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
-    "typecheck": "pnpm -r --if-present typecheck"
+    "typecheck": "pnpm -r --if-present typecheck",
+    "verify": "pnpm --filter @rodokmen/shared verify",
+    "verify:trace": "node scripts/verification-trace.mjs"
   }
 }
