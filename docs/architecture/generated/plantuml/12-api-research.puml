@@ -1,0 +1,74 @@
+@startuml
+title <size:24>API server: Research leads and scan reading</size>\n<size:24>Research leads and scan reading (add-research-leads, add-scan-reading).</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Component>
+
+!include ../../legend.puml
+
+AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Component,In progress", $bgColor="#85bbf0", $borderColor="#c25e00", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
+AddElementTag("Container,In progress,Data store", $bgColor="#438dd5", $borderColor="#c25e00", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
+AddElementTag("Component,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+
+AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
+AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
+
+AddBoundaryTag("Container,Built,Browser", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddBoundaryTag("Container,Built", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
+
+Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles and keeps the Backups.", $tags="Person,Built", $link="")
+
+System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+
+System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
+  Container_Boundary("Rodokmen.APIserver_boundary", "API server", $tags="Container,Built") {
+    Component(Rodokmen.APIserver.Evidencemedia, "Evidence media", $techn="sharp, S3 presigner", $descr="Presigned upload and view links; checks each upload and makes a 2,000-pixel WebP copy.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.APIserver.Researchleads, "Research leads", $techn="Rule-based gap finder", $descr="Suggested next research steps: question, where to look, status, what was searched; no review.", $tags="Component,Planned", $link="")
+    Component(Rodokmen.APIserver.Scanreader, "Scan reader", $techn="Anthropic API client, off until the Owner switches it on", $descr="Sends a scan a Member uploaded to the Claude API; returns a transcription, facts and leads.", $tags="Component,Planned", $link="")
+  }
+
+  Container_Boundary("Rodokmen.AppPWA_boundary", "App (PWA)", $tags="Container,Built,Browser") {
+    Component(Rodokmen.AppPWA.Drafts, "Drafts", $techn="app/src/drafts.js", $descr="Keeps Drafts and their photos on the device until the Member submits them.", $tags="Component,In progress", $link="")
+    Component(Rodokmen.AppPWA.Researchleadscreens, "Research lead screens", $techn="app/ (planned)", $descr="Lists open Research leads; Members add one or record what they searched.", $tags="Component,Planned", $link="")
+    Component(Rodokmen.AppPWA.Scanreading, "Scan reading", $techn="app/ (planned)", $descr="Uploads an archive scan, shows its reading, and saves it as a Draft for the Member to check.", $tags="Component,Planned", $link="")
+  }
+
+  ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
+  Container(Rodokmen.MCPserver, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+  ContainerDb(Rodokmen.Database, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
+}
+
+Rel(Rodokmen.AppPWA.Drafts, Rodokmen.Ondevicestore, "Keeps Drafts and photos as blobs", $techn="IndexedDB", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA.Researchleadscreens, Rodokmen.APIserver.Researchleads, "Lists, adds and updates Research leads", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Evidencemedia, "Uploads the scan", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Scanreader, "Asks for a reading of the scan", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.AppPWA.Drafts, "Saves the reading as a Draft to check", $techn="JS call", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Evidencemedia, "Reads the uploaded scan", $techn="JS call", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver.Scanreader, AnthropicClaudeAPI, "Sends the scan; gets a transcription and extracted facts", $techn="HTTPS, Anthropic API", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Researchleads, "Suggests Research leads from the scan", $techn="JS call", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver.Researchleads, Rodokmen.Database, "Stores leads; the gap finder queries the Tree for gaps", $techn="SQL", $tags="Planned", $link="")
+Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Researchleads, "Creates and reads Research leads", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Owner, Rodokmen.APIserver.Scanreader, "Switches scan reading on or off", $techn="JSON/HTTPS", $tags="Planned", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml

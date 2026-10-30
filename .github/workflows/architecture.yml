@@ -1,0 +1,33 @@
+name: architecture
+
+# Validates the C4 model (docs/architecture/workspace.dsl) and fails if the committed diagrams in
+# docs/architecture/generated/ are out of date with it. Fix: run docs/architecture/generate.sh
+# and commit the result.
+on:
+  push:
+    paths:
+      - docs/architecture/**
+      - .github/workflows/architecture.yml
+  pull_request:
+    paths:
+      - docs/architecture/**
+      - .github/workflows/architecture.yml
+
+permissions:
+  contents: read
+
+jobs:
+  diagrams:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate and regenerate
+        run: docs/architecture/generate.sh
+      - name: Generated files match the model
+        run: |
+          git add -N docs/architecture/generated
+          if ! git diff --exit-code --stat -- docs/architecture/generated; then
+            echo "::error::docs/architecture/generated/ is stale. Run docs/architecture/generate.sh and commit."
+            exit 1
+          fi

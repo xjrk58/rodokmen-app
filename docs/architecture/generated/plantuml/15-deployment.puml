@@ -1,0 +1,133 @@
+@startuml
+title <size:24>Deployment: production</size>\n<size:24>Production: one VPS in Germany, object storage, Backups and email.</size>
+
+set separator none
+left to right direction
+
+skinparam {
+}
+
+<style>
+  root {
+    BackgroundColor: #ffffff
+    FontColor: #444444
+  }
+</style>
+
+!include <C4/C4>
+!include <C4/C4_Context>
+!include <C4/C4_Container>
+!include <C4/C4_Deployment>
+
+!include ../../legend.puml
+
+AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Deployment Node,Built", $bgColor="#ffffff", $borderColor="#888888", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,In progress,Data store", $bgColor="#438dd5", $borderColor="#c25e00", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
+AddElementTag("Deployment Node,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Container,Built,Browser", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Infrastructure Node,Built", $bgColor="#ffffff", $borderColor="#888888", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
+AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
+
+Deployment_Node(Production.Phoneorcomputer, "Phone or computer", $type="Android Chrome or another current browser", $descr="A Member's or a visitor's device.", $tags="Deployment Node,Built", $link="") {
+  Container(Production.Phoneorcomputer.AppPWA_1, "App (PWA)", $techn="HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9", $descr="The only interface: the map for anyone; for Members a Tree home, Proposals and review.", $tags="Container,Built,Browser", $link="")
+  Container(Production.Phoneorcomputer.Serviceworker_1, "Service worker", $techn="Service Worker, Cache Storage", $descr="Precaches the app and reference data per release and keeps up to 2,000 viewed tiles, so the map works offline.", $tags="Container,Built", $link="")
+  ContainerDb(Production.Phoneorcomputer.Ondevicestore_1, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
+}
+
+Deployment_Node(Production.HetznerCloud, "Hetzner Cloud", $type="Hetzner", $descr="Germany, EU.", $tags="Deployment Node,Built", $link="") {
+  Deployment_Node(Production.HetznerCloud.VPS, "VPS", $type="Ubuntu 24.04, 2 vCPU, 4 GB", $descr="One server for one family; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
+    Deployment_Node(Production.HetznerCloud.VPS.systemdtimer, "systemd timer", $type="rodokmen-backup.timer", $descr="Starts the Backup job every night at 02:30 Prague time.", $tags="Infrastructure Node,Built", $link="")
+    Deployment_Node(Production.HetznerCloud.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.caddy, "caddy", $type="caddy:2-alpine", $descr="Ports 80 and 443.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, "Reverse proxy", $techn="Caddy 2", $descr="Serves the one domain over HTTPS with automatic certificates and forwards to the active API slot.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.mcp, "mcp", $type="Not in the compose file yet", $descr="Behind Caddy at /mcp.", $tags="Deployment Node,Planned", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.db, "db", $type="postgis/postgis:16-3.4", $descr="Volume pgdata; never exposed outside Docker.", $tags="Deployment Node,Built", $link="") {
+        ContainerDb(Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.watchdog, "watchdog", $type="rodokmen-app image", $descr="Runs all the time.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, "Watchdog", $techn="Node 22, API image, cli.js watchdog", $descr="Emails the Owner when the health check fails for over 5 minutes or a Backup fails or is missing.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.backup, "backup", $type="rodokmen-backup:local", $descr="Profile jobs; runs once a night.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, "Backup job", $techn="pg_dump, rclone, restic", $descr="Every night stores the database and all images, encrypted, keeping 30 daily and 12 monthly Backups.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
+        Container(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
+      }
+
+    }
+
+  }
+
+  Deployment_Node(Production.HetznerCloud.HetznerObjectStorage, "Hetzner Object Storage", $type="S3-compatible", $descr="Private bucket, for example rodokmen-images.", $tags="Deployment Node,Built", $link="") {
+    ContainerDb(Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Image bucket", $techn="S3-compatible object storage", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads.", $tags="Container,Built,Data store", $link="")
+  }
+
+}
+
+Deployment_Node(Production.SecondEUprovider, "Second EU provider", $type="S3-compatible object storage", $descr="A different company from the host.", $tags="Deployment Node,Built", $link="") {
+  System(Production.SecondEUprovider.Backupstorage_1, "Backup storage", $descr="Object storage at a second EU provider, holding the encrypted Backups.", $tags="Software System,External,Built", $link="")
+}
+
+Deployment_Node(Production.EUemailprovider, "EU email provider", $type="SMTP", $descr="Sends as noreply@<domain>.", $tags="Deployment Node,Built", $link="") {
+  System(Production.EUemailprovider.EUemailservice_1, "EU email service", $descr="Transactional email provider in the EU, sending from the Rodokmen domain.", $tags="Software System,External,Built", $link="")
+}
+
+Deployment_Node(Production.Anthropic, "Anthropic", $type="SaaS", $descr="Only when the Owner switches scan reading on.", $tags="Deployment Node,Planned", $link="") {
+  System(Production.Anthropic.AnthropicClaudeAPI_1, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+}
+
+Rel(Production.Phoneorcomputer.AppPWA_1, Production.Phoneorcomputer.Serviceworker_1, "Fetches the app, data and tiles through it", $techn="Service Worker API", $tags="Built", $link="")
+Rel(Production.Phoneorcomputer.AppPWA_1, Production.Phoneorcomputer.Ondevicestore_1, "Keeps Drafts and photos; later caches Tree records", $techn="IndexedDB", $tags="In progress", $link="")
+Rel(Production.Phoneorcomputer.AppPWA_1, Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, "Loads the app and calls the JSON API", $techn="HTTPS, session cookie", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Forwards every request to the active API slot", $techn="HTTP, port 3000", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Forwards every request to the active API slot", $techn="HTTP, port 3000", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, "Forwards /mcp", $techn="Streamable HTTP", $tags="Planned", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Reads and writes the Tree, accounts and sessions", $techn="SQL", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Reads and writes the Tree, accounts and sessions", $techn="SQL", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, "Checks the public health check every minute", $techn="HTTPS", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Dumps the database and counts its records", $techn="pg_dump", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, "Reads the status of the last Backup", $techn="backup.json on a shared volume", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Reads the Tree and the slug table", $techn="SQL", $tags="Planned", $link="")
+Rel(Production.Phoneorcomputer.AppPWA_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Uploads photos and shows images", $techn="HTTPS PUT and GET, presigned links", $tags="In progress", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Copies every image", $techn="rclone, read-only key", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, Production.SecondEUprovider.Backupstorage_1, "Stores encrypted, deduplicated Backups", $techn="restic over HTTPS", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, Production.EUemailprovider.EUemailservice_1, "Sends alerts to the Owner", $techn="SMTP", $tags="Built", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
+Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
+Rel(Production.HetznerCloud.VPS.systemdtimer, Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, "Starts nightly", $techn="docker compose --profile jobs run", $tags="Built", $link="")
+
+SHOW_LEGEND(true)
+hide stereotypes
+@enduml
