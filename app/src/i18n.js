@@ -99,7 +99,8 @@ export function translate(root) {
     el.textContent = t(/** @type {HTMLElement} */ (el).dataset.i18n ?? '');
   }
   for (const el of root.querySelectorAll('[data-i18n-attr]')) {
-    for (const pair of (/** @type {HTMLElement} */ (el).dataset.i18nAttr ?? '').split(';')) {
+    const attrs = /** @type {HTMLElement} */ (el).dataset.i18nAttr ?? '';
+    for (const pair of attrs.split(';')) {
       const [attr, key] = pair.split(':');
       if (attr && key) el.setAttribute(attr.trim(), t(key.trim()));
     }
