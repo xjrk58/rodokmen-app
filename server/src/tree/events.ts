@@ -4,7 +4,7 @@ import type { Db } from '../db/db.js';
 import type { TreeDeps } from './persons.js';
 import { estatesAt, parishesAt } from './places.js';
 import { citationSummariesFor } from './sources.js';
-import { displayName, compareEarliestDays, eventSummaries, geoPoint, personSummaries, summarizeEvents } from './summaries.js';
+import { displayName, compareEarliestDays, eventSummaries, personSummaries, summarizeEvents } from './summaries.js';
 
 export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<EventDetail | null> {
   const [summary] = await eventSummaries(db, [id]);
@@ -114,16 +114,18 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
         .orderBy('r.sort_order')
         .execute()
     : [];
+  // Every kept row has a location: the query only keeps rows whose House or Place lies in the area.
+  const locations = new Map(kept.map((r) => [r.id, { lat: r.lat, lon: r.lon }]));
   return {
     truncated,
-    events: summaries.map((s, i) => ({
+    events: summaries.map((s) => ({
       id: s.id,
       version: s.version,
       type: s.type,
       date: s.date,
       earliest: s.earliest,
       latest: s.latest,
-      location: geoPoint(kept[i]!)!,
+      location: locations.get(s.id)!,
       place: s.place,
       house: s.house,
       persons: roles.filter((r) => r.event_id === s.id).map((r) => ({ id: r.person_id, displayName: displayName(r.given, r.surname), role: r.role })),

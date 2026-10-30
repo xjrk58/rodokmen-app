@@ -1,6 +1,8 @@
 import { foldForSearch, isoDay, type ImageView, type PersonDetail, type PersonSearchQuery, type PersonSearchResult } from '@rodokmen/shared';
 import { sql } from 'kysely';
+import type { Selectable } from 'kysely';
 import type { Db } from '../db/db.js';
+import type { ImageTable } from '../db/types.js';
 import type { ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { containsPattern, compareEarliestDays, eventSummaries, personSummaries } from './summaries.js';
@@ -105,7 +107,10 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
   return { items: rows.map((r) => ({ person: summaries.get(r.id)!, matchedName: r.matched })), limit: q.limit, offset: q.offset };
 }
 
-export async function imageViews(deps: TreeDeps, rows: Array<{ id: string; version: number; kind: ImageView['kind']; citation_id: string | null; storage_key: string; content_type: ImageView['contentType']; byte_size: number; width: number | null; height: number | null; sha256: string; caption: string | null }>): Promise<ImageView[]> {
+/** An image row as IMAGE_COLUMNS selects it. */
+type ImageRow = Pick<Selectable<ImageTable>, 'id' | 'version' | 'kind' | 'citation_id' | 'storage_key' | 'content_type' | 'byte_size' | 'width' | 'height' | 'sha256' | 'caption'>;
+
+export async function imageViews(deps: TreeDeps, rows: ImageRow[]): Promise<ImageView[]> {
   if (rows.length === 0) return [];
   const subjects = await deps.db.selectFrom('image_person').select(['image_id', 'person_id']).where('image_id', 'in', rows.map((r) => r.id)).execute();
   return Promise.all(

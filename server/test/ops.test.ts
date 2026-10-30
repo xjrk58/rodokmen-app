@@ -38,7 +38,7 @@ describe('presigned image links (no network)', () => {
     expect(expiresAt.toISOString()).toBe('2026-10-29T10:05:00.000Z');
   });
 
-  it('shared image link: opened 30 minutes later, the link has expired (the spec allows at most 10)', async () => {
+  it('a shared image link is signed to expire within 10 minutes, long before 30 minutes have passed', async () => {
     const { url } = await storage.link('portraits/x.webp', 'image/webp');
     const u = new URL(url);
     const signed = u.searchParams.get('X-Amz-Date')!.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, '$1-$2-$3T$4:$5:$6Z');
