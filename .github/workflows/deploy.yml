@@ -1,7 +1,7 @@
 name: deploy
 
-# A merge to main deploys automatically once the server and app tests and the repo guard pass (operations
-# spec, "Deploys from CI"). The image goes to GHCR; the VPS starts it in the idle API slot and
+# A merge to main deploys automatically once the server and app tests, the proofs (verify.yml, ADR 0009)
+# and the repo guard pass (operations spec, "Deploys from CI"). The image goes to GHCR; the VPS starts it in the idle API slot and
 # switches only when its health check passes (deploy/scripts/deploy.sh). A failed health check
 # leaves the previous version serving and alerts the Owner.
 #
@@ -38,9 +38,13 @@ jobs:
     if: ${{ !inputs.rollback }}
     uses: ./.github/workflows/app-ci.yml
 
+  proofs:
+    if: ${{ !inputs.rollback }}
+    uses: ./.github/workflows/verify.yml
+
   image:
     if: ${{ !inputs.rollback }}
-    needs: [tests, guard, app]
+    needs: [tests, guard, app, proofs]
     runs-on: ubuntu-24.04
     permissions:
       contents: read

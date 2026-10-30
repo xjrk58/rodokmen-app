@@ -7,13 +7,15 @@
 - [ ] 1.3 Add the reading job (`POST /api/readings`, queue, Anthropic Messages API with structured output, schema check, failure state); verify the baptism-page scenario against a recorded API response and the illegible-house-number scenario
 - [ ] 1.4 Add the Owner's switch, the daily limit and the usage view; verify the switched-off and daily-limit scenarios
 - [ ] 1.4a Send only the display copy or crop of the requested scans, and nothing while switched off; verify the reading-one-page and switched-off scenarios by inspecting the outgoing request in a test
+- [ ] 1.4b Prove the switch and the daily limit with `lsc check`, with `//@ contract scan-reading: The Owner switches it on` and `evidence-media: Images sent for reading`, and ensures for the switched-off and daily-limit scenarios; verify with `pnpm verify` and `pnpm verify:trace`, and that reading while switched off makes `lsc check` fail
 - [ ] 1.5 Refuse portal URLs as input and keep them as Citation links; verify the portal-link scenario
 
 ## 2. Draft, marking and matching
 
 - [ ] 2.1 Turn a reading into Draft operations with `source: 'reader'` marks, and cap reader-drafted Citation confidence at normal on the server; verify the Member-confirms scenario and that a submitted high confidence is lowered
+- [ ] 2.1a Prove the confidence cap and the "read by AI" marks with `lsc check`, with `//@ contract scan-reading: The machine's reading is marked and modest` and ensures for the Member-confirms scenario; verify with `pnpm verify` and `pnpm verify:trace`, and that letting high confidence through makes `lsc check` fail
 - [ ] 2.2 Write match scoring as a pure function in `shared/` and the candidate query; verify the known-father scenario
-- [ ] 2.3 Prove match scoring with `lsc check` and add its `//@ contract scan-reading: Names are matched, not duplicated`; verify `lsc check` passes and `docs/verification.md` lists it
+- [ ] 2.3 Prove match scoring with `lsc check` and add its `//@ contract scan-reading: Names are matched, not duplicated`, with ensures for the known-father scenario; verify with `pnpm verify` and `pnpm verify:trace` (`docs/verification.md` lists it), and that scoring a stranger above the known father makes `lsc check` fail
 - [ ] 2.4 Build the check screen (entries, transcription beside the scan, match choices, "read by AI" marks) at 390 px; verify the baptism-page flow end to end in Playwright with a recorded reading
 
 ## 3. Leads and Agents
