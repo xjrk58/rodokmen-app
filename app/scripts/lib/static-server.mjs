@@ -3,7 +3,7 @@
 // sends no-cache headers so every reload sees the files on disk.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, sep } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 
 export const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -23,11 +23,21 @@ export const MIME = {
  * @param {{ root: string, port?: number, host?: string, base?: string }} options
  * @returns {Promise<{ url: string, port: number, close: () => Promise<void> }>}
  */
-export async function startServer({ root, port = 0, host = '127.0.0.1', base = '/' }) {
+export async function startServer({ root: given, port = 0, host = '127.0.0.1', base = '/' }) {
+  // Absolute, so the check that a file lies inside it also holds for a relative root such as ".".
+  const root = resolve(given);
   const prefix = base.endsWith('/') ? base : `${base}/`;
-  const server = createServer(async (req, res) => {
+  /** @param {import('node:http').IncomingMessage} req @param {import('node:http').ServerResponse} res */
+  const answer = async (req, res) => {
+    /** @type {string} */
+    let path;
     try {
-      const path = decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname);
+      path = decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname);
+    } catch {
+      res.writeHead(400).end('Bad request');
+      return;
+    }
+    try {
       if (path === prefix.slice(0, -1)) {
         res.writeHead(301, { location: prefix }).end();
         return;
@@ -56,7 +66,8 @@ export async function startServer({ root, port = 0, host = '127.0.0.1', base = '
     } catch (error) {
       res.writeHead(500).end(String(error));
     }
-  });
+  };
+  const server = createServer((req, res) => void answer(req, res));
   await new Promise((resolve) => server.listen(port, host, () => resolve(undefined)));
   const address = /** @type {import('node:net').AddressInfo} */ (server.address());
   return {

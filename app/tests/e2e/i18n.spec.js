@@ -52,3 +52,41 @@ test.describe('Language switch', () => {
     await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Najít obec');
   });
 });
+
+test.describe('Two quick language changes', () => {
+  test.use({ locale: 'en-US' });
+  test('end in the language chosen last, even when the first one loads slower', async ({ page }) => {
+    await openApp(page);
+    /** @type {() => void} */
+    let englishServed = () => {};
+    const served = new Promise((resolve) => (englishServed = () => resolve(undefined)));
+    await page.route('**/i18n/cs.json', async (route) => {
+      await served;
+      await route.continue();
+    });
+    await page.route('**/i18n/en.json', async (route) => {
+      await route.continue();
+      englishServed();
+    });
+    const lang = await page.evaluate(async (path) => {
+      /** @type {unknown} */
+      const loaded = await import(path);
+      const i18n = /** @type {typeof import('../../src/i18n.js')} */ (loaded);
+      const czech = i18n.setLanguage('cs', { remember: true });
+      await i18n.setLanguage('en', { remember: true });
+      await czech;
+      return { html: document.documentElement.lang, current: i18n.language(), stored: localStorage.getItem('rodokmen.language') };
+    }, './src/i18n.js');
+    expect(lang).toEqual({ html: 'en', current: 'en', stored: 'en' });
+    await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Find a municipality');
+  });
+});
+
+test('when the interface strings cannot be loaded, the page says so in Czech and English', async ({ page }) => {
+  await page.route('**/i18n/*.json', (route) => route.fulfill({ status: 503, body: 'down' }));
+  await page.goto('./');
+  await expect(page.locator('#message')).toBeVisible();
+  await expect(page.locator('#message')).toContainText('Aplikaci se nepodařilo načíst');
+  await expect(page.locator('#message')).toContainText('The app could not be loaded');
+  await expect(page.locator('body')).toHaveAttribute('data-ready', 'error');
+});

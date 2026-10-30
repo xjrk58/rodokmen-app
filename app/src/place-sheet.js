@@ -5,6 +5,7 @@
 import { scansUrl } from './archive-lookup.js';
 import { closeIcon, externalLink, h } from './dom.js';
 import { formatKm, t } from './i18n.js';
+import { withName } from './text.js';
 
 /** @typedef {import('./archive-lookup.js').ArchiveIndex} ArchiveIndex */
 /** @typedef {import('./gazetteer.js').Gazetteer} Gazetteer */
@@ -12,10 +13,12 @@ import { formatKm, t } from './i18n.js';
 /** @typedef {import('./types.js').ViewerLink} ViewerLink */
 
 /**
- * @typedef {object} Place
+ * A point on the map the sheet is about: tapped, or a Municipality chosen in
+ * search. (Not a Place of the Tree: the sheet knows only Municipalities.)
+ * @typedef {object} MapPoint
  * @property {number} lat
  * @property {number} lon
- * @property {Municipality} [municipality] set when the place came from search
+ * @property {Municipality} [municipality] set when the point came from search
  */
 
 /** Below this distance the tapped point counts as the Municipality itself. */
@@ -31,14 +34,6 @@ function formatCoordinates(lat, lon) {
   return `${Math.abs(lat).toFixed(4)}° ${ns}, ${Math.abs(lon).toFixed(4)}° ${ew}`;
 }
 
-/**
- * @param {ViewerLink} viewer
- * @param {string} name
- */
-function viewerUrl(viewer, name) {
-  return viewer.url.replaceAll('{name}', encodeURIComponent(name));
-}
-
 export class PlaceSheet {
   /**
    * @param {HTMLElement} el
@@ -47,16 +42,16 @@ export class PlaceSheet {
   constructor(el, deps) {
     this.el = el;
     this.deps = deps;
-    /** @type {Place | null} */
-    this.place = null;
+    /** @type {MapPoint | null} */
+    this.point = null;
     el.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') this.hide();
     });
   }
 
-  /** @param {Place} place */
-  show(place) {
-    this.place = place;
+  /** @param {MapPoint} point */
+  show(point) {
+    this.point = point;
     this.render();
     this.el.hidden = false;
     this.el.scrollTop = 0;
@@ -64,30 +59,30 @@ export class PlaceSheet {
   }
 
   hide() {
-    this.place = null;
+    this.point = null;
     this.el.hidden = true;
     this.el.replaceChildren();
     this.deps.onClose();
   }
 
   get open() {
-    return this.place !== null;
+    return this.point !== null;
   }
 
   render() {
-    const place = this.place;
-    if (!place) return;
+    const point = this.point;
+    if (!point) return;
     const { index, gazetteer } = this.deps;
-    const nearest = place.municipality ? { municipality: place.municipality, km: 0 } : gazetteer.nearest(place.lat, place.lon);
+    const nearest = point.municipality ? { municipality: point.municipality, km: 0 } : gazetteer.nearest(point.lat, point.lon);
     const municipality = nearest?.municipality;
-    const answer = index.lookup(place.lat, place.lon, municipality);
+    const answer = index.lookup(point.lat, point.lon, municipality);
     const close = h('button', { type: 'button', class: 'icon-button', 'aria-label': t('sheet.close'), title: t('sheet.close') }, closeIcon());
     close.addEventListener('click', () => this.hide());
 
     if (!answer) {
       this.el.replaceChildren(
         h('div', { class: 'sheet-head' },
-          h('div', {}, h('h2', {}, formatCoordinates(place.lat, place.lon))),
+          h('div', {}, h('h2', {}, formatCoordinates(point.lat, point.lon))),
           close),
         h('p', { class: 'outside', 'data-testid': 'outside' }, t('sheet.outside')),
       );
@@ -99,11 +94,11 @@ export class PlaceSheet {
     const head = h('div', { class: 'sheet-head' },
       h('div', {},
         showDistance ? h('p', { class: 'eyebrow' }, t('sheet.nearest', { distance: formatKm(nearest.km) })) : null,
-        h('h2', { 'data-testid': 'municipality' }, municipality?.name ?? formatCoordinates(place.lat, place.lon)),
+        h('h2', { 'data-testid': 'municipality' }, municipality?.name ?? formatCoordinates(point.lat, point.lon)),
         h('p', { class: 'meta' },
           municipality ? h('span', { 'data-testid': 'district' }, t('sheet.district', { district: municipality.district })) : null,
           municipality ? ' · ' : null,
-          formatCoordinates(place.lat, place.lon))),
+          formatCoordinates(point.lat, point.lon))),
       close);
 
     const { archive } = answer;
@@ -137,7 +132,7 @@ export class PlaceSheet {
       h('h3', {}, t('sheet.historical')),
       h('ul', { class: 'link-list' },
         ...this.deps.viewers.map((viewer) =>
-          h('li', {}, externalLink(viewerUrl(viewer, name), t(`viewer.${viewer.id}`, { name }), { 'data-viewer': viewer.id })))),
+          h('li', {}, externalLink(withName(viewer.url, name), t(`viewer.${viewer.id}`, { name }), { 'data-viewer': viewer.id })))),
     );
 
     this.el.replaceChildren(head, registers, jewishSection, historical);

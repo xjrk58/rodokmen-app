@@ -32,6 +32,10 @@ test('borders and archive regions draw when the tile server cannot be reached', 
   await openApp(page);
   await expect(page.locator('path.district-boundary')).toHaveCount(77);
   await expect(page.locator('path.national-border')).toHaveCount(1);
+  // The tiles were asked for and have all failed (a failed image is "complete" too).
+  const tiles = page.locator('img.leaflet-tile');
+  await expect(tiles).not.toHaveCount(0);
+  await expect.poll(() => tiles.evaluateAll((imgs) => imgs.every((img) => img instanceof HTMLImageElement && img.complete))).toBe(true);
   await expect(page.locator('img.leaflet-tile-loaded')).toHaveCount(0);
   await page.locator('#layers-button').click();
   await page.locator('#regions-toggle').check();

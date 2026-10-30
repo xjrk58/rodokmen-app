@@ -11,7 +11,7 @@ import { PRECACHE } from './src/precache.js';
 import { TILE_CACHE_LIMIT, TileLru } from './src/tile-lru.js';
 
 /** Written by scripts/stamp-version.mjs; changes whenever a precached file changes. */
-const VERSION = '0.1.0+5abf8f8b62';
+const VERSION = '0.1.0+016e2d92c1';
 
 const SHELL_PREFIX = 'rodokmen-shell-';
 const SHELL_CACHE = `${SHELL_PREFIX}${VERSION}`;
@@ -45,7 +45,9 @@ sw.addEventListener('activate', (event) => {
 });
 
 sw.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') sw.skipWaiting();
+  /** @type {unknown} */
+  const data = event.data;
+  if (typeof data === 'object' && data !== null && 'type' in data && data.type === 'SKIP_WAITING') event.waitUntil(sw.skipWaiting());
 });
 
 sw.addEventListener('fetch', (event) => {
@@ -78,22 +80,46 @@ async function shellFile(request) {
 /** @type {Promise<TileLru> | null} */
 let lruPromise = null;
 
-/** The use order of cached tiles, kept in META_CACHE across worker restarts. */
+/**
+ * The saved use order. One that cannot be read (a write cut short, an older
+ * format) counts as empty: its tiles are then the oldest, not lost.
+ * @param {Cache} meta
+ * @returns {Promise<string[]>}
+ */
+async function savedOrder(meta) {
+  const saved = await meta.match(LRU_KEY);
+  if (!saved) return [];
+  try {
+    /** @type {unknown} */
+    const order = await saved.json();
+    return Array.isArray(order) ? order.filter((u) => typeof u === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+async function loadTileIndex() {
+  const [meta, tiles] = await Promise.all([caches.open(META_CACHE), caches.open(TILE_CACHE)]);
+  const order = await savedOrder(meta);
+  const present = new Set((await tiles.keys()).map((r) => r.url));
+  const known = order.filter((u) => present.has(u));
+  const knownSet = new Set(known);
+  // Tiles cached but missing from the saved order count as the oldest.
+  const unknown = [...present].filter((u) => !knownSet.has(u));
+  const index = new TileLru(TILE_CACHE_LIMIT, [...unknown, ...known]);
+  await Promise.all(index.trim().map((u) => tiles.delete(u)));
+  return index;
+}
+
+/** The use order of cached tiles, kept in META_CACHE across worker restarts. A failed load is tried again on the next tile. */
 function tileIndex() {
-  lruPromise ??= (async () => {
-    const [meta, tiles] = await Promise.all([caches.open(META_CACHE), caches.open(TILE_CACHE)]);
-    const saved = await meta.match(LRU_KEY);
-    /** @type {string[]} */
-    const order = saved ? await saved.json() : [];
-    const present = new Set((await tiles.keys()).map((r) => r.url));
-    const known = order.filter((u) => present.has(u));
-    const knownSet = new Set(known);
-    // Tiles cached but missing from the saved order count as the oldest.
-    const unknown = [...present].filter((u) => !knownSet.has(u));
-    const index = new TileLru(TILE_CACHE_LIMIT, [...unknown, ...known]);
-    await Promise.all(index.trim().map((u) => tiles.delete(u)));
-    return index;
-  })();
+  if (!lruPromise) {
+    const attempt = loadTileIndex();
+    lruPromise = attempt;
+    attempt.catch(() => {
+      if (lruPromise === attempt) lruPromise = null;
+    });
+  }
   return lruPromise;
 }
 
@@ -128,19 +154,33 @@ function saveIndexSoon(index) {
   return pendingSave;
 }
 
-/** @param {FetchEvent} event */
+/**
+ * A map tile: from the tile cache when it has it, else from the network (then
+ * cached). When the cache fails (a storage error, a damaged index) the tile
+ * still comes from the network.
+ * @param {FetchEvent} event
+ */
 async function tile(event) {
   const { request } = event;
-  const [tiles, index] = await Promise.all([caches.open(TILE_CACHE), tileIndex()]);
-  const cached = await tiles.match(request);
-  if (cached) {
-    index.touch(request.url);
-    event.waitUntil(saveIndexSoon(index));
+  /** @param {unknown} error */
+  const failed = (error) => {
+    console.warn('The tile cache failed; the tile comes from the network.', error);
+    return null;
+  };
+  const store = await Promise.all([caches.open(TILE_CACHE), tileIndex()])
+    .then(([tiles, index]) => ({ tiles, index }))
+    .catch(failed);
+  const cached = store ? await store.tiles.match(request).catch(failed) : null;
+  if (store && cached) {
+    const { tiles, index } = store;
+    const evicted = index.touch(request.url);
+    event.waitUntil(Promise.all(evicted.map((u) => tiles.delete(u))).then(() => saveIndexSoon(index)));
     return cached;
   }
   const response = await fetch(request);
   // Opaque responses are skipped: their size is unknown and they may be errors.
-  if (response.ok && response.type !== 'opaque') {
+  if (store && response.ok && response.type !== 'opaque') {
+    const { tiles, index } = store;
     const copy = response.clone();
     event.waitUntil(
       (async () => {

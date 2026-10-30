@@ -33,15 +33,10 @@ jobs:
       - name: Check the version stamp
         run: node app/scripts/stamp-version.mjs --check
 
+      # The deployed files of app/, as the Docker image has them (app/scripts/site-files.mjs).
       - name: Assemble the site
         run: |
-          mkdir -p _site
-          rsync -a \
-            --exclude node_modules --exclude tests --exclude scripts --exclude .cache \
-            --exclude test-results --exclude playwright-report \
-            --exclude package.json --exclude 'tsconfig*.json' --exclude playwright.config.js \
-            --exclude '*.d.ts' \
-            app/ _site/
+          node app/scripts/site-files.mjs --copy _site
           touch _site/.nojekyll
           find _site -type f | sort
 

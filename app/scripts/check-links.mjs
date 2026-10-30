@@ -17,10 +17,12 @@ import { appendFile, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { withName } from '../src/text.js';
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const USER_AGENT = 'rodokmen-link-check/1 (+https://github.com/xjrk58/rodokmen-app)';
-const SAMPLE_PLACE = 'Pardubice';
+/** The Municipality whose name goes into place-search URLs for the check. */
+const SAMPLE_MUNICIPALITY = 'Pardubice';
 
 /**
  * @typedef {{ archive: string, kind: string, url: string }} Target
@@ -48,17 +50,31 @@ export function severityOf(probe) {
 }
 
 /**
- * @param {any} data parsed archives.json
+ * A property of a value read from JSON, unchecked.
+ * @param {unknown} value
+ * @param {string} key
+ * @returns {unknown}
+ */
+const prop = (value, key) => (typeof value === 'object' && value !== null ? /** @type {Record<string, unknown>} */ (value)[key] : undefined);
+/** @param {unknown} value */
+const text = (value) => (typeof value === 'string' ? value : '');
+
+/**
+ * The URLs to check. The file is read as it is: a missing URL becomes a target that fails.
+ * @param {unknown} data parsed archives.json
  * @returns {Target[]}
  */
 export function targetsOf(data) {
   /** @type {Target[]} */
   const targets = [];
-  for (const entry of [...(data.archives ?? []), ...(data.jewishRegisters ? [data.jewishRegisters] : [])]) {
-    targets.push({ archive: entry.name, kind: `portal ${entry.portal?.name ?? ''}`.trim(), url: entry.portal?.url });
-    if (entry.placeSearchUrl) {
-      targets.push({ archive: entry.name, kind: 'place search', url: entry.placeSearchUrl.replaceAll('{name}', encodeURIComponent(SAMPLE_PLACE)) });
-    }
+  const archives = prop(data, 'archives');
+  const jewish = prop(data, 'jewishRegisters');
+  for (const entry of [...(Array.isArray(archives) ? archives : []), ...(jewish ? [jewish] : [])]) {
+    const archive = text(prop(entry, 'name'));
+    const portal = prop(entry, 'portal');
+    targets.push({ archive, kind: `portal ${text(prop(portal, 'name'))}`.trim(), url: text(prop(portal, 'url')) });
+    const search = text(prop(entry, 'placeSearchUrl'));
+    if (search) targets.push({ archive, kind: 'place search', url: withName(search, SAMPLE_MUNICIPALITY) });
   }
   return targets;
 }
@@ -80,10 +96,10 @@ async function probe(url, timeoutMs) {
     await response.body?.cancel();
     return { ok: response.status < 400, status: `HTTP ${response.status}`, retry: response.status >= 500 || response.status === 429, httpStatus: response.status };
   } catch (error) {
-    const cause = /** @type {any} */ (error)?.cause;
-    const timedOut = /** @type {Error} */ (error).name === 'TimeoutError';
-    const code = cause?.code;
-    const message = timedOut ? `no answer within ${timeoutMs} ms` : (code ?? cause?.message ?? String(error));
+    const cause = error instanceof Error ? error.cause : undefined;
+    const timedOut = error instanceof Error && error.name === 'TimeoutError';
+    const code = text(prop(cause, 'code')) || undefined;
+    const message = timedOut ? `no answer within ${timeoutMs} ms` : (code ?? (text(prop(cause, 'message')) || String(error)));
     return { ok: false, status: message, retry: true, code, timedOut };
   }
 }
@@ -94,7 +110,7 @@ async function probe(url, timeoutMs) {
  * @returns {Promise<Result>}
  */
 async function check(target, { timeoutMs, retries }) {
-  if (typeof target.url !== 'string' || !/^https?:\/\//.test(target.url)) return { ...target, ok: false, status: 'not a URL', severity: 'fail' };
+  if (!/^https?:\/\//.test(target.url)) return { ...target, ok: false, status: 'not a URL', severity: 'fail' };
   let result = await probe(target.url, timeoutMs);
   for (let attempt = 1; !result.ok && result.retry && attempt <= retries; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
@@ -112,6 +128,7 @@ async function main() {
       retries: { type: 'string', default: '2' },
     },
   });
+  /** @type {unknown} */
   const data = JSON.parse(await readFile(args.file, 'utf8'));
   const targets = targetsOf(data);
   for (const extra of args.extra) {

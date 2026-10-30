@@ -12,12 +12,12 @@ const municipalities = await readJson('data/municipalities.json');
 const index = new ArchiveIndex(districts, archives);
 const gazetteer = new Gazetteer(municipalities);
 
-/** @param {string} name */
-const town = (name) => /** @type {import('../../src/types.js').Municipality} */ (municipalities.find((m) => m.name === name && m.district === name));
+/** The Municipality a district is named after. @param {string} name */
+const districtSeat = (name) => /** @type {import('../../src/types.js').Municipality} */ (municipalities.find((m) => m.name === name && m.district === name));
 
 test('spec cases', () => {
   for (const [name, archive] of [['Pardubice', 'SOA Zámrsk'], ['Havlíčkův Brod', 'SOA Zámrsk'], ['Pelhřimov', 'SOA Třeboň'], ['Vsetín', 'Zemský archiv Opava'], ['Praha', 'Archiv hlavního města Prahy']]) {
-    const m = town(name);
+    const m = districtSeat(name);
     assert.equal(index.lookup(m.lat, m.lon)?.archive.name, archive, name);
   }
   assert.equal(index.lookup(48.511, 14.5045), null, 'Freistadt, Austria');
@@ -52,7 +52,7 @@ test('search ranks whole names, then prefixes, then words, then the rest', () =>
 });
 
 test('nearest municipality', () => {
-  const m = town('Pardubice');
+  const m = districtSeat('Pardubice');
   assert.equal(gazetteer.nearest(m.lat + 0.001, m.lon)?.municipality.name, 'Pardubice');
 });
 

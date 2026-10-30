@@ -21,11 +21,6 @@ export class TileLru {
     return this.order.size;
   }
 
-  /** @param {string} key */
-  has(key) {
-    return this.order.has(key);
-  }
-
   /**
    * Records a use of `key` (a read or a write) and returns the keys to evict,
    * least recently used first.
@@ -36,11 +31,6 @@ export class TileLru {
     this.order.delete(key);
     this.order.set(key, true);
     return this.trim();
-  }
-
-  /** @param {string} key */
-  delete(key) {
-    return this.order.delete(key);
   }
 
   /** @returns {string[]} keys beyond capacity, least recently used first */

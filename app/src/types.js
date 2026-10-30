@@ -87,4 +87,43 @@
  * @property {ViewerLink[]} viewers
  */
 
+// ---------------------------------------------------------------- Tree API payloads
+// Types only, from the Zod schemas in shared/src/schemas (the app does not load Zod).
+
+/** @typedef {import('../../shared/src/schemas/accounts.js').Me} Me */
+/** @typedef {import('../../shared/src/schemas/api.js').PersonDetail} PersonDetail */
+/** @typedef {import('../../shared/src/schemas/api.js').PersonSearchResult} PersonSearchResult */
+/** @typedef {PersonSearchResult['items'][number]} PersonSearchHit */
+/** @typedef {import('../../shared/src/schemas/api.js').PlaceSearchResult} PlaceSearchResult */
+/** @typedef {import('../../shared/src/schemas/api.js').PlaceSummary} PlaceSummary */
+/** @typedef {import('../../shared/src/schemas/api.js').SourceSearchResult} SourceSearchResult */
+/** @typedef {import('../../shared/src/schemas/api.js').SourceSummary} SourceSummary */
+/** @typedef {import('../../shared/src/schemas/tree.js').Sex} Sex */
+/** @typedef {import('../../shared/src/schemas/tree.js').NameType} NameType */
+/** @typedef {import('../../shared/src/schemas/tree.js').EventType} EventType */
+/** @typedef {import('../../shared/src/schemas/tree.js').SourceType} SourceType */
+/** @typedef {import('../../shared/src/schemas/tree.js').Confidence} Confidence */
+/** @typedef {import('../../shared/src/schemas/tree.js').ImageKind} ImageKind */
+/** @typedef {import('../../shared/src/schemas/tree.js').RoleType} RoleType */
+/** @typedef {import('../../shared/src/schemas/proposals.js').OperationInput} OperationInput */
+/** @typedef {import('../../shared/src/schemas/proposals.js').Operation} Operation */
+/** @typedef {import('../../shared/src/schemas/proposals.js').SubmitProposalBody} SubmitProposalBody */
+/** @typedef {import('../../shared/src/schemas/review.js').ProposalView} ProposalView */
+/** @typedef {import('../../shared/src/schemas/review.js').ProposalList} ProposalList */
+/** @typedef {import('../../shared/src/schemas/review.js').OperationView} OperationView */
+/** @typedef {import('../../shared/src/schemas/review.js').ConflictView} ConflictView */
+/** @typedef {import('../../shared/src/schemas/review.js').CitationPreview} CitationPreview */
+/** @typedef {import('../../shared/src/schemas/review.js').AuthorRef} AuthorRef */
+/** @typedef {import('../../shared/src/schemas/review.js').UndoPreview} UndoPreview */
+/** @typedef {import('../../shared/src/schemas/review.js').LaterEdit} LaterEdit */
+/** @typedef {import('../../shared/src/schemas/review.js').History} History */
+/** @typedef {import('../../shared/src/schemas/review.js').HistoryEntry} HistoryEntry */
+/** @typedef {import('../../shared/src/schemas/review.js').UploadTicket} UploadTicket */
+/** @typedef {import('../../shared/src/schemas/review.js').UploadView} UploadView */
+/** @typedef {import('../../shared/src/schemas/review.js').NotificationSettings} NotificationSettings */
+/** @typedef {import('../../shared/src/schemas/review.js').AcceptBody} AcceptBody */
+/** @typedef {import('../../shared/src/schemas/review.js').RejectBody} RejectBody */
+/** @typedef {import('../../shared/src/schemas/review.js').MergeBody} MergeBody */
+/** @typedef {import('../../shared/src/schemas/review.js').UndoBody} UndoBody */
+
 export {};
