@@ -56,7 +56,7 @@ The importer SHALL set each Citation's confidence from the Vault: confirmed beco
 Vault tags that the Tree derives SHALL NOT be imported as Labels: `obec/…` follows from Places, and `nepribuzny` / `mozny-pribuzny` follow from the relation to the family. All other tags SHALL become Labels on the Person. The dry run SHALL list every Person whose computed relation differs from their Vault tag.
 
 #### Scenario: Line tag
-- **WHEN** a Person has the tags `obec/podulsany`, `line/novak` and `nepribuzny`
+- **WHEN** a Person has the tags `obec/dolni-lhota`, `line/novak` and `nepribuzny`
 - **THEN** the Person gets the Label `line/novak` only
 
 ### Requirement: Note bodies become research notes
@@ -70,7 +70,7 @@ The body of each Vault note SHALL become the research notes of the record it des
 Images listed in a Source note's `scans` SHALL be uploaded as that Citation's images. PDF files SHALL be attached as documents to the Source. DOC files SHALL be converted to PDF once and attached the same way, keeping the original file as well. Files the importer can't read SHALL be listed in the report and skipped.
 
 #### Scenario: Family document
-- **WHEN** a family-document Source lists `RodRichteru.doc` and `RodRichteru.pdf`
+- **WHEN** a family-document Source lists `RodNovaku.doc` and `RodNovaku.pdf`
 - **THEN** the Source gets the PDF and the converted DOC as documents, with the original DOC kept
 
 ### Requirement: Living status is computed, not copied
