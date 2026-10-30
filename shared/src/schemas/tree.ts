@@ -4,7 +4,7 @@
  * Every record has an `id` (UUIDv7) and a `version`.
  */
 import { z } from 'zod';
-import { EdtfDate, GeoPoint, Id, IsoDay, NameLanguage, Period, Version } from './common.js';
+import { EdtfDate, GeoPoint, Id, IsoDay, NameLanguage, Period, Version, WebUrl } from './common.js';
 
 const text = (max: number) => z.string().max(max);
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
@@ -219,7 +219,7 @@ export const SourceRecord = z
     title: nonEmpty(400),
     repository: text(400).nullable().describe('Archive or holder'),
     reference: text(200).nullable().describe('Call number or signature (signatura)'),
-    url: z.url().max(2000).nullable(),
+    url: WebUrl.nullable(),
     familyAccount: FamilyAccount.nullable(),
   })
   .refine((s) => (s.type === 'family_account') === (s.familyAccount !== null), {

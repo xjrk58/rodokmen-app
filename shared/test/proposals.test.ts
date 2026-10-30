@@ -57,6 +57,20 @@ const examples: OperationInput[] = [
   { op: 'restoreRecord', table: 'person', id: ids.dup, baseVersion: 2, values: { id: ids.dup, sex: 'male', merged_into_id: null } },
 ];
 
+describe('links in Sources', () => {
+  const source = (url: string) => ({ op: 'createSource', tempId: 'tmp:src', type: 'other', title: 'Online index', url });
+  it('accepts http and https links', () => {
+    for (const url of ['https://www.portafontium.eu/register/soap-ck/00001', 'http://example.org/scan?id=12']) expect(Operation.safeParse(source(url)).success, url).toBe(true);
+  });
+  it('refuses links that would run script or carry their own page', () => {
+    for (const url of ['javascript:alert(document.cookie)', 'JAVASCRIPT:alert(1)', 'data:text/html,<script>alert(1)</script>', 'vbscript:msgbox(1)', 'file:///etc/passwd']) {
+      expect(Operation.safeParse(source(url)).success, url).toBe(false);
+    }
+    const set = { op: 'setField', record: 'source', id: ids.source, baseVersion: 1, set: { url: 'javascript:alert(1)' } };
+    expect(Operation.safeParse(set).success).toBe(false);
+  });
+});
+
 describe('typed operations', () => {
   it('the examples cover the whole closed set', () => {
     expect(new Set(examples.map((e) => e.op))).toEqual(new Set(OPERATION_NAMES));

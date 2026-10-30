@@ -4213,12 +4213,7 @@
             "maximum": 9007199254740991
           },
           "operation": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {},
-            "description": "The operation as it will be applied (with any Editor correction)"
+            "$ref": "#/components/schemas/OperationInput"
           },
           "summary": {
             "$ref": "#/components/schemas/SentenceInput"
@@ -4229,17 +4224,12 @@
           "original": {
             "anyOf": [
               {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
+                "$ref": "#/components/schemas/OperationInput"
               },
               {
                 "type": "null"
               }
-            ],
-            "description": "The author's operation, when an Editor corrected it"
+            ]
           },
           "originalSummary": {
             "anyOf": [
@@ -9452,12 +9442,7 @@
             "maximum": 9007199254740991
           },
           "operation": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {},
-            "description": "The operation as it will be applied (with any Editor correction)"
+            "$ref": "#/components/schemas/Operation"
           },
           "summary": {
             "$ref": "#/components/schemas/Sentence"
@@ -9468,17 +9453,12 @@
           "original": {
             "anyOf": [
               {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
+                "$ref": "#/components/schemas/Operation"
               },
               {
                 "type": "null"
               }
-            ],
-            "description": "The author's operation, when an Editor corrected it"
+            ]
           },
           "originalSummary": {
             "anyOf": [

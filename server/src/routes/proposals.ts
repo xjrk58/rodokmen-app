@@ -27,7 +27,8 @@ import { z } from 'zod';
 import { requireRole } from '../auth/plugin.js';
 import { ApiProblem } from '../auth/problem.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
-import { acceptProposal, assertCanSee, canReview, getProposalRow, mergePersons, proposalViews, rejectProposal, submitProposal, uploadView, type ProposalDeps } from '../proposals/service.js';
+import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
+import { canReview, proposalViews, uploadView } from '../proposals/views.js';
 import { imageLink } from '../storage/images.js';
 import { processImage, TOO_LARGE_MESSAGE } from '../storage/process.js';
 

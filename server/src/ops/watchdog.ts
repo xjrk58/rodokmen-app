@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import type { Clock } from '../tree/summaries.js';
+import { messageOf, stringField } from '../errors.js';
 
 /**
  * Alerts for the Owner (operations spec, "Health and alerts"):
@@ -56,7 +57,7 @@ export class Watchdog {
     try {
       result = await this.o.checkHealth();
     } catch (error) {
-      result = { ok: false, detail: (error as Error).message };
+      result = { ok: false, detail: messageOf(error) };
     }
     if (result.ok) {
       if (this.healthAlerted) {
@@ -85,7 +86,7 @@ export class Watchdog {
     try {
       status = await this.o.readBackupStatus!();
     } catch (error) {
-      status = { ok: false, startedAt: '', finishedAt: '', error: `status unreadable: ${(error as Error).message}` };
+      status = { ok: false, startedAt: '', finishedAt: '', error: `status unreadable: ${messageOf(error)}` };
     }
     const once = async (key: string, subject: string, details: string) => {
       if (this.backupAlerts.has(key)) return;
@@ -111,7 +112,7 @@ export async function httpHealthCheck(url: string, timeoutMs = 10_000): Promise<
     const body = (await res.text()).slice(0, 300);
     return { ok: res.status === 200, detail: `HTTP ${res.status} ${body}` };
   } catch (error) {
-    return { ok: false, detail: `no answer: ${(error as Error).message}` };
+    return { ok: false, detail: `no answer: ${messageOf(error)}` };
   }
 }
 
@@ -120,7 +121,7 @@ export function backupStatusReader(path: string): () => Promise<BackupStatus | n
     try {
       return JSON.parse(await readFile(path, 'utf8')) as BackupStatus;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      if (stringField(error, 'code') === 'ENOENT') return null;
       throw error;
     }
   };

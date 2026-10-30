@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 import { Id, Version } from './common.js';
-import { ProposalKind, ProposalStatus, RestorableTable } from './proposals.js';
+import { Operation, ProposalKind, ProposalStatus, RestorableTable } from './proposals.js';
 import { Confidence, IMAGE_CONTENT_TYPES, ImageKind } from './tree.js';
 
 const Sentence = z.object({ cs: z.string(), en: z.string() }).meta({ id: 'Sentence', description: 'The same sentence in Czech and English' });
@@ -31,10 +31,12 @@ export const ConflictView = z
 export const OperationView = z
   .object({
     position: z.number().int(),
-    operation: z.record(z.string(), z.unknown()).describe('The operation as it will be applied (with any Editor correction)'),
+    // The operation as it will be applied (with any Editor correction).
+    operation: Operation,
     summary: Sentence,
     corrected: z.boolean(),
-    original: z.record(z.string(), z.unknown()).nullable().describe("The author's operation, when an Editor corrected it"),
+    // The author's operation, when an Editor corrected it.
+    original: Operation.nullable(),
     originalSummary: Sentence.nullable(),
     current: z.record(z.string(), z.unknown()).nullable().describe('For changes to existing records: the current values of the fields it sets'),
     conflict: ConflictView.nullable(),
@@ -202,3 +204,11 @@ export type UndoBody = z.infer<typeof UndoBody>;
 export type LaterEdit = z.infer<typeof LaterEdit>;
 export type HistoryEntry = z.infer<typeof HistoryEntry>;
 export type HistoryKind = z.infer<typeof HistoryKind>;
+export type ProposalList = z.infer<typeof ProposalList>;
+export type UndoPreview = z.infer<typeof UndoPreview>;
+export type History = z.infer<typeof History>;
+export type UploadTicket = z.infer<typeof UploadTicket>;
+export type NotificationSettings = z.infer<typeof NotificationSettings>;
+export type MergeBody = z.infer<typeof MergeBody>;
+export type RejectBody = z.infer<typeof RejectBody>;
+export type CreateUploadBody = z.infer<typeof CreateUploadBody>;

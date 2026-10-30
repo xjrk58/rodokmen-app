@@ -171,6 +171,17 @@ function proofAdditions(pkg, entry) {
   return { dfy: rel(join(ROOT, dfy)), lines: added };
 }
 
+/** Production files (not tests) that import a function by name and call it. */
+function importingCallers(name, file, call) {
+  const importer = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`);
+  const out = [];
+  for (const [other, otherLines] of sources) {
+    if (other === file || /(^|\/)tests?\//.test(other)) continue;
+    if (importer.test(otherLines.join('\n')) && otherLines.some((l) => call.test(l))) out.push(other);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- trace
 
 const files = gitFiles();
@@ -236,14 +247,7 @@ for (const [file, info] of verifiedFiles) {
       if (other.name === fn.name || verifiedNames.has(other.name)) continue;
       if (lines.slice(other.start, other.end + 1).some((l) => call.test(l) && !/^\s*(\/\/|\*)/.test(l))) callers.push(`\`${other.name}\``);
     }
-    if (range?.exported) {
-      const importer = new RegExp(`import\\s*\\{[^}]*\\b${fn.name}\\b[^}]*\\}\\s*from`);
-      for (const [other, otherLines] of sources) {
-        if (other === file || /(^|\/)tests?\//.test(other)) continue;
-        const text = otherLines.join('\n');
-        if (importer.test(text) && otherLines.some((l) => call.test(l))) callers.push(other);
-      }
-    }
+    if (range?.exported) callers.push(...importingCallers(fn.name, file, call));
     const assumed = [];
     if (requiresText.length > 0 && callers.length > 0) {
       assumed.push(`its requires, where unverified code calls it (${callers.join(', ')}): ${requiresText.map((r) => `\`${r}\``).join('; ')}`);

@@ -1,4 +1,4 @@
-import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, NoSuchKey, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Config } from '../config.js';
 import type { Clock } from '../tree/summaries.js';
@@ -73,7 +73,7 @@ export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Cli
         const out = await client.send(new GetObjectCommand({ Bucket, Key: storageKey }));
         return Buffer.from(await out.Body!.transformToByteArray());
       } catch (error) {
-        if ((error as { name?: string }).name === 'NoSuchKey') return null;
+        if (error instanceof NoSuchKey) return null;
         throw error;
       }
     },

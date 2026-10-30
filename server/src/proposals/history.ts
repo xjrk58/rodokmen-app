@@ -7,7 +7,8 @@ import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import { idsIn, labelsFor } from './labels.js';
 import { dependentsOf, restorableColumns, snapshot, type Snapshot } from './records.js';
-import { acceptInTransaction, authorRef, finishMoves, insertProposal, loadOperations, proposalViews, transaction, type ProposalDeps } from './service.js';
+import { acceptInTransaction, finishMoves, insertProposal, transaction, type ProposalDeps } from './service.js';
+import { authorRef, loadOperationsOf, proposalViews } from './views.js';
 
 // ---------------------------------------------------------------- record history
 
@@ -54,10 +55,11 @@ export async function recordHistory(db: Db, kind: HistoryKind, id: string): Prom
       : [],
   );
 
+  const storedOf = await loadOperationsOf(db, entries.map((e) => e.proposal_id));
+  const labels = await labelsFor(db, idsIn([...storedOf.values()].flat().map((s) => [s.original, s.corrected])));
   const out: HistoryEntry[] = [];
   for (const e of entries) {
-    const stored = await loadOperations(db, e.proposal_id);
-    const labels = await labelsFor(db, idsIn(stored.map((s) => [s.original, s.corrected])));
+    const stored = storedOf.get(e.proposal_id) ?? [];
     const effective = describeOperations(
       stored.map((s) => s.effective),
       labels,
@@ -111,10 +113,9 @@ async function loggedChanges(db: Db, proposalId: string): Promise<LoggedChange[]
   const entry = await db.selectFrom('log_entry').select('id').where('proposal_id', '=', proposalId).executeTakeFirst();
   if (!entry) throw new ApiProblem(409, 'not_accepted', 'Only an accepted Proposal can be undone.');
   const rows = await db.selectFrom('log_change').selectAll().where('log_entry_id', '=', entry.id).orderBy('seq').execute();
-  return rows.map((r) => ({ seq: r.seq, table: r.record_table as RestorableTable, id: r.record_id, before: r.before as Snapshot | null, after: r.after as Snapshot | null }));
+  return rows.map((r) => ({ seq: r.seq, table: r.record_table, id: r.record_id, before: r.before, after: r.after }));
 }
 
-/** Records changed again after the Proposal, field by field (tree-history spec, "Undo after later edits"). */
 /** What undoing involves, for the Editor before choosing: later edits, and Proposals that block it. */
 export async function undoPreview(db: Db, proposalId: string): Promise<{ laterEdits: LaterEdit[]; blockedBy: string[] }> {
   const { changes, edits, current } = await laterEdits(db, proposalId);
@@ -122,6 +123,7 @@ export async function undoPreview(db: Db, proposalId: string): Promise<{ laterEd
   return { laterEdits: edits, blockedBy: await blockingProposals(db, proposalId, deletions) };
 }
 
+/** Records changed again after the Proposal, field by field (tree-history spec, "Undo after later edits"). */
 export async function laterEdits(db: Db, proposalId: string, lock = false): Promise<{ changes: LoggedChange[]; edits: LaterEdit[]; current: Map<string, Snapshot | null> }> {
   const changes = await loggedChanges(db, proposalId);
   const labels = await labelsFor(db, changes.map((c) => c.id).concat(idsIn(changes.map((c) => [c.before?.person_id, c.after?.person_id]))));
@@ -183,6 +185,35 @@ function blockedProblem(blockedBy: string[]): ApiProblem {
 }
 
 /**
+ * The inverse operations of an accepted Proposal, newest change first, from its logged
+ * before-snapshots. Records edited again since need the Editor's choice: per record for those
+ * the undo would remove, per field otherwise; without it the undo is refused with 409.
+ */
+async function undoOperations(tx: Db, logged: Awaited<ReturnType<typeof laterEdits>>, body: UndoBody): Promise<Operation[]> {
+  const { changes, edits, current } = logged;
+  const ops: Operation[] = [];
+  for (const c of [...changes].reverse()) {
+    const cur = current.get(`${c.table}:${c.id}`) ?? null;
+    const restore = (fields?: string[]): Operation => ({ op: 'restoreRecord', table: c.table, id: c.id, baseVersion: cur?.version ?? null, values: c.before, ...(fields ? { fields } : {}) });
+    const edit = edits.find((e) => e.table === c.table && e.id === c.id);
+    const chosen = body.choices.find((x) => x.table === c.table && x.id === c.id);
+    if (!edit) {
+      if (c.before !== null || cur !== null) ops.push(restore());
+    } else if (edit.recordLevel) {
+      if (chosen?.keep === undefined) throw new ApiProblem(409, 'later_edits', `${edit.label.en} was changed after this Proposal. Choose whether to keep it before undoing.`);
+      if (!chosen.keep) ops.push(restore());
+    } else {
+      const undecided = edit.fields.filter((f) => !chosen?.fields[f.field]).map((f) => f.field);
+      if (undecided.length) throw new ApiProblem(409, 'later_edits', `${edit.label.en} was changed after this Proposal (${undecided.join(', ')}). Choose per field before undoing.`);
+      const kept = new Set(edit.fields.filter((f) => chosen?.fields[f.field] === 'keep').map((f) => f.field));
+      const columns = (await restorableColumns(tx, c.table)).filter((col) => !kept.has(col));
+      if (columns.length > 0) ops.push(restore(columns));
+    }
+  }
+  return ops;
+}
+
+/**
  * Undoes an accepted Proposal as a whole: the inverse operations come from the logged
  * before-snapshots and are applied at once as a new, logged Proposal of kind "undo". Records
  * edited again since need the Editor's choice per field (or, for records the undo would
@@ -197,32 +228,7 @@ export async function undoProposal(deps: ProposalDeps, editor: Account, proposal
       if (!original) throw new ApiProblem(404, 'not_found', 'No Proposal with this id.');
       if (original.status !== 'accepted') throw new ApiProblem(409, 'not_accepted', 'Only an accepted Proposal can be undone.');
       if (original.undone_by_proposal_id) throw new ApiProblem(409, 'already_undone', 'This Proposal was already undone.');
-      const { changes, edits, current } = await laterEdits(tx, proposalId, true);
-      const choice = (table: string, id: string) => body.choices.find((c) => c.table === table && c.id === id);
-
-      const ops: Operation[] = [];
-      for (const c of [...changes].reverse()) {
-        const cur = current.get(`${c.table}:${c.id}`) ?? null;
-        const edit = edits.find((e) => e.table === c.table && e.id === c.id);
-        if (!edit) {
-          if (c.before === null && cur === null) continue;
-          ops.push({ op: 'restoreRecord', table: c.table, id: c.id, baseVersion: cur?.version ?? null, values: c.before });
-          continue;
-        }
-        const chosen = choice(c.table, c.id);
-        if (edit.recordLevel) {
-          if (chosen?.keep === undefined) throw new ApiProblem(409, 'later_edits', `${edit.label.en} was changed after this Proposal. Choose whether to keep it before undoing.`);
-          if (chosen.keep) continue;
-          ops.push({ op: 'restoreRecord', table: c.table, id: c.id, baseVersion: cur?.version ?? null, values: c.before });
-          continue;
-        }
-        const undecided = edit.fields.filter((f) => !chosen?.fields[f.field]).map((f) => f.field);
-        if (undecided.length) throw new ApiProblem(409, 'later_edits', `${edit.label.en} was changed after this Proposal (${undecided.join(', ')}). Choose per field before undoing.`);
-        const kept = new Set(edit.fields.filter((f) => chosen!.fields[f.field] === 'keep').map((f) => f.field));
-        const columns = (await restorableColumns(tx, c.table)).filter((col) => !kept.has(col));
-        if (columns.length === 0) continue;
-        ops.push({ op: 'restoreRecord', table: c.table, id: c.id, baseVersion: cur!.version, values: c.before, fields: columns });
-      }
+      const ops = await undoOperations(tx, await laterEdits(tx, proposalId, true), body);
       if (ops.length === 0) throw new ApiProblem(409, 'nothing_to_undo', 'Every change of this Proposal is kept; there is nothing to undo.');
       const deletions = ops.flatMap((o) => (o.op === 'restoreRecord' && o.values === null ? [{ table: o.table, id: o.id }] : []));
       const blockedBy = await blockingProposals(tx, proposalId, deletions);

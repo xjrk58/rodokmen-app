@@ -1,4 +1,6 @@
+import type { RestorableTable } from '@rodokmen/shared';
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
+import type { Snapshot } from '../proposals/records.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -238,6 +240,8 @@ export interface SignInLinkTable {
 
 type Json = ColumnType<Record<string, unknown>, string, string>;
 type NullableJson = ColumnType<Record<string, unknown> | null, string | null, string | null>;
+/** A logged row (`to_jsonb(row)`), written as JSON text. */
+type SnapshotJson = ColumnType<Snapshot | null, string | null, string | null>;
 
 export interface ProposalTable {
   id: Generated<string>;
@@ -286,10 +290,10 @@ export interface LogChangeTable {
   id: Generated<number>;
   log_entry_id: string;
   seq: number;
-  record_table: string;
+  record_table: RestorableTable;
   record_id: string;
-  before: NullableJson;
-  after: NullableJson;
+  before: SnapshotJson;
+  after: SnapshotJson;
 }
 
 export interface UploadTable {
@@ -299,7 +303,7 @@ export interface UploadTable {
   status: Generated<'waiting' | 'ready' | 'deleted'>;
   storage_key: string;
   display_key: string;
-  declared_type: string;
+  declared_type: ImageTable['content_type'];
   declared_size: number;
   declared_sha256: string;
   content_type: ImageTable['content_type'] | null;

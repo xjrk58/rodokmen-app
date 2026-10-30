@@ -358,3 +358,5 @@ export type SourceDetail = z.infer<typeof SourceDetail>;
 export type CitationDetail = z.infer<typeof CitationDetail>;
 export type ImageView = z.infer<typeof ImageView>;
 export type Health = z.infer<typeof Health>;
+export type PlaceSearchResult = z.infer<typeof PlaceSearchResult>;
+export type SourceSearchResult = z.infer<typeof SourceSearchResult>;

@@ -17,6 +17,7 @@ import { systemRoutes } from './routes/system.js';
 import { treeRoutes } from './routes/tree.js';
 import { createImageStorage, type ImageStorage } from './storage/images.js';
 import { systemClock, type Clock } from './tree/summaries.js';
+import { messageOf, numberField, stringField } from './errors.js';
 
 export interface AppDeps {
   config: Config;
@@ -80,9 +81,9 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
       request.log.error({ err: error, issues: error.cause.issues }, 'response does not match its schema');
       return reply.code(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Something went wrong.', code: 'internal' });
     }
-    const status = (error as { statusCode?: number }).statusCode;
+    const status = numberField(error, 'statusCode');
     if (status && status >= 400 && status < 500) {
-      return reply.code(status).send({ statusCode: status, error: HTTP_ERROR_NAMES[status] ?? 'Error', message: (error as Error).message, code: (error as { code?: string }).code ?? 'request' });
+      return reply.code(status).send({ statusCode: status, error: HTTP_ERROR_NAMES[status] ?? 'Error', message: messageOf(error), code: stringField(error, 'code') ?? 'request' });
     }
     request.log.error({ err: error }, 'unhandled error');
     return reply.code(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Something went wrong.', code: 'internal' });

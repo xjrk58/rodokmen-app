@@ -10,6 +10,7 @@ import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import type { Clock } from '../tree/summaries.js';
 import { ApiProblem } from './problem.js';
+import { messageOf } from '../errors.js';
 
 /**
  * Passkeys through WebAuthn (@simplewebauthn/server). The relying party is the domain the
@@ -81,7 +82,7 @@ export async function verifyRegistration(deps: PasskeyDeps, account: Account, ch
       requireUserVerification: false,
     });
   } catch (error) {
-    throw new ApiProblem(400, 'passkey_invalid', `The passkey could not be registered: ${(error as Error).message}`);
+    throw new ApiProblem(400, 'passkey_invalid', `The passkey could not be registered: ${messageOf(error)}`);
   }
   if (!verification.verified) throw new ApiProblem(400, 'passkey_invalid', 'The passkey could not be registered.');
   const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;

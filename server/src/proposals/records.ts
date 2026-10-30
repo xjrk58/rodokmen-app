@@ -40,11 +40,12 @@ export class ChangeSet {
   }
 }
 
-const TABLES = new Set<string>(RESTORABLE_TABLES);
+const isTreeTable = (name: string): name is RestorableTable => (RESTORABLE_TABLES as readonly string[]).includes(name);
 
+/** A table name checked against the closed list, safe to put into SQL. */
 function table(name: string): RestorableTable {
-  if (!TABLES.has(name)) throw new Error(`not a Tree table: ${name}`);
-  return name as RestorableTable;
+  if (!isTreeTable(name)) throw new Error(`not a Tree table: ${name}`);
+  return name;
 }
 
 export async function snapshot(db: Db, name: RestorableTable, id: string, lock = true): Promise<Snapshot | null> {
@@ -77,31 +78,42 @@ export interface Rows {
   update(name: RestorableTable, id: string, values: Record<string, unknown>): Promise<Snapshot>;
   remove(name: RestorableTable, id: string): Promise<void>;
   /** Writes columns of a logged snapshot back (re-inserting the record when it is gone). */
-  restore(name: RestorableTable, id: string, values: Snapshot, columns?: readonly string[]): Promise<Snapshot>;
+  restore(name: RestorableTable, id: string, values: Record<string, unknown>, columns?: readonly string[]): Promise<Snapshot>;
 }
 
-/** Row writes that record every change in the ChangeSet. */
+/** The snapshot of a row that was just written, which must exist. */
+async function written(db: Db, name: RestorableTable, id: string): Promise<Snapshot> {
+  const row = await snapshot(db, name, id);
+  if (!row) throw new Error(`${name} ${id} vanished inside its own transaction`);
+  return row;
+}
+
+/**
+ * Row writes that record every change in the ChangeSet. The table is chosen at run time, which
+ * Kysely's typed builders cannot express, so these are plain SQL; table and column names come
+ * from the closed list of Tree tables and the operation schemas, values are parameters.
+ */
 export function trackedRows(db: Db, changes: ChangeSet): Rows {
+  const t = (name: RestorableTable) => sql.table(`public.${table(name)}`);
+  // Like Kysely's builders: an undefined value leaves the column to its default.
+  const defined = (values: Record<string, unknown>) => Object.entries(values).filter(([, v]) => v !== undefined);
   return {
     async insert(name, values) {
-      const { id } = await db
-        .insertInto(table(name) as 'person')
-        .values(values as never)
-        .returning('id')
-        .executeTakeFirstOrThrow();
-      const after = (await snapshot(db, name, id))!;
+      const entries = defined(values);
+      const { rows } = await sql<{ id: string }>`insert into ${t(name)} (${sql.join(entries.map(([c]) => sql.ref(c)))})
+        values (${sql.join(entries.map(([, v]) => v))}) returning id`.execute(db);
+      const id = rows[0]?.id;
+      if (!id) throw new Error(`insert into ${name} returned no id`);
+      const after = await written(db, name, id);
       changes.record(name, id, null, after);
       return after;
     },
     async update(name, id, values) {
       const before = await snapshot(db, name, id);
       if (!before) throw new ApiProblem(409, 'record_missing', `The ${name.replace('_', ' ')} record ${id} no longer exists.`);
-      await db
-        .updateTable(table(name) as 'person')
-        .set(values as never)
-        .where('id', '=', id)
-        .execute();
-      const after = (await snapshot(db, name, id))!;
+      const assignments = defined(values).map(([c, v]) => sql`${sql.ref(c)} = ${v}`);
+      if (assignments.length > 0) await sql`update ${t(name)} set ${sql.join(assignments)} where id = ${id}`.execute(db);
+      const after = await written(db, name, id);
       changes.record(name, id, before, after);
       return after;
     },
@@ -111,24 +123,24 @@ export function trackedRows(db: Db, changes: ChangeSet): Rows {
       // Never let ON DELETE CASCADE / SET NULL change other records unseen and unlogged.
       const dependents = await dependentsOf(db, name, id);
       if (dependents.length) throw new DependentsProblem(name, id, dependents);
-      await db.deleteFrom(table(name) as 'person').where('id', '=', id).execute();
+      await sql`delete from ${t(name)} where id = ${id}`.execute(db);
       changes.record(name, id, before, null);
     },
     async restore(name, id, values, only) {
       const all = await restorableColumns(db, name);
       const columns = only ? all.filter((c) => only.includes(c)) : all;
       const before = await snapshot(db, name, id);
-      // Schema-qualified: the table "name" would otherwise mean PostgreSQL's own type "name".
-      const t = sql.table(`public.${name}`);
+      // Schema-qualified (see t): the table "name" would otherwise mean PostgreSQL's own type "name".
       const json = JSON.stringify(values);
       const list = sql.join(columns.map((c) => sql.ref(c)));
       if (before === null) {
-        await sql`insert into ${t} (id, version, ${list})
-          select ${id}::uuid, ${values.version + 1}, ${list} from jsonb_populate_record(null::${t}, ${json}::jsonb)`.execute(db);
+        const version = typeof values.version === 'number' ? values.version + 1 : 1;
+        await sql`insert into ${t(name)} (id, version, ${list})
+          select ${id}::uuid, ${version}, ${list} from jsonb_populate_record(null::${t(name)}, ${json}::jsonb)`.execute(db);
       } else if (columns.length > 0) {
-        await sql`update ${t} set (${list}) = (select ${list} from jsonb_populate_record(null::${t}, ${json}::jsonb)) where id = ${id}`.execute(db);
+        await sql`update ${t(name)} set (${list}) = (select ${list} from jsonb_populate_record(null::${t(name)}, ${json}::jsonb)) where id = ${id}`.execute(db);
       }
-      const after = (await snapshot(db, name, id))!;
+      const after = await written(db, name, id);
       changes.record(name, id, before, after);
       return after;
     },
@@ -169,7 +181,7 @@ async function referencesTo(db: Db, name: RestorableTable): Promise<Array<{ tabl
     from pg_constraint c
     join pg_attribute a on a.attrelid = c.conrelid and a.attnum = any(c.conkey)
     where c.contype = 'f' and c.confrelid = ${`public.${table(name)}`}::regclass`.execute(db);
-  const refs = rows.filter((r) => TABLES.has(r.table_name)).map((r) => ({ table: r.table_name as RestorableTable, column: r.column_name }));
+  const refs = rows.flatMap((r) => (isTreeTable(r.table_name) ? [{ table: r.table_name, column: r.column_name }] : []));
   fkCache.set(name, refs);
   return refs;
 }

@@ -2,9 +2,10 @@ import { permissionsFor } from '@rodokmen/shared';
 import type { Db } from '../db/db.js';
 import type { Mailer } from '../mail/mailer.js';
 import { digestEmail } from '../mail/templates.js';
-import { proposalDigestLines } from '../proposals/service.js';
+import { proposalDigestLines } from '../proposals/views.js';
 import type { ImageStorage } from '../storage/images.js';
 import type { Clock } from '../tree/summaries.js';
+import { messageOf } from '../errors.js';
 
 export const TIME_ZONE = 'Europe/Prague';
 
@@ -84,7 +85,7 @@ export async function sendDigests(deps: JobDeps, day: string, job = 'editor-dige
         .execute();
       sent += 1;
     } catch (error) {
-      const message = (error as Error).message.slice(0, 500);
+      const message = messageOf(error).slice(0, 500);
       const row = await deps.db
         .insertInto('job_delivery')
         .values({ job, day, account_id: editor.id, attempts: 1, last_error: message })
@@ -190,7 +191,7 @@ export class DailyScheduler {
       try {
         result = await job.run(now, day);
       } catch (error) {
-        result = { detail: (error as Error).message.slice(0, 500), complete: false };
+        result = { detail: messageOf(error).slice(0, 500), complete: false };
         this.deps.log?.(`daily job ${job.name} failed`, error);
       }
       await this.deps.db

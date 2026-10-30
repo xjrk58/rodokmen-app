@@ -54,7 +54,7 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
    * Persons"): every /api/persons/:id… route answers 308 with the same route for the kept Person.
    */
   const followMerge = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { id } = req.params as { id: string };
+    const { id } = IdParams.parse(req.params);
     const row = await deps.db.selectFrom('person').select('merged_into_id').where('id', '=', id).executeTakeFirst();
     if (row?.merged_into_id) return reply.redirect(req.url.replace(`/api/persons/${id}`, `/api/persons/${row.merged_into_id}`), 308);
   };

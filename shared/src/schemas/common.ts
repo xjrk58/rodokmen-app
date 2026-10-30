@@ -50,6 +50,12 @@ export const Period = z
   })
   .meta({ id: 'Period' });
 
+/**
+ * A link to a web page, such as an archive's online scan of a register: http or https only, so
+ * a stored link can never run script (`javascript:`) or carry a page of its own (`data:`).
+ */
+export const WebUrl = z.url({ protocol: /^https?$/, error: 'a web link starting with http:// or https://' }).max(2000);
+
 export const GeoPoint = z
   .object({
     lat: z.number().min(-90).max(90),
