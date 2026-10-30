@@ -30,6 +30,11 @@ A fixed-window limit is kept per token in Postgres. That is enough at family sca
 ### Seeding
 The research done so far lives in the Owner's Vault and enters the Tree through `add-vault-import`, which uses an Agent token from this change.
 
+### Rules proved with LemmaScript
+Two pure rules in `shared/src/rules.ts`, next to `mayDecide`, are proved with `lsc check` (ADR 0009). Each lives in one file with everything its proof calls, and keeps optionals out of ordering comparisons (docs/verification.md, known issues).
+- **What a role may do** (agent-access: Read and propose only): one function from a role and an action to allowed or refused. Proved: the `agent` role may read and submit Proposals and nothing else; accepting, rejecting, merging, undoing, direct edits and account management are refused; an Agent is never allowed what a Contributor is refused. Every route asks this function; that wiring is tested, not proved.
+- **The fixed-window limit** (agent-access: Rate limits): a function from the window start, the count in the window, the limit and the time now to "allow" or "refuse until". Proved: one window never allows more than the limit, so the 61st Proposal within the hour is refused, and the retry time is the end of the window, later than now. The clock and the counter update in Postgres are the trust boundary.
+
 ## Risks / Trade-offs
 
 - [An Agent floods the queue] → rate limits, and the Owner can revoke the token.

@@ -28,6 +28,14 @@ The server pushes with a deploy key that can write only to `rodokmen-export`. Af
 ### Erasure mechanics
 Erasure runs in one transaction. It deletes the Person and their dependent rows, removes Events left with no participants, rewrites log entries about the Person to `{ erased: true, at }`, and appends the Person's id to the `erasures` table. The restore procedure applies the `erasures` table before the API starts.
 
+### Rules proved with LemmaScript
+These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each lives in one file with everything its proof calls, and keeps optionals out of ordering comparisons (docs/verification.md, known issues). The queries that load and delete rows, the writers' text and the Git push are the trust boundary; the tests cover them.
+- **The reduction of a Living person** (exports: Living people are reduced in every Export; exports: GEDCOM download for the Owner): the one reduction function. Proved: its output holds only name, sex, relationships and birth year, and no exact date, other Event, Place, House, Citation, note or image. Who is Living comes from the proved Living rule.
+- **The Export view of a record** (exports: No images in any Export): proved: for any record the view holds no image and no image link.
+- **Who may be erased, and what goes** (erasure: Owner erases a Living person): proved: erasure is refused unless the Person is Living and the confirmation names them; the Events removed are exactly those whose only participant is the Person; no row of another Person is selected.
+- **The log rewrite** (erasure: Erasure reaches the log): proved: every entry about the Person becomes a marker holding only "erased" and the time, and no other entry changes.
+- **Reapplying erasures** (erasure: Restores keep erased people erased): proved: after reapplying the list no erased id remains, and nothing else is removed.
+
 ## Risks / Trade-offs
 
 - [Erasure removes evidence other people relied on] → only Living people can be erased, and the confirmation lists which Events will disappear.
