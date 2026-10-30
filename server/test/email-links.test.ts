@@ -1,10 +1,11 @@
-import { Me, SignedIn } from '@rodokmen/shared';
+import { Me, SessionList, SignedIn } from '@rodokmen/shared';
+import { z } from 'zod';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SIGN_IN_LINKS_PER_HOUR } from '../src/auth/accounts.js';
 import { hashToken } from '../src/auth/sessions.js';
 import type { Account } from '../src/db/types.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { cookieFrom, createMember, ensureOwner, makeApp, MINUTE, signIn, tokenFromEmail, type TestApp } from './helpers.js';
+import { cookieFrom, createMember, ensureOwner, errorOf, makeApp, MINUTE, signIn, tokenFromEmail, type TestApp } from './helpers.js';
 
 describe('emailed sign-in links', () => {
   let t: TestDatabase;
@@ -47,11 +48,15 @@ describe('emailed sign-in links', () => {
 
     const options = await a.app.inject({ method: 'POST', url: '/api/auth/passkey/registration/options', headers: { cookie: newPhone } });
     expect(options.statusCode).toBe(200);
-    expect(options.json().user.name).toBe('jana@example.test');
+    expect(z.object({ user: z.object({ name: z.string() }) }).parse(options.json()).user.name).toBe('jana@example.test');
     expect(options.headers['set-cookie']).toMatch(/rdk_webauthn=.*HttpOnly.*SameSite=Strict/);
 
     const sessions = await a.app.inject({ method: 'GET', url: '/api/me/sessions', headers: { cookie: newPhone } });
-    expect(sessions.json().items.map((s: { method: string; current: boolean }) => [s.method, s.current]).sort()).toEqual([
+    expect(
+      SessionList.parse(sessions.json())
+        .items.map((s) => [s.method, s.current])
+        .sort(),
+    ).toEqual([
       ['email_link', true],
       ['passkey', false],
     ]);
@@ -67,7 +72,7 @@ describe('emailed sign-in links', () => {
     expect((await verify(token)).statusCode).toBe(200);
     const second = await verify(token);
     expect(second.statusCode).toBe(410);
-    expect(second.json().message).toBe('This sign-in link has expired or was already used. Request a new one.');
+    expect(errorOf(second).message).toBe('This sign-in link has expired or was already used. Request a new one.');
   });
 
   it('expires after 15 minutes', async () => {
@@ -87,6 +92,13 @@ describe('emailed sign-in links', () => {
   it(`sends at most ${SIGN_IN_LINKS_PER_HOUR} links an hour to one Member`, async () => {
     a.clock.advance(2 * 60 * MINUTE);
     for (let i = 0; i < SIGN_IN_LINKS_PER_HOUR + 2; i++) await request('jana@example.test');
+    expect(a.mailer.messages.filter((m) => m.to === 'jana@example.test')).toHaveLength(SIGN_IN_LINKS_PER_HOUR);
+  });
+
+  it(`also when the requests arrive at once: at most ${SIGN_IN_LINKS_PER_HOUR} links`, async () => {
+    a.clock.advance(2 * 60 * MINUTE);
+    a.mailer.clear();
+    await Promise.all(Array.from({ length: SIGN_IN_LINKS_PER_HOUR * 3 }, () => request('jana@example.test')));
     expect(a.mailer.messages.filter((m) => m.to === 'jana@example.test')).toHaveLength(SIGN_IN_LINKS_PER_HOUR);
   });
 

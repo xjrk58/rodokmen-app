@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  checkOperations,
-  describeOperations,
-  EVIDENCE_MESSAGE,
-  OPERATION_NAMES,
-  Operation,
-  type OperationInput,
-  type SummaryContext,
-} from '../src/index.js';
+import { checkOperations, describeOperations, EVIDENCE_MESSAGE, OPERATION_NAMES, Operation, type OperationInput, type SummaryContext } from '../src/index.js';
 
 // Invented records: ids and the labels a server would look up for them.
 const ids = {
@@ -47,8 +39,22 @@ const examples: OperationInput[] = [
   { op: 'createFamily', tempId: 'tmp:fam', partner1Id: ids.father, partner2Id: ids.mother },
   { op: 'addName', tempId: 'tmp:latin', personId: 'tmp:child', given: 'Wenceslaus', surname: 'Dworžak', type: 'latin', asFound: 'Wenceslaus Dworžak' },
   { op: 'createSource', tempId: 'tmp:register', type: 'parish_register', title: 'Matrika N 1790–1820', repository: 'Státní oblastní archiv (invented)' },
-  { op: 'createSource', tempId: 'tmp:account', type: 'family_account', title: 'Grandmother remembers', familyAccount: { givenBy: 'Eva Dvořáková', givenByPersonId: null, givenOn: '2026-05' } },
-  { op: 'createCitation', tempId: 'tmp:cit', sourceId: 'tmp:register', page: '12', transcription: 'Wenceslaus filius legitimus…', readOn: '2026-10-01', confidence: 'high' },
+  {
+    op: 'createSource',
+    tempId: 'tmp:account',
+    type: 'family_account',
+    title: 'Grandmother remembers',
+    familyAccount: { givenBy: 'Eva Dvořáková', givenByPersonId: null, givenOn: '2026-05' },
+  },
+  {
+    op: 'createCitation',
+    tempId: 'tmp:cit',
+    sourceId: 'tmp:register',
+    page: '12',
+    transcription: 'Wenceslaus filius legitimus…',
+    readOn: '2026-10-01',
+    confidence: 'high',
+  },
   { op: 'attachCitation', citationId: 'tmp:cit', eventId: 'tmp:baptism' },
   { op: 'attachCitation', citationId: ids.citation, nameId: ids.name, baseVersion: 1 },
   { op: 'addImage', uploadId: ids.upload, kind: 'page', citationId: 'tmp:cit' },
@@ -56,6 +62,27 @@ const examples: OperationInput[] = [
   { op: 'mergePersons', keepId: ids.anna, mergeId: ids.dup, keepBaseVersion: 1, mergeBaseVersion: 1 },
   { op: 'restoreRecord', table: 'person', id: ids.dup, baseVersion: 2, values: { id: ids.dup, sex: 'male', merged_into_id: null } },
 ];
+
+describe('links in Sources', () => {
+  const source = (url: string) => ({ op: 'createSource', tempId: 'tmp:src', type: 'other', title: 'Online index', url });
+  it('accepts http and https links', () => {
+    for (const url of ['https://www.portafontium.eu/register/soap-ck/00001', 'http://example.org/scan?id=12'])
+      expect(Operation.safeParse(source(url)).success, url).toBe(true);
+  });
+  it('refuses links that would run script or carry their own page', () => {
+    for (const url of [
+      'javascript:alert(document.cookie)',
+      'JAVASCRIPT:alert(1)',
+      'data:text/html,<script>alert(1)</script>',
+      'vbscript:msgbox(1)',
+      'file:///etc/passwd',
+    ]) {
+      expect(Operation.safeParse(source(url)).success, url).toBe(false);
+    }
+    const set = { op: 'setField', record: 'source', id: ids.source, baseVersion: 1, set: { url: 'javascript:alert(1)' } };
+    expect(Operation.safeParse(set).success).toBe(false);
+  });
+});
 
 describe('typed operations', () => {
   it('the examples cover the whole closed set', () => {
@@ -82,7 +109,14 @@ describe('typed operations', () => {
   it('a Citation of a Family account counts as evidence', () => {
     const ops: OperationInput[] = [
       examples[8]!,
-      { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:account', transcription: 'They married in the spring, she said.', readOn: '2026-05-10', confidence: 'low' },
+      {
+        op: 'createCitation',
+        tempId: 'tmp:c',
+        sourceId: 'tmp:account',
+        transcription: 'They married in the spring, she said.',
+        readOn: '2026-05-10',
+        confidence: 'low',
+      },
       { op: 'attachCitation', citationId: 'tmp:c', eventId: ids.event, baseVersion: 2 },
     ];
     expect(checkOperations(ops, { editor: false }).issues).toEqual([]);
@@ -113,7 +147,7 @@ describe('typed operations', () => {
       expect(issues[0]!.message).toContain(`no settable field "${key}"`);
     }
     // As JSON.parse leaves it: an own property named __proto__.
-    const raw = JSON.parse(`{"op":"setField","record":"name","id":"${ids.name}","baseVersion":1,"set":{"__proto__":{"polluted":true}}}`);
+    const raw: unknown = JSON.parse(`{"op":"setField","record":"name","id":"${ids.name}","baseVersion":1,"set":{"__proto__":{"polluted":true}}}`);
     const { issues } = checkOperations([raw], { editor: true });
     expect(issues.length).toBeGreaterThan(0);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();

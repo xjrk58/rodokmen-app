@@ -11,6 +11,7 @@
 // "also check".
 
 import { bboxContains, bboxOf, distanceToEdgesKm, polygonsContain, polygonsOf } from './geo.js';
+import { withName } from './text.js';
 
 /** @typedef {import('./types.js').Archive} Archive */
 /** @typedef {import('./types.js').ArchiveData} ArchiveData */
@@ -56,7 +57,6 @@ export class ArchiveIndex {
     /** @type {Map<string, Archive>} */
     const byDistrict = new Map();
     for (const archive of data.archives) for (const d of archive.districts) byDistrict.set(d, archive);
-    this.archives = data.archives;
     this.jewishRegisters = data.jewishRegisters;
     /** @type {Map<string, Archive>} */
     const byId = new Map(data.archives.map((a) => [a.id, a]));
@@ -127,7 +127,7 @@ export class ArchiveIndex {
  */
 export function scansUrl(archive, municipalityName) {
   if (archive.placeSearchUrl && municipalityName) {
-    return archive.placeSearchUrl.replaceAll('{name}', encodeURIComponent(municipalityName));
+    return withName(archive.placeSearchUrl, municipalityName);
   }
   return archive.portal.url;
 }

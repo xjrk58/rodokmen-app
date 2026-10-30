@@ -159,7 +159,11 @@ describe('Place, House, Parish, Estate and Municipality link', () => {
   });
 
   it('accepts Place names in Czech, German and Latin with periods', () => {
-    for (const [nm, language] of [['Kamenná Lhota', 'cs'], ['Steinlhota', 'de'], ['Lhota Lapidea', 'la']] as const) {
+    for (const [nm, language] of [
+      ['Kamenná Lhota', 'cs'],
+      ['Steinlhota', 'de'],
+      ['Lhota Lapidea', 'la'],
+    ] as const) {
       ok(PlaceNameRecord, { id: id(), version: 1, placeId, name: nm, language, primary: language === 'cs', period: { from: null, to: null } });
     }
     bad(PlaceNameRecord, { id: id(), version: 1, placeId, name: 'Kamienna', language: 'pl', primary: false, period: { from: null, to: null } });
@@ -210,7 +214,11 @@ describe('Source and Citation', () => {
   });
 
   it('refuses a Family account without who and when, and account details on other Sources', () => {
-    bad(SourceRecord, { id: id(), version: 1, type: 'family_account', title: 'Oral history', repository: null, reference: null, url: null, familyAccount: null }, /who gave the account/);
+    bad(
+      SourceRecord,
+      { id: id(), version: 1, type: 'family_account', title: 'Oral history', repository: null, reference: null, url: null, familyAccount: null },
+      /who gave the account/,
+    );
     bad(SourceRecord, {
       id: id(),
       version: 1,
@@ -224,7 +232,16 @@ describe('Source and Citation', () => {
   });
 
   it.each(['very_low', 'low', 'normal', 'high', 'very_high'])('accepts a Citation with confidence %s', (confidence) => {
-    ok(CitationRecord, { id: citationId, version: 1, sourceId, page: 'fol. 23v', transcription: 'Joannes, filius legitimus…', readOn: '2026-04-11', confidence, note: null });
+    ok(CitationRecord, {
+      id: citationId,
+      version: 1,
+      sourceId,
+      page: 'fol. 23v',
+      transcription: 'Joannes, filius legitimus…',
+      readOn: '2026-04-11',
+      confidence,
+      note: null,
+    });
   });
 
   it('refuses a Citation without transcription, with an unknown confidence or a malformed read date', () => {

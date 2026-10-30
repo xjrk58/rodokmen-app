@@ -2,21 +2,32 @@
 // (shared/src/schemas/proposals.ts). Pure functions, so they are unit-tested
 // without a browser. Records created in the Proposal get temporary ids.
 
-/** @typedef {'baptism' | 'marriage' | 'death' | 'name' | 'correction'} ProposeKind */
+/** @typedef {import('./types.js').OperationInput} OperationInput */
+/** @typedef {import('./types.js').Sex} Sex */
+/** @typedef {import('./types.js').NameType} NameType */
+/** @typedef {import('./types.js').EventType} EventType */
+/** @typedef {import('./types.js').SourceType} SourceType */
+/** @typedef {import('./types.js').Confidence} Confidence */
+/** @typedef {import('./types.js').RoleType} RoleType */
+
 export const KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction']);
+/** @typedef {typeof KINDS[number]} ProposeKind */
 export const OPERATIONS_VERSION = 1;
 
 /**
  * A Person in a form: one already in the Tree, or a new one by name.
  * @typedef {{ mode: 'existing', id: string, version: number, label: string }
- *   | { mode: 'new', given: string, surname: string, sex: 'female' | 'male' | 'unknown', asFound?: string }} PersonInput
+ *   | { mode: 'new', given: string, surname: string, sex: Sex, asFound?: string }} PersonInput
  */
+
+/** @typedef {{ id: string, label: string }} PlaceChoice a Place of the Tree */
+/** @typedef {{ id: string, label: string, type?: SourceType }} SourceChoice a Source of the Tree (Drafts from before 2026-10 have no type) */
 
 /**
  * @typedef {object} CitationForm
  * @property {'new' | 'existing' | 'account'} sourceMode
- * @property {{ id: string, label: string } | null} [source] an existing Source
- * @property {string} [sourceType] parish_register, census, land_book or other
+ * @property {SourceChoice | null} [source] an existing Source
+ * @property {SourceType} [sourceType] parish_register, census, land_book or other
  * @property {string} [title]
  * @property {string} [repository]
  * @property {string} [reference]
@@ -24,8 +35,28 @@ export const OPERATIONS_VERSION = 1;
  * @property {string} [givenOn] when (EDTF)
  * @property {string} [page]
  * @property {string} [transcription]
- * @property {string} [confidence]
+ * @property {Confidence} [confidence]
  * @property {string} [readOn] ISO day
+ */
+
+/** @typedef {{ citation: CitationForm, note: string }} FormBase */
+/** @typedef {{ date: string, place: PlaceChoice | null }} EventFields */
+/**
+ * @typedef {FormBase & EventFields & { eventType: 'baptism' | 'birth', child: PersonInput | null,
+ *   father: PersonInput | null, mother: PersonInput | null, godparents: (PersonInput | null)[] }} BaptismForm
+ */
+/** @typedef {FormBase & EventFields & { partner1: PersonInput | null, partner2: PersonInput | null, witnesses: (PersonInput | null)[] }} MarriageForm */
+/** @typedef {FormBase & EventFields & { eventType: 'death' | 'burial', person: PersonInput | null }} DeathForm */
+/** @typedef {FormBase & { person: PersonInput | null, given: string, surname: string, type: NameType, asFound: string }} NameForm */
+/**
+ * The Name or Event a correction changes, with its values when it was picked.
+ * @typedef {{ record: 'name' | 'event', id: string, version: number, label: string, current: Record<string, string> }} CorrectionTarget
+ */
+/** @typedef {FormBase & { person: PersonInput | null, target: CorrectionTarget | null, set: Record<string, string> }} CorrectionForm */
+/** @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm }} FormByKind */
+/**
+ * A kind of finding with its form, as a Draft holds them.
+ * @typedef {{ [K in ProposeKind]: { kind: K, form: FormByKind[K] } }[ProposeKind]} KindForm
  */
 
 /**
@@ -34,12 +65,103 @@ export const OPERATIONS_VERSION = 1;
  * @property {{ id: string, version: number } | null} [family] the existing Family of both parents (or partners)
  */
 
+// Choices offered by the forms; tests/unit/proposal-contract.test.mjs checks them against shared/.
+/** @type {readonly SourceType[]} */
+export const NEW_SOURCE_TYPES = ['parish_register', 'census', 'land_book', 'other'];
+/** @type {readonly Confidence[]} */
+export const CONFIDENCES = ['very_low', 'low', 'normal', 'high', 'very_high'];
+/** @type {readonly NameType[]} */
+export const NAME_TYPES = ['latin', 'german', 'married', 'nickname', 'birth', 'other'];
+/** @type {readonly Sex[]} */
+export const SEXES = ['unknown', 'female', 'male'];
+
 /** @param {string | undefined | null} s */
 const clean = (s) => (s ?? '').trim();
+
+/**
+ * A value formProblems requires, so a form that skipped them fails with a clear message.
+ * @template T
+ * @param {T | null | undefined} value
+ * @param {string} what
+ * @returns {T}
+ */
+function present(value, what) {
+  if (value === null || value === undefined) throw new Error(`The form has no ${what}; check formProblems before building`);
+  return value;
+}
 /** @param {string | undefined | null} s */
 const orNull = (s) => (clean(s) === '' ? null : clean(s));
 
-/** @param {PersonInput | null | undefined} p */
+/** Today as an ISO day where the Member is (not in UTC, which is yesterday in Czechia until 1 or 2 a.m.). */
+export function today() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/** Source types whose images show pages of the Source itself; images of other Sources are photos. */
+const PAGED_SOURCES = new Set(['parish_register', 'census', 'land_book']);
+
+/**
+ * @param {CitationForm} c
+ * @returns {SourceType | undefined}
+ */
+function sourceTypeOf(c) {
+  if (c.sourceMode === 'existing') return c.source?.type;
+  if (c.sourceMode === 'account') return 'family_account';
+  return c.sourceType || 'parish_register';
+}
+
+/**
+ * An empty form of a kind.
+ * @param {ProposeKind} kind
+ * @returns {KindForm}
+ */
+export function emptyForm(kind) {
+  /** @type {FormBase} */
+  const base = {
+    citation: {
+      sourceMode: 'new',
+      sourceType: 'parish_register',
+      title: '',
+      repository: '',
+      reference: '',
+      page: '',
+      transcription: '',
+      confidence: 'normal',
+      readOn: today(),
+    },
+    note: '',
+  };
+  switch (kind) {
+    case 'baptism':
+      return {
+        kind,
+        form: {
+          ...base,
+          eventType: 'baptism',
+          date: '',
+          place: null,
+          child: { mode: 'new', given: '', surname: '', sex: 'unknown' },
+          father: null,
+          mother: null,
+          godparents: [],
+        },
+      };
+    case 'marriage':
+      return { kind, form: { ...base, date: '', place: null, partner1: null, partner2: null, witnesses: [] } };
+    case 'death':
+      return { kind, form: { ...base, eventType: 'death', date: '', place: null, person: null } };
+    case 'name':
+      return { kind, form: { ...base, person: null, given: '', surname: '', type: 'latin', asFound: '' } };
+    case 'correction':
+      return { kind, form: { ...base, person: null, target: null, set: {} } };
+  }
+}
+
+/**
+ * @param {PersonInput | null | undefined} p
+ * @returns {p is PersonInput}
+ */
 export function isPerson(p) {
   if (!p) return false;
   if (p.mode === 'existing') return Boolean(p.id);
@@ -52,28 +174,50 @@ export function personLabel(p) {
 }
 
 /**
- * Problems that stop a Draft from being submitted, as i18n keys.
- * @param {ProposeKind} kind
- * @param {Record<string, any>} form
+ * What a form of its kind is missing, as i18n keys.
+ * @param {KindForm} draft
  * @returns {string[]}
  */
-export function formProblems(kind, form) {
-  const problems = [];
-  if (kind === 'baptism' && !isPerson(form.child)) problems.push('propose.needChild');
-  if (kind === 'marriage' && (!isPerson(form.partner1) || !isPerson(form.partner2))) problems.push('propose.needPartners');
-  if (kind === 'death' && !isPerson(form.person)) problems.push('propose.needPerson');
-  if (kind === 'name' && (form.person?.mode !== 'existing' || (clean(form.given) === '' && clean(form.surname) === ''))) problems.push('propose.needName');
-  if (kind === 'correction' && (!form.target || Object.keys(form.set ?? {}).length === 0)) problems.push('propose.needCorrection');
-  /** @type {CitationForm} */
-  const c = form.citation ?? { sourceMode: 'new' };
-  const hasSource = c.sourceMode === 'existing' ? Boolean(c.source?.id) : c.sourceMode === 'account' ? clean(c.givenBy) !== '' && clean(c.givenOn) !== '' : clean(c.title) !== '';
-  if (!hasSource || clean(c.transcription) === '') problems.push('propose.needEvidence');
-  return problems;
+function kindProblems(draft) {
+  switch (draft.kind) {
+    case 'baptism':
+      return isPerson(draft.form.child) ? [] : ['propose.needChild'];
+    case 'marriage':
+      return isPerson(draft.form.partner1) && isPerson(draft.form.partner2) ? [] : ['propose.needPartners'];
+    case 'death':
+      return isPerson(draft.form.person) ? [] : ['propose.needPerson'];
+    case 'name': {
+      const f = draft.form;
+      return f.person?.mode === 'existing' && (clean(f.given) !== '' || clean(f.surname) !== '') ? [] : ['propose.needName'];
+    }
+    case 'correction': {
+      const { target, set } = draft.form;
+      if (!target || Object.keys(set ?? {}).length === 0) return ['propose.needCorrection'];
+      return target.record === 'name' && set.asFound !== undefined && clean(set.asFound) === '' ? ['propose.needAsFound'] : [];
+    }
+  }
+}
+
+/** @param {CitationForm} c */
+function hasSource(c) {
+  if (c.sourceMode === 'existing') return Boolean(c.source?.id);
+  if (c.sourceMode === 'account') return clean(c.givenBy) !== '' && clean(c.givenOn) !== '';
+  return clean(c.title) !== '';
+}
+
+/**
+ * Problems that stop a Draft from being submitted, as i18n keys.
+ * @param {KindForm} draft
+ * @returns {string[]}
+ */
+export function formProblems(draft) {
+  const c = draft.form.citation ?? { sourceMode: 'new' };
+  return [...kindProblems(draft), ...(hasSource(c) && clean(c.transcription) !== '' ? [] : ['propose.needEvidence'])];
 }
 
 class Builder {
   constructor() {
-    /** @type {Record<string, any>[]} */
+    /** @type {OperationInput[]} */
     this.ops = [];
     this.n = 0;
   }
@@ -94,13 +238,18 @@ class Builder {
     const tempId = this.temp(prefix);
     const given = clean(p.given);
     const surname = clean(p.surname);
-    this.ops.push({ op: 'createPerson', tempId, sex: p.sex ?? 'unknown', name: { given, surname, type: 'birth', asFound: clean(p.asFound) || `${given} ${surname}`.trim() } });
+    this.ops.push({
+      op: 'createPerson',
+      tempId,
+      sex: p.sex ?? 'unknown',
+      name: { given, surname, type: 'birth', asFound: clean(p.asFound) || `${given} ${surname}`.trim() },
+    });
     return tempId;
   }
 
   /**
-   * @param {string} type
-   * @param {Record<string, any>} form
+   * @param {EventType} type
+   * @param {EventFields} form
    */
   event(type, form) {
     const tempId = this.temp('event');
@@ -111,34 +260,47 @@ class Builder {
   /**
    * @param {string} eventId
    * @param {string} personId
-   * @param {string} role
+   * @param {RoleType} role
    */
   role(eventId, personId, role) {
     this.ops.push({ op: 'addRole', eventId, personId, role });
   }
 
   /**
-   * The Citation, with its Source when new, and the Draft's photos.
+   * The Source of a Citation: an existing one, or a new one created here.
    * @param {CitationForm} c
-   * @param {string[]} uploadIds
    */
-  citation(c, uploadIds) {
-    let sourceId;
-    if (c.sourceMode === 'existing' && c.source) {
-      sourceId = c.source.id;
-    } else if (c.sourceMode === 'account') {
-      sourceId = this.temp('source');
+  source(c) {
+    if (c.sourceMode === 'existing' && c.source) return c.source.id;
+    const tempId = this.temp('source');
+    if (c.sourceMode === 'account') {
       this.ops.push({
         op: 'createSource',
-        tempId: sourceId,
+        tempId,
         type: 'family_account',
         title: clean(c.title) || `${clean(c.givenBy)}, ${clean(c.givenOn)}`,
         familyAccount: { givenBy: clean(c.givenBy), givenByPersonId: null, givenOn: clean(c.givenOn) },
       });
     } else {
-      sourceId = this.temp('source');
-      this.ops.push({ op: 'createSource', tempId: sourceId, type: c.sourceType || 'parish_register', title: clean(c.title), repository: orNull(c.repository), reference: orNull(c.reference) });
+      this.ops.push({
+        op: 'createSource',
+        tempId,
+        type: c.sourceType || 'parish_register',
+        title: clean(c.title),
+        repository: orNull(c.repository),
+        reference: orNull(c.reference),
+      });
     }
+    return tempId;
+  }
+
+  /**
+   * The Citation, with its Source when new, and the Draft's photos. Returns the Citation's id.
+   * @param {CitationForm} c
+   * @param {string[]} uploadIds
+   */
+  citation(c, uploadIds) {
+    const sourceId = this.source(c);
     const citationId = this.temp('citation');
     this.ops.push({
       op: 'createCitation',
@@ -146,102 +308,169 @@ class Builder {
       sourceId,
       page: c.sourceMode === 'account' ? null : orNull(c.page),
       transcription: clean(c.transcription),
-      readOn: c.readOn || new Date().toISOString().slice(0, 10),
+      readOn: c.readOn || today(),
       confidence: c.confidence || 'normal',
     });
-    const kind = c.sourceMode === 'new' && (c.sourceType ?? 'parish_register') !== 'other' ? 'page' : 'photo';
+    const type = sourceTypeOf(c);
+    const kind = type && PAGED_SOURCES.has(type) ? 'page' : 'photo';
     for (const uploadId of uploadIds) this.ops.push({ op: 'addImage', uploadId, kind, citationId });
     return citationId;
+  }
+
+  /**
+   * The Citation, attached to an Event or a Name.
+   * @param {CitationForm} c
+   * @param {BuildContext} ctx
+   * @param {{ eventId: string } | { nameId: string }} target
+   * @param {number} [baseVersion] of the target, when it is in the Tree already
+   */
+  cite(c, ctx, target, baseVersion) {
+    const citationId = this.citation(c ?? { sourceMode: 'new' }, ctx.uploadIds);
+    this.ops.push({ op: 'attachCitation', citationId, ...target, ...(baseVersion === undefined ? {} : { baseVersion }) });
   }
 }
 
 /**
- * The operations of one Proposal for a filled-in form.
- * @param {ProposeKind} kind
- * @param {Record<string, any>} form
+ * @param {Builder} b
+ * @param {BaptismForm} form
  * @param {BuildContext} ctx
- * @returns {Record<string, any>[]}
  */
-export function buildOperations(kind, form, ctx) {
-  const b = new Builder();
-  /** @param {string} target */
-  const cite = (target) => {
-    const citationId = b.citation(form.citation ?? { sourceMode: 'new' }, ctx.uploadIds);
-    return { citationId, target };
-  };
-
-  if (kind === 'baptism') {
-    const event = b.event(form.eventType === 'birth' ? 'birth' : 'baptism', form);
-    const child = b.person(form.child, 'child');
-    b.role(event, child, 'child');
-    const father = isPerson(form.father) ? b.person(form.father, 'father') : null;
-    const mother = isPerson(form.mother) ? b.person(form.mother, 'mother') : null;
-    if (father) b.role(event, father, 'father');
-    if (mother) b.role(event, mother, 'mother');
-    for (const g of form.godparents ?? []) if (isPerson(g)) b.role(event, b.person(g, 'godparent'), 'godparent');
-    if (father || mother) {
-      if (ctx.family) {
-        b.ops.push({ op: 'linkChild', familyId: ctx.family.id, childId: child, linkType: 'birth', baseVersion: ctx.family.version });
-      } else {
-        const family = b.temp('family');
-        b.ops.push({ op: 'createFamily', tempId: family, partner1Id: father, partner2Id: mother });
-        b.ops.push({ op: 'linkChild', familyId: family, childId: child, linkType: 'birth' });
-      }
+function buildBaptism(b, form, ctx) {
+  const event = b.event(form.eventType === 'birth' ? 'birth' : 'baptism', form);
+  const child = b.person(present(form.child, 'child'), 'child');
+  b.role(event, child, 'child');
+  const father = isPerson(form.father) ? b.person(form.father, 'father') : null;
+  const mother = isPerson(form.mother) ? b.person(form.mother, 'mother') : null;
+  if (father) b.role(event, father, 'father');
+  if (mother) b.role(event, mother, 'mother');
+  for (const g of form.godparents ?? []) if (isPerson(g)) b.role(event, b.person(g, 'godparent'), 'godparent');
+  if (father || mother) {
+    if (ctx.family) {
+      b.ops.push({ op: 'linkChild', familyId: ctx.family.id, childId: child, linkType: 'birth', baseVersion: ctx.family.version });
+    } else {
+      const family = b.temp('family');
+      b.ops.push({ op: 'createFamily', tempId: family, partner1Id: father, partner2Id: mother });
+      b.ops.push({ op: 'linkChild', familyId: family, childId: child, linkType: 'birth' });
     }
-    const { citationId } = cite(event);
-    b.ops.push({ op: 'attachCitation', citationId, eventId: event });
-  } else if (kind === 'marriage') {
-    const event = b.event('marriage', form);
-    const p1 = b.person(form.partner1, 'partner');
-    const p2 = b.person(form.partner2, 'partner');
-    b.role(event, p1, 'partner');
-    b.role(event, p2, 'partner');
-    for (const w of form.witnesses ?? []) if (isPerson(w)) b.role(event, b.person(w, 'witness'), 'witness');
-    if (!ctx.family) b.ops.push({ op: 'createFamily', tempId: b.temp('family'), partner1Id: p1, partner2Id: p2 });
-    const { citationId } = cite(event);
-    b.ops.push({ op: 'attachCitation', citationId, eventId: event });
-  } else if (kind === 'death') {
-    const event = b.event(form.eventType === 'burial' ? 'burial' : 'death', form);
-    b.role(event, b.person(form.person, 'deceased'), 'deceased');
-    const { citationId } = cite(event);
-    b.ops.push({ op: 'attachCitation', citationId, eventId: event });
-  } else if (kind === 'name') {
-    const nameId = b.temp('name');
-    b.ops.push({
-      op: 'addName',
-      tempId: nameId,
-      personId: form.person.id,
-      baseVersion: form.person.version,
-      given: clean(form.given),
-      surname: clean(form.surname),
-      type: form.type || 'other',
-      asFound: clean(form.asFound) || `${clean(form.given)} ${clean(form.surname)}`.trim(),
-    });
-    const { citationId } = cite(nameId);
-    b.ops.push({ op: 'attachCitation', citationId, nameId });
-  } else if (kind === 'correction') {
-    const t = form.target;
-    /** @type {Record<string, unknown>} */
-    const set = {};
-    for (const [field, value] of Object.entries(form.set ?? {})) set[field] = typeof value === 'string' && value.trim() === '' && field !== 'given' && field !== 'surname' ? null : value;
-    b.ops.push({ op: 'setField', record: t.record, id: t.id, baseVersion: t.version, set });
-    const { citationId } = cite(t.id);
-    if (t.record === 'event') b.ops.push({ op: 'attachCitation', citationId, eventId: t.id, baseVersion: t.version });
-    if (t.record === 'name') b.ops.push({ op: 'attachCitation', citationId, nameId: t.id, baseVersion: t.version });
+  }
+  b.cite(form.citation, ctx, { eventId: event });
+}
+
+/**
+ * @param {Builder} b
+ * @param {MarriageForm} form
+ * @param {BuildContext} ctx
+ */
+function buildMarriage(b, form, ctx) {
+  const event = b.event('marriage', form);
+  const p1 = b.person(present(form.partner1, 'first partner'), 'partner');
+  const p2 = b.person(present(form.partner2, 'second partner'), 'partner');
+  b.role(event, p1, 'partner');
+  b.role(event, p2, 'partner');
+  for (const w of form.witnesses ?? []) if (isPerson(w)) b.role(event, b.person(w, 'witness'), 'witness');
+  if (!ctx.family) b.ops.push({ op: 'createFamily', tempId: b.temp('family'), partner1Id: p1, partner2Id: p2 });
+  b.cite(form.citation, ctx, { eventId: event });
+}
+
+/**
+ * @param {Builder} b
+ * @param {DeathForm} form
+ * @param {BuildContext} ctx
+ */
+function buildDeath(b, form, ctx) {
+  const event = b.event(form.eventType === 'burial' ? 'burial' : 'death', form);
+  b.role(event, b.person(present(form.person, 'deceased'), 'deceased'), 'deceased');
+  b.cite(form.citation, ctx, { eventId: event });
+}
+
+/**
+ * @param {Builder} b
+ * @param {NameForm} form
+ * @param {BuildContext} ctx
+ */
+function buildName(b, form, ctx) {
+  const person = present(form.person, 'Person');
+  if (person.mode !== 'existing') throw new Error('A new Name is for a Person in the Tree');
+  const nameId = b.temp('name');
+  b.ops.push({
+    op: 'addName',
+    tempId: nameId,
+    personId: person.id,
+    baseVersion: person.version,
+    given: clean(form.given),
+    surname: clean(form.surname),
+    type: form.type || 'other',
+    asFound: clean(form.asFound) || `${clean(form.given)} ${clean(form.surname)}`.trim(),
+  });
+  b.cite(form.citation, ctx, { nameId });
+}
+
+/**
+ * @param {Builder} b
+ * @param {CorrectionForm} form
+ * @param {BuildContext} ctx
+ */
+function buildCorrection(b, form, ctx) {
+  const target = present(form.target, 'record to correct');
+  /** @type {Record<string, unknown>} */
+  const set = {};
+  // An emptied Event field is cleared; a Name's fields are text and stay text (formProblems refuses an empty spelling as found).
+  for (const [field, value] of Object.entries(form.set ?? {})) set[field] = target.record === 'event' && value.trim() === '' ? null : value;
+  b.ops.push({ op: 'setField', record: target.record, id: target.id, baseVersion: target.version, set });
+  b.cite(form.citation, ctx, target.record === 'event' ? { eventId: target.id } : { nameId: target.id }, target.version);
+}
+
+/**
+ * The operations of one Proposal for a filled-in form (one that has no formProblems).
+ * @param {KindForm} draft
+ * @param {BuildContext} ctx
+ * @returns {OperationInput[]}
+ */
+export function buildOperations(draft, ctx) {
+  const b = new Builder();
+  switch (draft.kind) {
+    case 'baptism':
+      buildBaptism(b, draft.form, ctx);
+      break;
+    case 'marriage':
+      buildMarriage(b, draft.form, ctx);
+      break;
+    case 'death':
+      buildDeath(b, draft.form, ctx);
+      break;
+    case 'name':
+      buildName(b, draft.form, ctx);
+      break;
+    case 'correction':
+      buildCorrection(b, draft.form, ctx);
+      break;
   }
   return b.ops;
 }
 
 /**
- * A short title for a Draft in the list, e.g. "Baptism: Václav Dvořák".
- * @param {ProposeKind} kind
- * @param {Record<string, any>} form
- * @param {(key: string) => string} t
+ * The Person a Draft is about, and the second partner of a marriage.
+ * @param {KindForm} draft
+ * @returns {[PersonInput | null, PersonInput | null]}
  */
-export function draftTitle(kind, form, t) {
-  /** @type {PersonInput | null | undefined} */
-  const who = kind === 'baptism' ? form.child : kind === 'marriage' ? form.partner1 : form.person;
-  const name = isPerson(who) && who ? personLabel(who) : t('propose.unnamed');
-  const second = kind === 'marriage' && isPerson(form.partner2) ? ` & ${personLabel(form.partner2)}` : '';
-  return `${t(`propose.kind.${kind}`)}: ${name}${second}`;
+function draftPersons(draft) {
+  switch (draft.kind) {
+    case 'baptism':
+      return [draft.form.child, null];
+    case 'marriage':
+      return [draft.form.partner1, draft.form.partner2];
+    default:
+      return [draft.form.person, null];
+  }
+}
+
+/**
+ * A short title for a Draft in the list, e.g. "Baptism: Václav Dvořák".
+ * @param {KindForm} draft
+ * @param {(key: string) => string} translate
+ */
+export function draftTitle(draft, translate) {
+  const [who, second] = draftPersons(draft);
+  const name = isPerson(who) ? personLabel(who) : translate('propose.unnamed');
+  return `${translate(`propose.kind.${draft.kind}`)}: ${name}${isPerson(second) ? ` & ${personLabel(second)}` : ''}`;
 }

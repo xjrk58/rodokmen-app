@@ -312,13 +312,18 @@ create constraint trigger place_name_one_primary after insert or update or delet
     .execute(db);
 
   for (const table of TREE_TABLES) {
-    await sql
-      .raw(`create trigger ${table}_bump_version before update on ${table} for each row execute function rdk_bump_version();`)
-      .execute(db);
+    await sql.raw(`create trigger ${table}_bump_version before update on ${table} for each row execute function rdk_bump_version();`).execute(db);
   }
 }
 
 export async function down(db: Kysely<unknown>): Promise<void> {
-  await sql.raw([...TREE_TABLES].reverse().map((t) => `drop table if exists ${t} cascade;`).join('\n')).execute(db);
+  await sql
+    .raw(
+      [...TREE_TABLES]
+        .reverse()
+        .map((t) => `drop table if exists ${t} cascade;`)
+        .join('\n'),
+    )
+    .execute(db);
   await sql.raw(`drop function if exists rdk_check_person_names(); drop function if exists rdk_check_place_names();`).execute(db);
 }

@@ -31,10 +31,11 @@ const LETTERS: Readonly<Record<string, string>> = {
 const LETTER = new RegExp(`[${Object.keys(LETTERS).join('')}]`, 'gu');
 
 /**
- * What `\s` matches in PostgreSQL's regular expressions (with the PostGIS image's locale). Unlike
- * JavaScript's `\s` it leaves no-break spaces (U+00A0, U+2007, U+202F) and U+FEFF alone.
+ * What rdk_fold treats as whitespace: `\s` in PostgreSQL's regular expressions (with the PostGIS
+ * image's locale), plus no-break spaces and U+FEFF (migration 0005). JavaScript's `\s` would also
+ * match U+0085, which PostgreSQL keeps.
  */
-const WHITESPACE = /[\t\n\v\f\r \u1680\u2000-\u2006\u2008-\u200a\u2028\u2029\u205f\u3000]+/g;
+const WHITESPACE = /[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u202f\u2028\u2029\u205f\u3000\ufeff]+/g;
 
 /**
  * Search normalisation: lower case, no diacritics, runs of whitespace as one space, trimmed.

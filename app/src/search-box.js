@@ -1,7 +1,7 @@
 // Municipality search as a combobox: results appear as the reader types,
 // each with its district; arrow keys move, Enter or a tap chooses.
 
-import { h } from './dom.js';
+import { h, required } from './dom.js';
 import { t } from './i18n.js';
 
 /** @typedef {import('./gazetteer.js').Gazetteer} Gazetteer */
@@ -14,11 +14,11 @@ export class SearchBox {
    */
   constructor(form, deps) {
     this.deps = deps;
-    this.input = /** @type {HTMLInputElement} */ (form.querySelector('#search-input'));
-    this.clear = /** @type {HTMLButtonElement} */ (form.querySelector('#search-clear'));
-    this.box = /** @type {HTMLElement} */ (form.querySelector('#search-results-box'));
-    this.list = /** @type {HTMLUListElement} */ (form.querySelector('#search-results'));
-    this.note = /** @type {HTMLElement} */ (form.querySelector('#search-note'));
+    this.input = required(form, '#search-input', HTMLInputElement);
+    this.clear = required(form, '#search-clear', HTMLButtonElement);
+    this.box = required(form, '#search-results-box', HTMLElement);
+    this.list = required(form, '#search-results', HTMLUListElement);
+    this.note = required(form, '#search-note', HTMLElement);
     /** @type {Municipality[]} */
     this.results = [];
     this.active = -1;
@@ -63,11 +63,16 @@ export class SearchBox {
     this.active = -1;
     this.list.replaceChildren(
       ...results.map((m, i) =>
-        h('li', { id: `search-result-${i}`, role: 'option', 'aria-selected': 'false', 'data-index': String(i) },
+        h(
+          'li',
+          { id: `search-result-${i}`, role: 'option', 'aria-selected': 'false', 'data-index': String(i) },
           h('span', { class: 'name' }, m.name),
-          h('span', { class: 'district' }, t('search.district', { district: m.district })))),
+          h('span', { class: 'district' }, t('search.district', { district: m.district })),
+        ),
+      ),
     );
-    this.note.textContent = total === 0 ? t('search.none', { query: query.trim() }) : total > results.length ? t('search.more', { count: total - results.length }) : '';
+    this.note.textContent =
+      total === 0 ? t('search.none', { query: query.trim() }) : total > results.length ? t('search.more', { count: total - results.length }) : '';
     this.box.hidden = false;
     this.input.setAttribute('aria-expanded', 'true');
     this.input.removeAttribute('aria-activedescendant');

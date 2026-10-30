@@ -17,7 +17,10 @@ export async function systemRoutes(fastify: FastifyInstance, deps: { db: Db; rel
     schema: { tags: ['System'], summary: 'Health check: the API answers and the database is reachable', response: { 200: Health, 503: Health } },
     handler: async (_req, reply) => {
       const ok = await Promise.race([
-        sql`select 1`.execute(deps.db).then(() => true, () => false),
+        sql`select 1`.execute(deps.db).then(
+          () => true,
+          () => false,
+        ),
         new Promise<boolean>((resolve) => setTimeout(() => resolve(false), HEALTH_TIMEOUT_MS).unref()),
       ]);
       reply.header('cache-control', 'no-store');

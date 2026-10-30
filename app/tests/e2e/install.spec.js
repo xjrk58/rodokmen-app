@@ -15,7 +15,11 @@ test('the manifest lists 192, 512 and maskable 512 icons that exist', () => {
   expect(manifest.name).toBe('Rodokmen');
   /** @type {{ src: string, sizes: string, type: string, purpose: string }[]} */
   const icons = manifest.icons;
-  const want = [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']];
+  const want = [
+    ['192x192', 'any'],
+    ['512x512', 'any'],
+    ['512x512', 'maskable'],
+  ];
   for (const [sizes, purpose] of want) {
     const icon = icons.find((i) => i.sizes === sizes && i.purpose === purpose && i.type === 'image/png');
     expect(icon, `${sizes} ${purpose}`).toBeDefined();

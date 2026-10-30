@@ -74,4 +74,4 @@ if [ -n "${PNG_DIR:-}" ]; then
     -tpng -o /png generated/plantuml/*.puml
 fi
 
-echo "Done: $(ls generated/svg | wc -l) diagrams in docs/architecture/generated/"
+echo "Done: $(find generated/svg -name '*.svg' | wc -l) diagrams in docs/architecture/generated/"

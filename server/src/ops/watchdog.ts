@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
-import type { Clock } from '../tree/summaries.js';
+import { z } from 'zod';
+import type { Clock } from '../clock.js';
+import { messageOf, stringField } from '../errors.js';
 
 /**
  * Alerts for the Owner (operations spec, "Health and alerts"):
@@ -14,13 +16,14 @@ export const HEALTH_ALERT_AFTER_MS = 5 * 60_000;
 export const BACKUP_MAX_AGE_MS = 26 * 3_600_000;
 
 /** Written by deploy/backup/backup.sh at the end of every run, successful or not. */
-export interface BackupStatus {
-  ok: boolean;
-  startedAt: string;
-  finishedAt: string;
-  snapshot?: string | null;
-  error?: string | null;
-}
+export const BackupStatus = z.object({
+  ok: z.boolean(),
+  startedAt: z.iso.datetime(),
+  finishedAt: z.iso.datetime(),
+  snapshot: z.string().nullable().optional(),
+  error: z.string().nullable().optional(),
+});
+export type BackupStatus = z.infer<typeof BackupStatus>;
 
 export interface WatchdogOptions {
   checkHealth: () => Promise<{ ok: boolean; detail: string }>;
@@ -56,11 +59,14 @@ export class Watchdog {
     try {
       result = await this.o.checkHealth();
     } catch (error) {
-      result = { ok: false, detail: (error as Error).message };
+      result = { ok: false, detail: messageOf(error) };
     }
     if (result.ok) {
       if (this.healthAlerted) {
-        await this.o.alert('Health check recovered', `The health check passes again since ${now.toISOString()}.\nIt had been failing since ${this.failingSince?.toISOString()}.`);
+        await this.o.alert(
+          'Health check recovered',
+          `The health check passes again since ${now.toISOString()}.\nIt had been failing since ${this.failingSince?.toISOString()}.`,
+        );
       }
       this.failingSince = null;
       this.healthAlerted = false;
@@ -81,27 +87,40 @@ export class Watchdog {
   private async tickBackup(): Promise<void> {
     const now = this.o.clock.now();
     const maxAge = this.o.backupMaxAgeMs ?? BACKUP_MAX_AGE_MS;
-    let status: BackupStatus | null;
-    try {
-      status = await this.o.readBackupStatus!();
-    } catch (error) {
-      status = { ok: false, startedAt: '', finishedAt: '', error: `status unreadable: ${(error as Error).message}` };
-    }
     const once = async (key: string, subject: string, details: string) => {
       if (this.backupAlerts.has(key)) return;
       await this.o.alert(subject, details);
       this.backupAlerts.add(key);
     };
+    let status: BackupStatus | null;
+    try {
+      status = (await this.o.readBackupStatus?.()) ?? null;
+    } catch (error) {
+      // Once per stretch of unreadable files: a good read in between allows the next alert.
+      await once('unreadable', 'Backup status unreadable', `The status file of the nightly Backup could not be read: ${messageOf(error)}`);
+      return;
+    }
+    this.backupAlerts.delete('unreadable');
     if (status === null) {
-      if (now.getTime() - this.startedAt.getTime() >= maxAge) await once('missing', 'No Backup recorded', `No Backup has reported since the watchdog started at ${this.startedAt.toISOString()}.`);
+      if (now.getTime() - this.startedAt.getTime() >= maxAge)
+        await once('missing', 'No Backup recorded', `No Backup has reported since the watchdog started at ${this.startedAt.toISOString()}.`);
       return;
     }
     if (!status.ok) {
-      await once(`failed:${status.finishedAt}`, 'Nightly Backup failed', `The Backup started at ${status.startedAt} failed at ${status.finishedAt}.\n${status.error ?? ''}`);
+      await once(
+        `failed:${status.finishedAt}`,
+        'Nightly Backup failed',
+        `The Backup started at ${status.startedAt} failed at ${status.finishedAt}.\n${status.error ?? ''}`,
+      );
       return;
     }
     const age = now.getTime() - new Date(status.finishedAt).getTime();
-    if (age >= maxAge) await once(`stale:${status.finishedAt}`, 'Nightly Backup missing', `The last successful Backup finished at ${status.finishedAt}, ${Math.round(age / 3_600_000)} hours ago.`);
+    if (age >= maxAge)
+      await once(
+        `stale:${status.finishedAt}`,
+        'Nightly Backup missing',
+        `The last successful Backup finished at ${status.finishedAt}, ${Math.round(age / 3_600_000)} hours ago.`,
+      );
   }
 }
 
@@ -111,16 +130,18 @@ export async function httpHealthCheck(url: string, timeoutMs = 10_000): Promise<
     const body = (await res.text()).slice(0, 300);
     return { ok: res.status === 200, detail: `HTTP ${res.status} ${body}` };
   } catch (error) {
-    return { ok: false, detail: `no answer: ${(error as Error).message}` };
+    return { ok: false, detail: `no answer: ${messageOf(error)}` };
   }
 }
 
 export function backupStatusReader(path: string): () => Promise<BackupStatus | null> {
   return async () => {
     try {
-      return JSON.parse(await readFile(path, 'utf8')) as BackupStatus;
+      const parsed = BackupStatus.safeParse(JSON.parse(await readFile(path, 'utf8')));
+      if (!parsed.success) throw new Error(`not a Backup status: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+      return parsed.data;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      if (stringField(error, 'code') === 'ENOENT') return null;
       throw error;
     }
   };

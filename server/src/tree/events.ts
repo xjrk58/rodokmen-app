@@ -4,7 +4,7 @@ import type { Db } from '../db/db.js';
 import type { TreeDeps } from './persons.js';
 import { estatesAt, parishesAt } from './places.js';
 import { citationSummariesFor } from './sources.js';
-import { displayName, earliestSortKey, eventSummaries, geoPoint, personSummaries, summarizeEvents } from './summaries.js';
+import { displayName, compareEarliestDays, eventSummaries, personSummaries, summarizeEvents } from './summaries.js';
 
 export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<EventDetail | null> {
   const [summary] = await eventSummaries(db, [id]);
@@ -16,8 +16,12 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
     .orderBy('sort_order')
     .orderBy('id')
     .execute();
-  const persons = await personSummaries(db, roles.map((r) => r.person_id), clock);
-  const citations = await citationSummariesFor(db, 'event_citation', 'event_id', [id]);
+  const persons = await personSummaries(
+    db,
+    roles.map((r) => r.person_id),
+    clock,
+  );
+  const citations = await citationSummariesFor(db, 'event', [id]);
   const placeId = summary.place?.id ?? null;
   const dated = summary.date !== null;
   return {
@@ -32,7 +36,13 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
 export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<FamilyDetail | null> {
   const f = await db.selectFrom('family').select(['id', 'version', 'partner1_id', 'partner2_id']).where('id', '=', id).executeTakeFirst();
   if (!f) return null;
-  const children = await db.selectFrom('family_child').select(['id', 'version', 'child_id', 'link_type']).where('family_id', '=', id).orderBy('sort_order').orderBy('id').execute();
+  const children = await db
+    .selectFrom('family_child')
+    .select(['id', 'version', 'child_id', 'link_type'])
+    .where('family_id', '=', id)
+    .orderBy('sort_order')
+    .orderBy('id')
+    .execute();
   const partnerIds = [f.partner1_id, f.partner2_id].filter((x): x is string => x !== null);
   const persons = await personSummaries(db, [...partnerIds, ...children.map((c) => c.child_id)], clock);
 
@@ -45,12 +55,19 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
       .where((eb) =>
         eb.and(
           partnerIds.map((pid) =>
-            eb.exists(eb.selectFrom('event_role as r').select(sql`1`.as('x')).whereRef('r.event_id', '=', 'e.id').where('r.person_id', '=', pid).where('r.role', '=', 'partner')),
+            eb.exists(
+              eb
+                .selectFrom('event_role as r')
+                .select(sql`1`.as('x'))
+                .whereRef('r.event_id', '=', 'e.id')
+                .where('r.person_id', '=', pid)
+                .where('r.role', '=', 'partner'),
+            ),
           ),
         ),
       )
       .execute();
-    rows.sort((a, b) => earliestSortKey(a.date_earliest).localeCompare(earliestSortKey(b.date_earliest)) || a.id.localeCompare(b.id));
+    rows.sort((a, b) => compareEarliestDays(a.date_earliest, b.date_earliest) || a.id.localeCompare(b.id));
     events = await summarizeEvents(db, rows);
   }
   return {
@@ -70,7 +87,8 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
  * House (else Place) lies inside the bounding box. Undated Events are left out.
  */
 export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsResult> {
-  const [minLon, minLat, maxLon, maxLat] = q.bbox.split(',').map(Number) as [number, number, number, number];
+  // MapEventsQuery checked that bbox is four numbers.
+  const [minLon = 0, minLat = 0, maxLon = 0, maxLat = 0] = q.bbox.split(',').map(Number);
   const from = isoDay(Math.min(q.from, q.to), 1, 1);
   const to = isoDay(Math.max(q.from, q.to), 12, 31);
   const envelope = sql`ST_MakeEnvelope(${minLon}, ${minLat}, ${maxLon}, ${maxLat}, 4326)`;
@@ -109,20 +127,26 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
         .selectFrom('event_role as r')
         .innerJoin('name as n', (j) => j.onRef('n.person_id', '=', 'r.person_id').on('n.is_primary', '=', true))
         .select(['r.event_id', 'r.person_id', 'r.role', 'n.given', 'n.surname'])
-        .where('r.event_id', 'in', kept.map((r) => r.id))
+        .where(
+          'r.event_id',
+          'in',
+          kept.map((r) => r.id),
+        )
         .orderBy('r.sort_order')
         .execute()
     : [];
+  // Every kept row has a location: the query only keeps rows whose House or Place lies in the area.
+  const locations = new Map(kept.map((r) => [r.id, { lat: r.lat, lon: r.lon }]));
   return {
     truncated,
-    events: summaries.map((s, i) => ({
+    events: summaries.map((s) => ({
       id: s.id,
       version: s.version,
       type: s.type,
       date: s.date,
       earliest: s.earliest,
       latest: s.latest,
-      location: geoPoint(kept[i]!)!,
+      location: locations.get(s.id)!,
       place: s.place,
       house: s.house,
       persons: roles.filter((r) => r.event_id === s.id).map((r) => ({ id: r.person_id, displayName: displayName(r.given, r.surname), role: r.role })),

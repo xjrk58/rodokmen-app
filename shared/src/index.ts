@@ -7,4 +7,5 @@ export * from './schemas/tree.js';
 export * from './schemas/api.js';
 export * from './schemas/accounts.js';
 export * from './schemas/proposals.js';
+export * from './schemas/proposal-summaries.js';
 export * from './schemas/review.js';

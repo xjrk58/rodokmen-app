@@ -3,6 +3,7 @@ import pg from 'pg';
 import type { TestProject } from 'vitest/node';
 import { createDb, migrateToLatest } from '../src/db/db.js';
 import { loadFixture } from '../src/fixture/load.js';
+import { messageOf } from '../src/errors.js';
 
 declare module 'vitest' {
   export interface ProvidedContext {
@@ -30,12 +31,12 @@ async function connectAdmin(url: string): Promise<pg.Client> {
   } catch (error) {
     const safe = url.replace(/\/\/([^:@/]+):[^@/]*@/, '//$1:***@');
     const message =
-      `PostgreSQL is not reachable at ${safe} (${(error as Error).message}).\n` +
+      `PostgreSQL is not reachable at ${safe} (${messageOf(error)}).\n` +
       'The server tests need PostgreSQL 16 with PostGIS, unaccent and pg_trgm, and a role that can create databases.\n' +
       'Start it, or point TEST_DATABASE_URL at one.';
     // Printed as well as thrown: some Vitest versions fail to print errors thrown from global setup.
     console.error(`\n${message}\n`);
-    throw new Error(message);
+    throw new Error(message, { cause: error });
   }
 }
 

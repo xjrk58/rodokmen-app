@@ -1,110 +1,159 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Rodokmen</title>
-  <meta name="description" content="Which archive holds the parish registers for a place in the Czech lands, and what it looked like on old maps.">
-  <meta name="theme-color" content="#24392d">
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-  <link rel="stylesheet" href="styles.css">
-  <script type="module" src="app.js"></script>
-</head>
-<body>
-  <div id="map" role="application" data-i18n-attr="aria-label:map.label" aria-label="Map of the Czech lands"></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Rodokmen</title>
+    <meta name="description" content="Which archive holds the parish registers for a place in the Czech lands, and what it looked like on old maps." />
+    <meta name="theme-color" content="#24392d" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <div id="map" role="application" data-i18n-attr="aria-label:map.label" aria-label="Map of the Czech lands"></div>
 
-  <header class="topbar">
-    <form class="search" id="search" role="search" autocomplete="off">
-      <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
-      <input id="search-input" type="search" inputmode="search" enterkeyhint="search" spellcheck="false"
-        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results"
-        data-i18n-attr="placeholder:search.placeholder;aria-label:search.label"
-        placeholder="Find a municipality" aria-label="Search municipalities">
-      <button type="button" class="icon-button clear" id="search-clear" hidden data-i18n-attr="aria-label:search.clear;title:search.clear" aria-label="Clear search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-      <div class="results" id="search-results-box" hidden>
-        <ul id="search-results" role="listbox" data-i18n-attr="aria-label:search.label" aria-label="Search municipalities"></ul>
-        <p class="results-note" id="search-note" role="status"></p>
-      </div>
-    </form>
-    <button type="button" class="round-button" id="layers-button" aria-expanded="false" aria-controls="layers-panel"
-      data-i18n-attr="aria-label:layers.open;title:layers.open" aria-label="Map layers" title="Map layers">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></svg>
-    </button>
-    <button type="button" class="round-button" id="work-button"
-      data-i18n-attr="aria-label:work.open;title:work.open" aria-label="Contribute" title="Contribute">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></svg>
-      <span class="count-badge" id="work-badge" hidden>0</span>
-    </button>
-    <button type="button" class="round-button" id="settings-button"
-      data-i18n-attr="aria-label:settings.open;title:settings.open" aria-label="Settings" title="Settings">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8"/></svg>
-    </button>
-  </header>
-
-  <section class="panel" id="layers-panel" hidden aria-labelledby="layers-title">
-    <div class="panel-head">
-      <h2 id="layers-title" data-i18n="layers.title">Map layers</h2>
-      <button type="button" class="icon-button" id="layers-close" data-i18n-attr="aria-label:layers.close" aria-label="Close map layers">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-    </div>
-    <p class="muted" data-i18n="layers.base">Base map: OpenStreetMap</p>
-    <label class="switch-row">
-      <input type="checkbox" id="regions-toggle">
-      <span data-i18n="layers.archiveRegions">Archive regions</span>
-    </label>
-    <h3 data-i18n="layers.historical">Historical maps</h3>
-    <div id="overlay-list"></div>
-  </section>
-
-  <section class="sheet" id="place-sheet" hidden tabindex="-1" data-i18n-attr="aria-label:sheet.label" aria-label="Place"></section>
-
-  <dialog id="settings" aria-labelledby="settings-title">
-    <form method="dialog" class="dialog-body">
-      <div class="panel-head">
-        <h2 id="settings-title" data-i18n="settings.title">Settings</h2>
-        <button class="icon-button" value="close" data-i18n-attr="aria-label:settings.close" aria-label="Close">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    <header class="topbar">
+      <form class="search" id="search" role="search" autocomplete="off">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" />
+          <path d="m15.5 15.5 5 5" />
+        </svg>
+        <input
+          id="search-input"
+          type="search"
+          inputmode="search"
+          enterkeyhint="search"
+          spellcheck="false"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="search-results"
+          data-i18n-attr="placeholder:search.placeholder;aria-label:search.label"
+          placeholder="Find a municipality"
+          aria-label="Search municipalities"
+        />
+        <button
+          type="button"
+          class="icon-button clear"
+          id="search-clear"
+          hidden
+          data-i18n-attr="aria-label:search.clear;title:search.clear"
+          aria-label="Clear search"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
         </button>
-      </div>
-      <fieldset class="language">
-        <legend data-i18n="settings.language">Language</legend>
-        <label><input type="radio" name="language" value="cs"> <span lang="cs">Čeština</span></label>
-        <label><input type="radio" name="language" value="en"> <span lang="en">English</span></label>
-      </fieldset>
-      <section>
-        <h3 data-i18n="settings.layers">Map layers</h3>
-        <button type="button" class="button" id="check-layers" data-i18n="settings.checkLayers">Check map layers</button>
-        <ul class="check-results" id="check-results" aria-live="polite"></ul>
-      </section>
-      <section>
-        <h3 data-i18n="settings.about">About</h3>
-        <p class="muted" data-i18n="settings.aboutText"></p>
-        <p class="muted" id="app-version"></p>
-      </section>
-    </form>
-  </dialog>
-
-  <section class="work" id="work" hidden aria-labelledby="work-title">
-    <header class="work-head">
-      <h1 id="work-title" data-i18n="work.title">Tree</h1>
-      <button type="button" class="icon-button" id="work-close" data-i18n-attr="aria-label:work.close" aria-label="Back to the map">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <div class="results" id="search-results-box" hidden>
+          <ul id="search-results" role="listbox" data-i18n-attr="aria-label:search.label" aria-label="Search municipalities"></ul>
+          <p class="results-note" id="search-note" role="status"></p>
+        </div>
+      </form>
+      <button
+        type="button"
+        class="round-button"
+        id="layers-button"
+        aria-expanded="false"
+        aria-controls="layers-panel"
+        data-i18n-attr="aria-label:layers.open;title:layers.open"
+        aria-label="Map layers"
+        title="Map layers"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m12 3 9 5-9 5-9-5 9-5Z" />
+          <path d="m3 13 9 5 9-5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="round-button"
+        id="work-button"
+        data-i18n-attr="aria-label:work.open;title:work.open"
+        aria-label="Contribute"
+        title="Contribute"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 20h4L19 9l-4-4L4 16v4Z" />
+          <path d="m13.5 6.5 4 4" />
+        </svg>
+        <span class="count-badge" id="work-badge" hidden>0</span>
+      </button>
+      <button
+        type="button"
+        class="round-button"
+        id="settings-button"
+        data-i18n-attr="aria-label:settings.open;title:settings.open"
+        aria-label="Settings"
+        title="Settings"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8" />
+        </svg>
       </button>
     </header>
-    <nav class="work-tabs" id="work-nav" data-i18n-attr="aria-label:work.title" aria-label="Tree"></nav>
-    <div class="work-body" id="work-body"></div>
-  </section>
 
-  <div class="toast drafts-toast" id="drafts-toast" hidden></div>
-  <div class="toast" id="update-toast" hidden>
-    <button type="button" class="button primary" id="update-reload" data-i18n="update.reload">New version, reload</button>
-  </div>
-  <p class="message" id="message" role="alert" hidden></p>
-</body>
+    <section class="panel" id="layers-panel" hidden aria-labelledby="layers-title">
+      <div class="panel-head">
+        <h2 id="layers-title" data-i18n="layers.title">Map layers</h2>
+        <button type="button" class="icon-button" id="layers-close" data-i18n-attr="aria-label:layers.close" aria-label="Close map layers">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </div>
+      <p class="muted" data-i18n="layers.base">Base map: OpenStreetMap</p>
+      <label class="switch-row">
+        <input type="checkbox" id="regions-toggle" />
+        <span data-i18n="layers.archiveRegions">Archive regions</span>
+      </label>
+      <h3 data-i18n="layers.historical">Historical maps</h3>
+      <div id="overlay-list"></div>
+    </section>
+
+    <section class="sheet" id="place-sheet" hidden tabindex="-1" data-i18n-attr="aria-label:sheet.label" aria-label="Point on the map"></section>
+
+    <dialog id="settings" aria-labelledby="settings-title">
+      <form method="dialog" class="dialog-body">
+        <div class="panel-head">
+          <h2 id="settings-title" data-i18n="settings.title">Settings</h2>
+          <button class="icon-button" value="close" data-i18n-attr="aria-label:settings.close" aria-label="Close">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
+        </div>
+        <fieldset class="language">
+          <legend data-i18n="settings.language">Language</legend>
+          <label><input type="radio" name="language" value="cs" /> <span lang="cs">Čeština</span></label>
+          <label><input type="radio" name="language" value="en" /> <span lang="en">English</span></label>
+        </fieldset>
+        <section>
+          <h3 data-i18n="settings.layers">Map layers</h3>
+          <button type="button" class="button" id="check-layers" data-i18n="settings.checkLayers">Check map layers</button>
+          <ul class="check-results" id="check-results" aria-live="polite"></ul>
+        </section>
+        <section>
+          <h3 data-i18n="settings.about">About</h3>
+          <p class="muted" data-i18n="settings.aboutText"></p>
+          <p class="muted" id="app-version"></p>
+        </section>
+      </form>
+    </dialog>
+
+    <section class="work" id="work" hidden aria-labelledby="work-title">
+      <header class="work-head">
+        <h1 id="work-title" data-i18n="work.title">Tree</h1>
+        <button type="button" class="icon-button" id="work-close" data-i18n-attr="aria-label:work.close" aria-label="Back to the map">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+        </button>
+      </header>
+      <nav class="work-tabs" id="work-nav" data-i18n-attr="aria-label:work.title" aria-label="Tree"></nav>
+      <div class="work-body" id="work-body"></div>
+    </section>
+
+    <div class="toast drafts-toast" id="drafts-toast" hidden></div>
+    <div class="toast" id="update-toast" hidden>
+      <button type="button" class="button primary" id="update-reload" data-i18n="update.reload">New version, reload</button>
+    </div>
+    <p class="message" id="message" role="alert" hidden></p>
+  </body>
 </html>

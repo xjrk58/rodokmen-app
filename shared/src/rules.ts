@@ -109,7 +109,12 @@ export function valueOf(values: readonly FieldValue[], field: string): unknown {
  * sets is listed with its current value, for the Editor to choose. Returns null when there is
  * no conflict.
  */
-export function detectConflict(baseVersion: number, currentVersion: number | null, proposed: readonly FieldValue[], current: readonly FieldValue[]): ConflictResult | null {
+export function detectConflict(
+  baseVersion: number,
+  currentVersion: number | null,
+  proposed: readonly FieldValue[],
+  current: readonly FieldValue[],
+): ConflictResult | null {
   //@ verify
   //@ contract proposals: Proposals record what they were based on
   //@ contract review: Conflicts are resolved by the Editor
@@ -225,13 +230,24 @@ export function isBlocking(t: LoggedTouch, undoneProposalId: string, deletions: 
 }
 
 /** Whether a Proposal has a logged change that blocks the undo. */
-export function isBlockingProposal(id: string, undoneProposalId: string, deletions: readonly RecordKey[], dependencies: readonly Dependency[], touches: readonly LoggedTouch[]): boolean {
+export function isBlockingProposal(
+  id: string,
+  undoneProposalId: string,
+  deletions: readonly RecordKey[],
+  dependencies: readonly Dependency[],
+  touches: readonly LoggedTouch[],
+): boolean {
   //@ verify
   return touches.some((t) => t.proposalId === id && isBlocking(t, undoneProposalId, deletions, dependencies));
 }
 
 /** Whether the undo would leave behind a record that no standing Proposal logged. */
-export function leavesUnlogged(undoneProposalId: string, deletions: readonly RecordKey[], dependencies: readonly Dependency[], touches: readonly LoggedTouch[]): boolean {
+export function leavesUnlogged(
+  undoneProposalId: string,
+  deletions: readonly RecordKey[],
+  dependencies: readonly Dependency[],
+  touches: readonly LoggedTouch[],
+): boolean {
   //@ verify
   return dependencies.some((d) => leavesDependent(deletions, d) && !isLogged(touches, d.dependent, undoneProposalId));
 }
@@ -264,7 +280,13 @@ interface LoggedBlockers {
   readonly unlogged: boolean;
 }
 
-function loggedBlockers(undoneProposalId: string, deletions: readonly RecordKey[], dependencies: readonly Dependency[], remaining: readonly RecordKey[], touches: readonly LoggedTouch[]): LoggedBlockers {
+function loggedBlockers(
+  undoneProposalId: string,
+  deletions: readonly RecordKey[],
+  dependencies: readonly Dependency[],
+  remaining: readonly RecordKey[],
+  touches: readonly LoggedTouch[],
+): LoggedBlockers {
   //@ verify
   //@ requires forall(m: nat, m < remaining.length ==> isLeftBehind(deletions, dependencies, remaining[m]))
   //@ ensures forall(m: nat, m < \result.found.length ==> isBlocking(\result.found[m], undoneProposalId, deletions, dependencies) && touches.includes(\result.found[m]))
@@ -317,7 +339,12 @@ function newestFirst(found: readonly LoggedTouch[]): LoggedTouch[] {
   return sorted;
 }
 
-export function undoBlockers(undoneProposalId: string, deletions: readonly RecordKey[], dependencies: readonly Dependency[], touches: readonly LoggedTouch[]): UndoBlockers {
+export function undoBlockers(
+  undoneProposalId: string,
+  deletions: readonly RecordKey[],
+  dependencies: readonly Dependency[],
+  touches: readonly LoggedTouch[],
+): UndoBlockers {
   //@ verify
   //@ contract tree-history: Undo a whole Proposal
   // Complete: every standing later Proposal that changed a record the undo would leave behind is named.

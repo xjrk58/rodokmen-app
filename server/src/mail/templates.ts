@@ -103,7 +103,10 @@ export function signInLinkEmail(e: SignInLinkEmail): MailMessage {
   }
   return render(e.to, {
     subject: 'Sign in to Rodokmen',
-    intro: [`Hello ${e.displayName},`, `Someone (most likely you) asked to sign in to Rodokmen. Sign in with this link. It is valid for ${e.minutes} minutes and works only once.`],
+    intro: [
+      `Hello ${e.displayName},`,
+      `Someone (most likely you) asked to sign in to Rodokmen. Sign in with this link. It is valid for ${e.minutes} minutes and works only once.`,
+    ],
     button: { label: 'Sign in', url: e.link },
     outro: [
       'Once you are signed in, you can save a passkey on this device, so next time you sign in without email.',
@@ -155,7 +158,9 @@ export function outcomeEmail(e: OutcomeEmail): MailMessage {
       subject: e.accepted ? 'Váš návrh byl přijat' : 'Váš návrh nebyl přijat',
       intro: [
         `Dobrý den, ${e.displayName},`,
-        e.accepted ? `${e.editorName} přijal(a) váš návrh do Rodokmenu. Změny teď vidí všichni členové.` : `${e.editorName} váš návrh do Rodokmenu nepřijal(a). Ve stromu se nic nezměnilo.`,
+        e.accepted
+          ? `${e.editorName} přijal(a) váš návrh do Rodokmenu. Změny teď vidí všichni členové.`
+          : `${e.editorName} váš návrh do Rodokmenu nepřijal(a). Ve stromu se nic nezměnilo.`,
         ...(e.note ? [`Poznámka: ${e.note}`] : []),
         ...listed(e.changes, (n) => `… a ${n} dalších změn`),
       ],
@@ -168,7 +173,9 @@ export function outcomeEmail(e: OutcomeEmail): MailMessage {
     subject: e.accepted ? 'Your Proposal was accepted' : 'Your Proposal was not accepted',
     intro: [
       `Hello ${e.displayName},`,
-      e.accepted ? `${e.editorName} accepted your Proposal to Rodokmen. Every Member now sees the changes.` : `${e.editorName} did not accept your Proposal to Rodokmen. Nothing in the Tree changed.`,
+      e.accepted
+        ? `${e.editorName} accepted your Proposal to Rodokmen. Every Member now sees the changes.`
+        : `${e.editorName} did not accept your Proposal to Rodokmen. Nothing in the Tree changed.`,
       ...(e.note ? [`Note: ${e.note}`] : []),
       ...listed(e.changes, (n) => `… and ${n} more changes`),
     ],
@@ -187,7 +194,8 @@ export interface DigestEmail {
   queueLink: string;
 }
 
-const dayFormat = (language: UiLanguage, d: Date) => new Intl.DateTimeFormat(language === 'cs' ? 'cs-CZ' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Prague' }).format(d);
+const dayFormat = (language: UiLanguage, d: Date) =>
+  new Intl.DateTimeFormat(language === 'cs' ? 'cs-CZ' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Prague' }).format(d);
 
 /** The daily list of Proposals waiting for review, for one Editor. */
 export function digestEmail(e: DigestEmail): MailMessage {
@@ -195,7 +203,10 @@ export function digestEmail(e: DigestEmail): MailMessage {
   const cs = e.language === 'cs';
   const groups = e.groups.map((g) => {
     const who = g.isAgent ? `${g.author} (${cs ? 'agent' : 'Agent'})` : g.author;
-    const lines = g.items.map((i) => `• ${dayFormat(e.language, i.submittedAt)}: ${i.summary}${i.changes > 1 ? (cs ? ` (změn: ${i.changes})` : ` (${i.changes} changes)`) : ''}\n  ${i.link}`);
+    const lines = g.items.map(
+      (i) =>
+        `• ${dayFormat(e.language, i.submittedAt)}: ${i.summary}${i.changes > 1 ? (cs ? ` (změn: ${i.changes})` : ` (${i.changes} changes)`) : ''}\n  ${i.link}`,
+    );
     return `${who}\n${lines.join('\n')}`;
   });
   if (cs) {

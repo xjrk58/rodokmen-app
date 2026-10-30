@@ -52,8 +52,12 @@ class Legend extends L.Control {
   }
 
   render() {
-    const head = h('button', { type: 'button', class: 'legend-head', 'aria-expanded': String(!this.collapsed), title: t('legend.toggle') },
-      h('span', {}, t('legend.title')), icon('m6 9 6 6 6-6'));
+    const head = h(
+      'button',
+      { type: 'button', class: 'legend-head', 'aria-expanded': String(!this.collapsed), title: t('legend.toggle') },
+      h('span', {}, t('legend.title')),
+      icon('m6 9 6 6 6-6'),
+    );
     head.addEventListener('click', () => {
       this.collapsed = !this.collapsed;
       this.render();
@@ -61,10 +65,11 @@ class Legend extends L.Control {
     this.el.dataset.collapsed = String(this.collapsed);
     this.el.replaceChildren(
       head,
-      h('ul', {}, ...this.archives.map((a) =>
-        h('li', { 'data-archive': a.id },
-          h('span', { class: 'swatch', style: `background:${a.color}` }),
-          h('span', {}, a.name)))),
+      h(
+        'ul',
+        {},
+        ...this.archives.map((a) => h('li', { 'data-archive': a.id }, h('span', { class: 'swatch', style: `background:${a.color}` }), h('span', {}, a.name))),
+      ),
     );
   }
 }
@@ -117,30 +122,33 @@ export class LayersPanel {
 
   render() {
     this.legend.render();
-    const items = this.deps.overlays.filter((o) => o.enabled).map((overlay) => {
-      const state = /** @type {{ on: boolean, opacity: number }} */ (this.overlayState.get(overlay.id));
-      const name = t(`overlay.${overlay.id}`);
-      const toggle = h('input', { type: 'checkbox', 'data-overlay': overlay.id, checked: state.on });
-      toggle.addEventListener('change', () => {
-        state.on = toggle.checked;
-        this.deps.mapView.showOverlay(overlay.id, state.on);
-        slider.disabled = !state.on;
+    const items = this.deps.overlays
+      .filter((o) => o.enabled)
+      .map((overlay) => {
+        const state = /** @type {{ on: boolean, opacity: number }} */ (this.overlayState.get(overlay.id));
+        const name = t(`overlay.${overlay.id}`);
+        const toggle = h('input', { type: 'checkbox', 'data-overlay': overlay.id, checked: state.on });
+        toggle.addEventListener('change', () => {
+          state.on = toggle.checked;
+          this.deps.mapView.showOverlay(overlay.id, state.on);
+          slider.disabled = !state.on;
+        });
+        const slider = h('input', {
+          type: 'range',
+          min: '0',
+          max: '100',
+          step: '5',
+          value: String(Math.round(state.opacity * 100)),
+          'aria-label': t('layers.opacity', { layer: name }),
+          'data-opacity': overlay.id,
+          disabled: !state.on,
+        });
+        slider.addEventListener('input', () => {
+          state.opacity = Number(slider.value) / 100;
+          this.deps.mapView.setOverlayOpacity(overlay.id, state.opacity);
+        });
+        return h('div', { class: 'overlay-item' }, h('label', { class: 'switch-row' }, toggle, h('span', {}, name)), slider);
       });
-      const slider = h('input', {
-        type: 'range', min: '0', max: '100', step: '5',
-        value: String(Math.round(state.opacity * 100)),
-        'aria-label': t('layers.opacity', { layer: name }),
-        'data-opacity': overlay.id,
-        disabled: !state.on,
-      });
-      slider.addEventListener('input', () => {
-        state.opacity = Number(slider.value) / 100;
-        this.deps.mapView.setOverlayOpacity(overlay.id, state.opacity);
-      });
-      return h('div', { class: 'overlay-item' },
-        h('label', { class: 'switch-row' }, toggle, h('span', {}, name)),
-        slider);
-    });
     this.els.overlayList.replaceChildren(...(items.length ? items : [h('p', { class: 'muted' }, t('layers.none'))]));
   }
 }

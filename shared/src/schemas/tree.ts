@@ -4,7 +4,7 @@
  * Every record has an `id` (UUIDv7) and a `version`.
  */
 import { z } from 'zod';
-import { EdtfDate, GeoPoint, Id, IsoDay, NameLanguage, Period, Version } from './common.js';
+import { EdtfDate, GeoPoint, Id, IsoDay, NameLanguage, Period, Version, WebUrl } from './common.js';
 
 const text = (max: number) => z.string().max(max);
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
@@ -59,9 +59,7 @@ export const PersonWithNames = z
 
 // ---------------------------------------------------------------- Families
 
-export const ChildLinkType = z
-  .enum(['birth', 'adoptive', 'foster', 'step'])
-  .meta({ id: 'ChildLinkType', description: 'How a child belongs to a Family' });
+export const ChildLinkType = z.enum(['birth', 'adoptive', 'foster', 'step']).meta({ id: 'ChildLinkType', description: 'How a child belongs to a Family' });
 
 export const FamilyRecord = z
   .object({
@@ -85,9 +83,7 @@ export const ChildLinkRecord = z
 
 // ---------------------------------------------------------------- Events and Roles
 
-export const EventType = z
-  .enum(['birth', 'baptism', 'marriage', 'death', 'burial', 'residence', 'census', 'other'])
-  .meta({ id: 'EventType' });
+export const EventType = z.enum(['birth', 'baptism', 'marriage', 'death', 'burial', 'residence', 'census', 'other']).meta({ id: 'EventType' });
 
 export const EventRecord = z
   .object({
@@ -185,23 +181,17 @@ export const ParishRecord = z
   })
   .meta({ id: 'ParishRecord' });
 
-export const PlaceParishRecord = z
-  .object({ id: Id, version: Version, placeId: Id, parishId: Id, period: Period })
-  .meta({ id: 'PlaceParishRecord' });
+export const PlaceParishRecord = z.object({ id: Id, version: Version, placeId: Id, parishId: Id, period: Period }).meta({ id: 'PlaceParishRecord' });
 
 export const EstateRecord = z
   .object({ id: Id, version: Version, name: nonEmpty(200) })
   .meta({ id: 'EstateRecord', description: 'A manorial domain (panství)' });
 
-export const PlaceEstateRecord = z
-  .object({ id: Id, version: Version, placeId: Id, estateId: Id, period: Period })
-  .meta({ id: 'PlaceEstateRecord' });
+export const PlaceEstateRecord = z.object({ id: Id, version: Version, placeId: Id, estateId: Id, period: Period }).meta({ id: 'PlaceEstateRecord' });
 
 // ---------------------------------------------------------------- Sources and Citations
 
-export const SourceType = z
-  .enum(['parish_register', 'census', 'land_book', 'family_account', 'other'])
-  .meta({ id: 'SourceType' });
+export const SourceType = z.enum(['parish_register', 'census', 'land_book', 'family_account', 'other']).meta({ id: 'SourceType' });
 
 export const FamilyAccount = z
   .object({
@@ -219,7 +209,7 @@ export const SourceRecord = z
     title: nonEmpty(400),
     repository: text(400).nullable().describe('Archive or holder'),
     reference: text(200).nullable().describe('Call number or signature (signatura)'),
-    url: z.url().max(2000).nullable(),
+    url: WebUrl.nullable(),
     familyAccount: FamilyAccount.nullable(),
   })
   .refine((s) => (s.type === 'family_account') === (s.familyAccount !== null), {
@@ -252,6 +242,7 @@ export const ImageKind = z
   .meta({ id: 'ImageKind', description: 'Register page image, own photo (letter, gravestone) or portrait' });
 
 export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'] as const;
+export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
 export const IMAGE_MAX_BYTES = 25 * 1024 * 1024;
 
 export const ImageMetadata = z

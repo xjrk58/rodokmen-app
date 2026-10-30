@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Db } from '../db/db.js';
 import type { Account, SessionTable } from '../db/types.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 
 export const SESSION_COOKIE = 'rdk_session';
 
@@ -32,7 +32,15 @@ export async function createSession(
   const expiresAt = new Date(now.getTime() + options.idleDays * 86_400_000);
   const row = await db
     .insertInto('session')
-    .values({ token_hash: hash, account_id: accountId, method, user_agent: userAgent?.slice(0, 400) ?? null, created_at: now, last_seen_at: now, expires_at: expiresAt })
+    .values({
+      token_hash: hash,
+      account_id: accountId,
+      method,
+      user_agent: userAgent?.slice(0, 400) ?? null,
+      created_at: now,
+      last_seen_at: now,
+      expires_at: expiresAt,
+    })
     .returning('id')
     .executeTakeFirstOrThrow();
   await db.updateTable('account').set({ last_seen_at: now }).where('id', '=', accountId).execute();
@@ -71,7 +79,7 @@ export async function resolveSession(db: Db, clock: Clock, options: SessionOptio
     await db.updateTable('session').set({ last_seen_at: now, expires_at: refreshed }).where('id', '=', session_id).execute();
     await db.updateTable('account').set({ last_seen_at: now }).where('id', '=', account.id).execute();
   }
-  return { sessionId: session_id, account: account as Account, refreshed };
+  return { sessionId: session_id, account: account, refreshed };
 }
 
 export async function endSession(db: Db, clock: Clock, sessionId: string): Promise<void> {
@@ -79,6 +87,11 @@ export async function endSession(db: Db, clock: Clock, sessionId: string): Promi
 }
 
 export async function endAllSessions(db: Db, clock: Clock, accountId: string): Promise<number> {
-  const result = await db.updateTable('session').set({ ended_at: clock.now() }).where('account_id', '=', accountId).where('ended_at', 'is', null).executeTakeFirst();
+  const result = await db
+    .updateTable('session')
+    .set({ ended_at: clock.now() })
+    .where('account_id', '=', accountId)
+    .where('ended_at', 'is', null)
+    .executeTakeFirst();
   return Number(result.numUpdatedRows);
 }

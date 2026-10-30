@@ -62,6 +62,7 @@ table_count=$(grep -oE '"[a-z_]+":[0-9]+' <<<"$tables_json" | wc -l | tr -d ' ')
 status=0
 if [ -n "$differences" ]; then
   echo "Record counts differ (table, production, restored):"
+  # shellcheck disable=SC2001 # sed indents every line; ${var//…} cannot anchor at line starts
   sed 's/^/  /' <<<"$differences"
   status=1
 fi

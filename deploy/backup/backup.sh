@@ -21,6 +21,9 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 started=$(date -u +%FT%TZ)
 snapshot=""
 LOG=$(mktemp)
+RCLONE_CONFIG=$(mktemp)
+export RCLONE_CONFIG
+trap 'rm -f "$LOG" "$RCLONE_CONFIG"' EXIT
 exec 2> >(tee -a "$LOG" >&2)
 
 json_string() {
@@ -79,7 +82,7 @@ eval "exec ${PSQL[1]}>&-"
 wait "$PSQL_PID" 2>/dev/null || true
 
 log "copying images from $(sed -E 's/(access_key_id|secret_access_key)=[^,:]*/\1=***/g' <<<"$IMAGES_SOURCE")"
-RCLONE_CONFIG=$(mktemp) rclone sync "$IMAGES_SOURCE" "$WORK_DIR/images" --checksum --stats-one-line --stats 0
+rclone sync "$IMAGES_SOURCE" "$WORK_DIR/images" --checksum --stats-one-line --stats 0
 image_files=$(find "$WORK_DIR/images" -type f | wc -l | tr -d ' ')
 
 printf '{"takenAt":"%s","tables":%s,"imageFiles":%s}\n' "$started" "$table_counts" "$image_files" > "$WORK_DIR/db/counts.json"

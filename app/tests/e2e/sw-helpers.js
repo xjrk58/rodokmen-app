@@ -1,24 +1,17 @@
 // Helpers for tests that run the service worker against their own server, so
 // a test can stop the server (offline) or change the files (a new deploy).
-import { cp, mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, relative, sep } from 'node:path';
+import { join } from 'node:path';
 import { startServer } from '../../scripts/lib/static-server.mjs';
+import { copySite } from '../../scripts/site-files.mjs';
 import { APP_DIR } from './data.js';
 import { expect } from './fixtures.js';
 
-const NOT_DEPLOYED = ['node_modules', 'tests', 'scripts', '.cache', 'test-results', 'playwright-report'];
-
-/** Copies the deployable part of app/ to a temporary directory. */
+/** Copies the deployed files of app/ (scripts/site-files.mjs) to a temporary directory. */
 export async function copyApp() {
   const dir = await mkdtemp(join(tmpdir(), 'rodokmen-app-'));
-  await cp(APP_DIR, dir, {
-    recursive: true,
-    filter: (src) => {
-      const rel = relative(APP_DIR, src);
-      return rel === '' || !NOT_DEPLOYED.includes(rel.split(sep)[0]);
-    },
-  });
+  await copySite(dir, APP_DIR);
   return { dir, remove: () => rm(dir, { recursive: true, force: true }) };
 }
 

@@ -24,7 +24,10 @@ test('case and diacritics do not matter in the query either', async ({ page }) =
 test('"Adamov" lists every Adamov with its district', async ({ page }) => {
   await openApp(page);
   await page.locator('#search-input').fill('Adamov');
-  const expected = municipalities.filter((m) => m.name === 'Adamov').map((m) => m.district).sort();
+  const expected = municipalities
+    .filter((m) => m.name === 'Adamov')
+    .map((m) => m.district)
+    .sort();
   expect(expected.length).toBeGreaterThan(1);
   const rows = page.locator('#search-results li').filter({ has: page.locator('.name', { hasText: /^Adamov$/ }) });
   await expect(rows).toHaveCount(expected.length);
@@ -59,7 +62,10 @@ test('choosing a result centres the map on it and opens its place sheet', async 
   const target = municipality('Adamov', 'Blansko');
   await openApp(page);
   await page.locator('#search-input').fill('Adamov');
-  await page.locator('#search-results li', { hasText: 'district Blansko' }).filter({ has: page.locator('.name', { hasText: /^Adamov$/ }) }).click();
+  await page
+    .locator('#search-results li', { hasText: 'district Blansko' })
+    .filter({ has: page.locator('.name', { hasText: /^Adamov$/ }) })
+    .click();
   await expect(page.locator('#place-sheet')).toBeVisible();
   await expect(page.locator('[data-testid="municipality"]')).toHaveText('Adamov');
   await expect(page.locator('[data-testid="district"]')).toHaveText('District Blansko');

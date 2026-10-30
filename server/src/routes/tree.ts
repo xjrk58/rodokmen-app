@@ -54,13 +54,18 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
    * Persons"): every /api/persons/:id… route answers 308 with the same route for the kept Person.
    */
   const followMerge = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { id } = req.params as { id: string };
+    const { id } = IdParams.parse(req.params);
     const row = await deps.db.selectFrom('person').select('merged_into_id').where('id', '=', id).executeTakeFirst();
     if (row?.merged_into_id) return reply.redirect(req.url.replace(`/api/persons/${id}`, `/api/persons/${row.merged_into_id}`), 308);
   };
 
   app.get('/api/persons', {
-    schema: { tags: ['Persons'], summary: 'Search Persons by any Name, ignoring case and diacritics; narrow by Place and years', querystring: PersonSearchQuery, response: { 200: PersonSearchResult, 400: ApiError, ...read } },
+    schema: {
+      tags: ['Persons'],
+      summary: 'Search Persons by any Name, ignoring case and diacritics; narrow by Place and years',
+      querystring: PersonSearchQuery,
+      response: { 200: PersonSearchResult, 400: ApiError, ...read },
+    },
     handler: async (req) => searchPersons(deps, req.query),
   });
 
@@ -77,28 +82,55 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
 
   app.get('/api/persons/:id/ancestors', {
     preHandler: followMerge,
-    schema: { tags: ['Persons'], summary: 'Every known ancestor up to the given number of generations, with the links between them', params: IdParams, querystring: PedigreeQuery, response: { 200: Pedigree, ...mergedRedirect, ...detail } },
+    schema: {
+      tags: ['Persons'],
+      summary: 'Every known ancestor up to the given number of generations, with the links between them',
+      params: IdParams,
+      querystring: PedigreeQuery,
+      response: { 200: Pedigree, ...mergedRedirect, ...detail },
+    },
     handler: async (req) => found(await ancestors(deps, req.params.id, req.query.generations), 'Person'),
   });
 
   app.get('/api/persons/:id/descendants', {
     preHandler: followMerge,
-    schema: { tags: ['Persons'], summary: 'Every known descendant up to the given number of generations, with partners and links', params: IdParams, querystring: PedigreeQuery, response: { 200: Pedigree, ...mergedRedirect, ...detail } },
+    schema: {
+      tags: ['Persons'],
+      summary: 'Every known descendant up to the given number of generations, with partners and links',
+      params: IdParams,
+      querystring: PedigreeQuery,
+      response: { 200: Pedigree, ...mergedRedirect, ...detail },
+    },
     handler: async (req) => found(await descendants(deps, req.params.id, req.query.generations), 'Person'),
   });
 
   app.get('/api/families/:id', {
-    schema: { tags: ['Families'], summary: 'A Family with its partners, children (with link types) and Events', params: IdParams, response: { 200: FamilyDetail, ...detail } },
+    schema: {
+      tags: ['Families'],
+      summary: 'A Family with its partners, children (with link types) and Events',
+      params: IdParams,
+      response: { 200: FamilyDetail, ...detail },
+    },
     handler: async (req) => found(await getFamily(deps, req.params.id), 'Family'),
   });
 
   app.get('/api/events/:id', {
-    schema: { tags: ['Events'], summary: 'An Event with its Roles, Citations, and the Parishes and Estates of its Place at that date', params: IdParams, response: { 200: EventDetail, ...detail } },
+    schema: {
+      tags: ['Events'],
+      summary: 'An Event with its Roles, Citations, and the Parishes and Estates of its Place at that date',
+      params: IdParams,
+      response: { 200: EventDetail, ...detail },
+    },
     handler: async (req) => found(await getEvent(deps, req.params.id), 'Event'),
   });
 
   app.get('/api/map/events', {
-    schema: { tags: ['Map'], summary: 'Events whose House or Place lies in the map area and whose date could fall in the year range', querystring: MapEventsQuery, response: { 200: MapEventsResult, 400: ApiError, ...read } },
+    schema: {
+      tags: ['Map'],
+      summary: 'Events whose House or Place lies in the map area and whose date could fall in the year range',
+      querystring: MapEventsQuery,
+      response: { 200: MapEventsResult, 400: ApiError, ...read },
+    },
     handler: async (req) => mapEvents(deps.db, req.query),
   });
 
@@ -108,7 +140,12 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   });
 
   app.get('/api/places/:id', {
-    schema: { tags: ['Places'], summary: 'A Place with its names, Parishes and Estates over time, and its Houses', params: IdParams, response: { 200: PlaceDetail, ...detail } },
+    schema: {
+      tags: ['Places'],
+      summary: 'A Place with its names, Parishes and Estates over time, and its Houses',
+      params: IdParams,
+      response: { 200: PlaceDetail, ...detail },
+    },
     handler: async (req) => found(await getPlace(deps.db, req.params.id), 'Place'),
   });
 
@@ -121,23 +158,38 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
       response: { 200: z.object({ items: z.array(HouseSummary) }), 400: ApiError, ...detail },
     },
     handler: async (req) => {
-      found(await deps.db.selectFrom('place').select('id').where('id', '=', req.params.id).executeTakeFirst() ?? null, 'Place');
+      found((await deps.db.selectFrom('place').select('id').where('id', '=', req.params.id).executeTakeFirst()) ?? null, 'Place');
       return { items: await findHousesByNumber(deps.db, req.params.id, req.query.number, req.query.at) };
     },
   });
 
   app.get('/api/houses/:id', {
-    schema: { tags: ['Places'], summary: 'A House with its house numbers over time and its Events', params: IdParams, response: { 200: HouseDetail, ...detail } },
+    schema: {
+      tags: ['Places'],
+      summary: 'A House with its house numbers over time and its Events',
+      params: IdParams,
+      response: { 200: HouseDetail, ...detail },
+    },
     handler: async (req) => found(await getHouse(deps.db, req.params.id), 'House'),
   });
 
   app.get('/api/parishes/:id', {
-    schema: { tags: ['Places'], summary: 'A Parish and the Places that belonged to it, with periods', params: IdParams, response: { 200: ParishDetail, ...detail } },
+    schema: {
+      tags: ['Places'],
+      summary: 'A Parish and the Places that belonged to it, with periods',
+      params: IdParams,
+      response: { 200: ParishDetail, ...detail },
+    },
     handler: async (req) => found(await getParish(deps.db, req.params.id), 'Parish'),
   });
 
   app.get('/api/estates/:id', {
-    schema: { tags: ['Places'], summary: 'An Estate and the Places that were part of it, with periods', params: IdParams, response: { 200: EstateDetail, ...detail } },
+    schema: {
+      tags: ['Places'],
+      summary: 'An Estate and the Places that were part of it, with periods',
+      params: IdParams,
+      response: { 200: EstateDetail, ...detail },
+    },
     handler: async (req) => found(await getEstate(deps.db, req.params.id), 'Estate'),
   });
 
@@ -152,7 +204,12 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   });
 
   app.get('/api/citations/:id', {
-    schema: { tags: ['Sources'], summary: 'A Citation with its transcription, Events, Names and page images (expiring links)', params: IdParams, response: { 200: CitationDetail, ...detail } },
+    schema: {
+      tags: ['Sources'],
+      summary: 'A Citation with its transcription, Events, Names and page images (expiring links)',
+      params: IdParams,
+      response: { 200: CitationDetail, ...detail },
+    },
     handler: async (req) => found(await getCitation(deps, req.params.id), 'Citation'),
   });
 
@@ -165,7 +222,10 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
       response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), ...detail },
     },
     handler: async (req, reply) => {
-      const image = found(await deps.db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', req.params.id).executeTakeFirst() ?? null, 'image');
+      const image = found(
+        (await deps.db.selectFrom('image').select(['storage_key', 'display_key', 'content_type']).where('id', '=', req.params.id).executeTakeFirst()) ?? null,
+        'image',
+      );
       const link = await imageLink(deps.images, image, req.query.full === 'true');
       return reply.header('cache-control', 'no-store').redirect(link.url, 302);
     },

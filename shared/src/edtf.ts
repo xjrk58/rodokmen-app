@@ -299,7 +299,7 @@ function parseSyntax(input: string): EdtfSyntax {
   if (input.includes('/')) {
     const parts = input.split('/');
     if (parts.length !== 2) throw new EdtfError(input, 'an interval has exactly one "/"');
-    const [startText, endText] = parts as [string, string];
+    const [startText = '', endText = ''] = parts;
     if (startText === '..' && endText === '..') throw new EdtfError(input, 'an interval needs at least one end');
     if (startText === '') throw new EdtfError(input, 'use "../" for an open start');
     if (endText === '') throw new EdtfError(input, 'use "/.." for an open end');
@@ -377,11 +377,6 @@ export function tryParseEdtf(input: string): EdtfResult {
 
 export function isEdtf(input: string): boolean {
   return tryParseEdtf(input).ok;
-}
-
-/** Year of an ISO day, or null. */
-export function yearOf(iso: string | null): number | null {
-  return iso === null ? null : Number(iso.slice(0, 4));
 }
 
 /** Whether the date's possible range overlaps the inclusive year range (either bound may be open). */

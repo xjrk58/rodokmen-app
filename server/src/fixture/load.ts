@@ -19,7 +19,7 @@ import {
   type GeoPoint,
 } from '@rodokmen/shared';
 import { sql, type Kysely } from 'kysely';
-import { type z } from 'zod';
+import type { z } from 'zod';
 import type { Database } from '../db/types.js';
 import { dateColumns, periodColumns } from '../tree/dates.js';
 import { generateFixture, type FixtureModel } from './generate.js';
@@ -35,8 +35,9 @@ function period(p: Period) {
   return periodColumns(p);
 }
 
-async function insertChunks<T>(rows: T[], insert: (chunk: T[]) => Promise<unknown>): Promise<void> {
-  for (let i = 0; i < rows.length; i += 500) await insert(rows.slice(i, i + 500));
+/** Inserts in chunks of 500 rows; `start` is the index of the chunk's first row in `rows`. */
+async function insertChunks<T>(rows: T[], insert: (chunk: T[], start: number) => Promise<unknown>): Promise<void> {
+  for (let i = 0; i < rows.length; i += 500) await insert(rows.slice(i, i + 500), i);
 }
 
 /** Validates the whole model with the shared schemas and inserts it in one transaction. */
@@ -59,17 +60,41 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
   model.images.forEach((r) => check(ImageMetadata, r, 'image'));
 
   await db.transaction().execute(async (tx) => {
-    await insertChunks(model.persons, (c) => tx.insertInto('person').values(c.map((p) => ({ id: p.id, sex: p.sex }))).execute());
-    await insertChunks(model.names, (c) =>
+    await insertChunks(model.persons, (c) =>
+      tx
+        .insertInto('person')
+        .values(c.map((p) => ({ id: p.id, sex: p.sex })))
+        .execute(),
+    );
+    await insertChunks(model.names, (c, start) =>
       tx
         .insertInto('name')
-        .values(c.map((n, i) => ({ id: n.id, person_id: n.personId, given: n.given, surname: n.surname, type: n.type, as_found: n.asFound, is_primary: n.primary, sort_order: n.primary ? 0 : i + 1 })))
+        .values(
+          c.map((n, i) => ({
+            id: n.id,
+            person_id: n.personId,
+            given: n.given,
+            surname: n.surname,
+            type: n.type,
+            as_found: n.asFound,
+            is_primary: n.primary,
+            sort_order: n.primary ? 0 : start + i + 1,
+          })),
+        )
         .execute(),
     );
     await insertChunks(model.places, (c) =>
       tx
         .insertInto('place')
-        .values(c.map((p) => ({ id: p.id, type: p.type, location: point(p.location), municipality_code: p.municipality?.code ?? null, municipality_name: p.municipality?.name ?? null })))
+        .values(
+          c.map((p) => ({
+            id: p.id,
+            type: p.type,
+            location: point(p.location),
+            municipality_code: p.municipality?.code ?? null,
+            municipality_name: p.municipality?.name ?? null,
+          })),
+        )
         .execute(),
     );
     await insertChunks(model.placeNames, (c) =>
@@ -79,38 +104,73 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
         .execute(),
     );
     await insertChunks(model.houses, (c) =>
-      tx.insertInto('house').values(c.map((h) => ({ id: h.id, place_id: h.placeId, location: point(h.location), note: h.note }))).execute(),
+      tx
+        .insertInto('house')
+        .values(c.map((h) => ({ id: h.id, place_id: h.placeId, location: point(h.location), note: h.note })))
+        .execute(),
     );
     await insertChunks(model.houseNumbers, (c) =>
-      tx.insertInto('house_number').values(c.map((n) => ({ id: n.id, house_id: n.houseId, number: n.number, ...period(n.period) }))).execute(),
+      tx
+        .insertInto('house_number')
+        .values(c.map((n) => ({ id: n.id, house_id: n.houseId, number: n.number, ...period(n.period) })))
+        .execute(),
     );
-    await insertChunks(model.parishes, (c) => tx.insertInto('parish').values(c.map((p) => ({ id: p.id, name: p.name, seat_place_id: p.seatPlaceId }))).execute());
+    await insertChunks(model.parishes, (c) =>
+      tx
+        .insertInto('parish')
+        .values(c.map((p) => ({ id: p.id, name: p.name, seat_place_id: p.seatPlaceId })))
+        .execute(),
+    );
     await insertChunks(model.placeParishes, (c) =>
-      tx.insertInto('place_parish').values(c.map((l) => ({ id: l.id, place_id: l.placeId, parish_id: l.parishId, ...period(l.period) }))).execute(),
+      tx
+        .insertInto('place_parish')
+        .values(c.map((l) => ({ id: l.id, place_id: l.placeId, parish_id: l.parishId, ...period(l.period) })))
+        .execute(),
     );
-    await insertChunks(model.estates, (c) => tx.insertInto('estate').values(c.map((e) => ({ id: e.id, name: e.name }))).execute());
+    await insertChunks(model.estates, (c) =>
+      tx
+        .insertInto('estate')
+        .values(c.map((e) => ({ id: e.id, name: e.name })))
+        .execute(),
+    );
     await insertChunks(model.placeEstates, (c) =>
-      tx.insertInto('place_estate').values(c.map((l) => ({ id: l.id, place_id: l.placeId, estate_id: l.estateId, ...period(l.period) }))).execute(),
+      tx
+        .insertInto('place_estate')
+        .values(c.map((l) => ({ id: l.id, place_id: l.placeId, estate_id: l.estateId, ...period(l.period) })))
+        .execute(),
     );
     await insertChunks(model.families, (c) =>
-      tx.insertInto('family').values(c.map((f) => ({ id: f.id, partner1_id: f.partner1Id, partner2_id: f.partner2Id }))).execute(),
+      tx
+        .insertInto('family')
+        .values(c.map((f) => ({ id: f.id, partner1_id: f.partner1Id, partner2_id: f.partner2Id })))
+        .execute(),
     );
-    await insertChunks(model.childLinks, (c) =>
+    await insertChunks(model.childLinks, (c, start) =>
       tx
         .insertInto('family_child')
-        .values(c.map((l, i) => ({ id: l.id, family_id: l.familyId, child_id: l.childId, link_type: l.linkType, sort_order: i })))
+        .values(c.map((l, i) => ({ id: l.id, family_id: l.familyId, child_id: l.childId, link_type: l.linkType, sort_order: start + i })))
         .execute(),
     );
     await insertChunks(model.events, (c) =>
       tx
         .insertInto('event')
-        .values(c.map((e) => ({ id: e.id, type: e.type, type_detail: e.typeDetail, ...dateColumns(e.date), place_id: e.placeId, house_id: e.houseId, description: e.description })))
+        .values(
+          c.map((e) => ({
+            id: e.id,
+            type: e.type,
+            type_detail: e.typeDetail,
+            ...dateColumns(e.date),
+            place_id: e.placeId,
+            house_id: e.houseId,
+            description: e.description,
+          })),
+        )
         .execute(),
     );
-    await insertChunks(model.roles, (c) =>
+    await insertChunks(model.roles, (c, start) =>
       tx
         .insertInto('event_role')
-        .values(c.map((r, i) => ({ id: r.id, event_id: r.eventId, person_id: r.personId, role: r.role, role_detail: r.roleDetail, sort_order: i })))
+        .values(c.map((r, i) => ({ id: r.id, event_id: r.eventId, person_id: r.personId, role: r.role, role_detail: r.roleDetail, sort_order: start + i })))
         .execute(),
     );
     await insertChunks(model.sources, (c) =>
@@ -134,14 +194,30 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
     await insertChunks(model.citations, (c) =>
       tx
         .insertInto('citation')
-        .values(c.map((x) => ({ id: x.id, source_id: x.sourceId, page: x.page, transcription: x.transcription, read_on: x.readOn, confidence: x.confidence, note: x.note })))
+        .values(
+          c.map((x) => ({
+            id: x.id,
+            source_id: x.sourceId,
+            page: x.page,
+            transcription: x.transcription,
+            read_on: x.readOn,
+            confidence: x.confidence,
+            note: x.note,
+          })),
+        )
         .execute(),
     );
     await insertChunks(model.eventCitations, (c) =>
-      tx.insertInto('event_citation').values(c.map((x) => ({ id: x.id, event_id: x.eventId, citation_id: x.citationId }))).execute(),
+      tx
+        .insertInto('event_citation')
+        .values(c.map((x) => ({ id: x.id, event_id: x.eventId, citation_id: x.citationId })))
+        .execute(),
     );
     await insertChunks(model.nameCitations, (c) =>
-      tx.insertInto('name_citation').values(c.map((x) => ({ id: x.id, name_id: x.nameId, citation_id: x.citationId }))).execute(),
+      tx
+        .insertInto('name_citation')
+        .values(c.map((x) => ({ id: x.id, name_id: x.nameId, citation_id: x.citationId })))
+        .execute(),
     );
     for (const img of model.images) {
       await tx

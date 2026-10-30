@@ -17,10 +17,12 @@ import { appendFile, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { withName } from '../src/text.js';
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const USER_AGENT = 'rodokmen-link-check/1 (+https://github.com/xjrk58/rodokmen-app)';
-const SAMPLE_PLACE = 'Pardubice';
+/** The Municipality whose name goes into place-search URLs for the check. */
+const SAMPLE_MUNICIPALITY = 'Pardubice';
 
 /**
  * @typedef {{ archive: string, kind: string, url: string }} Target
@@ -29,7 +31,8 @@ const SAMPLE_PLACE = 'Pardubice';
  */
 
 const WARN_HTTP = new Set([401, 403, 408, 429]);
-const WARN_CODES = /^(UND_ERR_CONNECT_TIMEOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|ETIMEDOUT|ECONNRESET|EAI_AGAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT(_LOCALLY)?|SELF_SIGNED_CERT_IN_CHAIN|DEPTH_ZERO_SELF_SIGNED_CERT|CERT_[A-Z_]+|ERR_TLS_CERT_ALTNAME_INVALID)$/;
+const WARN_CODES =
+  /^(UND_ERR_CONNECT_TIMEOUT|UND_ERR_HEADERS_TIMEOUT|UND_ERR_BODY_TIMEOUT|ETIMEDOUT|ECONNRESET|EAI_AGAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|UNABLE_TO_GET_ISSUER_CERT(_LOCALLY)?|SELF_SIGNED_CERT_IN_CHAIN|DEPTH_ZERO_SELF_SIGNED_CERT|CERT_[A-Z_]+|ERR_TLS_CERT_ALTNAME_INVALID)$/;
 
 /**
  * How serious a failed probe is.
@@ -48,17 +51,31 @@ export function severityOf(probe) {
 }
 
 /**
- * @param {any} data parsed archives.json
+ * A property of a value read from JSON, unchecked.
+ * @param {unknown} value
+ * @param {string} key
+ * @returns {unknown}
+ */
+const prop = (value, key) => (typeof value === 'object' && value !== null ? /** @type {Record<string, unknown>} */ (value)[key] : undefined);
+/** @param {unknown} value */
+const text = (value) => (typeof value === 'string' ? value : '');
+
+/**
+ * The URLs to check. The file is read as it is: a missing URL becomes a target that fails.
+ * @param {unknown} data parsed archives.json
  * @returns {Target[]}
  */
 export function targetsOf(data) {
   /** @type {Target[]} */
   const targets = [];
-  for (const entry of [...(data.archives ?? []), ...(data.jewishRegisters ? [data.jewishRegisters] : [])]) {
-    targets.push({ archive: entry.name, kind: `portal ${entry.portal?.name ?? ''}`.trim(), url: entry.portal?.url });
-    if (entry.placeSearchUrl) {
-      targets.push({ archive: entry.name, kind: 'place search', url: entry.placeSearchUrl.replaceAll('{name}', encodeURIComponent(SAMPLE_PLACE)) });
-    }
+  const archives = prop(data, 'archives');
+  const jewish = prop(data, 'jewishRegisters');
+  for (const entry of [...(Array.isArray(archives) ? archives : []), ...(jewish ? [jewish] : [])]) {
+    const archive = text(prop(entry, 'name'));
+    const portal = prop(entry, 'portal');
+    targets.push({ archive, kind: `portal ${text(prop(portal, 'name'))}`.trim(), url: text(prop(portal, 'url')) });
+    const search = text(prop(entry, 'placeSearchUrl'));
+    if (search) targets.push({ archive, kind: 'place search', url: withName(search, SAMPLE_MUNICIPALITY) });
   }
   return targets;
 }
@@ -78,12 +95,17 @@ async function probe(url, timeoutMs) {
       signal: AbortSignal.timeout(timeoutMs),
     });
     await response.body?.cancel();
-    return { ok: response.status < 400, status: `HTTP ${response.status}`, retry: response.status >= 500 || response.status === 429, httpStatus: response.status };
+    return {
+      ok: response.status < 400,
+      status: `HTTP ${response.status}`,
+      retry: response.status >= 500 || response.status === 429,
+      httpStatus: response.status,
+    };
   } catch (error) {
-    const cause = /** @type {any} */ (error)?.cause;
-    const timedOut = /** @type {Error} */ (error).name === 'TimeoutError';
-    const code = cause?.code;
-    const message = timedOut ? `no answer within ${timeoutMs} ms` : (code ?? cause?.message ?? String(error));
+    const cause = error instanceof Error ? error.cause : undefined;
+    const timedOut = error instanceof Error && error.name === 'TimeoutError';
+    const code = text(prop(cause, 'code')) || undefined;
+    const message = timedOut ? `no answer within ${timeoutMs} ms` : (code ?? (text(prop(cause, 'message')) || String(error)));
     return { ok: false, status: message, retry: true, code, timedOut };
   }
 }
@@ -94,7 +116,7 @@ async function probe(url, timeoutMs) {
  * @returns {Promise<Result>}
  */
 async function check(target, { timeoutMs, retries }) {
-  if (typeof target.url !== 'string' || !/^https?:\/\//.test(target.url)) return { ...target, ok: false, status: 'not a URL', severity: 'fail' };
+  if (!/^https?:\/\//.test(target.url)) return { ...target, ok: false, status: 'not a URL', severity: 'fail' };
   let result = await probe(target.url, timeoutMs);
   for (let attempt = 1; !result.ok && result.retry && attempt <= retries; attempt++) {
     await new Promise((resolve) => setTimeout(resolve, 2000 * attempt));
@@ -112,6 +134,7 @@ async function main() {
       retries: { type: 'string', default: '2' },
     },
   });
+  /** @type {unknown} */
   const data = JSON.parse(await readFile(args.file, 'utf8'));
   const targets = targetsOf(data);
   for (const extra of args.extra) {
@@ -132,7 +155,10 @@ async function main() {
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
     const rows = results.map((r) => `| ${icon[r.severity]} | ${r.archive} | ${r.kind} | ${r.url} | ${r.status} |`);
-    await appendFile(process.env.GITHUB_STEP_SUMMARY, ['## Archive portal links', '', '| | Archive | Link | URL | Result |', '|---|---|---|---|---|', ...rows, ''].join('\n'));
+    await appendFile(
+      process.env.GITHUB_STEP_SUMMARY,
+      ['## Archive portal links', '', '| | Archive | Link | URL | Result |', '|---|---|---|---|---|', ...rows, ''].join('\n'),
+    );
   }
   if (failed.length) {
     console.error(`\n${failed.length} of ${results.length} archive links failed:`);

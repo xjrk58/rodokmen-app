@@ -1,4 +1,24 @@
+import type {
+  ChildLinkType,
+  Confidence,
+  EventType,
+  ImageContentType,
+  ImageKind,
+  MemberRole,
+  NameLanguage,
+  NameType,
+  PlaceType,
+  ProposalKind,
+  ProposalStatus,
+  RestorableTable,
+  RoleType,
+  Sex,
+  SourceType,
+  UiLanguage,
+  UploadStatus,
+} from '@rodokmen/shared';
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
+import type { Snapshot } from '../proposals/records.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -22,7 +42,7 @@ interface PeriodColumns {
 }
 
 export interface PersonTable extends RecordColumns {
-  sex: Generated<'female' | 'male' | 'unknown'>;
+  sex: Generated<Sex>;
   /** Set when the Person was merged into another; the record stays as a redirect. */
   merged_into_id: ColumnType<string | null, string | null | undefined, string | null>;
 }
@@ -31,7 +51,7 @@ export interface NameTable extends RecordColumns {
   person_id: string;
   given: Generated<string>;
   surname: Generated<string>;
-  type: 'birth' | 'married' | 'latin' | 'german' | 'nickname' | 'other';
+  type: NameType;
   as_found: string;
   is_primary: Generated<boolean>;
   sort_order: Generated<number>;
@@ -46,12 +66,12 @@ export interface FamilyTable extends RecordColumns {
 export interface FamilyChildTable extends RecordColumns {
   family_id: string;
   child_id: string;
-  link_type: 'birth' | 'adoptive' | 'foster' | 'step';
+  link_type: ChildLinkType;
   sort_order: Generated<number>;
 }
 
 export interface PlaceTable extends RecordColumns {
-  type: Generated<'village' | 'town' | 'hamlet' | 'other'>;
+  type: Generated<PlaceType>;
   location: Geography | null;
   municipality_code: string | null;
   municipality_name: string | null;
@@ -60,7 +80,7 @@ export interface PlaceTable extends RecordColumns {
 export interface PlaceNameTable extends RecordColumns, PeriodColumns {
   place_id: string;
   name: string;
-  language: 'cs' | 'de' | 'la';
+  language: NameLanguage;
   is_primary: Generated<boolean>;
   search_text: ColumnType<string, never, never>;
 }
@@ -96,7 +116,7 @@ export interface PlaceEstateTable extends RecordColumns, PeriodColumns {
 }
 
 export interface EventTable extends RecordColumns {
-  type: 'birth' | 'baptism' | 'marriage' | 'death' | 'burial' | 'residence' | 'census' | 'other';
+  type: EventType;
   type_detail: string | null;
   date: string | null;
   date_earliest: Day | null;
@@ -109,13 +129,13 @@ export interface EventTable extends RecordColumns {
 export interface EventRoleTable extends RecordColumns {
   event_id: string;
   person_id: string;
-  role: 'child' | 'father' | 'mother' | 'partner' | 'godparent' | 'witness' | 'priest' | 'deceased' | 'informant' | 'other';
+  role: RoleType;
   role_detail: string | null;
   sort_order: Generated<number>;
 }
 
 export interface SourceTable extends RecordColumns {
-  type: 'parish_register' | 'census' | 'land_book' | 'family_account' | 'other';
+  type: SourceType;
   title: string;
   repository: string | null;
   reference: string | null;
@@ -130,7 +150,7 @@ export interface CitationTable extends RecordColumns {
   page: string | null;
   transcription: string;
   read_on: Day;
-  confidence: 'very_low' | 'low' | 'normal' | 'high' | 'very_high';
+  confidence: Confidence;
   note: string | null;
 }
 
@@ -145,10 +165,10 @@ export interface NameCitationTable extends RecordColumns {
 }
 
 export interface ImageTable extends RecordColumns {
-  kind: 'page' | 'photo' | 'portrait';
+  kind: ImageKind;
   citation_id: string | null;
   storage_key: string;
-  content_type: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic' | 'image/heif';
+  content_type: ImageContentType;
   byte_size: number;
   width: number | null;
   height: number | null;
@@ -162,14 +182,12 @@ export interface ImagePersonTable extends RecordColumns {
   person_id: string;
 }
 
-export type MemberRole = 'contributor' | 'editor' | 'owner';
-
 export interface AccountTable {
   id: Generated<string>;
   version: Generated<number>;
   email: string;
   display_name: string;
-  language: 'cs' | 'en';
+  language: UiLanguage;
   role: Generated<MemberRole>;
   disabled_at: Timestamp | null;
   invited_by: string | null;
@@ -218,7 +236,7 @@ export interface InvitationTable {
   id: Generated<string>;
   token_hash: Buffer;
   email: string;
-  language: 'cs' | 'en';
+  language: UiLanguage;
   invited_by: string;
   created_at: CreatedAt;
   expires_at: Timestamp;
@@ -238,12 +256,14 @@ export interface SignInLinkTable {
 
 type Json = ColumnType<Record<string, unknown>, string, string>;
 type NullableJson = ColumnType<Record<string, unknown> | null, string | null, string | null>;
+/** A logged row (`to_jsonb(row)`), written as JSON text. */
+type SnapshotJson = ColumnType<Snapshot | null, string | null, string | null>;
 
 export interface ProposalTable {
   id: Generated<string>;
   version: Generated<number>;
-  kind: Generated<'contribution' | 'direct' | 'undo'>;
-  status: Generated<'pending' | 'accepted' | 'rejected'>;
+  kind: Generated<ProposalKind>;
+  status: Generated<ProposalStatus>;
   author_id: string;
   note: string | null;
   format_version: number;
@@ -274,7 +294,7 @@ export interface ProposalOperationTable {
 export interface LogEntryTable {
   id: Generated<string>;
   proposal_id: string;
-  kind: 'contribution' | 'direct' | 'undo';
+  kind: ProposalKind;
   author_id: string;
   accepted_by: string;
   accepted_at: Timestamp;
@@ -286,20 +306,20 @@ export interface LogChangeTable {
   id: Generated<number>;
   log_entry_id: string;
   seq: number;
-  record_table: string;
+  record_table: RestorableTable;
   record_id: string;
-  before: NullableJson;
-  after: NullableJson;
+  before: SnapshotJson;
+  after: SnapshotJson;
 }
 
 export interface UploadTable {
   id: Generated<string>;
   version: Generated<number>;
   author_id: string;
-  status: Generated<'waiting' | 'ready' | 'deleted'>;
+  status: Generated<UploadStatus>;
   storage_key: string;
   display_key: string;
-  declared_type: string;
+  declared_type: ImageTable['content_type'];
   declared_size: number;
   declared_sha256: string;
   content_type: ImageTable['content_type'] | null;

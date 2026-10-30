@@ -1,4 +1,6 @@
-import type { MemberRole, UiLanguage } from '@rodokmen/shared';
+import { ApiError, type MemberRole, type UiLanguage } from '@rodokmen/shared';
+import type { AddressInfo } from 'node:net';
+import { z } from 'zod';
 import { buildApp, type RodokmenApp } from '../src/app.js';
 import { createSession, SESSION_COOKIE } from '../src/auth/sessions.js';
 import { loadConfig, type Config } from '../src/config.js';
@@ -6,7 +8,7 @@ import type { Db } from '../src/db/db.js';
 import type { Account } from '../src/db/types.js';
 import { OutboxMailer } from '../src/mail/mailer.js';
 import type { ImageStorage } from '../src/storage/images.js';
-import type { Clock } from '../src/tree/summaries.js';
+import type { Clock } from '../src/clock.js';
 import type { TestDatabase } from './db.js';
 
 /** A clock tests can move. */
@@ -48,7 +50,12 @@ export interface TestApp {
 
 export async function makeApp(
   t: TestDatabase,
-  options: { config?: Record<string, string>; extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes']; clock?: TestClock; images?: (clock: TestClock) => ImageStorage } = {},
+  options: {
+    config?: Record<string, string>;
+    extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes'];
+    clock?: TestClock;
+    images?: (clock: TestClock) => ImageStorage;
+  } = {},
 ): Promise<TestApp> {
   const config = testConfig(t.url, options.config);
   const mailer = new OutboxMailer();
@@ -60,7 +67,11 @@ export async function makeApp(
 let counter = 0;
 
 /** Creates a Member directly in the database (the Owner first, if none exists). */
-export async function createMember(db: Db, role: MemberRole = 'contributor', fields: { email?: string; displayName?: string; language?: UiLanguage } = {}): Promise<Account> {
+export async function createMember(
+  db: Db,
+  role: MemberRole = 'contributor',
+  fields: { email?: string; displayName?: string; language?: UiLanguage } = {},
+): Promise<Account> {
   counter += 1;
   const email = fields.email ?? `member${counter}-${Math.random().toString(36).slice(2, 8)}@example.test`;
   return db
@@ -93,4 +104,20 @@ export function tokenFromEmail(text: string): string {
   const m = /#token=([A-Za-z0-9_-]+)/.exec(text);
   if (!m) throw new Error(`no token link in email:\n${text}`);
   return m[1]!;
+}
+
+/** The error an API answer carries, parsed. */
+export function errorOf(res: { json(): unknown }): ApiError {
+  return ApiError.parse(res.json());
+}
+
+/** The id of the record an API answer describes. */
+export function idOf(res: { json(): unknown }): string {
+  return z.object({ id: z.string() }).parse(res.json()).id;
+}
+
+/** The port of a server listening on TCP. */
+export function portOf(address: AddressInfo | string | null): number {
+  if (address === null || typeof address === 'string') throw new Error('the server is not listening on a TCP port');
+  return address.port;
 }

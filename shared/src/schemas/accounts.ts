@@ -6,9 +6,7 @@ import { mayDecide } from '../rules.js';
 import { Id, UiLanguage, Version } from './common.js';
 
 /** Every Member has exactly one role. There is exactly one Owner. */
-export const MemberRole = z
-  .enum(['contributor', 'editor', 'owner'])
-  .meta({ id: 'MemberRole', description: 'Contributor (the default), Editor or Owner' });
+export const MemberRole = z.enum(['contributor', 'editor', 'owner']).meta({ id: 'MemberRole', description: 'Contributor (the default), Editor or Owner' });
 
 export const MEMBER_ROLE_RANK = { contributor: 0, editor: 1, owner: 2 } as const satisfies Record<z.infer<typeof MemberRole>, number>;
 
@@ -100,9 +98,7 @@ export const PasskeyList = z.object({ items: z.array(PasskeyView) }).meta({ id: 
 export const INVITATION_DAYS = 7;
 export const SIGN_IN_LINK_MINUTES = 15;
 
-export const CreateInvitationBody = z
-  .object({ email: Email, language: UiLanguage })
-  .meta({ id: 'CreateInvitationBody' });
+export const CreateInvitationBody = z.object({ email: Email, language: UiLanguage }).meta({ id: 'CreateInvitationBody' });
 
 export const InvitationStatus = z.enum(['pending', 'accepted', 'expired', 'revoked']).meta({ id: 'InvitationStatus' });
 

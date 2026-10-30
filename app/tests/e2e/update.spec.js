@@ -50,8 +50,8 @@ test('a new deploy shows "New version, reload" and updates only when tapped', as
       const prompt = page.getByRole('button', { name: 'New version, reload' });
       await expect(prompt).toBeVisible();
 
-      // Nothing changes until the reader agrees.
-      await page.waitForTimeout(1000);
+      // Nothing changes until the reader agrees: the new worker waits, the page keeps its state.
+      await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.waiting?.state ?? 'none')).toBe('installed');
       expect(await page.evaluate(() => /** @type {any} */ (window).notReloaded)).toBe(true);
       await expect(page.locator('#place-sheet')).toBeVisible();
 

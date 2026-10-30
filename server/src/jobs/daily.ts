@@ -2,16 +2,25 @@ import { permissionsFor } from '@rodokmen/shared';
 import type { Db } from '../db/db.js';
 import type { Mailer } from '../mail/mailer.js';
 import { digestEmail } from '../mail/templates.js';
-import { proposalDigestLines } from '../proposals/service.js';
+import { proposalDigestLines } from '../proposals/views.js';
 import type { ImageStorage } from '../storage/images.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
+import { messageOf } from '../errors.js';
 
 export const TIME_ZONE = 'Europe/Prague';
 
 /** The day and minute of the day in Prague for an instant, so jobs follow local time across DST. */
 export function pragueTime(at: Date): { day: string; minutes: number } {
   const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    })
       .formatToParts(at)
       .map((p) => [p.type, p.value]),
   );
@@ -48,6 +57,8 @@ export const MAX_DELIVERY_ATTEMPTS = 3;
 export const MAX_JOB_ATTEMPTS = 5;
 /** A running claim older than this was left by a crash and may be taken over. */
 export const STALE_CLAIM_MS = 15 * 60_000;
+/** A failed run is tried again after this pause, so a short outage does not use up the day's attempts. */
+export const RETRY_AFTER_MS = 10 * 60_000;
 
 /**
  * The Editor digest (notifications spec): each Editor gets one email listing every pending
@@ -72,23 +83,42 @@ export async function sendDigests(deps: JobDeps, day: string, job = 'editor-dige
     const groups = new Map<string, { author: string; isAgent: boolean; items: Array<{ submittedAt: Date; summary: string; changes: number; link: string }> }>();
     for (const l of lines) {
       const g = groups.get(l.author.id) ?? { author: l.author.displayName, isAgent: l.author.isAgent, items: [] };
-      g.items.push({ submittedAt: l.submittedAt, summary: l.note ?? l.first[editor.language], changes: l.changes, link: `${deps.publicOrigin}/#work/review/${l.id}` });
+      g.items.push({
+        submittedAt: l.submittedAt,
+        summary: l.note ?? l.first[editor.language],
+        changes: l.changes,
+        link: `${deps.publicOrigin}/#work/review/${l.id}`,
+      });
       groups.set(l.author.id, g);
     }
     try {
-      await deps.mailer.send(digestEmail({ to: editor.email, language: editor.language, displayName: editor.display_name, groups: [...groups.values()], queueLink: `${deps.publicOrigin}/#work/review` }));
+      await deps.mailer.send(
+        digestEmail({
+          to: editor.email,
+          language: editor.language,
+          displayName: editor.display_name,
+          groups: [...groups.values()],
+          queueLink: `${deps.publicOrigin}/#work/review`,
+        }),
+      );
       await deps.db
         .insertInto('job_delivery')
         .values({ job, day, account_id: editor.id, sent_at: deps.clock.now(), attempts: 1 })
-        .onConflict((oc) => oc.columns(['job', 'day', 'account_id']).doUpdateSet((eb) => ({ sent_at: deps.clock.now(), attempts: eb('job_delivery.attempts', '+', 1), last_error: null })))
+        .onConflict((oc) =>
+          oc
+            .columns(['job', 'day', 'account_id'])
+            .doUpdateSet((eb) => ({ sent_at: deps.clock.now(), attempts: eb('job_delivery.attempts', '+', 1), last_error: null })),
+        )
         .execute();
       sent += 1;
     } catch (error) {
-      const message = (error as Error).message.slice(0, 500);
+      const message = messageOf(error).slice(0, 500);
       const row = await deps.db
         .insertInto('job_delivery')
         .values({ job, day, account_id: editor.id, attempts: 1, last_error: message })
-        .onConflict((oc) => oc.columns(['job', 'day', 'account_id']).doUpdateSet((eb) => ({ attempts: eb('job_delivery.attempts', '+', 1), last_error: message })))
+        .onConflict((oc) =>
+          oc.columns(['job', 'day', 'account_id']).doUpdateSet((eb) => ({ attempts: eb('job_delivery.attempts', '+', 1), last_error: message })),
+        )
         .returning('attempts')
         .executeTakeFirstOrThrow();
       if (row.attempts >= MAX_DELIVERY_ATTEMPTS) deps.log?.(`giving up the ${job} email to ${editor.email} for ${day}`, error);
@@ -138,7 +168,7 @@ export function dailyJobs(deps: JobDeps): DailyJob[] {
  * Runs each daily job once per Prague day, at or after its time. Called every minute. A run is
  * claimed in the database before it starts and marked done only after it finished, so a second
  * server never runs it twice, a crash mid-run is picked up again once the claim is stale, and a
- * failed or incomplete run is retried (at most MAX_JOB_ATTEMPTS times a day).
+ * failed or incomplete run is retried RETRY_AFTER_MS later (at most MAX_JOB_ATTEMPTS times a day).
  */
 export class DailyScheduler {
   private inFlight: Promise<string[]> | null = null;
@@ -159,6 +189,7 @@ export class DailyScheduler {
 
   private async claim(job: string, day: string, now: Date): Promise<boolean> {
     const stale = new Date(now.getTime() - STALE_CLAIM_MS);
+    const retry = new Date(now.getTime() - RETRY_AFTER_MS);
     const claimed = await this.deps.db
       .insertInto('job_run')
       .values({ job, day, status: 'running', claimed_at: now })
@@ -170,7 +201,7 @@ export class DailyScheduler {
             eb.and([
               eb('job_run.status', '!=', 'done'),
               eb('job_run.attempts', '<', MAX_JOB_ATTEMPTS),
-              eb.or([eb('job_run.status', '=', 'failed'), eb('job_run.claimed_at', '<', stale)]),
+              eb.or([eb.and([eb('job_run.status', '=', 'failed'), eb('job_run.finished_at', '<', retry)]), eb('job_run.claimed_at', '<', stale)]),
             ]),
           ),
       )
@@ -190,7 +221,7 @@ export class DailyScheduler {
       try {
         result = await job.run(now, day);
       } catch (error) {
-        result = { detail: (error as Error).message.slice(0, 500), complete: false };
+        result = { detail: messageOf(error).slice(0, 500), complete: false };
         this.deps.log?.(`daily job ${job.name} failed`, error);
       }
       await this.deps.db

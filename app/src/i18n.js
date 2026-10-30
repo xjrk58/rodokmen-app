@@ -12,6 +12,8 @@ let strings = {};
 let current = 'en';
 /** @type {Set<(lang: Language) => void>} */
 const listeners = new Set();
+/** Counts setLanguage calls, so a slow load of an earlier choice cannot undo a later one. */
+let requested = 0;
 
 /**
  * @param {string | null | undefined} value
@@ -40,14 +42,26 @@ export function language() {
 }
 
 /**
+ * @param {unknown} value
+ * @returns {value is Record<string, string>}
+ */
+const isStrings = (value) => typeof value === 'object' && value !== null && Object.values(value).every((v) => typeof v === 'string');
+
+/**
  * Loads a language, translates the page and remembers the choice if asked.
+ * When called again before it finishes, only the last call takes effect.
  * @param {Language} lang
  * @param {{ remember?: boolean }} [options]
  */
 export async function setLanguage(lang, { remember = false } = {}) {
+  const mine = ++requested;
   const response = await fetch(`i18n/${lang}.json`);
   if (!response.ok) throw new Error(`Cannot load i18n/${lang}.json`);
-  strings = await response.json();
+  /** @type {unknown} */
+  const loaded = await response.json();
+  if (!isStrings(loaded)) throw new Error(`i18n/${lang}.json is not a table of strings`);
+  if (mine !== requested) return;
+  strings = loaded;
   current = lang;
   if (remember) {
     try {
@@ -85,7 +99,8 @@ export function translate(root) {
     el.textContent = t(/** @type {HTMLElement} */ (el).dataset.i18n ?? '');
   }
   for (const el of root.querySelectorAll('[data-i18n-attr]')) {
-    for (const pair of (/** @type {HTMLElement} */ (el).dataset.i18nAttr ?? '').split(';')) {
+    const attrs = /** @type {HTMLElement} */ (el).dataset.i18nAttr ?? '';
+    for (const pair of attrs.split(';')) {
       const [attr, key] = pair.split(':');
       if (attr && key) el.setAttribute(attr.trim(), t(key.trim()));
     }

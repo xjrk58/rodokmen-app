@@ -6,10 +6,12 @@ import {
   type AuthenticationResponseJSON,
   type RegistrationResponseJSON,
 } from '@simplewebauthn/server';
+import { z } from 'zod';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { ApiProblem } from './problem.js';
+import { messageOf } from '../errors.js';
 
 /**
  * Passkeys through WebAuthn (@simplewebauthn/server). The relying party is the domain the
@@ -18,6 +20,36 @@ import { ApiProblem } from './problem.js';
  */
 export const CHALLENGE_COOKIE = 'rdk_webauthn';
 export const CHALLENGE_SECONDS = 300;
+
+/** WebAuthn answers as the browser sends them (base64url fields), checked before verification. */
+const Base64Url = z.string().regex(/^[A-Za-z0-9_-]*$/);
+const ClientExtensions = z.object({
+  appid: z.boolean().optional(),
+  credProps: z.object({ rk: z.boolean().optional() }).optional(),
+  hmacCreateSecret: z.boolean().optional(),
+});
+const Credential = {
+  id: Base64Url,
+  rawId: Base64Url,
+  type: z.literal('public-key'),
+  authenticatorAttachment: z.enum(['cross-platform', 'platform']).optional(),
+  clientExtensionResults: ClientExtensions,
+};
+const RegistrationResponse = z.object({
+  ...Credential,
+  response: z.object({
+    clientDataJSON: Base64Url,
+    attestationObject: Base64Url,
+    authenticatorData: Base64Url.optional(),
+    transports: z.array(z.string()).optional(),
+    publicKeyAlgorithm: z.number().optional(),
+    publicKey: Base64Url.optional(),
+  }),
+}) satisfies z.ZodType<RegistrationResponseJSON>;
+const AuthenticationResponse = z.object({
+  ...Credential,
+  response: z.object({ clientDataJSON: Base64Url, authenticatorData: Base64Url, signature: Base64Url, userHandle: Base64Url.optional() }),
+}) satisfies z.ZodType<AuthenticationResponseJSON>;
 
 export interface PasskeyDeps {
   db: Db;
@@ -48,7 +80,8 @@ async function takeChallenge(deps: PasskeyDeps, id: string | undefined, purpose:
     .where('expires_at', '>', deps.clock.now())
     .returning(['challenge', 'account_id'])
     .executeTakeFirst();
-  if (!row || (accountId !== null && row.account_id !== accountId)) throw new ApiProblem(400, 'challenge_missing', 'Start again: the passkey request has expired.');
+  if (!row || (accountId !== null && row.account_id !== accountId))
+    throw new ApiProblem(400, 'challenge_missing', 'Start again: the passkey request has expired.');
   return row.challenge;
 }
 
@@ -70,18 +103,20 @@ export async function registrationOptions(deps: PasskeyDeps, account: Account) {
 }
 
 export async function verifyRegistration(deps: PasskeyDeps, account: Account, challengeId: string | undefined, response: unknown, name: string | undefined) {
+  const parsed = RegistrationResponse.safeParse(response);
+  if (!parsed.success) throw new ApiProblem(400, 'passkey_invalid', 'The passkey could not be registered: the browser sent an incomplete answer.');
   const expectedChallenge = await takeChallenge(deps, challengeId, 'registration', account.id);
   let verification;
   try {
     verification = await verifyRegistrationResponse({
-      response: response as RegistrationResponseJSON,
+      response: parsed.data,
       expectedChallenge,
       expectedOrigin: deps.origin,
       expectedRPID: deps.rpId,
       requireUserVerification: false,
     });
   } catch (error) {
-    throw new ApiProblem(400, 'passkey_invalid', `The passkey could not be registered: ${(error as Error).message}`);
+    throw new ApiProblem(400, 'passkey_invalid', `The passkey could not be registered: ${messageOf(error)}`);
   }
   if (!verification.verified) throw new ApiProblem(400, 'passkey_invalid', 'The passkey could not be registered.');
   const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
@@ -114,9 +149,10 @@ export async function authenticationOptions(deps: PasskeyDeps) {
 
 export async function verifyAuthentication(deps: PasskeyDeps, challengeId: string | undefined, response: unknown): Promise<Account> {
   const expectedChallenge = await takeChallenge(deps, challengeId, 'authentication', null);
-  const body = response as AuthenticationResponseJSON;
   const refuse = () => new ApiProblem(401, 'passkey_unknown', 'This passkey is not known here. Sign in with an emailed link instead.');
-  if (typeof body?.id !== 'string') throw refuse();
+  const parsed = AuthenticationResponse.safeParse(response);
+  if (!parsed.success) throw refuse();
+  const body = parsed.data;
   const stored = await deps.db
     .selectFrom('passkey as k')
     .innerJoin('account as a', 'a.id', 'k.account_id')

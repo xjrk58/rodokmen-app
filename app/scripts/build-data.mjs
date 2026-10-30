@@ -102,17 +102,21 @@ const sha256 = (data) => createHash('sha256').update(data).digest('hex');
 /** @param {number} x */
 const round = (x) => Number(x.toFixed(COORD_DECIMALS));
 
-async function main() {
-  // 1. Municipalities
+/** @typedef {import('geojson').Polygon | import('geojson').MultiPolygon} Area */
+/** @typedef {{ code: string, name: string, listedDistrict: string, districtCode: string, lat: number, lon: number }} ListedMunicipality */
+/** @typedef {{ code: string, name: string, listedDistrict: string, polygonDistrict: string }} Reassigned */
+/** @typedef {{ type: string, properties: { name: string, code: string | undefined }, geometry: Area }} NamedDistrict */
+
+/** Step 1: the Municipalities of the list (without abolished ones) and the districts they name. */
+async function readMunicipalities() {
   const csvBuffer = await loadSource('municipalities', args['municipalities-file']);
   const rows = parseCsv(csvBuffer.toString('utf8'));
-  const required = ['Obec', 'Kód obce', 'Okres', 'Kód okresu', 'Latitude', 'Longitude'];
-  for (const column of required) {
+  for (const column of ['Obec', 'Kód obce', 'Okres', 'Kód okresu', 'Latitude', 'Longitude']) {
     if (!(column in rows[0])) throw new BuildError(`Municipality list has no column "${column}"`);
   }
   /** @type {{ code: string, name: string, reason: string | undefined }[]} */
   const excluded = [];
-  /** @type {{ code: string, name: string, listedDistrict: string, districtCode: string, lat: number, lon: number }[]} */
+  /** @type {ListedMunicipality[]} */
   const municipalities = [];
   for (const row of rows) {
     if (ABOLISHED.has(row['Kód obce'])) {
@@ -127,17 +131,33 @@ async function main() {
   /** @type {Map<string, string>} district name -> district code */
   const districtCodes = new Map();
   for (const m of municipalities) districtCodes.set(m.listedDistrict, m.districtCode);
+  return { csvBuffer, rows, excluded, municipalities, districtCodes };
+}
 
-  // 2. Every district needs exactly one archive (checked before the slow part).
+/**
+ * Step 2: archives.json, where every district needs exactly one archive (checked before the slow part).
+ * @param {string[]} districtNames
+ * @returns {Promise<import('../src/types.js').ArchiveData>}
+ */
+async function readArchives(districtNames) {
+  /** @type {unknown} */
   const archives = JSON.parse(await readFile(args.archives, 'utf8'));
-  const coverageErrors = checkArchiveCoverage(archives, [...districtCodes.keys()]);
+  const coverageErrors = checkArchiveCoverage(archives, districtNames);
   if (coverageErrors.length) throw new BuildError(`archives.json does not match the districts:\n  ${coverageErrors.join('\n  ')}`);
+  return /** @type {import('../src/types.js').ArchiveData} */ (archives);
+}
 
-  // 3. Name each district polygon by the municipality points inside it.
-  const districtsBuffer = await loadSource('districts', args['districts-file']);
-  /** @type {import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon>} */
+/**
+ * Step 3: names each district polygon by the municipality points inside it.
+ * @param {Buffer} districtsBuffer
+ * @param {ListedMunicipality[]} municipalities
+ * @param {Map<string, string>} districtCodes
+ * @returns {NamedDistrict[]}
+ */
+function nameDistricts(districtsBuffer, municipalities, districtCodes) {
+  /** @type {import('geojson').FeatureCollection<Area>} */
   const source = JSON.parse(districtsBuffer.toString('utf8'));
-  const shapes = source.features.map((/** @type {import('geojson').Feature<import('geojson').Polygon | import('geojson').MultiPolygon>} */ f) => {
+  const shapes = source.features.map((f) => {
     const polygons = polygonsOf(f.geometry);
     return { feature: f, polygons, bbox: bboxOf(polygons) };
   });
@@ -164,16 +184,16 @@ async function main() {
   });
   const unnamed = [...districtCodes.keys()].filter((d) => !seen.has(d));
   if (unnamed.length) throw new BuildError(`No polygon for district(s): ${unnamed.join(', ')}`);
-
-  const named = shapes
-    .map((shape, i) => ({
-      type: 'Feature',
-      properties: { name: names[i], code: districtCodes.get(names[i]) },
-      geometry: shape.feature.geometry,
-    }))
+  return shapes
+    .map((shape, i) => ({ type: 'Feature', properties: { name: names[i], code: districtCodes.get(names[i]) }, geometry: shape.feature.geometry }))
     .sort((a, b) => czechCollator.compare(a.properties.name, b.properties.name));
+}
 
-  // 4. Simplify with shared borders kept shared, and dissolve to the national border.
+/**
+ * Step 4: simplifies with shared borders kept shared, and dissolves to the national border.
+ * @param {NamedDistrict[]} named
+ */
+async function simplify(named) {
   const { default: mapshaper } = await import('mapshaper');
   const input = JSON.stringify({ type: 'FeatureCollection', features: named });
   const output = await mapshaper.applyCommands(
@@ -182,23 +202,30 @@ async function main() {
       `-dissolve -each "name='Česko'" -o country.geojson format=geojson precision=${PRECISION}`,
     { 'districts.json': input },
   );
-  const districtsOut = output['districts.geojson'].toString();
-  const countryOut = output['country.geojson'].toString();
+  return { districtsOut: output['districts.geojson'].toString(), countryOut: output['country.geojson'].toString() };
+}
 
-  // 5. Check every Municipality against the simplified polygons the app uses.
-  /** @type {import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon, {name: string, code: string}>} */
+/**
+ * Step 5: checks every Municipality against the simplified polygons the app uses.
+ * @param {ListedMunicipality[]} municipalities
+ * @param {string} districtsOut
+ * @param {string} countryOut
+ */
+function placeMunicipalities(municipalities, districtsOut, countryOut) {
+  /** @type {import('geojson').FeatureCollection<Area, {name: string, code: string}>} */
   const simplified = JSON.parse(districtsOut);
-  const simpleShapes = simplified.features.map((/** @type {import('geojson').Feature<import('geojson').Polygon | import('geojson').MultiPolygon, {name: string, code: string}>} */ f) => {
+  const simpleShapes = simplified.features.map((f) => {
     const polygons = polygonsOf(f.geometry);
     return { name: f.properties.name, polygons, bbox: bboxOf(polygons) };
   });
+  /** @type {import('geojson').FeatureCollection<Area>} */
   const country = JSON.parse(countryOut);
   const countryPolygons = polygonsOf(country.features[0].geometry);
   /** @type {string[]} */
   const outside = [];
   /** @type {string[]} */
   const overlapping = [];
-  /** @type {{ code: string, name: string, listedDistrict: string, polygonDistrict: string }[]} */
+  /** @type {Reassigned[]} */
   const reassigned = [];
   const records = municipalities.map((m) => {
     const hits = simpleShapes.filter((s) => bboxContains(s.bbox, m.lon, m.lat) && polygonsContain(s.polygons, m.lon, m.lat));
@@ -212,11 +239,17 @@ async function main() {
   });
   if (outside.length) throw new BuildError(`${outside.length} municipalities fall outside every district: ${outside.slice(0, 20).join(', ')}`);
   if (overlapping.length) throw new BuildError(`${overlapping.length} municipalities fall inside two districts: ${overlapping.slice(0, 20).join('; ')}`);
-
   records.sort((a, b) => czechCollator.compare(a.name, b.name) || czechCollator.compare(a.district, b.district) || a.code.localeCompare(b.code));
+  return { records, reassigned, districtCount: simplified.features.length };
+}
 
-  // 6. Municipalities whose listed (older) district differs from the polygon
-  //    keep the archive of the listed district.
+/**
+ * Step 6: Municipalities whose listed (older) district differs from the polygon keep the archive of the listed district.
+ * @param {import('../src/types.js').ArchiveData} archives
+ * @param {Reassigned[]} reassigned
+ * @param {string[]} districtNames
+ */
+function withOverrides(archives, reassigned, districtNames) {
   /** @type {Map<string, string>} */
   const archiveIdByDistrict = new Map();
   for (const archive of archives.archives) for (const d of archive.districts) archiveIdByDistrict.set(d, archive.id);
@@ -225,17 +258,28 @@ async function main() {
   for (const r of [...reassigned].sort((a, b) => a.code.localeCompare(b.code))) {
     municipalityOverrides[r.code] = {
       name: r.name,
-      archive: /** @type {string} */ (archiveIdByDistrict.get(r.listedDistrict)),
+      archive: archiveIdByDistrict.get(r.listedDistrict) ?? '',
       district: r.listedDistrict,
       reason: OVERRIDE_REASON,
     };
   }
   const { municipalityOverrides: _previous, ...archiveInput } = archives;
   const archivesOut = { ...archiveInput, municipalityOverrides };
-  const outputErrors = checkArchiveCoverage(archivesOut, [...districtCodes.keys()]);
+  const outputErrors = checkArchiveCoverage(archivesOut, districtNames);
   if (outputErrors.length) throw new BuildError(`Generated archives.json is invalid:\n  ${outputErrors.join('\n  ')}`);
+  return { archivesOut, archiveIdByDistrict };
+}
 
-  // 7. Write.
+async function main() {
+  const { csvBuffer, rows, excluded, municipalities, districtCodes } = await readMunicipalities();
+  const districtNames = [...districtCodes.keys()];
+  const archives = await readArchives(districtNames);
+  const districtsBuffer = await loadSource('districts', args['districts-file']);
+  const { districtsOut, countryOut } = await simplify(nameDistricts(districtsBuffer, municipalities, districtCodes));
+  const { records, reassigned, districtCount } = placeMunicipalities(municipalities, districtsOut, countryOut);
+  const { archivesOut, archiveIdByDistrict } = withOverrides(archives, reassigned, districtNames);
+
+  // Step 7: write.
   await mkdir(args.out, { recursive: true });
   await writeFile(join(args.out, 'archives.json'), `${formatJson(archivesOut)}\n`);
   await writeFile(join(args.out, 'districts.geojson'), districtsOut.endsWith('\n') ? districtsOut : `${districtsOut}\n`);
@@ -247,7 +291,7 @@ async function main() {
       municipalities: { ...SOURCES.municipalities, sha256: sha256(csvBuffer), bytes: csvBuffer.length, rows: rows.length },
     },
     simplify: { keep: SIMPLIFY, precision: PRECISION },
-    counts: { districts: simplified.features.length, municipalities: records.length },
+    counts: { districts: districtCount, municipalities: records.length },
     excluded,
     reassigned: {
       note: 'Listed under one district in the municipality list but inside the polygon of another (district boundaries changed in 2021). The app shows the polygon district; municipalityOverrides in archives.json keeps the archive of the listed district.',
@@ -257,7 +301,7 @@ async function main() {
   await writeFile(join(args.out, 'build-info.json'), `${JSON.stringify(info, null, 2)}\n`);
 
   const kb = (/** @type {string} */ s) => `${Math.round(Buffer.byteLength(s) / 1024)} KB`;
-  console.log(`${simplified.features.length} named districts (districts.geojson ${kb(districtsOut)}, country.geojson ${kb(countryOut)})`);
+  console.log(`${districtCount} named districts (districts.geojson ${kb(districtsOut)}, country.geojson ${kb(countryOut)})`);
   console.log(`${records.length.toLocaleString('en')} municipalities, each inside a district`);
   console.log(`Every district has an archive (${archives.archives.length} archives)`);
   for (const e of excluded) console.log(`Excluded ${e.name} (${e.code}): ${e.reason}`);

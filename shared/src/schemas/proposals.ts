@@ -9,7 +9,7 @@
  */
 import { z } from 'zod';
 import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
-import { EdtfDate, Id, IsoDay, UiLanguage, Version } from './common.js';
+import { EdtfDate, Id, IsoDay, Version, WebUrl } from './common.js';
 import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RoleType, Sex, SourceType } from './tree.js';
 
 export const OPERATIONS_VERSION = 1;
@@ -36,6 +36,9 @@ const NameFields = {
 };
 
 const hasName = (n: { given: string; surname: string }) => n.given.trim() !== '' || n.surname.trim() !== '';
+
+/** A Zod issue path as plain keys and indexes (Zod allows symbols, which JSON cannot carry). */
+const issuePath = (path: readonly PropertyKey[]): Array<string | number> => path.map((p) => (typeof p === 'symbol' ? String(p) : p));
 
 // ---------------------------------------------------------------- operations
 
@@ -113,7 +116,7 @@ export const CreateSource = z
     title: nonEmpty(400),
     repository: text(400).nullable().default(null),
     reference: text(200).nullable().default(null),
-    url: z.url().max(2000).nullable().default(null),
+    url: WebUrl.nullable().default(null),
     familyAccount: FamilyAccount.nullable().default(null),
   })
   .refine((s) => (s.type === 'family_account') === (s.familyAccount !== null), {
@@ -164,10 +167,17 @@ export const AddImage = z
 export const SETTABLE_FIELDS = {
   person: { sex: Sex },
   name: { given: text(200), surname: text(200), type: NameType, asFound: nonEmpty(400) },
-  event: { type: EventType, typeDetail: text(200).nullable(), date: EdtfDate.nullable(), placeId: Id.nullable(), houseId: Id.nullable(), description: text(4000).nullable() },
+  event: {
+    type: EventType,
+    typeDetail: text(200).nullable(),
+    date: EdtfDate.nullable(),
+    placeId: Id.nullable(),
+    houseId: Id.nullable(),
+    description: text(4000).nullable(),
+  },
   role: { role: RoleType, roleDetail: text(200).nullable() },
   childLink: { linkType: ChildLinkType },
-  source: { title: nonEmpty(400), repository: text(400).nullable(), reference: text(200).nullable(), url: z.url().max(2000).nullable() },
+  source: { title: nonEmpty(400), repository: text(400).nullable(), reference: text(200).nullable(), url: WebUrl.nullable() },
   citation: { page: text(200).nullable(), transcription: nonEmpty(20_000), readOn: IsoDay, confidence: Confidence, note: text(4000).nullable() },
 } as const;
 
@@ -193,7 +203,8 @@ export const SetField = z
         continue;
       }
       const r = schema.safeParse(s.set[key]);
-      if (!r.success) for (const issue of r.error.issues) ctx.addIssue({ code: 'custom', message: issue.message, path: ['set', key, ...issue.path] as Array<string | number> });
+      if (!r.success)
+        for (const issue of r.error.issues) ctx.addIssue({ code: 'custom', message: issue.message, path: ['set', key, ...issuePath(issue.path)] });
     }
   })
   .meta({ id: 'SetField', description: 'Changes fields of an existing record' });
@@ -210,7 +221,20 @@ export const MergePersons = z
   .meta({ id: 'MergePersons', description: 'Editors only: moves every Name, Role, Family link and Citation to the kept Person' });
 
 /** Tables an undo may restore. */
-export const RESTORABLE_TABLES = ['person', 'name', 'family', 'family_child', 'event', 'event_role', 'source', 'citation', 'event_citation', 'name_citation', 'image', 'image_person'] as const;
+export const RESTORABLE_TABLES = [
+  'person',
+  'name',
+  'family',
+  'family_child',
+  'event',
+  'event_role',
+  'source',
+  'citation',
+  'event_citation',
+  'name_citation',
+  'image',
+  'image_person',
+] as const;
 export const RestorableTable = z.enum(RESTORABLE_TABLES).meta({ id: 'RestorableTable' });
 export type RestorableTable = z.infer<typeof RestorableTable>;
 
@@ -231,13 +255,27 @@ export const RestoreRecord = z
   .meta({ id: 'RestoreRecord' });
 
 export const Operation = z
-  .discriminatedUnion('op', [CreatePerson, AddName, CreateEvent, AddRole, CreateFamily, LinkChild, CreateSource, CreateCitation, AttachCitation, AddImage, SetField, MergePersons, RestoreRecord])
+  .discriminatedUnion('op', [
+    CreatePerson,
+    AddName,
+    CreateEvent,
+    AddRole,
+    CreateFamily,
+    LinkChild,
+    CreateSource,
+    CreateCitation,
+    AttachCitation,
+    AddImage,
+    SetField,
+    MergePersons,
+    RestoreRecord,
+  ])
   .meta({ id: 'Operation' });
 
 export type Operation = z.infer<typeof Operation>;
 export type OperationInput = z.input<typeof Operation>;
 export type OperationName = Operation['op'];
-export const OPERATION_NAMES = Operation.options.map((o) => o.shape.op.value) as OperationName[];
+export const OPERATION_NAMES: OperationName[] = Operation.options.map((o) => o.shape.op.value);
 
 /** Operations a Member may submit. `restoreRecord` is the server's own; merges are Editors' only. */
 export const SUBMITTABLE_OPERATIONS: readonly OperationName[] = OPERATION_NAMES.filter((n) => n !== 'restoreRecord');
@@ -246,15 +284,20 @@ export const EDITOR_ONLY_OPERATIONS: readonly OperationName[] = ['mergePersons']
 // ---------------------------------------------------------------- whole Proposals
 
 export const ProposalStatus = z.enum(['pending', 'accepted', 'rejected']).meta({ id: 'ProposalStatus' });
+export type ProposalStatus = z.infer<typeof ProposalStatus>;
 export const ProposalKind = z
   .enum(['contribution', 'direct', 'undo'])
-  .meta({ id: 'ProposalKind', description: 'Submitted for review, an Editor\'s direct change, or an undo' });
+  .meta({ id: 'ProposalKind', description: "Submitted for review, an Editor's direct change, or an undo" });
+export type ProposalKind = z.infer<typeof ProposalKind>;
 
 export const SubmitProposalBody = z
   .object({
     formatVersion: z.literal(OPERATIONS_VERSION).describe('Version of the operation set the Proposal was written for'),
-    idempotencyKey: z.string().regex(/^[A-Za-z0-9_-]{8,100}$/).describe('One key per Draft: a retried submit returns the same Proposal'),
-    note: text(4000).nullable().default(null).describe('What the finding is, in the author\'s words'),
+    idempotencyKey: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{8,100}$/)
+      .describe('One key per Draft: a retried submit returns the same Proposal'),
+    note: text(4000).nullable().default(null).describe("What the finding is, in the author's words"),
     direct: z.boolean().default(false).describe('Editors only: accept at once (a direct change)'),
     operations: z.array(z.unknown()).min(1).max(300),
   })
@@ -309,14 +352,19 @@ function referencesOf(op: Operation): Array<{ ref: string; kind: TempKind; path:
         ...(op.nameId ? [{ ref: op.nameId, kind: 'name' as const, path: 'nameId' }] : []),
       ];
     case 'addImage':
-      return [...(op.citationId ? [{ ref: op.citationId, kind: 'citation' as const, path: 'citationId' }] : []), ...op.personIds.map((p, i) => ({ ref: p, kind: 'person' as const, path: `personIds.${i}` }))];
+      return [
+        ...(op.citationId ? [{ ref: op.citationId, kind: 'citation' as const, path: 'citationId' }] : []),
+        ...op.personIds.map((p, i) => ({ ref: p, kind: 'person' as const, path: `personIds.${i}` })),
+      ];
     default:
       return [];
   }
 }
 
 /** The existing record an operation changes and must name a base version for, if any. */
-export function baseTargetOf(op: Operation): { record: 'person' | 'event' | 'family' | 'name' | SettableRecord; id: string; baseVersion: number | undefined; path: string } | null {
+export function baseTargetOf(
+  op: Operation,
+): { record: 'person' | 'event' | 'family' | 'name' | SettableRecord; id: string; baseVersion: number | undefined; path: string } | null {
   switch (op.op) {
     case 'addName':
       return isTempId(op.personId) ? null : { record: 'person', id: op.personId, baseVersion: op.baseVersion, path: 'baseVersion' };
@@ -350,6 +398,43 @@ export interface ProposalCheck {
   issues: ProposalIssue[];
 }
 
+const opNameOf = (value: unknown): unknown => (typeof value === 'object' && value !== null && 'op' in value ? value.op : undefined);
+const tempIdOf = (op: Operation): string | undefined => ('tempId' in op ? op.tempId : undefined);
+
+/** One parsed operation in context: who may use it, and its temporary ids (recorded in `temps`). */
+function checkOne(op: Operation, position: number, options: { editor: boolean; allowRestore?: boolean }, temps: Map<string, TempKind>): ProposalIssue[] {
+  if (op.op === 'restoreRecord' && !options.allowRestore)
+    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: restoreRecord is written only by an undo` }];
+  if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor)
+    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` }];
+  const issues: ProposalIssue[] = [];
+  for (const r of referencesOf(op)) {
+    if (!isTempId(r.ref)) continue;
+    const kind = temps.get(r.ref);
+    if (kind === undefined)
+      issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is not created before it is used` });
+    else if (kind !== r.kind)
+      issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is a ${kind}, not a ${r.kind}` });
+  }
+  if (op.op === 'setField' && Object.keys(op.set).length === 0)
+    issues.push({ code: 'invalid_operation', position, path: ['set'], message: `operation ${position + 1} (setField): set at least one field` });
+  const target = baseTargetOf(op);
+  if (target && target.baseVersion === undefined)
+    issues.push({
+      code: 'invalid_operation',
+      position,
+      path: [target.path],
+      message: `operation ${position + 1} (${op.op}): name the version of the ${target.record} you saw (baseVersion)`,
+    });
+  const creates = CREATES[op.op];
+  const tempId = tempIdOf(op);
+  if (creates && tempId) {
+    if (temps.has(tempId)) issues.push({ code: 'temp_id', position, path: ['tempId'], message: `operation ${position + 1}: ${tempId} is created twice` });
+    temps.set(tempId, creates);
+  }
+  return issues;
+}
+
 /**
  * Parses and checks a whole list of operations: each against its schema, temporary ids
  * defined once and before use with the right kind, base versions present, who may use
@@ -360,223 +445,27 @@ export function checkOperations(raw: readonly unknown[], options: { editor: bool
   const operations: Operation[] = [];
   const temps = new Map<string, TempKind>();
   raw.forEach((value, position) => {
-    const name = (value as { op?: unknown } | null)?.op;
+    const name = opNameOf(value);
     if (typeof name !== 'string' || !(OPERATION_NAMES as string[]).includes(name)) {
       issues.push({ code: 'unknown_operation', position, message: `operation ${position + 1}: unknown operation ${JSON.stringify(name ?? null)}` });
       return;
     }
     const parsed = Operation.safeParse(value);
     if (!parsed.success) {
-      for (const i of parsed.error.issues) issues.push({ code: 'invalid_operation', position, path: i.path as Array<string | number>, message: `operation ${position + 1} (${name}) ${i.path.join('.')}: ${i.message}` });
+      for (const i of parsed.error.issues)
+        issues.push({
+          code: 'invalid_operation',
+          position,
+          path: issuePath(i.path),
+          message: `operation ${position + 1} (${name}) ${i.path.join('.')}: ${i.message}`,
+        });
       return;
     }
-    const op = parsed.data;
-    if (op.op === 'restoreRecord' && !options.allowRestore) {
-      issues.push({ code: 'not_allowed', position, message: `operation ${position + 1}: restoreRecord is written only by an undo` });
-      return;
-    }
-    if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor) {
-      issues.push({ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` });
-      return;
-    }
-    for (const r of referencesOf(op)) {
-      if (!isTempId(r.ref)) continue;
-      const kind = temps.get(r.ref);
-      if (kind === undefined) issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is not created before it is used` });
-      else if (kind !== r.kind) issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is a ${kind}, not a ${r.kind}` });
-    }
-    if (op.op === 'setField' && Object.keys(op.set).length === 0) issues.push({ code: 'invalid_operation', position, path: ['set'], message: `operation ${position + 1} (setField): set at least one field` });
-    const target = baseTargetOf(op);
-    if (target && target.baseVersion === undefined) issues.push({ code: 'invalid_operation', position, path: [target.path], message: `operation ${position + 1} (${op.op}): name the version of the ${target.record} you saw (baseVersion)` });
-    const creates = CREATES[op.op];
-    const tempId = (op as { tempId?: string }).tempId;
-    if (creates && tempId) {
-      if (temps.has(tempId)) issues.push({ code: 'temp_id', position, path: ['tempId'], message: `operation ${position + 1}: ${tempId} is created twice` });
-      temps.set(tempId, creates);
-    }
-    operations.push(op);
+    const found = checkOne(parsed.data, position, options, temps);
+    issues.push(...found);
+    if (found.some((i) => i.code === 'not_allowed')) return;
+    operations.push(parsed.data);
   });
   if (issues.length === 0 && !satisfiesEvidenceRule(operations.map((o) => o.op))) issues.push({ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en });
   return { operations, issues };
-}
-
-// ---------------------------------------------------------------- readable summaries
-
-export type SummaryLanguage = z.infer<typeof UiLanguage>;
-
-/** Labels of the records operations refer to, such as a Person's name or "the baptism (1801-03-12)". */
-export interface SummaryContext {
-  label(ref: string, language: SummaryLanguage): string;
-}
-
-export const EVENT_TYPE_LABELS: Record<SummaryLanguage, Record<z.infer<typeof EventType>, string>> = {
-  en: { birth: 'birth', baptism: 'baptism', marriage: 'marriage', death: 'death', burial: 'burial', residence: 'residence', census: 'census entry', other: 'event' },
-  cs: { birth: 'narození', baptism: 'křest', marriage: 'sňatek', death: 'úmrtí', burial: 'pohřeb', residence: 'bydliště', census: 'záznam sčítání', other: 'událost' },
-};
-
-export const ROLE_LABELS: Record<SummaryLanguage, Record<z.infer<typeof RoleType>, string>> = {
-  en: { child: 'child', father: 'father', mother: 'mother', partner: 'partner', godparent: 'godparent', witness: 'witness', priest: 'priest', deceased: 'deceased', informant: 'informant', other: 'other role' },
-  cs: { child: 'dítě', father: 'otec', mother: 'matka', partner: 'partner', godparent: 'kmotr', witness: 'svědek', priest: 'kněz', deceased: 'zemřelý', informant: 'oznamovatel', other: 'jiná role' },
-};
-
-const NAME_TYPE_LABELS: Record<SummaryLanguage, Record<z.infer<typeof NameType>, string>> = {
-  en: { birth: 'birth name', married: 'married name', latin: 'Latin form', german: 'German form', nickname: 'nickname', other: 'other form' },
-  cs: { birth: 'rodné jméno', married: 'jméno po sňatku', latin: 'latinská podoba', german: 'německá podoba', nickname: 'přezdívka', other: 'jiná podoba' },
-};
-
-const LINK_TYPE_LABELS: Record<SummaryLanguage, Record<z.infer<typeof ChildLinkType>, string>> = {
-  en: { birth: 'birth child', adoptive: 'adoptive child', foster: 'foster child', step: 'stepchild' },
-  cs: { birth: 'vlastní dítě', adoptive: 'adoptované dítě', foster: 'dítě v pěstounské péči', step: 'nevlastní dítě' },
-};
-
-const CONFIDENCE_LABELS: Record<SummaryLanguage, Record<z.infer<typeof Confidence>, string>> = {
-  en: { very_low: 'very low', low: 'low', normal: 'normal', high: 'high', very_high: 'very high' },
-  cs: { very_low: 'velmi nízká', low: 'nízká', normal: 'běžná', high: 'vysoká', very_high: 'velmi vysoká' },
-};
-
-const RECORD_LABELS: Record<SummaryLanguage, Record<SettableRecord, string>> = {
-  en: { person: 'Person', name: 'Name', event: 'Event', role: 'Role', childLink: 'child link', source: 'Source', citation: 'Citation' },
-  cs: { person: 'osoba', name: 'jméno', event: 'událost', role: 'role', childLink: 'vazba dítěte', source: 'pramen', citation: 'citace' },
-};
-
-const KIND_LABELS: Record<SummaryLanguage, Record<z.infer<typeof ImageKind>, string>> = {
-  en: { page: 'page image', photo: 'photo', portrait: 'portrait' },
-  cs: { page: 'snímek stránky', photo: 'fotografie', portrait: 'portrét' },
-};
-
-/** Readable names of the settable fields. */
-export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
-  en: {
-    sex: 'sex', given: 'given names', surname: 'surname', type: 'type', asFound: 'spelling as found', typeDetail: 'kind', date: 'date', placeId: 'Place', houseId: 'House',
-    description: 'description', role: 'role', roleDetail: 'role detail', linkType: 'link type', title: 'title', repository: 'archive', reference: 'call number', url: 'link',
-    page: 'page', transcription: 'transcription', readOn: 'read on', confidence: 'confidence', note: 'note',
-  },
-  cs: {
-    sex: 'pohlaví', given: 'křestní jména', surname: 'příjmení', type: 'druh', asFound: 'zápis v prameni', typeDetail: 'upřesnění', date: 'datum', placeId: 'místo', houseId: 'dům',
-    description: 'popis', role: 'role', roleDetail: 'upřesnění role', linkType: 'druh vazby', title: 'název', repository: 'archiv', reference: 'signatura', url: 'odkaz',
-    page: 'strana', transcription: 'přepis', readOn: 'přečteno', confidence: 'věrohodnost', note: 'poznámka',
-  },
-};
-
-const quote = (s: string, language: SummaryLanguage) => (language === 'cs' ? `„${s}“` : `“${s}”`);
-const nameOf = (n: { given: string; surname: string }) => `${n.given} ${n.surname}`.trim();
-
-function fieldValue(value: unknown, language: SummaryLanguage, ctx: SummaryContext): string {
-  if (value === null || value === undefined || value === '') return language === 'cs' ? '(prázdné)' : '(empty)';
-  if (typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(value)) return ctx.label(value, language);
-  return quote(String(value), language);
-}
-
-/**
- * One readable sentence per operation, in Czech or English, for review and history
- * ("adds godparent Anna Králová to the baptism (1801-03-12)"). Czech sentences use the
- * "verb: object" form so that names need no declension.
- */
-export function describeOperation(op: Operation, ctx: SummaryContext, language: SummaryLanguage): string {
-  const L = (ref: string) => ctx.label(ref, language);
-  const cs = language === 'cs';
-  switch (op.op) {
-    case 'createPerson':
-      return cs ? `přidává osobu: ${nameOf(op.name)}` : `adds the Person ${nameOf(op.name)}`;
-    case 'addName':
-      return cs
-        ? `přidává jméno ${quote(op.asFound, language)} (${NAME_TYPE_LABELS.cs[op.type]}) osobě: ${L(op.personId)}`
-        : `adds the Name ${quote(op.asFound, language)} (${NAME_TYPE_LABELS.en[op.type]}) to ${L(op.personId)}`;
-    case 'createEvent': {
-      const type = op.type === 'other' && op.typeDetail ? op.typeDetail : EVENT_TYPE_LABELS[language][op.type];
-      const when = op.date ? (cs ? ` ${op.date}` : ` on ${op.date}`) : '';
-      const where = op.placeId ? (cs ? `, místo: ${L(op.placeId)}` : ` at ${L(op.placeId)}`) : op.houseId ? (cs ? `, dům: ${L(op.houseId)}` : ` at ${L(op.houseId)}`) : '';
-      return cs ? `přidává událost: ${type}${when}${where}` : `adds the ${type}${when}${where}`;
-    }
-    case 'addRole': {
-      const role = op.role === 'other' && op.roleDetail ? op.roleDetail : ROLE_LABELS[language][op.role];
-      return cs ? `přidává roli ${role}: ${L(op.personId)} – ${L(op.eventId)}` : `adds ${role} ${L(op.personId)} to ${L(op.eventId)}`;
-    }
-    case 'createFamily': {
-      const partners = [op.partner1Id, op.partner2Id].filter((p): p is string => p !== null).map(L);
-      const list = partners.length ? partners.join(cs ? ' a ' : ' and ') : cs ? 'bez známých partnerů' : 'with no known partners';
-      return cs ? `přidává rodinu: ${list}` : `adds the Family of ${list}`;
-    }
-    case 'linkChild':
-      return cs ? `připojuje ${LINK_TYPE_LABELS.cs[op.linkType]}: ${L(op.childId)} (${L(op.familyId)})` : `links ${L(op.childId)} as ${LINK_TYPE_LABELS.en[op.linkType]} to ${L(op.familyId)}`;
-    case 'createSource':
-      if (op.familyAccount) {
-        return cs
-          ? `přidává rodinné vyprávění: ${quote(op.title, language)}, vyprávěl(a) ${op.familyAccount.givenBy}, ${op.familyAccount.givenOn}`
-          : `adds the Family account ${quote(op.title, language)}, given by ${op.familyAccount.givenBy} in ${op.familyAccount.givenOn}`;
-      }
-      return cs ? `přidává pramen: ${quote(op.title, language)}` : `adds the Source ${quote(op.title, language)}`;
-    case 'createCitation': {
-      const page = op.page ? (cs ? `, strana ${op.page}` : `, page ${op.page}`) : '';
-      return cs
-        ? `přidává citaci z pramene ${L(op.sourceId)}${page} (věrohodnost ${CONFIDENCE_LABELS.cs[op.confidence]})`
-        : `adds a Citation of ${L(op.sourceId)}${page} (${CONFIDENCE_LABELS.en[op.confidence]} confidence)`;
-    }
-    case 'attachCitation': {
-      const target = L((op.eventId ?? op.nameId)!);
-      return cs ? `připojuje citaci ${L(op.citationId)} k: ${target}` : `cites ${L(op.citationId)} for ${target}`;
-    }
-    case 'addImage': {
-      const of = op.kind === 'portrait' ? op.personIds.map(L).join(', ') : op.citationId ? L(op.citationId) : '';
-      return cs ? `přidává ${KIND_LABELS.cs[op.kind]}: ${of}` : `adds a ${KIND_LABELS.en[op.kind]} to ${of}`;
-    }
-    case 'setField': {
-      const changes = Object.entries(op.set).map(([k, v]) => `${Object.hasOwn(FIELD_LABELS[language], k) ? FIELD_LABELS[language][k] : k} → ${fieldValue(v, language, ctx)}`);
-      return cs ? `mění (${RECORD_LABELS.cs[op.record]}) ${L(op.id)}: ${changes.join(', ')}` : `changes ${L(op.id)} (${RECORD_LABELS.en[op.record]}): ${changes.join(', ')}`;
-    }
-    case 'mergePersons':
-      return cs ? `slučuje osobu ${L(op.mergeId)} do osoby ${L(op.keepId)}` : `merges ${L(op.mergeId)} into ${L(op.keepId)}`;
-    case 'restoreRecord': {
-      const what = op.table.replace(/_/g, ' ');
-      if (op.values === null) return cs ? `odebírá záznam (${what}) ${L(op.id)}` : `removes the ${what} record ${L(op.id)}`;
-      return cs ? `vrací záznam (${what}) ${L(op.id)} do dřívější podoby` : `restores the ${what} record ${L(op.id)} to its earlier state`;
-    }
-  }
-}
-
-/** Labels for records created inside a Proposal, from the operations themselves. */
-export function tempLabels(ops: readonly Operation[], language: SummaryLanguage, existing: SummaryContext): Map<string, string> {
-  const out = new Map<string, string>();
-  const ctx: SummaryContext = { label: (ref, lang) => out.get(ref) ?? existing.label(ref, lang) };
-  for (const op of ops) {
-    switch (op.op) {
-      case 'createPerson':
-        out.set(op.tempId, nameOf(op.name));
-        break;
-      case 'addName':
-        if (op.tempId) out.set(op.tempId, quote(op.asFound, language));
-        break;
-      case 'createEvent': {
-        const type = op.type === 'other' && op.typeDetail ? op.typeDetail : EVENT_TYPE_LABELS[language][op.type];
-        out.set(op.tempId, language === 'cs' ? (op.date ? `${type} ${op.date}` : type) : op.date ? `the ${type} of ${op.date}` : `the ${type}`);
-        break;
-      }
-      case 'createFamily': {
-        const partners = [op.partner1Id, op.partner2Id].filter((p): p is string => p !== null).map((p) => ctx.label(p, language));
-        out.set(op.tempId, language === 'cs' ? `rodina ${partners.join(' a ')}` : `the Family of ${partners.join(' and ')}`);
-        break;
-      }
-      case 'createSource':
-        out.set(op.tempId, quote(op.title, language));
-        break;
-      case 'createCitation':
-        out.set(op.tempId, op.page ? `${ctx.label(op.sourceId, language)}, ${language === 'cs' ? 's.' : 'p.'} ${op.page}` : ctx.label(op.sourceId, language));
-        break;
-      default:
-        break;
-    }
-  }
-  return out;
-}
-
-/** Sentences for every operation of a Proposal, in both languages. */
-export function describeOperations(ops: readonly Operation[], existing: SummaryContext): Array<Record<SummaryLanguage, string>> {
-  const langs: SummaryLanguage[] = ['cs', 'en'];
-  const contexts = Object.fromEntries(
-    langs.map((lang) => {
-      const temps = tempLabels(ops, lang, existing);
-      return [lang, { label: (ref: string, l: SummaryLanguage) => temps.get(ref) ?? existing.label(ref, l) } satisfies SummaryContext];
-    }),
-  ) as Record<SummaryLanguage, SummaryContext>;
-  return ops.map((op) => ({ cs: describeOperation(op, contexts.cs, 'cs'), en: describeOperation(op, contexts.en, 'en') }));
 }

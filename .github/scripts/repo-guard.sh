@@ -19,7 +19,7 @@ report() {
   [ -z "$list" ] && return 0
   problems=1
   echo "::error::$title"
-  printf '  %s\n' $list
+  while IFS= read -r file; do printf '  %s\n' "$file"; done <<<"$list"
 }
 
 ged=$(printf '%s\n' "$files" | grep -iE '\.ged$' || true)

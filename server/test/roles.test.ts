@@ -1,8 +1,8 @@
-import { Me, MemberView } from '@rodokmen/shared';
+import { Me, MemberList, MemberView, SessionList } from '@rodokmen/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { createMember, ensureOwner, makeApp, signIn, type TestApp } from './helpers.js';
+import { createMember, ensureOwner, errorOf, makeApp, signIn, type TestApp } from './helpers.js';
 
 describe('roles, the single Owner, sessions and disabling', () => {
   let t: TestDatabase;
@@ -11,7 +11,8 @@ describe('roles, the single Owner, sessions and disabling', () => {
   let ownerCookie: string;
 
   const me = async (cookie: string) => a.app.inject({ method: 'GET', url: '/api/me', headers: { cookie } });
-  const setRole = (id: string, role: string, cookie = ownerCookie) => a.app.inject({ method: 'PUT', url: `/api/members/${id}/role`, headers: { cookie }, payload: { role } });
+  const setRole = (id: string, role: string, cookie = ownerCookie) =>
+    a.app.inject({ method: 'PUT', url: `/api/members/${id}/role`, headers: { cookie }, payload: { role } });
   const owners = async () => (await t.db.selectFrom('account').select('id').where('role', '=', 'owner').execute()).map((r) => r.id);
 
   beforeAll(async () => {
@@ -50,7 +51,7 @@ describe('roles, the single Owner, sessions and disabling', () => {
     const target = await createMember(t.db);
     const res = await setRole(target.id, 'editor', await signIn(t.db, a.clock, editor));
     expect(res.statusCode).toBe(403);
-    expect(res.json().message).toBe('Only the Owner can do this.');
+    expect(errorOf(res).message).toBe('Only the Owner can do this.');
   });
 
   it('there is exactly one Owner: handing over ownership makes the old Owner an Editor', async () => {
@@ -77,7 +78,7 @@ describe('roles, the single Owner, sessions and disabling', () => {
     const member = await createMember(t.db);
     const phone = await signIn(t.db, a.clock, member);
     const tablet = await signIn(t.db, a.clock, member);
-    const list = (await a.app.inject({ method: 'GET', url: '/api/me/sessions', headers: { cookie: phone } })).json().items as Array<{ id: string; current: boolean }>;
+    const list = SessionList.parse((await a.app.inject({ method: 'GET', url: '/api/me/sessions', headers: { cookie: phone } })).json()).items;
     expect(list).toHaveLength(2);
     const tabletSession = list.find((s) => !s.current)!;
     // Someone else cannot end it.
@@ -107,7 +108,9 @@ describe('roles, the single Owner, sessions and disabling', () => {
     a.mailer.clear();
     await a.app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: member.email } });
     expect(a.mailer.messages).toHaveLength(0);
-    expect((await a.app.inject({ method: 'POST', url: `/api/members/${member.id}/enable`, headers: { cookie: ownerCookie } })).json().disabled).toBe(false);
+    expect(
+      MemberView.parse((await a.app.inject({ method: 'POST', url: `/api/members/${member.id}/enable`, headers: { cookie: ownerCookie } })).json()).disabled,
+    ).toBe(false);
   });
 
   it('the Owner cannot be disabled, and only the Owner disables', async () => {
@@ -116,6 +119,6 @@ describe('roles, the single Owner, sessions and disabling', () => {
     const target = await createMember(t.db);
     expect((await a.app.inject({ method: 'POST', url: `/api/members/${target.id}/disable`, headers: { cookie: editor } })).statusCode).toBe(403);
     const list = await a.app.inject({ method: 'GET', url: '/api/members', headers: { cookie: ownerCookie } });
-    expect(list.json().items.length).toBeGreaterThan(5);
+    expect(MemberList.parse(list.json()).items.length).toBeGreaterThan(5);
   });
 });

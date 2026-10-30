@@ -56,7 +56,9 @@ const STRINGS = {
 };
 
 const $ = (id) => document.getElementById(id);
-let lang = localStorage.getItem('rodokmen.language') || ((navigator.language || '').toLowerCase().startsWith('cs') ? 'cs' : 'en');
+// The map app shares this key; anything but a language of these pages falls back to the browser's.
+const stored = localStorage.getItem('rodokmen.language');
+let lang = stored && Object.hasOwn(STRINGS, stored) ? stored : (navigator.language || '').toLowerCase().startsWith('cs') ? 'cs' : 'en';
 
 function t(key) {
   return STRINGS[lang][key] ?? key;
@@ -99,10 +101,19 @@ async function api(path, body) {
 // ---- WebAuthn JSON <-> binary (base64url)
 
 const fromB64 = (s) => {
-  const b = atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '='));
+  const b = atob(
+    s
+      .replace(/-/g, '+')
+      .replace(/_/g, '/')
+      .padEnd(Math.ceil(s.length / 4) * 4, '='),
+  );
   return Uint8Array.from(b, (c) => c.charCodeAt(0)).buffer;
 };
-const toB64 = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const toB64 = (buf) =>
+  btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
 
 function creationOptions(o) {
   return {

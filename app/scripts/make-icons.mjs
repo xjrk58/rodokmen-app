@@ -26,10 +26,16 @@ await writeFile(join(iconsDir, 'icon.svg'), svg(false));
 const browser = await chromium.launch();
 try {
   /** @type {[string, number, boolean][]} */
-  const targets = [['icon-192.png', 192, false], ['icon-512.png', 512, false], ['icon-maskable-512.png', 512, true]];
+  const targets = [
+    ['icon-192.png', 192, false],
+    ['icon-512.png', 512, false],
+    ['icon-maskable-512.png', 512, true],
+  ];
   for (const [file, size, maskable] of targets) {
     const page = await browser.newPage({ viewport: { width: size, height: size } });
-    await page.setContent(`<html><body style="margin:0;background:transparent">${svg(maskable).replace('<svg ', `<svg width="${size}" height="${size}" `)}</body></html>`);
+    await page.setContent(
+      `<html><body style="margin:0;background:transparent">${svg(maskable).replace('<svg ', `<svg width="${size}" height="${size}" `)}</body></html>`,
+    );
     await page.screenshot({ path: join(iconsDir, file), omitBackground: true });
     await page.close();
     console.log(`icons/${file}`);

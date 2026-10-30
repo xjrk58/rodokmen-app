@@ -139,17 +139,44 @@ interface GivenName {
 const g = (cs: string, la: string, de: string): GivenName => ({ cs, la, de });
 
 const MALE: GivenName[] = [
-  g('Jan', 'Joannes', 'Johann'), g('Václav', 'Wenceslaus', 'Wenzel'), g('Tomáš', 'Thomas', 'Thomas'), g('Matěj', 'Matthias', 'Matthias'),
-  g('Vojtěch', 'Adalbertus', 'Adalbert'), g('Antonín', 'Antonius', 'Anton'), g('Karel', 'Carolus', 'Karl'), g('Martin', 'Martinus', 'Martin'),
-  g('Petr', 'Petrus', 'Peter'), g('Pavel', 'Paulus', 'Paul'), g('Jakub', 'Jacobus', 'Jakob'), g('Ondřej', 'Andreas', 'Andreas'),
-  g('Prokop', 'Procopius', 'Prokop'), g('Šimon', 'Simon', 'Simon'), g('Bartoloměj', 'Bartholomaeus', 'Bartholomäus'), g('Vincenc', 'Vincentius', 'Vinzenz'),
-  g('Jindřich', 'Henricus', 'Heinrich'), g('Bohumil', 'Theophilus', 'Gottlieb'), g('Vilém', 'Wilhelmus', 'Wilhelm'), g('Alois', 'Aloysius', 'Alois'),
+  g('Jan', 'Joannes', 'Johann'),
+  g('Václav', 'Wenceslaus', 'Wenzel'),
+  g('Tomáš', 'Thomas', 'Thomas'),
+  g('Matěj', 'Matthias', 'Matthias'),
+  g('Vojtěch', 'Adalbertus', 'Adalbert'),
+  g('Antonín', 'Antonius', 'Anton'),
+  g('Karel', 'Carolus', 'Karl'),
+  g('Martin', 'Martinus', 'Martin'),
+  g('Petr', 'Petrus', 'Peter'),
+  g('Pavel', 'Paulus', 'Paul'),
+  g('Jakub', 'Jacobus', 'Jakob'),
+  g('Ondřej', 'Andreas', 'Andreas'),
+  g('Prokop', 'Procopius', 'Prokop'),
+  g('Šimon', 'Simon', 'Simon'),
+  g('Bartoloměj', 'Bartholomaeus', 'Bartholomäus'),
+  g('Vincenc', 'Vincentius', 'Vinzenz'),
+  g('Jindřich', 'Henricus', 'Heinrich'),
+  g('Bohumil', 'Theophilus', 'Gottlieb'),
+  g('Vilém', 'Wilhelmus', 'Wilhelm'),
+  g('Alois', 'Aloysius', 'Alois'),
 ];
 const FEMALE: GivenName[] = [
-  g('Anna', 'Anna', 'Anna'), g('Marie', 'Maria', 'Maria'), g('Kateřina', 'Catharina', 'Katharina'), g('Ludmila', 'Ludmilla', 'Ludmilla'),
-  g('Alžběta', 'Elisabetha', 'Elisabeth'), g('Magdalena', 'Magdalena', 'Magdalena'), g('Barbora', 'Barbara', 'Barbara'), g('Dorota', 'Dorothea', 'Dorothea'),
-  g('Rozálie', 'Rosalia', 'Rosalia'), g('Terezie', 'Theresia', 'Theresia'), g('Veronika', 'Veronica', 'Veronika'), g('Johana', 'Joanna', 'Johanna'),
-  g('Apolena', 'Apollonia', 'Apollonia'), g('Markéta', 'Margaretha', 'Margarethe'), g('Viktorie', 'Victoria', 'Viktoria'), g('Cecílie', 'Caecilia', 'Cäcilie'),
+  g('Anna', 'Anna', 'Anna'),
+  g('Marie', 'Maria', 'Maria'),
+  g('Kateřina', 'Catharina', 'Katharina'),
+  g('Ludmila', 'Ludmilla', 'Ludmilla'),
+  g('Alžběta', 'Elisabetha', 'Elisabeth'),
+  g('Magdalena', 'Magdalena', 'Magdalena'),
+  g('Barbora', 'Barbara', 'Barbara'),
+  g('Dorota', 'Dorothea', 'Dorothea'),
+  g('Rozálie', 'Rosalia', 'Rosalia'),
+  g('Terezie', 'Theresia', 'Theresia'),
+  g('Veronika', 'Veronica', 'Veronika'),
+  g('Johana', 'Joanna', 'Johanna'),
+  g('Apolena', 'Apollonia', 'Apollonia'),
+  g('Markéta', 'Margaretha', 'Margarethe'),
+  g('Viktorie', 'Victoria', 'Viktoria'),
+  g('Cecílie', 'Caecilia', 'Cäcilie'),
 ];
 const MODERN_MALE = ['Jaroslav', 'Miroslav', 'Zdeněk', 'Bedřich', 'Otakar', 'Rudolf', 'Bohumil', 'Karel'];
 const MODERN_FEMALE = ['Božena', 'Věra', 'Jarmila', 'Zdenka', 'Milada', 'Hana', 'Libuše', 'Vlasta', 'Olga', 'Ludmila'];
@@ -164,14 +191,36 @@ interface Surname {
 const s = (m: string, f: string, old: string, oldF?: string): Surname => ({ m, f, old, oldF: oldF ?? old });
 
 const SURNAMES: Surname[] = [
-  s('Dvořák', 'Dvořáková', 'Dworzak', 'Dworzakowa'), s('Černý', 'Černá', 'Czerny', 'Czerna'), s('Horák', 'Horáková', 'Horak'),
-  s('Němec', 'Němcová', 'Niemetz'), s('Marek', 'Marková', 'Marek'), s('Pokorný', 'Pokorná', 'Pokorny', 'Pokorna'), s('Pospíšil', 'Pospíšilová', 'Pospischil'),
-  s('Hájek', 'Hájková', 'Hajek'), s('Král', 'Králová', 'Kral'), s('Jelínek', 'Jelínková', 'Gelinek'), s('Růžička', 'Růžičková', 'Ruziczka'),
-  s('Beneš', 'Benešová', 'Benesch'), s('Fiala', 'Fialová', 'Fiala'), s('Sedláček', 'Sedláčková', 'Sedlaczek'), s('Doležal', 'Doležalová', 'Doleschal'),
-  s('Zeman', 'Zemanová', 'Zeman'), s('Kolář', 'Kolářová', 'Kolarz'), s('Navrátil', 'Navrátilová', 'Nawratil'), s('Čermák', 'Čermáková', 'Czermak'),
-  s('Blažek', 'Blažková', 'Blaschek'), s('Kříž', 'Křížová', 'Krzisch'), s('Kovář', 'Kovářová', 'Kowarz'), s('Bartoš', 'Bartošová', 'Bartosch'),
-  s('Vlček', 'Vlčková', 'Wltschek'), s('Polák', 'Poláková', 'Polak'), s('Musil', 'Musilová', 'Musil'), s('Holub', 'Holubová', 'Holub'),
-  s('Štěpánek', 'Štěpánková', 'Stiepanek'), s('Kadlec', 'Kadlecová', 'Kadletz'), s('Hruška', 'Hrušková', 'Hruschka'),
+  s('Dvořák', 'Dvořáková', 'Dworzak', 'Dworzakowa'),
+  s('Černý', 'Černá', 'Czerny', 'Czerna'),
+  s('Horák', 'Horáková', 'Horak'),
+  s('Němec', 'Němcová', 'Niemetz'),
+  s('Marek', 'Marková', 'Marek'),
+  s('Pokorný', 'Pokorná', 'Pokorny', 'Pokorna'),
+  s('Pospíšil', 'Pospíšilová', 'Pospischil'),
+  s('Hájek', 'Hájková', 'Hajek'),
+  s('Král', 'Králová', 'Kral'),
+  s('Jelínek', 'Jelínková', 'Gelinek'),
+  s('Růžička', 'Růžičková', 'Ruziczka'),
+  s('Beneš', 'Benešová', 'Benesch'),
+  s('Fiala', 'Fialová', 'Fiala'),
+  s('Sedláček', 'Sedláčková', 'Sedlaczek'),
+  s('Doležal', 'Doležalová', 'Doleschal'),
+  s('Zeman', 'Zemanová', 'Zeman'),
+  s('Kolář', 'Kolářová', 'Kolarz'),
+  s('Navrátil', 'Navrátilová', 'Nawratil'),
+  s('Čermák', 'Čermáková', 'Czermak'),
+  s('Blažek', 'Blažková', 'Blaschek'),
+  s('Kříž', 'Křížová', 'Krzisch'),
+  s('Kovář', 'Kovářová', 'Kowarz'),
+  s('Bartoš', 'Bartošová', 'Bartosch'),
+  s('Vlček', 'Vlčková', 'Wltschek'),
+  s('Polák', 'Poláková', 'Polak'),
+  s('Musil', 'Musilová', 'Musil'),
+  s('Holub', 'Holubová', 'Holub'),
+  s('Štěpánek', 'Štěpánková', 'Stiepanek'),
+  s('Kadlec', 'Kadlecová', 'Kadletz'),
+  s('Hruška', 'Hrušková', 'Hruschka'),
 ];
 const NOVAK = s('Novák', 'Nováková', 'Nowak', 'Nowakowa');
 const SVOBODA = s('Svoboda', 'Svobodová', 'Swoboda', 'Swobodowa');
@@ -222,9 +271,26 @@ class Builder {
   constructor(seed: number) {
     this.rng = new Rng(seed);
     this.m = {
-      persons: [], names: [], families: [], childLinks: [], places: [], placeNames: [], houses: [], houseNumbers: [],
-      parishes: [], placeParishes: [], estates: [], placeEstates: [], events: [], roles: [], sources: [], citations: [],
-      eventCitations: [], nameCitations: [], images: [], landmarks: {} as Landmarks,
+      persons: [],
+      names: [],
+      families: [],
+      childLinks: [],
+      places: [],
+      placeNames: [],
+      houses: [],
+      houseNumbers: [],
+      parishes: [],
+      placeParishes: [],
+      estates: [],
+      placeEstates: [],
+      events: [],
+      roles: [],
+      sources: [],
+      citations: [],
+      eventCitations: [],
+      nameCitations: [],
+      images: [],
+      landmarks: {} as Landmarks,
     };
   }
 
@@ -258,7 +324,10 @@ class Builder {
     this.m.houses.push({ id, version: 1, placeId, location, note: null });
     for (const n of numbers) {
       this.m.houseNumbers.push({
-        id: this.id(), version: 1, houseId: id, number: n.number,
+        id: this.id(),
+        version: 1,
+        houseId: id,
+        number: n.number,
         period: { from: n.from === null ? null : String(n.from), to: n.to === null ? null : String(n.to) },
       });
     }
@@ -289,27 +358,78 @@ class Builder {
   }
 
   placeParish(placeId: string, parishId: string, from: number | null, to: number | null): void {
-    this.m.placeParishes.push({ id: this.id(), version: 1, placeId, parishId, period: { from: from === null ? null : String(from), to: to === null ? null : String(to) } });
+    this.m.placeParishes.push({
+      id: this.id(),
+      version: 1,
+      placeId,
+      parishId,
+      period: { from: from === null ? null : String(from), to: to === null ? null : String(to) },
+    });
     this.parishPeriods.push({ placeId, parishId, from, to });
   }
 
   // -------------------------------------------------------------- persons and families
 
-  person(sex: 'male' | 'female', given: GivenName, surname: Surname, generation: number, birthYear: number, opts: { latin?: boolean; german?: boolean; asFound?: string } = {}): PersonInfo {
+  person(
+    sex: 'male' | 'female',
+    given: GivenName,
+    surname: Surname,
+    generation: number,
+    birthYear: number,
+    opts: { latin?: boolean; german?: boolean; asFound?: string } = {},
+  ): PersonInfo {
     const id = this.id();
     this.m.persons.push({ id, version: 1, sex });
     const sn = sex === 'male' ? surname.m : surname.f;
-    this.m.names.push({ id: this.id(), version: 1, personId: id, given: given.cs, surname: sn, type: 'birth', asFound: opts.asFound ?? `${given.cs} ${sn}`, primary: true });
+    this.m.names.push({
+      id: this.id(),
+      version: 1,
+      personId: id,
+      given: given.cs,
+      surname: sn,
+      type: 'birth',
+      asFound: opts.asFound ?? `${given.cs} ${sn}`,
+      primary: true,
+    });
     const oldSurname = sex === 'male' ? surname.old : surname.oldF;
-    if (opts.latin) this.m.names.push({ id: this.id(), version: 1, personId: id, given: given.la, surname: oldSurname, type: 'latin', asFound: `${given.la} ${oldSurname}`, primary: false });
-    if (opts.german) this.m.names.push({ id: this.id(), version: 1, personId: id, given: given.de, surname: oldSurname, type: 'german', asFound: `${given.de} ${oldSurname}`, primary: false });
+    if (opts.latin)
+      this.m.names.push({
+        id: this.id(),
+        version: 1,
+        personId: id,
+        given: given.la,
+        surname: oldSurname,
+        type: 'latin',
+        asFound: `${given.la} ${oldSurname}`,
+        primary: false,
+      });
+    if (opts.german)
+      this.m.names.push({
+        id: this.id(),
+        version: 1,
+        personId: id,
+        given: given.de,
+        surname: oldSurname,
+        type: 'german',
+        asFound: `${given.de} ${oldSurname}`,
+        primary: false,
+      });
     const p: PersonInfo = { id, sex, given, surname, generation, birthYear, deathYear: null, home: null };
     this.info.set(id, p);
     return p;
   }
 
   marriedName(wife: PersonInfo, husband: PersonInfo): void {
-    this.m.names.push({ id: this.id(), version: 1, personId: wife.id, given: wife.given.cs, surname: husband.surname.f, type: 'married', asFound: `${wife.given.cs} ${husband.surname.f}`, primary: false });
+    this.m.names.push({
+      id: this.id(),
+      version: 1,
+      personId: wife.id,
+      given: wife.given.cs,
+      surname: husband.surname.f,
+      type: 'married',
+      asFound: `${wife.given.cs} ${husband.surname.f}`,
+      primary: false,
+    });
   }
 
   family(husband: PersonInfo | null, wife: PersonInfo | null): string {
@@ -324,10 +444,21 @@ class Builder {
 
   // -------------------------------------------------------------- events and evidence
 
-  event(type: EventType, date: string | null, at: At | null, roles: Array<[PersonInfo, RoleType, string?]>, description: string | null = null, typeDetail: string | null = null): string {
+  event(
+    type: EventType,
+    date: string | null,
+    at: At | null,
+    roles: Array<[PersonInfo, RoleType, string?]>,
+    description: string | null = null,
+    typeDetail: string | null = null,
+  ): string {
     const id = this.id();
     this.m.events.push({
-      id, version: 1, type, typeDetail, date,
+      id,
+      version: 1,
+      type,
+      typeDetail,
+      date,
       placeId: at && 'placeId' in at ? at.placeId : null,
       houseId: at && 'houseId' in at ? at.houseId : null,
       description,
@@ -346,11 +477,14 @@ class Builder {
     const what = { N: 'narozených', O: 'oddaných', Z: 'zemřelých' }[kind];
     const parish = this.parishName.get(parishId)!.replace(/^Farnost /, '');
     this.m.sources.push({
-      id, version: 1, type: 'parish_register',
+      id,
+      version: 1,
+      type: 'parish_register',
       title: `Matrika ${what} (${kind}) ${parish} ${start}–${end}`,
       repository: 'Invented Regional Archive (fixture)',
       reference: `${parish.slice(0, 3).toUpperCase()} ${kind} ${start - 1700}`,
-      url: null, familyAccount: null,
+      url: null,
+      familyAccount: null,
     });
     this.sourceCache.set(key, id);
     return id;
@@ -413,7 +547,10 @@ class Builder {
     for (const gp of godparents) roles.push([gp, 'godparent']);
     if (priest) roles.push([priest, 'priest']);
     const id = this.event('baptism', date, at, roles);
-    const parents = [father, mother].filter((p): p is PersonInfo => p !== null).map((p) => (year <= 1830 ? p.given.la : p.given.de)).join(' et ');
+    const parents = [father, mother]
+      .filter((p): p is PersonInfo => p !== null)
+      .map((p) => (year <= 1830 ? p.given.la : p.given.de))
+      .join(' et ');
     this.citeRegister(id, 'N', date, at, child, parents ? `parentes ${parents}` : '');
     return id;
   }
@@ -438,7 +575,10 @@ class Builder {
 
   marry(husband: PersonInfo, wife: PersonInfo, date: string, at: At, witnesses: PersonInfo[] = []): string {
     const year = Number(date.slice(0, 4));
-    const roles: Array<[PersonInfo, RoleType]> = [[husband, 'partner'], [wife, 'partner']];
+    const roles: Array<[PersonInfo, RoleType]> = [
+      [husband, 'partner'],
+      [wife, 'partner'],
+    ];
     for (const w of witnesses) roles.push([w, 'witness']);
     const priest = this.priestAt(this.parishAt(this.placeOf(at), year), year);
     if (priest) roles.push([priest, 'priest']);
@@ -453,11 +593,31 @@ class Builder {
     let sourceId = this.sourceCache.get(key);
     if (!sourceId) {
       sourceId = this.id();
-      this.m.sources.push({ id: sourceId, version: 1, type: 'census', title: `Sčítání lidu ${year}, ${this.placeInfo.get(placeId)!.name}`, repository: 'Invented District Archive (fixture)', reference: `SL ${year}`, url: null, familyAccount: null });
+      this.m.sources.push({
+        id: sourceId,
+        version: 1,
+        type: 'census',
+        title: `Sčítání lidu ${year}, ${this.placeInfo.get(placeId)!.name}`,
+        repository: 'Invented District Archive (fixture)',
+        reference: `SL ${year}`,
+        url: null,
+        familyAccount: null,
+      });
       this.sourceCache.set(key, sourceId);
     }
-    const id = this.event('census', `${year}-12-31`, { houseId }, people.map((p) => [p, 'other', 'household member'] as [PersonInfo, RoleType, string]));
-    this.cite(id, sourceId, `čp. ${this.houseNumberAt(houseId, year)}`, people.map((p) => `${p.given.cs} ${p.sex === 'male' ? p.surname.m : p.surname.f}, ${p.birthYear}`).join('; '), 'high');
+    const id = this.event(
+      'census',
+      `${year}-12-31`,
+      { houseId },
+      people.map((p) => [p, 'other', 'household member'] as [PersonInfo, RoleType, string]),
+    );
+    this.cite(
+      id,
+      sourceId,
+      `čp. ${this.houseNumberAt(houseId, year)}`,
+      people.map((p) => `${p.given.cs} ${p.sex === 'male' ? p.surname.m : p.surname.f}, ${p.birthYear}`).join('; '),
+      'high',
+    );
     return id;
   }
 
@@ -495,13 +655,22 @@ export function generateFixture(seed = 267): FixtureModel {
   Object.assign(L, { kamennaLhota, dolniKamenec, vrbice, horniBukovina });
 
   // Houses. House A: čp. 12 until 1805, čp. 15 afterwards; House B took over čp. 12.
-  const houseA = b.house(kamennaLhota, [{ number: '12', from: null, to: 1805 }, { number: '15', from: 1806, to: null }]);
-  const houseB = b.house(kamennaLhota, [{ number: '9', from: null, to: 1805 }, { number: '12', from: 1806, to: null }]);
+  const houseA = b.house(kamennaLhota, [
+    { number: '12', from: null, to: 1805 },
+    { number: '15', from: 1806, to: null },
+  ]);
+  const houseB = b.house(kamennaLhota, [
+    { number: '9', from: null, to: 1805 },
+    { number: '12', from: 1806, to: null },
+  ]);
   const lhotaHouses = [
     houseA,
     houseB,
     b.house(kamennaLhota, [{ number: '3', from: null, to: null }]),
-    b.house(kamennaLhota, [{ number: '7', from: null, to: 1805 }, { number: '21', from: 1806, to: null }]),
+    b.house(kamennaLhota, [
+      { number: '7', from: null, to: 1805 },
+      { number: '21', from: 1806, to: null },
+    ]),
     b.house(kamennaLhota, [{ number: '18', from: 1830, to: null }]),
   ];
   Object.assign(L, { houseA, houseB });
@@ -511,7 +680,12 @@ export function generateFixture(seed = 267): FixtureModel {
   const bukovinaHouses = ['10', '11'].map((n) => b.house(horniBukovina, [{ number: n, from: null, to: null }]));
   const lomniceHouses = ['210', '311'].map((n) => b.house(lomnice, [{ number: n, from: 1890, to: null }]));
   const housesByPlace = new Map<string, string[]>([
-    [kamennaLhota, lhotaHouses], [dolniKamenec, kamenecHouses], [vrbice, vrbiceHouses], [zalesi, zalesiHouses], [horniBukovina, bukovinaHouses], [lomnice, lomniceHouses],
+    [kamennaLhota, lhotaHouses],
+    [dolniKamenec, kamenecHouses],
+    [vrbice, vrbiceHouses],
+    [zalesi, zalesiHouses],
+    [horniBukovina, bukovinaHouses],
+    [lomnice, lomniceHouses],
   ]);
   const ordinaryPlaces = [kamennaLhota, dolniKamenec, vrbice, zalesi];
 
@@ -533,16 +707,23 @@ export function generateFixture(seed = 267): FixtureModel {
   const eBukovina = b.id();
   b.m.estates.push({ id: eVrbice, version: 1, name: 'Panství Vrbice' }, { id: eBukovina, version: 1, name: 'Panství Bukovina' });
   L.estateVrbice = eVrbice;
-  for (const placeId of [kamennaLhota, dolniKamenec, vrbice, zalesi]) b.m.placeEstates.push({ id: b.id(), version: 1, placeId, estateId: eVrbice, period: { from: null, to: '1848' } });
+  for (const placeId of [kamennaLhota, dolniKamenec, vrbice, zalesi])
+    b.m.placeEstates.push({ id: b.id(), version: 1, placeId, estateId: eVrbice, period: { from: null, to: '1848' } });
   b.m.placeEstates.push({ id: b.id(), version: 1, placeId: horniBukovina, estateId: eBukovina, period: { from: null, to: '1848' } });
 
   // Priests (Persons too). Each gets a burial so that the Living rule sees a recorded death.
   const priestSpecs: Array<[string, GivenName, Surname, number, number]> = [
-    [pKamenec, MALE[14]!, SURNAMES[7]!, 1760, 1811], [pKamenec, MALE[15]!, SURNAMES[12]!, 1812, 1849],
-    [pKamenec, MALE[19]!, SURNAMES[15]!, 1850, 1889], [pKamenec, MALE[18]!, SURNAMES[19]!, 1890, 1949],
-    [pVrbice, MALE[4]!, SURNAMES[14]!, 1760, 1809], [pVrbice, MALE[16]!, SURNAMES[25]!, 1810, 1854],
-    [pVrbice, MALE[17]!, SURNAMES[26]!, 1855, 1899], [pVrbice, MALE[12]!, SURNAMES[28]!, 1900, 1949],
-    [pBukovina, MALE[13]!, SURNAMES[22]!, 1760, 1819], [pBukovina, MALE[8]!, SURNAMES[29]!, 1820, 1879], [pBukovina, MALE[9]!, SURNAMES[24]!, 1880, 1949],
+    [pKamenec, MALE[14]!, SURNAMES[7]!, 1760, 1811],
+    [pKamenec, MALE[15]!, SURNAMES[12]!, 1812, 1849],
+    [pKamenec, MALE[19]!, SURNAMES[15]!, 1850, 1889],
+    [pKamenec, MALE[18]!, SURNAMES[19]!, 1890, 1949],
+    [pVrbice, MALE[4]!, SURNAMES[14]!, 1760, 1809],
+    [pVrbice, MALE[16]!, SURNAMES[25]!, 1810, 1854],
+    [pVrbice, MALE[17]!, SURNAMES[26]!, 1855, 1899],
+    [pVrbice, MALE[12]!, SURNAMES[28]!, 1900, 1949],
+    [pBukovina, MALE[13]!, SURNAMES[22]!, 1760, 1819],
+    [pBukovina, MALE[8]!, SURNAMES[29]!, 1820, 1879],
+    [pBukovina, MALE[9]!, SURNAMES[24]!, 1880, 1949],
   ];
   for (const [parishId, given, surname, from, to] of priestSpecs) {
     const priest = b.person('male', given, surname, 0, from - 30, { asFound: `P. ${given.la} ${surname.old}` });
@@ -565,7 +746,15 @@ export function generateFixture(seed = 267): FixtureModel {
   };
   const oldForms = (year: number) => ({ latin: year <= 1830 && rng.chance(0.5), german: year > 1830 && year <= 1880 && rng.chance(0.4) });
   const adultsAround = (year: number, placeId: string, exclude: Set<string>) =>
-    [...b.info.values()].filter((p) => p.generation > 0 && p.home !== null && b.alive(p, year) && year - p.birthYear >= 18 && !exclude.has(p.id) && b.houseInfo.get(p.home)?.placeId === placeId);
+    [...b.info.values()].filter(
+      (p) =>
+        p.generation > 0 &&
+        p.home !== null &&
+        b.alive(p, year) &&
+        year - p.birthYear >= 18 &&
+        !exclude.has(p.id) &&
+        b.houseInfo.get(p.home)?.placeId === placeId,
+    );
 
   /** A new Person from outside the Tree (parents unknown), to marry into it. */
   const outsider = (sex: 'male' | 'female', generation: number, birthYear: number, placeId: string): PersonInfo => {
@@ -698,7 +887,14 @@ export function generateFixture(seed = 267): FixtureModel {
     b.marry(husband, wife, date, { houseId: wife.home ?? home }, witnesses);
     husband.home = home;
     wife.home = home;
-    const fam: FamilyInfo = { id: famId, husband, wife, home, generation: Math.max(husband.generation, wife.generation), marriedYear: Number(date.slice(0, 4)) };
+    const fam: FamilyInfo = {
+      id: famId,
+      husband,
+      wife,
+      home,
+      generation: Math.max(husband.generation, wife.generation),
+      marriedYear: Number(date.slice(0, 4)),
+    };
     families.push(fam);
     return fam;
   };
@@ -815,7 +1011,11 @@ export function generateFixture(seed = 267): FixtureModel {
   const in1920 = b.person('male', { cs: 'Zdeněk', la: 'Zdeněk', de: 'Zdeněk' }, NOVAK, 6, 1920);
   in1920.home = lomniceHouses[0]!;
   b.childLink(famBohumil.id, in1920);
-  b.event('birth', '1920-06-11', { houseId: lomniceHouses[0]! }, [[in1920, 'child'], [bohumil, 'father'], [bohumilWife, 'mother']]);
+  b.event('birth', '1920-06-11', { houseId: lomniceHouses[0]! }, [
+    [in1920, 'child'],
+    [bohumil, 'father'],
+    [bohumilWife, 'mother'],
+  ]);
   L.bornIn1920 = in1920.id;
   b.die(bohumil, '1938-12-01', { houseId: houseA });
 
@@ -839,7 +1039,9 @@ export function generateFixture(seed = 267): FixtureModel {
   // Oral history: a marriage known only from a Family account given in 2026 by a Living relative.
   // Her father is a generation 5 man of the Tree, so she is generation 6.
   const ludmilaFather =
-    [...b.info.values()].find((p) => p.generation === 5 && p.sex === 'male' && p.birthYear >= 1895 && p.birthYear <= 1910 && p.home !== null && p.deathYear === null) ??
+    [...b.info.values()].find(
+      (p) => p.generation === 5 && p.sex === 'male' && p.birthYear >= 1895 && p.birthYear <= 1910 && p.home !== null && p.deathYear === null,
+    ) ??
     (() => {
       const extra = b.person('male', { cs: 'Jaroslav', la: 'Jaroslaus', de: 'Jaroslaw' }, NOVAK, 5, 1903);
       extra.home = houseA;
@@ -852,13 +1054,24 @@ export function generateFixture(seed = 267): FixtureModel {
   const ludmilaG6 = b.person('female', { cs: 'Ludmila', la: 'Ludmilla', de: 'Ludmilla' }, ludmilaFather.surname, 6, 1941);
   ludmilaG6.home = lomniceHouses[1]!;
   b.childLink(famOral, ludmilaG6);
-  b.event('birth', '1941-05-09', { houseId: lomniceHouses[1]! }, [[ludmilaG6, 'child'], [ludmilaFather, 'father'], [ludmilaMother, 'mother']]);
+  b.event('birth', '1941-05-09', { houseId: lomniceHouses[1]! }, [
+    [ludmilaG6, 'child'],
+    [ludmilaFather, 'father'],
+    [ludmilaMother, 'mother'],
+  ]);
   // Her brothers: one born 1933 who died in 2001, one born 1936 and Living.
-  for (const [given, date, died] of [['Miroslav', '1933-02-14', '2001-07-19'], ['Jaroslav', '1936-10-02', null]] as const) {
+  for (const [given, date, died] of [
+    ['Miroslav', '1933-02-14', '2001-07-19'],
+    ['Jaroslav', '1936-10-02', null],
+  ] as const) {
     const brother = b.person('male', { cs: given, la: given, de: given }, ludmilaFather.surname, 6, Number(date.slice(0, 4)));
     brother.home = lomniceHouses[1]!;
     b.childLink(famOral, brother);
-    b.event('birth', date, { houseId: lomniceHouses[1]! }, [[brother, 'child'], [ludmilaFather, 'father'], [ludmilaMother, 'mother']]);
+    b.event('birth', date, { houseId: lomniceHouses[1]! }, [
+      [brother, 'child'],
+      [ludmilaFather, 'father'],
+      [ludmilaMother, 'mother'],
+    ]);
     if (died) {
       brother.deathYear = 2001;
       b.event('death', died, { placeId: lomnice }, [[brother, 'deceased']]);
@@ -866,13 +1079,20 @@ export function generateFixture(seed = 267): FixtureModel {
   }
   const accountId = b.id();
   b.m.sources.push({
-    id: accountId, version: 1, type: 'family_account',
+    id: accountId,
+    version: 1,
+    type: 'family_account',
     title: 'What Ludmila recalled about her parents (invented)',
-    repository: null, reference: null, url: null,
+    repository: null,
+    reference: null,
+    url: null,
     familyAccount: { givenBy: `Ludmila ${ludmilaFather.surname.f} (invented)`, givenByPersonId: ludmilaG6.id, givenOn: '2026-05-01' },
   });
   L.familyAccountSource = accountId;
-  L.oralMarriage = b.event('marriage', '1931~', { placeId: lomnice }, [[ludmilaFather, 'partner'], [ludmilaMother, 'partner']]);
+  L.oralMarriage = b.event('marriage', '1931~', { placeId: lomnice }, [
+    [ludmilaFather, 'partner'],
+    [ludmilaMother, 'partner'],
+  ]);
   b.cite(L.oralMarriage, accountId, null, 'They married in Lomnice "the summer the river flooded", around 1931; she did not know the exact date.', 'low');
 
   // A Person with no dates at all: Living by the rule.
@@ -893,12 +1113,32 @@ export function generateFixture(seed = 267): FixtureModel {
   const baptismCitation = b.m.eventCitations.find((c) => c.eventId === L.janBaptism)!.citationId;
   L.pageImage = b.id();
   b.m.images.push({
-    id: L.pageImage, version: 1, kind: 'page', citationId: baptismCitation, personIds: [], contentType: 'image/jpeg', byteSize: 2_481_337,
-    width: 3024, height: 4032, sha256: 'b'.repeat(64), caption: 'Register page, baptism of Jan Novák (fixture)', storageKey: 'fixtures/page-jan-novak-1801.jpg',
+    id: L.pageImage,
+    version: 1,
+    kind: 'page',
+    citationId: baptismCitation,
+    personIds: [],
+    contentType: 'image/jpeg',
+    byteSize: 2_481_337,
+    width: 3024,
+    height: 4032,
+    sha256: 'b'.repeat(64),
+    caption: 'Register page, baptism of Jan Novák (fixture)',
+    storageKey: 'fixtures/page-jan-novak-1801.jpg',
   });
   b.m.images.push({
-    id: b.id(), version: 1, kind: 'portrait', citationId: null, personIds: [proband.id], contentType: 'image/webp', byteSize: 312_004,
-    width: 1600, height: 2000, sha256: 'c'.repeat(64), caption: 'Portrait (fixture)', storageKey: 'fixtures/portrait-proband.webp',
+    id: b.id(),
+    version: 1,
+    kind: 'portrait',
+    citationId: null,
+    personIds: [proband.id],
+    contentType: 'image/webp',
+    byteSize: 312_004,
+    width: 1600,
+    height: 2000,
+    sha256: 'c'.repeat(64),
+    caption: 'Portrait (fixture)',
+    storageKey: 'fixtures/portrait-proband.webp',
   });
 
   return b.m;

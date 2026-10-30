@@ -39,7 +39,12 @@ describe('invitation and sign-in emails in Czech and English', () => {
   });
 
   it('formats alerts for the Owner', () => {
-    const e = alertEmail({ to: 'owner@example.test', subject: 'Nightly Backup failed', details: 'restic: repository not found', origin: 'https://rodokmen.example' });
+    const e = alertEmail({
+      to: 'owner@example.test',
+      subject: 'Nightly Backup failed',
+      details: 'restic: repository not found',
+      origin: 'https://rodokmen.example',
+    });
     expect(e.subject).toBe('[Rodokmen alert] Nightly Backup failed');
     expect(e.text).toContain('restic: repository not found');
   });
@@ -69,8 +74,30 @@ describe('Proposal emails in Czech and English', () => {
         displayName: 'Eva',
         queueLink: 'https://rodokmen.example/#work/review',
         groups: [
-          { author: 'Karel', isAgent: false, items: [{ submittedAt: new Date('2026-10-28T09:00:00Z'), summary: 'Baptism of Václav, 1803', changes: 9, link: 'https://rodokmen.example/#work/review/0192f0c4-7a1e-7c3b-9d2a-000000000002' }] },
-          { author: 'Research assistant', isAgent: true, items: [{ submittedAt: new Date('2026-10-29T11:30:00Z'), summary: 'adds the Person Anna Králová', changes: 1, link: 'https://rodokmen.example/#work/review/0192f0c4-7a1e-7c3b-9d2a-000000000003' }] },
+          {
+            author: 'Karel',
+            isAgent: false,
+            items: [
+              {
+                submittedAt: new Date('2026-10-28T09:00:00Z'),
+                summary: 'Baptism of Václav, 1803',
+                changes: 9,
+                link: 'https://rodokmen.example/#work/review/0192f0c4-7a1e-7c3b-9d2a-000000000002',
+              },
+            ],
+          },
+          {
+            author: 'Research assistant',
+            isAgent: true,
+            items: [
+              {
+                submittedAt: new Date('2026-10-29T11:30:00Z'),
+                summary: 'adds the Person Anna Králová',
+                changes: 1,
+                link: 'https://rodokmen.example/#work/review/0192f0c4-7a1e-7c3b-9d2a-000000000003',
+              },
+            ],
+          },
         ],
       });
       await expect(`Subject: ${email.subject}\n\n${email.text}`).toMatchFileSnapshot(`__snapshots__/emails/digest.${language}.txt`);
@@ -79,7 +106,16 @@ describe('Proposal emails in Czech and English', () => {
   }
 
   it('says when the Proposal was accepted, without a note', () => {
-    const e = outcomeEmail({ to: 'x@example.test', language: 'en', displayName: 'Jana', accepted: true, editorName: 'Eva', note: null, changes: [], link: 'https://rodokmen.example/' });
+    const e = outcomeEmail({
+      to: 'x@example.test',
+      language: 'en',
+      displayName: 'Jana',
+      accepted: true,
+      editorName: 'Eva',
+      note: null,
+      changes: [],
+      link: 'https://rodokmen.example/',
+    });
     expect(e.subject).toBe('Your Proposal was accepted');
     expect(e.text).not.toContain('Note:');
   });

@@ -8,18 +8,20 @@ export interface RouteRecord {
   hasResponseSchema: boolean;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+
 /** Records every route as it is added. Register before any route. */
 export function trackRoutes(app: FastifyInstance): RouteRecord[] {
   const routes: RouteRecord[] = [];
   app.addHook('onRoute', (route: RouteOptions) => {
     const methods = Array.isArray(route.method) ? route.method : [route.method];
-    const schema = route.schema as { response?: Record<string, unknown>; hide?: boolean } | undefined;
+    const response: unknown = route.schema?.response;
     for (const method of methods) {
       routes.push({
         method: method.toUpperCase(),
         url: route.url,
-        hasSchema: schema !== undefined,
-        hasResponseSchema: Object.keys(schema?.response ?? {}).some((code) => /^[23]\d\d$/.test(code)),
+        hasSchema: route.schema !== undefined,
+        hasResponseSchema: isRecord(response) && Object.keys(response).some((code) => /^[23]\d\d$/.test(code)),
       });
     }
   });
@@ -35,7 +37,8 @@ export function toOpenApiPath(url: string): string {
  * server registers must have a response schema and appear in the published description.
  * Returns one line per problem; empty means the description matches the routes.
  */
-export function checkRouteCoverage(routes: readonly RouteRecord[], doc: { paths?: Record<string, Record<string, unknown>> }): string[] {
+export function checkRouteCoverage(routes: readonly RouteRecord[], doc: unknown): string[] {
+  const paths = isRecord(doc) && isRecord(doc.paths) ? doc.paths : {};
   const problems: string[] = [];
   for (const r of routes) {
     if (!r.url.startsWith('/api/') || r.method === 'HEAD' || r.method === 'OPTIONS') continue;
@@ -43,8 +46,8 @@ export function checkRouteCoverage(routes: readonly RouteRecord[], doc: { paths?
     if (r.url === '/api/*') continue;
     const label = `${r.method} ${r.url}`;
     if (!r.hasResponseSchema) problems.push(`${label} has no response schema`);
-    const operation = doc.paths?.[toOpenApiPath(r.url)]?.[r.method.toLowerCase()];
-    if (!operation) problems.push(`${label} is missing from the OpenAPI description`);
+    const item = paths[toOpenApiPath(r.url)];
+    if (!isRecord(item) || !item[r.method.toLowerCase()]) problems.push(`${label} is missing from the OpenAPI description`);
   }
   return problems;
 }
@@ -52,11 +55,11 @@ export function checkRouteCoverage(routes: readonly RouteRecord[], doc: { paths?
 /** jsonSchemaTransform, plus: public routes need no session in the description. */
 export const transform: typeof jsonSchemaTransform = (input) => {
   const out = jsonSchemaTransform(input);
-  const route = (input as { route?: { config?: { public?: boolean } } }).route;
-  if (route?.config?.public) (out.schema as Record<string, unknown>).security = [];
-  return out;
+  return input.route.config?.public ? { ...out, schema: { ...out.schema, security: [] } } : out;
 };
 
 export function openApiDocument(app: FastifyInstance): Record<string, unknown> {
-  return app.swagger() as unknown as Record<string, unknown>;
+  const doc: unknown = app.swagger();
+  if (!isRecord(doc)) throw new Error('@fastify/swagger returned no document');
+  return doc;
 }

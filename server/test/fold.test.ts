@@ -21,8 +21,8 @@ const WORDS = [
   'Ĳssel ǅuro Ǆungla ǉubica ǌegoš ﬁlia ﬂos ſanctus ƒ',
   'Jose\u0301 Nova\u0301k Ma\u0308dchen',
   'two  spaces\ttab\nnewline\u2009thin\u3000wide\u2028line',
-  // rdk_fold keeps no-break spaces, so the mirror does too.
-  'Lhota\u00a0u\u00a0Kolína 1\u202f801 12\u2007a',
+  // No-break spaces and U+FEFF are spaces too (migration 0005); U+0085 is not.
+  'Lhota\u00a0u\u00a0Kolína 1\u202f801 12\u2007a \ufeffBOM x\u0085y',
   '^`~ 12a čp. 15 (1801)',
 ];
 
@@ -97,5 +97,15 @@ describe('search folding: shared foldForSearch and the database rdk_fold agree',
         q,
       ).toContain(sourceId);
     }
+  });
+
+  it('finds a name written with no-break spaces by a query typed with ordinary ones', async () => {
+    const placeId = await t.db.transaction().execute(async (tx) => {
+      const { id } = await tx.insertInto('place').values({ type: 'village' }).returning('id').executeTakeFirstOrThrow();
+      await tx.insertInto('place_name').values({ place_id: id, name: 'Lhota\u00a0u\u00a0Kolína', language: 'cs', is_primary: true }).execute();
+      return id;
+    });
+    const res = await a.app.inject({ method: 'GET', url: `/api/places?q=${encodeURIComponent('lhota u kolina')}`, headers: { cookie } });
+    expect(PlaceSearchResult.parse(res.json()).items.map((p) => p.id)).toContain(placeId);
   });
 });

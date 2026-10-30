@@ -1,7 +1,13 @@
 import fastifyCookie from '@fastify/cookie';
 import fastifySwagger from '@fastify/swagger';
 import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
-import { hasZodFastifySchemaValidationErrors, isResponseSerializationError, jsonSchemaTransformObject, serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
+import {
+  hasZodFastifySchemaValidationErrors,
+  isResponseSerializationError,
+  jsonSchemaTransformObject,
+  serializerCompiler,
+  validatorCompiler,
+} from 'fastify-type-provider-zod';
 import type { AccountDeps } from './auth/accounts.js';
 import { auth } from './auth/plugin.js';
 import { ApiProblem, HTTP_ERROR_NAMES } from './auth/problem.js';
@@ -16,7 +22,8 @@ import { proposalRoutes } from './routes/proposals.js';
 import { systemRoutes } from './routes/system.js';
 import { treeRoutes } from './routes/tree.js';
 import { createImageStorage, type ImageStorage } from './storage/images.js';
-import { systemClock, type Clock } from './tree/summaries.js';
+import { systemClock, type Clock } from './clock.js';
+import { messageOf, numberField, stringField } from './errors.js';
 
 export interface AppDeps {
   config: Config;
@@ -38,12 +45,12 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   const clock = deps.clock ?? systemClock;
   const images = deps.images ?? createImageStorage(config.s3, clock);
 
-  const app = Fastify({
+  const fastify = Fastify({
     logger: deps.logger ?? false,
     trustProxy: config.trustProxy,
     bodyLimit: 1024 * 1024,
-  }) as unknown as RodokmenApp;
-  app.routeRecords = trackRoutes(app);
+  });
+  const app: RodokmenApp = Object.assign(fastify, { routeRecords: trackRoutes(fastify) });
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -55,7 +62,8 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
       info: {
         title: 'Rodokmen API',
         version: '0.1.0',
-        description: 'Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member.',
+        description:
+          'Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member.',
       },
       // Relative, so the committed description does not depend on where it was generated.
       servers: [{ url: '/' }],
@@ -71,7 +79,9 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiProblem) {
-      return reply.code(error.statusCode).send({ statusCode: error.statusCode, error: HTTP_ERROR_NAMES[error.statusCode] ?? 'Error', message: error.message, code: error.code });
+      return reply
+        .code(error.statusCode)
+        .send({ statusCode: error.statusCode, error: HTTP_ERROR_NAMES[error.statusCode] ?? 'Error', message: error.message, code: error.code });
     }
     if (hasZodFastifySchemaValidationErrors(error)) {
       return reply.code(400).send({ statusCode: 400, error: 'Bad Request', message: error.message, code: 'validation' });
@@ -80,9 +90,11 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
       request.log.error({ err: error, issues: error.cause.issues }, 'response does not match its schema');
       return reply.code(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Something went wrong.', code: 'internal' });
     }
-    const status = (error as { statusCode?: number }).statusCode;
+    const status = numberField(error, 'statusCode');
     if (status && status >= 400 && status < 500) {
-      return reply.code(status).send({ statusCode: status, error: HTTP_ERROR_NAMES[status] ?? 'Error', message: (error as Error).message, code: (error as { code?: string }).code ?? 'request' });
+      return reply
+        .code(status)
+        .send({ statusCode: status, error: HTTP_ERROR_NAMES[status] ?? 'Error', message: messageOf(error), code: stringField(error, 'code') ?? 'request' });
     }
     request.log.error({ err: error }, 'unhandled error');
     return reply.code(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Something went wrong.', code: 'internal' });

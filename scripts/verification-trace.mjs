@@ -147,7 +147,13 @@ function lscInfo(file, { pkg, entry }) {
   try {
     return JSON.parse(execFileSync(lsc, ['info', '--typed', entry], { cwd: join(ROOT, pkg), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }));
   } catch (e) {
-    problem(`lsc info --typed ${file} failed: ${String(e.stderr || e.message).trim().split('\n')[0]}`);
+    problem(
+      `lsc info --typed ${file} failed: ${
+        String(e.stderr || e.message)
+          .trim()
+          .split('\n')[0]
+      }`,
+    );
     return null;
   }
 }
@@ -166,6 +172,17 @@ function functionsOf(lines) {
 }
 
 /** Lines of the .dfy that are not in the .dfy.gen (the proof additions). */
+/** Production files other than `file` that import `name` and call it (`call` matches a call). */
+function callingFiles(name, file, call, sources) {
+  const importer = new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`);
+  const found = [];
+  for (const [other, otherLines] of sources) {
+    if (other === file || /(^|\/)tests?\//.test(other)) continue;
+    if (importer.test(otherLines.join('\n')) && otherLines.some((l) => call.test(l))) found.push(other);
+  }
+  return found;
+}
+
 function proofAdditions(pkg, entry) {
   const config = join(ROOT, pkg, 'lemmascript.json');
   const proofDir = existsSync(config) ? (JSON.parse(readFileSync(config, 'utf8'))['proof-dir'] ?? '.') : '.';
@@ -228,11 +245,15 @@ for (const [file, info] of verifiedFiles) {
   const verifiedNames = new Set(lscView.functions.map((f) => f.name));
 
   // Contracts in the source must be exactly the contracts lsc extracted.
-  const inSource = contractLines.filter((c) => c.file === file).map((c) => c.text).sort();
+  const inSource = contractLines
+    .filter((c) => c.file === file)
+    .map((c) => c.text)
+    .sort();
   const extracted = lscView.functions.flatMap((f) => f.contract ?? []).sort();
   for (const c of contractLines.filter((c) => c.file === file)) {
     const fn = fns.find((f) => f.start < c.line - 1 && c.line - 1 <= f.end);
-    if (!fn || !verifiedNames.has(fn.name)) problem(`${c.file}:${c.line}: //@ contract on ${fn ? `"${fn.name}", which lsc does not verify (missing //@ verify?)` : 'no function lsc verifies'}`);
+    if (!fn || !verifiedNames.has(fn.name))
+      problem(`${c.file}:${c.line}: //@ contract on ${fn ? `"${fn.name}", which lsc does not verify (missing //@ verify?)` : 'no function lsc verifies'}`);
   }
   if (JSON.stringify(inSource) !== JSON.stringify(extracted) && problems.length === 0) {
     problem(`${file}: the //@ contract lines and the contracts lsc extracts differ (${inSource.length} vs ${extracted.length})`);
@@ -242,11 +263,15 @@ for (const [file, info] of verifiedFiles) {
     const range = fns.find((f) => f.name === fn.name);
     const body = range ? lines.slice(range.start, range.end + 1) : [];
     const requiresText = body.map((l) => /^\s*\/\/@ requires\s+(.*?)\s*$/.exec(l)?.[1]).filter(Boolean);
-    const markers = body.map((l) => TRUST_MARKER.exec(l)).filter(Boolean).map((m) => `\`//@ ${m[1]}${m[2] ? ` ${m[2]}` : ''}\``);
+    const markers = body
+      .map((l) => TRUST_MARKER.exec(l))
+      .filter(Boolean)
+      .map((m) => `\`//@ ${m[1]}${m[2] ? ` ${m[2]}` : ''}\``);
     if (fn.autohavoc) markers.push('`//@ autohavoc`');
     for (const ext of lscView.externs ?? []) {
       const extName = (ext.qualified ?? ext.name ?? '').split('.').pop();
-      if (extName && body.some((l) => new RegExp(`(?<![\\w$])${extName}\\s*\\(`).test(l))) markers.push(`uses \`${ext.qualified ?? extName}\`, an extern (see below)`);
+      if (extName && body.some((l) => new RegExp(`(?<![\\w$])${extName}\\s*\\(`).test(l)))
+        markers.push(`uses \`${ext.qualified ?? extName}\`, an extern (see below)`);
     }
 
     // Unverified production code that calls it: there its requires are assumed, not checked.
@@ -256,14 +281,7 @@ for (const [file, info] of verifiedFiles) {
       if (other.name === fn.name || verifiedNames.has(other.name)) continue;
       if (lines.slice(other.start, other.end + 1).some((l) => call.test(l) && !/^\s*(\/\/|\*)/.test(l))) callers.push(`\`${other.name}\``);
     }
-    if (range?.exported) {
-      const importer = new RegExp(`import\\s*\\{[^}]*\\b${fn.name}\\b[^}]*\\}\\s*from`);
-      for (const [other, otherLines] of sources) {
-        if (other === file || /(^|\/)tests?\//.test(other)) continue;
-        const text = otherLines.join('\n');
-        if (importer.test(text) && otherLines.some((l) => call.test(l))) callers.push(other);
-      }
-    }
+    if (range?.exported) callers.push(...callingFiles(fn.name, file, call, sources));
     const assumed = [];
     if (requiresText.length > 0 && callers.length > 0) {
       assumed.push(`its requires, where unverified code calls it (${callers.join(', ')}): ${requiresText.map((r) => `\`${r}\``).join('; ')}`);
@@ -279,8 +297,15 @@ for (const [file, info] of verifiedFiles) {
   }
 
   for (const ext of lscView.externs ?? []) {
-    const contract = (ext.requires?.length ?? 0) + (ext.ensures?.length ?? 0) > 0 ? 'its contract is assumed' : 'it has no contract, so the proofs assume only that it is a deterministic function';
-    assumptions.push({ name: ext.qualified ?? ext.name ?? '(extern)', file, assumed: [`an extern (\`//@ extern\`, or a call into another file): ${contract}`] });
+    const contract =
+      (ext.requires?.length ?? 0) + (ext.ensures?.length ?? 0) > 0
+        ? 'its contract is assumed'
+        : 'it has no contract, so the proofs assume only that it is a deterministic function';
+    assumptions.push({
+      name: ext.qualified ?? ext.name ?? '(extern)',
+      file,
+      assumed: [`an extern (\`//@ extern\`, or a call into another file): ${contract}`],
+    });
   }
 
   const { dfy, lines: added } = proofAdditions(info.pkg, info.entry);
@@ -314,12 +339,14 @@ out.push('');
 out.push('| Requirement | Specified in | Function | File | Assumed, not proved |');
 out.push('|---|---|---|---|---|');
 for (const r of byRequirement) {
-  out.push(`| ${r.requirement} | ${specOf(r.requirement)} | ${fnRef(r)} | ${r.file} | ${r.assumed.length === 0 ? 'nothing beyond the trusted base' : 'see below'} |`);
+  out.push(
+    `| ${r.requirement} | ${specOf(r.requirement)} | ${fnRef(r)} | ${r.file} | ${r.assumed.length === 0 ? 'nothing beyond the trusted base' : 'see below'} |`,
+  );
 }
 out.push('');
 out.push('## Assumed, not proved');
 out.push('');
-out.push('A verified function\'s `requires` are proved wherever a verified function calls it. Where unverified code');
+out.push("A verified function's `requires` are proved wherever a verified function calls it. Where unverified code");
 out.push('(the "shell": parsing, I/O, the clock) calls it, they are assumed; the tests cover those callers.');
 out.push('');
 const seen = new Set();
@@ -349,14 +376,15 @@ out.push('## Proof additions');
 out.push('');
 out.push('Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.');
 out.push('');
-for (const a of additions.sort((x, y) => x.dfy.localeCompare(y.dfy))) out.push(`- ${a.dfy}: ${a.lemmas.length > 0 ? a.lemmas.map((l) => `\`${l}\``).join(', ') : 'assertions only'}`);
+for (const a of additions.sort((x, y) => x.dfy.localeCompare(y.dfy)))
+  out.push(`- ${a.dfy}: ${a.lemmas.length > 0 ? a.lemmas.map((l) => `\`${l}\``).join(', ') : 'assertions only'}`);
 if (additions.length === 0) out.push('- none');
 out.push('');
 out.push('## Trusted base');
 out.push('');
 out.push('Every proof above also trusts:');
 out.push('');
-out.push('- LemmaScript\'s translation of TypeScript to Dafny (`lemmascript` as pinned in the package; a tech preview).');
+out.push("- LemmaScript's translation of TypeScript to Dafny (`lemmascript` as pinned in the package; a tech preview).");
 out.push('  Read the generated `.dfy.gen` when writing a proof, and avoid the known issues below.');
 out.push('- Dafny and its Z3 solver (the version pinned in `.github/workflows/verify.yml`).');
 out.push('- The model: `number` is a mathematical integer (no floating point, no overflow), strings are sequences of');

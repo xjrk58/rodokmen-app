@@ -4,7 +4,7 @@ import { createDb, migrateToLatest } from './db/db.js';
 import { DailyScheduler } from './jobs/daily.js';
 import { createMailer } from './mail/mailer.js';
 import { createImageStorage } from './storage/images.js';
-import { systemClock } from './tree/summaries.js';
+import { systemClock } from './clock.js';
 
 /**
  * Starts the API: migrates the database (each release's migrations must work with the
@@ -28,7 +28,14 @@ async function main() {
   if (config.env === 'production' && !config.s3.configured) app.log.warn('object storage is not configured; image links will not work');
 
   // Daily jobs (Editor digest at 18:00 Prague time, deleting images of rejected Proposals).
-  const stopJobs = new DailyScheduler({ db, clock: systemClock, mailer, images, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) }).start();
+  const stopJobs = new DailyScheduler({
+    db,
+    clock: systemClock,
+    mailer,
+    images,
+    publicOrigin: config.publicOrigin,
+    log: (msg, err) => app.log.error({ err }, msg),
+  }).start();
 
   const shutdown = async (signal: string) => {
     app.log.info({ signal }, 'shutting down');

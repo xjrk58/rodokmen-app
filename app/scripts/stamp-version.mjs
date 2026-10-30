@@ -12,13 +12,22 @@ import { fileURLToPath } from 'node:url';
 import { PRECACHE } from '../src/precache.js';
 
 const appDir = join(dirname(fileURLToPath(import.meta.url)), '..');
-/** Files that carry the stamp are not part of the hash. */
-const STAMPED = ['sw.js', 'src/version.js'];
+/**
+ * Files that carry the stamp (they are not part of the hash): where the stamp
+ * is (the version in the first group) and the line that writes it.
+ */
+const STAMPED = [
+  { file: 'sw.js', pattern: /const VERSION = '([^']*)';/, line: (/** @type {string} */ v) => `const VERSION = '${v}';` },
+  { file: 'src/version.js', pattern: /export const APP_VERSION = '([^']*)';/, line: (/** @type {string} */ v) => `export const APP_VERSION = '${v}';` },
+];
 
 export async function computeVersion() {
-  const { version } = JSON.parse(await readFile(join(appDir, 'package.json'), 'utf8'));
+  /** @type {unknown} */
+  const pkg = JSON.parse(await readFile(join(appDir, 'package.json'), 'utf8'));
+  const version = typeof pkg === 'object' && pkg !== null && 'version' in pkg && typeof pkg.version === 'string' ? pkg.version : null;
+  if (!version) throw new Error('app/package.json has no version');
   const hash = createHash('sha256');
-  const files = [...new Set(PRECACHE.map((p) => (p === './' ? 'index.html' : p)))].filter((p) => !STAMPED.includes(p)).sort();
+  const files = [...new Set(PRECACHE.map((p) => (p === './' ? 'index.html' : p)))].filter((p) => !STAMPED.some((s) => s.file === p)).sort();
   for (const file of files) {
     hash.update(`${file}\0`);
     hash.update(await readFile(join(appDir, file)));
@@ -27,27 +36,38 @@ export async function computeVersion() {
   return `${version}+${hash.digest('hex').slice(0, 10)}`;
 }
 
-const SW_PATTERN = /const VERSION = '[^']*';/;
-const MODULE_PATTERN = /export const APP_VERSION = '[^']*';/;
-
+/**
+ * The stamp in each stamped file: its text, and the version it carries (null
+ * when the file has no stamp line, which is an error both when checking and when writing).
+ */
 export async function readStamps() {
-  const sw = await readFile(join(appDir, 'sw.js'), 'utf8');
-  const mod = await readFile(join(appDir, 'src/version.js'), 'utf8');
-  return { sw: sw.match(/const VERSION = '([^']*)';/)?.[1], module: mod.match(/export const APP_VERSION = '([^']*)';/)?.[1], swText: sw, moduleText: mod };
+  return Promise.all(
+    STAMPED.map(async ({ file, pattern, line }) => {
+      const text = await readFile(join(appDir, file), 'utf8');
+      return { file, text, line, pattern, version: pattern.exec(text)?.[1] ?? null };
+    }),
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const version = await computeVersion();
   const stamps = await readStamps();
+  const missing = stamps.filter((s) => s.version === null).map((s) => s.file);
+  if (missing.length) {
+    console.error(`No version stamp line in ${missing.join(', ')}`);
+    process.exit(1);
+  }
   if (process.argv.includes('--check')) {
-    if (stamps.sw !== version || stamps.module !== version) {
-      console.error(`Version stamp is stale: sw.js has ${stamps.sw}, src/version.js has ${stamps.module}, files give ${version}. Run node scripts/stamp-version.mjs`);
+    const stale = stamps.filter((s) => s.version !== version);
+    if (stale.length) {
+      console.error(
+        `Version stamp is stale: ${stale.map((s) => `${s.file} has ${s.version}`).join(', ')}; the files give ${version}. Run node scripts/stamp-version.mjs`,
+      );
       process.exit(1);
     }
     console.log(`Version stamp ${version} is current`);
   } else {
-    await writeFile(join(appDir, 'sw.js'), stamps.swText.replace(SW_PATTERN, `const VERSION = '${version}';`));
-    await writeFile(join(appDir, 'src/version.js'), stamps.moduleText.replace(MODULE_PATTERN, `export const APP_VERSION = '${version}';`));
+    for (const s of stamps) await writeFile(join(appDir, s.file), s.text.replace(s.pattern, s.line(version)));
     console.log(`Stamped ${version}`);
   }
 }

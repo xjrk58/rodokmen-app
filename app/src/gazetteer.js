@@ -56,9 +56,4 @@ export class Gazetteer {
     }
     return best ? { municipality: best, km: haversineKm(lat, lon, best.lat, best.lon) } : null;
   }
-
-  /** @param {string} code */
-  byCode(code) {
-    return this.municipalities.find((m) => m.code === code) ?? null;
-  }
 }

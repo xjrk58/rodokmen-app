@@ -26,6 +26,17 @@ test.describe('English', () => {
     await expect(page.locator('[data-testid="also-check"]')).toHaveCount(0);
   });
 
+  test('Escape in Settings closes only Settings, not the place sheet behind it', async ({ page }) => {
+    await tapPoint(page, NEAR_MZA.lat, NEAR_MZA.lon);
+    await page.locator('#settings-button').click();
+    await expect(page.locator('#settings')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#settings')).toBeHidden();
+    await expect(page.locator('#place-sheet')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#place-sheet')).toBeHidden();
+  });
+
   test('a tap in the countryside shows the nearest municipality and its district', async ({ page }) => {
     await tapPoint(page, NEAR_MZA.lat, NEAR_MZA.lon);
     await expect(page.locator('#place-sheet .eyebrow')).toContainText('Nearest municipality');

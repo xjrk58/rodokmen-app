@@ -28,10 +28,13 @@ test('offline reload opens the map, searches and shows a place sheet', async ({ 
   /** @type {string[]} */
   const blocked = [];
   await context.unrouteAll({ behavior: 'ignoreErrors' });
-  await context.route((url) => !LOCAL.test(url.href), (route) => {
-    blocked.push(route.request().url());
-    return route.abort('internetdisconnected');
-  });
+  await context.route(
+    (url) => !LOCAL.test(url.href),
+    (route) => {
+      blocked.push(route.request().url());
+      return route.abort('internetdisconnected');
+    },
+  );
   await context.setOffline(true);
 
   await page.reload();
@@ -67,6 +70,27 @@ test('tiles are cached only as they are viewed', async ({ page }) => {
     const cached = await page.evaluate(async () => (await (await caches.open('rodokmen-tiles')).keys()).map((r) => r.url));
     // Nothing is cached that was not on screen.
     for (const url of cached) expect(viewed).toContain(url);
+  } finally {
+    await server.close();
+  }
+});
+
+test('a damaged tile index does not stop the map tiles: they come from the network and are cached again', async ({ page }) => {
+  const server = await serve(APP_DIR);
+  try {
+    await page.goto(`${server.url}#map=8/49.8/15.5`);
+    await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
+    await waitForServiceWorker(page);
+    // The saved use order is unreadable (a write cut short, a bug in an older version).
+    await page.evaluate(async (key) => {
+      await (
+        await caches.open('rodokmen-meta')
+      ).put(key, new Response('["https://tile.openstreetmap.org/8/1', { headers: { 'content-type': 'application/json' } }));
+    }, `${server.url}__tile-lru__.json`);
+    await page.reload();
+    await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
+    await expect(page.locator('img.leaflet-tile-loaded').first()).toBeVisible();
+    await expect.poll(async () => (await cacheSizes(page))['rodokmen-tiles'] ?? 0).toBeGreaterThan(0);
   } finally {
     await server.close();
   }

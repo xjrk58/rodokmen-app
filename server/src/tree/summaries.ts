@@ -1,16 +1,27 @@
-import { compareByEarliest, isLiving, livingFactsFromEvents, parseEdtf, type EventSummary, type GeoPoint, type HouseRef, type PersonSummary, type PlaceRef } from '@rodokmen/shared';
+import {
+  compareByEarliest,
+  isLiving,
+  livingFactsFromEvents,
+  parseEdtf,
+  type EventSummary,
+  type GeoPoint,
+  type HouseRef,
+  type PersonSummary,
+  type PlaceRef,
+} from '@rodokmen/shared';
 import { sql } from 'kysely';
+import type { Clock } from '../clock.js';
 import type { Db } from '../db/db.js';
 import { dayOrNull } from './dates.js';
 
-export interface Clock {
-  now(): Date;
+/** Latitude and longitude of a geography(Point) column, for a select list. */
+export const lat = (column: string) => sql<number | null>`ST_Y(${sql.ref(column)}::geometry)`;
+export const lon = (column: string) => sql<number | null>`ST_X(${sql.ref(column)}::geometry)`;
+
+/** A LIKE pattern that finds the text anywhere, with LIKE's own characters taken literally. */
+export function containsPattern(text: string): string {
+  return `%${text.replace(/[\\%_]/g, '\\$&')}%`;
 }
-
-export const systemClock: Clock = { now: () => new Date() };
-
-const lat = (column: string) => sql<number | null>`ST_Y(${sql.ref(column)}::geometry)`;
-const lon = (column: string) => sql<number | null>`ST_X(${sql.ref(column)}::geometry)`;
 
 export function geoPoint(row: { lat: number | null; lon: number | null }): GeoPoint | null {
   return row.lat === null || row.lon === null ? null : { lat: row.lat, lon: row.lon };
@@ -51,7 +62,10 @@ export async function personSummaries(db: Db, ids: readonly string[], clock: Clo
   }
   const today = clock.now();
   const earliestOf = (dates: Array<string | null>): string | null => {
-    const parsed = dates.filter((d): d is string => d !== null).map(parseEdtf).sort(compareByEarliest);
+    const parsed = dates
+      .filter((d): d is string => d !== null)
+      .map(parseEdtf)
+      .sort(compareByEarliest);
     return parsed[0]?.input ?? null;
   };
   for (const p of persons) {
@@ -161,7 +175,13 @@ export async function summarizeEvents(db: Db, rows: EventRow[], order?: readonly
     rows.map((r): [string, EventSummary] => {
       const h = r.house_id ? houseById.get(r.house_id) : undefined;
       const house: HouseRef | null = h
-        ? { id: h.id, version: h.version, placeId: h.place_id, number: numberAt(numbers.get(h.id) ?? [], dayOrNull(r.date_earliest), dayOrNull(r.date_latest)), location: geoPoint(h) }
+        ? {
+            id: h.id,
+            version: h.version,
+            placeId: h.place_id,
+            number: numberAt(numbers.get(h.id) ?? [], dayOrNull(r.date_earliest), dayOrNull(r.date_latest)),
+            location: geoPoint(h),
+          }
         : null;
       const placeId = r.place_id ?? h?.place_id ?? null;
       return [
@@ -185,9 +205,12 @@ export async function summarizeEvents(db: Db, rows: EventRow[], order?: readonly
   return ids.map((id) => byId.get(id)).filter((e): e is EventSummary => e !== undefined);
 }
 
-/** Sort key for stored earliest days: open starts first, undated last. */
-export function earliestSortKey(day: string | null): string {
-  if (day === null) return '￿';
-  if (day === '-infinity') return '';
-  return day;
+/**
+ * Orders stored earliest days (date_earliest): open starts first, undated last, so that lists of
+ * Events read from the earliest known one. Unlike compareByEarliest in shared/src/edtf.ts, which
+ * ranks parsed dates and puts undated (null) first; the server only gives it dated values.
+ */
+export function compareEarliestDays(a: string | null, b: string | null): number {
+  const rank = (day: string | null) => (day === null ? 2 : day === '-infinity' ? 0 : 1);
+  return rank(a) - rank(b) || (a !== null && b !== null && a !== b ? (a < b ? -1 : 1) : 0);
 }

@@ -1,9 +1,18 @@
-import { INVITATION_DAYS, SIGN_IN_LINK_MINUTES, type InvitationStatus, type InvitationView, type MemberRole, type MemberView, type UiLanguage } from '@rodokmen/shared';
+import {
+  INVITATION_DAYS,
+  SIGN_IN_LINK_MINUTES,
+  type InvitationStatus,
+  type InvitationView,
+  type MemberRole,
+  type MemberView,
+  type UiLanguage,
+} from '@rodokmen/shared';
+import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import type { Mailer } from '../mail/mailer.js';
 import { invitationEmail, signInLinkEmail } from '../mail/templates.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { ApiProblem } from './problem.js';
 import { createSession, endAllSessions, hashToken, newToken, type SessionOptions } from './sessions.js';
 
@@ -43,7 +52,10 @@ function invitationStatus(i: { accepted_at: Date | null; revoked_at: Date | null
   return 'pending';
 }
 
-export function invitationView(i: { id: string; email: string; language: UiLanguage; created_at: Date; expires_at: Date; accepted_at: Date | null; revoked_at: Date | null }, now: Date): InvitationView {
+export function invitationView(
+  i: { id: string; email: string; language: UiLanguage; created_at: Date; expires_at: Date; accepted_at: Date | null; revoked_at: Date | null },
+  now: Date,
+): InvitationView {
   return {
     id: i.id,
     email: i.email,
@@ -65,12 +77,18 @@ export async function createInvitation(deps: AccountDeps, owner: Account, emailI
   const { token, hash } = newToken();
   const now = deps.clock.now();
   const expiresAt = new Date(now.getTime() + INVITATION_DAYS * 86_400_000);
-  const row = await deps.db
-    .insertInto('invitation')
-    .values({ token_hash: hash, email, language, invited_by: owner.id, created_at: now, expires_at: expiresAt })
-    .returningAll()
-    .executeTakeFirstOrThrow();
-  await deps.mailer.send(invitationEmail({ to: email, language, inviterName: owner.display_name, link: `${deps.publicOrigin}/auth/invite#token=${token}`, days: INVITATION_DAYS }));
+  // Sent inside the transaction: if the email cannot go out, no invitation is left that nobody has the link to.
+  const row = await deps.db.transaction().execute(async (tx) => {
+    const inserted = await tx
+      .insertInto('invitation')
+      .values({ token_hash: hash, email, language, invited_by: owner.id, created_at: now, expires_at: expiresAt })
+      .returningAll()
+      .executeTakeFirstOrThrow();
+    await deps.mailer.send(
+      invitationEmail({ to: email, language, inviterName: owner.display_name, link: `${deps.publicOrigin}/auth/invite#token=${token}`, days: INVITATION_DAYS }),
+    );
+    return inserted;
+  });
   return invitationView(row, now);
 }
 
@@ -81,7 +99,13 @@ export async function listInvitations(deps: AccountDeps): Promise<InvitationView
 }
 
 export async function revokeInvitation(deps: AccountDeps, id: string): Promise<void> {
-  const result = await deps.db.updateTable('invitation').set({ revoked_at: deps.clock.now() }).where('id', '=', id).where('accepted_at', 'is', null).where('revoked_at', 'is', null).executeTakeFirst();
+  const result = await deps.db
+    .updateTable('invitation')
+    .set({ revoked_at: deps.clock.now() })
+    .where('id', '=', id)
+    .where('accepted_at', 'is', null)
+    .where('revoked_at', 'is', null)
+    .executeTakeFirst();
   if (Number(result.numUpdatedRows) === 0) throw new ApiProblem(404, 'not_found', 'No open invitation with this id.');
 }
 
@@ -152,20 +176,33 @@ export async function requestEmailLink(deps: AccountDeps, emailInput: string): P
   const account = await deps.db.selectFrom('account').selectAll().where('email', '=', email).where('disabled_at', 'is', null).executeTakeFirst();
   if (!account) return;
   const now = deps.clock.now();
-  const recent = await deps.db
-    .selectFrom('sign_in_link')
-    .select((eb) => eb.fn.countAll<number>().as('n'))
-    .where('account_id', '=', account.id)
-    .where('created_at', '>', new Date(now.getTime() - 3_600_000))
-    .executeTakeFirstOrThrow();
-  if (recent.n >= SIGN_IN_LINKS_PER_HOUR) return;
   const { token, hash } = newToken();
-  await deps.db
-    .insertInto('sign_in_link')
-    .values({ token_hash: hash, account_id: account.id, created_at: now, expires_at: new Date(now.getTime() + SIGN_IN_LINK_MINUTES * 60_000) })
-    .execute();
+  // Counting and inserting under a lock per Member, so that simultaneous requests cannot all
+  // see room under the limit.
+  const issued = await deps.db.transaction().execute(async (tx) => {
+    await sql`select pg_advisory_xact_lock(hashtext(${`sign-in-link:${account.id}`}))`.execute(tx);
+    const recent = await tx
+      .selectFrom('sign_in_link')
+      .select((eb) => eb.fn.countAll<number>().as('n'))
+      .where('account_id', '=', account.id)
+      .where('created_at', '>', new Date(now.getTime() - 3_600_000))
+      .executeTakeFirstOrThrow();
+    if (recent.n >= SIGN_IN_LINKS_PER_HOUR) return false;
+    await tx
+      .insertInto('sign_in_link')
+      .values({ token_hash: hash, account_id: account.id, created_at: now, expires_at: new Date(now.getTime() + SIGN_IN_LINK_MINUTES * 60_000) })
+      .execute();
+    return true;
+  });
+  if (!issued) return;
   await deps.mailer.send(
-    signInLinkEmail({ to: account.email, language: account.language, displayName: account.display_name, link: `${deps.publicOrigin}/auth/link#token=${token}`, minutes: SIGN_IN_LINK_MINUTES }),
+    signInLinkEmail({
+      to: account.email,
+      language: account.language,
+      displayName: account.display_name,
+      link: `${deps.publicOrigin}/auth/link#token=${token}`,
+      minutes: SIGN_IN_LINK_MINUTES,
+    }),
   );
 }
 
@@ -223,7 +260,12 @@ export async function disableMember(deps: AccountDeps, owner: Account, targetId:
   return deps.db.transaction().execute(async (tx) => {
     const target = await loadMember(tx, targetId);
     const now = deps.clock.now();
-    const updated = await tx.updateTable('account').set({ disabled_at: target.disabled_at ?? now }).where('id', '=', target.id).returningAll().executeTakeFirstOrThrow();
+    const updated = await tx
+      .updateTable('account')
+      .set({ disabled_at: target.disabled_at ?? now })
+      .where('id', '=', target.id)
+      .returningAll()
+      .executeTakeFirstOrThrow();
     await endAllSessions(tx, deps.clock, target.id);
     await tx.updateTable('sign_in_link').set({ used_at: now }).where('account_id', '=', target.id).where('used_at', 'is', null).execute();
     return memberView(updated);

@@ -17,7 +17,7 @@ export async function openApiJson(config: Config): Promise<{ json: string; probl
   try {
     const app = await buildApp({ config: { ...config, appDir: '/nonexistent' }, db, mailer: new OutboxMailer() });
     const doc = openApiDocument(app);
-    const problems = checkRouteCoverage(app.routeRecords, doc as { paths?: Record<string, Record<string, unknown>> });
+    const problems = checkRouteCoverage(app.routeRecords, doc);
     await app.close();
     return { json: `${JSON.stringify(doc, null, 2)}\n`, problems };
   } finally {

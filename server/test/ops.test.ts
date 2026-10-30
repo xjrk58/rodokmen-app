@@ -9,7 +9,7 @@ import { sendAlert } from '../src/ops/alerts.js';
 import { signInLinkEmail } from '../src/mail/templates.js';
 import { backupStatusReader, BACKUP_MAX_AGE_MS, HEALTH_ALERT_AFTER_MS, Watchdog } from '../src/ops/watchdog.js';
 import { createImageStorage, IMAGE_LINK_SECONDS } from '../src/storage/images.js';
-import { MINUTE, TestClock } from './helpers.js';
+import { MINUTE, portOf, TestClock } from './helpers.js';
 
 describe('presigned image links (no network)', () => {
   const clock = new TestClock(new Date('2026-10-29T10:00:00Z'));
@@ -38,7 +38,7 @@ describe('presigned image links (no network)', () => {
     expect(expiresAt.toISOString()).toBe('2026-10-29T10:05:00.000Z');
   });
 
-  it('shared image link: opened 30 minutes later, the link has expired (the spec allows at most 10)', async () => {
+  it('a shared image link is signed to expire within 10 minutes, long before 30 minutes have passed', async () => {
     const { url } = await storage.link('portraits/x.webp', 'image/webp');
     const u = new URL(url);
     const signed = u.searchParams.get('X-Amz-Date')!.replace(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/, '$1-$2-$3T$4:$5:$6Z');
@@ -70,10 +70,16 @@ describe('watchdog alerts for the Owner', () => {
     });
     return { clock, alerts, watchdog };
   }
-  const okBackup = (finishedAt: string, ok = true) => ({ ok, startedAt: finishedAt, finishedAt, snapshot: ok ? 'abc123' : null, error: ok ? null : 'restic: wrong password' });
+  const okBackup = (finishedAt: string, ok = true) => ({
+    ok,
+    startedAt: finishedAt,
+    finishedAt,
+    snapshot: ok ? 'abc123' : null,
+    error: ok ? null : 'restic: wrong password',
+  });
 
   it('alerts once when the health check fails for more than 5 minutes, and once on recovery', async () => {
-    const { clock, alerts, watchdog } = setup([...Array(13).fill(false), true]);
+    const { clock, alerts, watchdog } = setup([...Array<boolean>(13).fill(false), true]);
     for (let i = 0; i < 13; i++) {
       await watchdog.tick();
       clock.advance(30_000);
@@ -188,6 +194,29 @@ describe('watchdog alerts for the Owner', () => {
     expect(sent).toEqual(['Health check failing for 0 minutes', 'Health check recovered']);
   });
 
+  it('an unreadable or malformed status file alerts, and alerts again after a good read in between', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'rdk-status-'));
+    const file = join(dir, 'backup.json');
+    const alerts: string[] = [];
+    const clock = new TestClock(new Date('2026-10-29T08:00:00Z'));
+    const watchdog = new Watchdog({
+      clock,
+      checkHealth: async () => ({ ok: true, detail: '' }),
+      readBackupStatus: backupStatusReader(file),
+      alert: async (subject) => void alerts.push(subject),
+    });
+    await writeFile(file, '{"ok": tru');
+    await watchdog.tick();
+    await watchdog.tick();
+    await writeFile(file, JSON.stringify(okBackup('2026-10-29T02:31:00Z')));
+    await watchdog.tick();
+    // A status whose times are not times would otherwise never look stale.
+    await writeFile(file, JSON.stringify({ ok: true, startedAt: 'yesterday', finishedAt: 'yesterday' }));
+    await watchdog.tick();
+    expect(alerts).toEqual(['Backup status unreadable', 'Backup status unreadable']);
+    await rm(dir, { recursive: true });
+  });
+
   it('reads the status file written by the backup script', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'rdk-status-'));
     const file = join(dir, 'backup.json');
@@ -212,27 +241,44 @@ describe('SMTP transport', () => {
         let data = '';
         stream.on('data', (chunk: Buffer) => (data += chunk.toString('utf8')));
         stream.on('end', () => {
-          received.push({ from: session.envelope.mailFrom ? session.envelope.mailFrom.address : '', to: session.envelope.rcptTo.map((r) => r.address), data, secure: session.secure, user: session.user as string | undefined });
+          received.push({
+            from: session.envelope.mailFrom ? session.envelope.mailFrom.address : '',
+            to: session.envelope.rcptTo.map((r) => r.address),
+            data,
+            secure: session.secure,
+            user: typeof session.user === 'string' ? session.user : undefined,
+          });
           cb();
         });
       },
       logger: false,
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
-    port = (server.server.address() as { port: number }).port;
+    port = portOf(server.server.address());
   });
   afterAll(async () => new Promise<void>((resolve) => server.close(() => resolve())));
 
   it('sends over STARTTLS with authentication, from the configured address', async () => {
-    const mailer = new SmtpMailer('Rodokmen <noreply@rodokmen.example>', { host: '127.0.0.1', port, secure: false, user: 'rodokmen', password: 'secret', insecureTls: true }, { rejectUnauthorized: false });
-    await mailer.send(signInLinkEmail({ to: 'jana@example.test', language: 'cs', displayName: 'Jana', link: 'https://rodokmen.example/auth/link#token=abc', minutes: 15 }));
+    const mailer = new SmtpMailer(
+      'Rodokmen <noreply@rodokmen.example>',
+      { host: '127.0.0.1', port, secure: false, user: 'rodokmen', password: 'secret', insecureTls: true },
+      { rejectUnauthorized: false },
+    );
+    await mailer.send(
+      signInLinkEmail({ to: 'jana@example.test', language: 'cs', displayName: 'Jana', link: 'https://rodokmen.example/auth/link#token=abc', minutes: 15 }),
+    );
     expect(received).toHaveLength(1);
     const m = received[0]!;
     expect(m).toMatchObject({ from: 'noreply@rodokmen.example', to: ['jana@example.test'], secure: true, user: 'rodokmen' });
     // Decode the (folded) RFC 2047 subject.
     const raw = /^Subject: (.*(?:\r?\n[ \t].*)*)/m.exec(m.data)![1]!;
     const subject = [...raw.matchAll(/=\?UTF-8\?Q\?([^?]*)\?=/g)]
-      .map((x) => Buffer.from(x[1]!.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/g, (_s, h: string) => String.fromCharCode(parseInt(h, 16))), 'latin1').toString('utf8'))
+      .map((x) =>
+        Buffer.from(
+          x[1]!.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/g, (_s, h: string) => String.fromCharCode(parseInt(h, 16))),
+          'latin1',
+        ).toString('utf8'),
+      )
       .join('');
     expect(subject).toBe('Přihlášení do Rodokmenu');
     expect(m.data).toContain('multipart/alternative');
@@ -264,15 +310,17 @@ describe('watchdog alerts over SMTP when the mail service refuses at first', () 
       },
     });
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
-    const address = server.server.address();
-    if (address === null || typeof address === 'string') throw new Error('the SMTP test server is not listening on a port');
-    port = address.port;
+    port = portOf(server.server.address());
   });
   afterAll(async () => new Promise<void>((resolve) => server.close(() => resolve())));
 
   it('a failed Backup: the first send is refused with 421, the next tick delivers the alert, and only once', async () => {
     const config = loadConfig({ NODE_ENV: 'test', ALERT_EMAIL: 'owner@example.test', PUBLIC_ORIGIN: 'https://rodokmen.example' });
-    const mailer = new SmtpMailer('Rodokmen <noreply@rodokmen.example>', { host: '127.0.0.1', port, secure: false, user: undefined, password: undefined, insecureTls: true }, { rejectUnauthorized: false });
+    const mailer = new SmtpMailer(
+      'Rodokmen <noreply@rodokmen.example>',
+      { host: '127.0.0.1', port, secure: false, user: undefined, password: undefined, insecureTls: true },
+      { rejectUnauthorized: false },
+    );
     const watchdog = new Watchdog({
       clock: new TestClock(new Date('2026-10-29T02:40:00Z')),
       checkHealth: async () => ({ ok: true, detail: 'HTTP 200' }),

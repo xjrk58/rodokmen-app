@@ -92,7 +92,7 @@ function isLivingOn(deathRecorded: boolean, birthLatest: ReadonlyArray<CalendarD
 
 /** The calendar day of an ISO day written by parseEdtf (the inverse of isoDay). */
 function dayOfIso(iso: string): CalendarDay {
-  const [year, month, day] = iso.split('-').map(Number) as [number, number, number];
+  const [year = 0, month = 0, day = 0] = iso.split('-').map(Number);
   return { year, month, day };
 }
 

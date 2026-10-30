@@ -2,12 +2,29 @@
   "name": "rodokmen",
   "private": true,
   "packageManager": "pnpm@10.28.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r --if-present typecheck",
     "verify": "pnpm --filter @rodokmen/shared verify",
-    "verify:trace": "node scripts/verification-trace.mjs"
+    "verify:trace": "node scripts/verification-trace.mjs",
+    "lint": "pnpm run lint:js && pnpm run lint:sh",
+    "lint:js": "eslint --max-warnings 0 .",
+    "lint:sh": "node scripts/shellcheck.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "4.8.1",
+    "@eslint/js": "10.0.1",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
   }
 }
