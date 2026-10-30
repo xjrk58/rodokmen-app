@@ -45,4 +45,4 @@ These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each l
 
 ## Open Questions
 
-- Which Claude model gives the best Kurrent and Latin reading at an acceptable cost is settled by a small benchmark during implementation (task 1.2). This changes configuration only.
+- Which reader gives the best Kurrent and Latin reading at an acceptable cost is settled by a small benchmark during implementation (task 1.2): two Claude models against Transkribus's public Kurrent models. Claude stays the default unless Transkribus reads clearly better. If it does, the switch, limits, marking and Draft flow stay as specified, and ADR 0011 is revisited for the new service. Transkribus only transcribes, so entries would still need structuring.
