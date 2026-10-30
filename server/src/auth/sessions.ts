@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { Db } from '../db/db.js';
 import type { Account, SessionTable } from '../db/types.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 
 export const SESSION_COOKIE = 'rdk_session';
 

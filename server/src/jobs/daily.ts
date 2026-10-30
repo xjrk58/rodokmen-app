@@ -4,7 +4,7 @@ import type { Mailer } from '../mail/mailer.js';
 import { digestEmail } from '../mail/templates.js';
 import { proposalDigestLines } from '../proposals/views.js';
 import type { ImageStorage } from '../storage/images.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { messageOf } from '../errors.js';
 
 export const TIME_ZONE = 'Europe/Prague';
@@ -49,6 +49,8 @@ export const MAX_DELIVERY_ATTEMPTS = 3;
 export const MAX_JOB_ATTEMPTS = 5;
 /** A running claim older than this was left by a crash and may be taken over. */
 export const STALE_CLAIM_MS = 15 * 60_000;
+/** A failed run is tried again after this pause, so a short outage does not use up the day's attempts. */
+export const RETRY_AFTER_MS = 10 * 60_000;
 
 /**
  * The Editor digest (notifications spec): each Editor gets one email listing every pending
@@ -139,7 +141,7 @@ export function dailyJobs(deps: JobDeps): DailyJob[] {
  * Runs each daily job once per Prague day, at or after its time. Called every minute. A run is
  * claimed in the database before it starts and marked done only after it finished, so a second
  * server never runs it twice, a crash mid-run is picked up again once the claim is stale, and a
- * failed or incomplete run is retried (at most MAX_JOB_ATTEMPTS times a day).
+ * failed or incomplete run is retried RETRY_AFTER_MS later (at most MAX_JOB_ATTEMPTS times a day).
  */
 export class DailyScheduler {
   private inFlight: Promise<string[]> | null = null;
@@ -160,6 +162,7 @@ export class DailyScheduler {
 
   private async claim(job: string, day: string, now: Date): Promise<boolean> {
     const stale = new Date(now.getTime() - STALE_CLAIM_MS);
+    const retry = new Date(now.getTime() - RETRY_AFTER_MS);
     const claimed = await this.deps.db
       .insertInto('job_run')
       .values({ job, day, status: 'running', claimed_at: now })
@@ -171,7 +174,7 @@ export class DailyScheduler {
             eb.and([
               eb('job_run.status', '!=', 'done'),
               eb('job_run.attempts', '<', MAX_JOB_ATTEMPTS),
-              eb.or([eb('job_run.status', '=', 'failed'), eb('job_run.claimed_at', '<', stale)]),
+              eb.or([eb.and([eb('job_run.status', '=', 'failed'), eb('job_run.finished_at', '<', retry)]), eb('job_run.claimed_at', '<', stale)]),
             ]),
           ),
       )

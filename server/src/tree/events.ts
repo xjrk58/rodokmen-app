@@ -4,7 +4,7 @@ import type { Db } from '../db/db.js';
 import type { TreeDeps } from './persons.js';
 import { estatesAt, parishesAt } from './places.js';
 import { citationSummariesFor } from './sources.js';
-import { displayName, earliestSortKey, eventSummaries, geoPoint, personSummaries, summarizeEvents } from './summaries.js';
+import { displayName, compareEarliestDays, eventSummaries, geoPoint, personSummaries, summarizeEvents } from './summaries.js';
 
 export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<EventDetail | null> {
   const [summary] = await eventSummaries(db, [id]);
@@ -17,7 +17,7 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
     .orderBy('id')
     .execute();
   const persons = await personSummaries(db, roles.map((r) => r.person_id), clock);
-  const citations = await citationSummariesFor(db, 'event_citation', 'event_id', [id]);
+  const citations = await citationSummariesFor(db, 'event', [id]);
   const placeId = summary.place?.id ?? null;
   const dated = summary.date !== null;
   return {
@@ -50,7 +50,7 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
         ),
       )
       .execute();
-    rows.sort((a, b) => earliestSortKey(a.date_earliest).localeCompare(earliestSortKey(b.date_earliest)) || a.id.localeCompare(b.id));
+    rows.sort((a, b) => compareEarliestDays(a.date_earliest, b.date_earliest) || a.id.localeCompare(b.id));
     events = await summarizeEvents(db, rows);
   }
   return {

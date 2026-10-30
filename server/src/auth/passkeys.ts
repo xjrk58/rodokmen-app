@@ -8,7 +8,7 @@ import {
 } from '@simplewebauthn/server';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { ApiProblem } from './problem.js';
 import { messageOf } from '../errors.js';
 

@@ -16,7 +16,7 @@ import { proposalRoutes } from './routes/proposals.js';
 import { systemRoutes } from './routes/system.js';
 import { treeRoutes } from './routes/tree.js';
 import { createImageStorage, type ImageStorage } from './storage/images.js';
-import { systemClock, type Clock } from './tree/summaries.js';
+import { systemClock, type Clock } from './clock.js';
 import { messageOf, numberField, stringField } from './errors.js';
 
 export interface AppDeps {

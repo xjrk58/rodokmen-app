@@ -188,6 +188,24 @@ describe('watchdog alerts for the Owner', () => {
     expect(sent).toEqual(['Health check failing for 0 minutes', 'Health check recovered']);
   });
 
+  it('an unreadable or malformed status file alerts, and alerts again after a good read in between', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'rdk-status-'));
+    const file = join(dir, 'backup.json');
+    const alerts: string[] = [];
+    const clock = new TestClock(new Date('2026-10-29T08:00:00Z'));
+    const watchdog = new Watchdog({ clock, checkHealth: async () => ({ ok: true, detail: '' }), readBackupStatus: backupStatusReader(file), alert: async (subject) => void alerts.push(subject) });
+    await writeFile(file, '{"ok": tru');
+    await watchdog.tick();
+    await watchdog.tick();
+    await writeFile(file, JSON.stringify(okBackup('2026-10-29T02:31:00Z')));
+    await watchdog.tick();
+    // A status whose times are not times would otherwise never look stale.
+    await writeFile(file, JSON.stringify({ ok: true, startedAt: 'yesterday', finishedAt: 'yesterday' }));
+    await watchdog.tick();
+    expect(alerts).toEqual(['Backup status unreadable', 'Backup status unreadable']);
+    await rm(dir, { recursive: true });
+  });
+
   it('reads the status file written by the backup script', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'rdk-status-'));
     const file = join(dir, 'backup.json');

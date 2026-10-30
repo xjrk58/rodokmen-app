@@ -249,9 +249,11 @@ export const EDITOR_ONLY_OPERATIONS: readonly OperationName[] = ['mergePersons']
 // ---------------------------------------------------------------- whole Proposals
 
 export const ProposalStatus = z.enum(['pending', 'accepted', 'rejected']).meta({ id: 'ProposalStatus' });
+export type ProposalStatus = z.infer<typeof ProposalStatus>;
 export const ProposalKind = z
   .enum(['contribution', 'direct', 'undo'])
   .meta({ id: 'ProposalKind', description: 'Submitted for review, an Editor\'s direct change, or an undo' });
+export type ProposalKind = z.infer<typeof ProposalKind>;
 
 export const SubmitProposalBody = z
   .object({

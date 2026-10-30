@@ -144,16 +144,19 @@ describe('notifications: the daily Editor digest and outcome emails', () => {
       await jobs.tick();
       expect(a.mailer.messages.map((m) => m.to)).toEqual([editor.email]);
       expect((await t.db.selectFrom('job_run').select('status').where('job', '=', 'editor-digest').where('day', '=', '2026-11-02').executeTakeFirstOrThrow()).status).toBe('failed');
-      // Next minute: only the Editor not yet reached.
-      failing.clear();
+      // A minute later the mail service may still be down: no retry yet.
       at('2026-11-02T17:01:00Z');
+      expect(await jobs.tick()).not.toContain('editor-digest');
+      // Ten minutes later: only the Editor not yet reached.
+      failing.clear();
+      at('2026-11-02T17:10:01Z');
       await jobs.tick();
       expect(a.mailer.messages.map((m) => m.to).sort()).toEqual([editor.email, owner.email].sort());
 
       // Another day, a mailbox that never works: tried three times, nobody else gets duplicates.
       failing.add(owner.email);
       a.mailer.clear();
-      for (const minute of ['00', '01', '02', '03', '04']) {
+      for (const minute of ['00', '11', '22', '33', '44']) {
         at(`2026-11-03T17:${minute}:00Z`);
         await jobs.tick();
       }

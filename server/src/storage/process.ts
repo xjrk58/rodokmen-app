@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { IMAGE_MAX_BYTES } from '@rodokmen/shared';
+import { IMAGE_MAX_BYTES, type ImageContentType } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
@@ -7,7 +7,7 @@ import { messageOf } from '../errors.js';
 /** Longest side of the display copy (evidence-media spec, "Originals are kept"). */
 export const DISPLAY_MAX_PIXELS = 2000;
 
-export type ImageType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/heic' | 'image/heif';
+export type ImageType = ImageContentType;
 
 export interface ProcessedImage {
   contentType: ImageType;

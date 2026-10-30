@@ -379,11 +379,6 @@ export function isEdtf(input: string): boolean {
   return tryParseEdtf(input).ok;
 }
 
-/** Year of an ISO day, or null. */
-export function yearOf(iso: string | null): number | null {
-  return iso === null ? null : Number(iso.slice(0, 4));
-}
-
 /** Whether the date's possible range overlaps the inclusive year range (either bound may be open). */
 export function overlapsYears(parsed: ParsedEdtf, fromYear: number | null, toYear: number | null): boolean {
   const from = fromYear === null ? null : isoDay(fromYear, 1, 1);

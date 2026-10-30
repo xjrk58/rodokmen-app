@@ -9,7 +9,7 @@ import { createMailer } from './mail/mailer.js';
 import { sendAlert } from './ops/alerts.js';
 import { OPENAPI_FILE, openApiJson } from './ops/openapi-file.js';
 import { backupStatusReader, httpHealthCheck, Watchdog } from './ops/watchdog.js';
-import { systemClock } from './tree/summaries.js';
+import { systemClock } from './clock.js';
 
 const USAGE = `Usage: node dist/cli.js <command>
 

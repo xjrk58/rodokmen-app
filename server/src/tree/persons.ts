@@ -2,17 +2,14 @@ import { foldForSearch, isoDay, type ImageView, type PersonDetail, type PersonSe
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { ImageStorage } from '../storage/images.js';
-import { earliestSortKey, eventSummaries, personSummaries, type Clock } from './summaries.js';
+import type { Clock } from '../clock.js';
+import { containsPattern, compareEarliestDays, eventSummaries, personSummaries } from './summaries.js';
 import { citationSummariesFor } from './sources.js';
 
 export interface TreeDeps {
   db: Db;
   clock: Clock;
   images: ImageStorage;
-}
-
-function likePattern(token: string): string {
-  return `%${token.replace(/[\\%_]/g, '\\$&')}%`;
 }
 
 /**
@@ -60,7 +57,7 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
 
   let rows: Array<{ id: string; matched: string | null }>;
   if (tokens.length > 0) {
-    const patterns = tokens.map(likePattern);
+    const patterns = tokens.map(containsPattern);
     const folded = tokens.join(' ');
     const matches = db
       .selectFrom('name as n')
@@ -71,7 +68,8 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
         sql<number>`similarity(n.search_text, rdk_fold(${folded}))`.as('score'),
       ])
       // rdk_fold, the fold behind search_text, also folds the query: both sides match by definition.
-      .where(sql<boolean>`n.search_text like all(array(select rdk_fold(p) from unnest(${sql.val(patterns)}::text[]) p))`);
+      // One LIKE per word, which the trigram index serves (it cannot serve LIKE ALL over an array).
+      .where((eb) => eb.and(patterns.map((p) => sql<boolean>`n.search_text like rdk_fold(${p})`)));
     const best = db
       .selectFrom(matches.as('m'))
       .distinctOn('m.person_id')
@@ -140,7 +138,7 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
   if (!person) return null;
 
   const names = await db.selectFrom('name').selectAll().where('person_id', '=', id).orderBy('is_primary', 'desc').orderBy('sort_order').orderBy('id').execute();
-  const nameCitations = await citationSummariesFor(db, 'name_citation', 'name_id', names.map((n) => n.id));
+  const nameCitations = await citationSummariesFor(db, 'name', names.map((n) => n.id));
 
   const roles = await db
     .selectFrom('event_role as r')
@@ -148,7 +146,7 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
     .select(['r.id', 'r.role', 'r.role_detail', 'r.event_id', 'e.date_earliest'])
     .where('r.person_id', '=', id)
     .execute();
-  roles.sort((a, b) => earliestSortKey(a.date_earliest).localeCompare(earliestSortKey(b.date_earliest)) || a.event_id.localeCompare(b.event_id));
+  roles.sort((a, b) => compareEarliestDays(a.date_earliest, b.date_earliest) || a.event_id.localeCompare(b.event_id));
   const events = new Map((await eventSummaries(db, roles.map((r) => r.event_id))).map((e) => [e.id, e]));
 
   const asPartner = await db

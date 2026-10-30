@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isEdtf, tryParseEdtf } from '../edtf.js';
+import { tryParseEdtf } from '../edtf.js';
 
 /** UUIDv7 primary key of every record. Inputs accept any RFC 9562 UUID. */
 export const Id = z.uuid().meta({ id: 'Id', description: 'Record id (UUIDv7)' });
@@ -78,12 +78,12 @@ export const ApiError = z
   })
   .meta({ id: 'ApiError' });
 
+/** Paging of search results: at most 200 at a time. */
 export const Paging = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
   offset: z.coerce.number().int().min(0).max(100_000).default(0),
 });
 
-export { isEdtf };
 
 export type Id = z.infer<typeof Id>;
 export type EdtfDate = z.infer<typeof EdtfDate>;

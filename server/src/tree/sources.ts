@@ -3,20 +3,31 @@ import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { SourceTable } from '../db/types.js';
 import { IMAGE_COLUMNS, imageViews, type TreeDeps } from './persons.js';
-import { eventSummaries } from './summaries.js';
+import { containsPattern, eventSummaries } from './summaries.js';
 
 /** Citation summaries attached to Events or Names, keyed by the Event or Name id. */
-export async function citationSummariesFor(db: Db, table: 'event_citation' | 'name_citation', column: 'event_id' | 'name_id', ids: readonly string[]): Promise<Map<string, CitationSummary[]>> {
+export async function citationSummariesFor(db: Db, of: 'event' | 'name', ids: readonly string[]): Promise<Map<string, CitationSummary[]>> {
   const out = new Map<string, CitationSummary[]>();
   if (ids.length === 0) return out;
-  const rows = await db
-    .selectFrom(`${table} as l` as 'event_citation as l')
-    .innerJoin('citation as c', 'c.id', 'l.citation_id')
-    .innerJoin('source as s', 's.id', 'c.source_id')
-    .select([sql<string>`l.${sql.raw(column)}`.as('owner'), 'c.id', 'c.version', 'c.source_id', 's.title', 'c.page', 'c.confidence'])
-    .where(sql.ref(`l.${column}`), 'in', [...ids])
-    .orderBy('c.id')
-    .execute();
+  const columns = ['c.id', 'c.version', 'c.source_id', 's.title', 'c.page', 'c.confidence'] as const;
+  const rows =
+    of === 'event'
+      ? await db
+          .selectFrom('event_citation as l')
+          .innerJoin('citation as c', 'c.id', 'l.citation_id')
+          .innerJoin('source as s', 's.id', 'c.source_id')
+          .select(['l.event_id as owner', ...columns])
+          .where('l.event_id', 'in', [...ids])
+          .orderBy('c.id')
+          .execute()
+      : await db
+          .selectFrom('name_citation as l')
+          .innerJoin('citation as c', 'c.id', 'l.citation_id')
+          .innerJoin('source as s', 's.id', 'c.source_id')
+          .select(['l.name_id as owner', ...columns])
+          .where('l.name_id', 'in', [...ids])
+          .orderBy('c.id')
+          .execute();
   for (const r of rows) {
     const list = out.get(r.owner) ?? [];
     list.push({ id: r.id, version: r.version, sourceId: r.source_id, sourceTitle: r.title, page: r.page, confidence: r.confidence });
@@ -43,7 +54,7 @@ function sourceSummary(s: Pick<SourceTable, 'type' | 'title' | 'repository' | 'r
 
 export async function searchSources(db: Db, q: { q?: string | undefined; type?: SourceSummary['type'] | undefined; limit: number; offset: number }): Promise<SourceSummary[]> {
   let query = db.selectFrom('source').selectAll();
-  if (q.q) query = query.where(sql<boolean>`rdk_fold(title) like rdk_fold(${`%${foldForSearch(q.q).replace(/[\\%_]/g, '\\$&')}%`})`);
+  if (q.q) query = query.where(sql<boolean>`rdk_fold(title) like rdk_fold(${containsPattern(foldForSearch(q.q))})`);
   if (q.type) query = query.where('type', '=', q.type);
   const rows = await query.orderBy('title').orderBy('id').limit(q.limit).offset(q.offset).execute();
   return rows.map(sourceSummary);

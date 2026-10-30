@@ -14,7 +14,7 @@ import { ApiProblem } from '../auth/problem.js';
 import type { Mailer } from '../mail/mailer.js';
 import { outcomeEmail } from '../mail/templates.js';
 import type { ImageStorage } from '../storage/images.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { applyOperations, RECORD_TABLES, translateDbError, type ApplyResult, type UploadMove } from './apply.js';
 import { snapshot } from './records.js';
 import { canReview, findConflicts, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';

@@ -3,7 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import fp from 'fastify-plugin';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { resolveSession, SESSION_COOKIE, type SessionOptions } from './sessions.js';
 
 declare module 'fastify' {

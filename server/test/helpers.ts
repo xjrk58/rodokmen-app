@@ -7,7 +7,7 @@ import type { Db } from '../src/db/db.js';
 import type { Account } from '../src/db/types.js';
 import { OutboxMailer } from '../src/mail/mailer.js';
 import type { ImageStorage } from '../src/storage/images.js';
-import type { Clock } from '../src/tree/summaries.js';
+import type { Clock } from '../src/clock.js';
 import type { TestDatabase } from './db.js';
 
 /** A clock tests can move. */

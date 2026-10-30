@@ -4,7 +4,7 @@ import { createDb, migrateToLatest } from './db/db.js';
 import { DailyScheduler } from './jobs/daily.js';
 import { createMailer } from './mail/mailer.js';
 import { createImageStorage } from './storage/images.js';
-import { systemClock } from './tree/summaries.js';
+import { systemClock } from './clock.js';
 
 /**
  * Starts the API: migrates the database (each release's migrations must work with the

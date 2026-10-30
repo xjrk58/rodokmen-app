@@ -44,6 +44,7 @@ export const OperationView = z
   .meta({ id: 'OperationView' });
 
 export const UploadStatus = z.enum(['waiting', 'ready', 'deleted']).meta({ id: 'UploadStatus' });
+export type UploadStatus = z.infer<typeof UploadStatus>;
 
 export const UploadView = z
   .object({

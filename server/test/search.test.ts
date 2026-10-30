@@ -1,5 +1,9 @@
-import { PersonSearchResult } from '@rodokmen/shared';
-import { sql } from 'kysely';
+import { PersonSearchQuery, PersonSearchResult } from '@rodokmen/shared';
+import { Kysely, PostgresDialect, sql } from 'kysely';
+import { createPool } from '../src/db/db.js';
+import type { Database } from '../src/db/types.js';
+import { MemoryImageStorage } from '../src/storage/images.js';
+import { searchPersons } from '../src/tree/persons.js';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { generateFixture } from '../src/fixture/generate.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
@@ -58,12 +62,28 @@ describe('Person search across all Names, ignoring case and diacritics', () => {
     expect((await search('q=jan%20novak&limit=200&from=1700&to=1760')).items.map((i) => i.person.id)).not.toContain(L.janNovak);
   });
 
-  it('uses the trigram index on folded Names', async () => {
+  it('the search query can use the trigram index on folded Names', async () => {
     const { rows } = await sql<{ indexdef: string }>`select indexdef from pg_indexes where indexname = 'name_search_trgm_idx'`.execute(t.db);
     expect(rows[0]!.indexdef).toMatch(/gin \(search_text gin_trgm_ops\)/);
-    await sql`set enable_seqscan = off`.execute(t.db);
-    const plan = await sql<{ 'QUERY PLAN': string }>`explain select person_id from name where search_text like '%nowak%'`.execute(t.db);
-    expect(plan.rows.map((r) => r['QUERY PLAN']).join('\n')).toMatch(/name_search_trgm_idx/);
+    // The SQL searchPersons really runs, explained with sequential and plain index scans off, so
+    // only an index that can answer the LIKEs is left (inside a transaction: nothing leaks).
+    const pool = createPool(t.url, { max: 1 });
+    const queries: Array<{ sql: string; parameters: readonly unknown[] }> = [];
+    const logged = new Kysely<Database>({ dialect: new PostgresDialect({ pool }), log: (e) => void (e.level === 'query' && queries.push(e.query)) });
+    await searchPersons({ db: logged, clock: a.clock, images: new MemoryImageStorage(a.clock) }, PersonSearchQuery.parse({ q: 'jan nowak' }));
+    const search = queries.find((q) => q.sql.includes('search_text'))!;
+    const client = await pool.connect();
+    try {
+      await client.query('begin');
+      await client.query('set local enable_seqscan = off');
+      await client.query('set local enable_indexscan = off');
+      const plan = await client.query<{ 'QUERY PLAN': string }>(`explain ${search.sql}`, [...search.parameters]);
+      expect(plan.rows.map((r) => r['QUERY PLAN']).join('\n')).toMatch(/Bitmap Index Scan on name_search_trgm_idx/);
+    } finally {
+      await client.query('rollback');
+      client.release();
+      await logged.destroy();
+    }
   });
 
   it('lists Persons by surname without a query, with paging', async () => {

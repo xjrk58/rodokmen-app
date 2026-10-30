@@ -3,7 +3,7 @@ import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import type { Mailer } from '../mail/mailer.js';
 import { invitationEmail, signInLinkEmail } from '../mail/templates.js';
-import type { Clock } from '../tree/summaries.js';
+import type { Clock } from '../clock.js';
 import { ApiProblem } from './problem.js';
 import { createSession, endAllSessions, hashToken, newToken, type SessionOptions } from './sessions.js';
 

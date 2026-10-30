@@ -3,7 +3,7 @@
  * serialises responses with these, and the OpenAPI description is generated from them.
  */
 import { z } from 'zod';
-import { EdtfDate, GeoPoint, Id, IsoDay, Period, Version } from './common.js';
+import { EdtfDate, GeoPoint, Id, IsoDay, Paging, Period, Version } from './common.js';
 import {
   ChildLinkType,
   CitationRecord,
@@ -12,7 +12,6 @@ import {
   EventType,
   FamilyAccount,
   HouseNumberRecord,
-  ImageKind,
   ImageMetadata,
   MunicipalityLink,
   NameRecord,
@@ -92,8 +91,7 @@ export const PersonSearchQuery = z.object({
   placeId: Id.optional().describe('Only Persons with an Event at this Place or one of its Houses'),
   from: z.coerce.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or after this year'),
   to: z.coerce.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or before this year'),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  ...Paging.shape,
 });
 
 export const PersonSearchHit = z
@@ -226,8 +224,7 @@ export const MapEventsResult = z
 
 export const PlaceSearchQuery = z.object({
   q: z.string().trim().min(1).max(200).optional().describe('Any part of any name of the Place; case and diacritics are ignored'),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  ...Paging.shape,
 });
 
 export const PlaceSummary = z
@@ -286,8 +283,7 @@ export const EstateDetail = EstateRecord.safeExtend({
 export const SourceSearchQuery = z.object({
   q: z.string().trim().min(1).max(200).optional(),
   type: SourceType.optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-  offset: z.coerce.number().int().min(0).max(100_000).default(0),
+  ...Paging.shape,
 });
 
 export const SourceSummary = z
@@ -323,7 +319,6 @@ export const CitationDetail = CitationRecord.safeExtend({
   images: z.array(ImageView),
 }).meta({ id: 'CitationDetail' });
 
-export const ImageQuery = z.object({ kind: ImageKind.optional() });
 
 export const ImageLinkQuery = z.object({ full: z.enum(['true', 'false']).optional().describe('true: the original file instead of the display copy') });
 

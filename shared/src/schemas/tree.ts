@@ -252,6 +252,7 @@ export const ImageKind = z
   .meta({ id: 'ImageKind', description: 'Register page image, own photo (letter, gravestone) or portrait' });
 
 export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'] as const;
+export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
 export const IMAGE_MAX_BYTES = 25 * 1024 * 1024;
 
 export const ImageMetadata = z
