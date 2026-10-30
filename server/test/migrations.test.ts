@@ -102,16 +102,19 @@ describe('migrations on an empty database', () => {
     await expect(db.insertInto('account').values({ email: 'b@example.test', display_name: 'B', language: 'en', role: 'owner' }).execute()).rejects.toThrow(/account_one_owner_idx/);
   });
 
-  it('the Proposals migration can be rolled back and applied again', async () => {
+  it('the Proposals and fold migrations can be rolled back and applied again', async () => {
     const migrator = new Migrator({ db, provider: { getMigrations: async () => MIGRATIONS }, migrationTableName: 'schema_migration', migrationLockTableName: 'schema_migration_lock' });
-    const down = await migrator.migrateDown();
+    const down = await migrator.migrateTo('0003_accounts');
     expect(down.error).toBeUndefined();
-    expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([['0004_proposals', 'Success']]);
+    expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([
+      ['0005_fold_spaces', 'Success'],
+      ['0004_proposals', 'Success'],
+    ]);
     // The one-primary-Name check works again without merged_into_id.
     await db.transaction().execute(async (tx) => {
       const p = await tx.insertInto('person').values({ sex: 'female' }).returning('id').executeTakeFirstOrThrow();
       await tx.insertInto('name').values({ person_id: p.id, given: 'Dana', surname: 'Invented', type: 'birth', as_found: 'Dana', is_primary: true }).execute();
     });
-    expect(await migrateToLatest(db)).toEqual(['0004_proposals']);
+    expect(await migrateToLatest(db)).toEqual(['0004_proposals', '0005_fold_spaces']);
   });
 });

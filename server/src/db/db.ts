@@ -5,6 +5,7 @@ import * as m0001 from './migrations/0001_foundations.js';
 import * as m0002 from './migrations/0002_tree.js';
 import * as m0003 from './migrations/0003_accounts.js';
 import * as m0004 from './migrations/0004_proposals.js';
+import * as m0005 from './migrations/0005_fold_spaces.js';
 import type { Database } from './types.js';
 
 // Return `date` columns as written ('1801-03-12', 'infinity', '-infinity') instead of JS Dates,
@@ -38,6 +39,7 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0002_tree': m0002,
   '0003_accounts': m0003,
   '0004_proposals': m0004,
+  '0005_fold_spaces': m0005,
 };
 
 const provider: MigrationProvider = { getMigrations: async () => MIGRATIONS };
