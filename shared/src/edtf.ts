@@ -299,7 +299,7 @@ function parseSyntax(input: string): EdtfSyntax {
   if (input.includes('/')) {
     const parts = input.split('/');
     if (parts.length !== 2) throw new EdtfError(input, 'an interval has exactly one "/"');
-    const [startText, endText] = parts as [string, string];
+    const [startText = '', endText = ''] = parts;
     if (startText === '..' && endText === '..') throw new EdtfError(input, 'an interval needs at least one end');
     if (startText === '') throw new EdtfError(input, 'use "../" for an open start');
     if (endText === '') throw new EdtfError(input, 'use "/.." for an open end');
