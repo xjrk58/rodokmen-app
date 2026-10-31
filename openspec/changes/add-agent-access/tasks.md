@@ -20,7 +20,8 @@
 
 - [x] 3.1 Create `server/mcp` with tools for searching Persons and Places, reading records, reading ancestors and descendants, and submitting Proposals, calling the API with the Agent token; verify each tool against the fixture tree in an integration test
   Note: `@modelcontextprotocol/server` 2.4.0 (the SDK's v2 line, which replaces `@modelcontextprotocol/sdk`). Besides the listed tools, `search_sources` (to cite an existing Source) and `list_my_proposals` (to follow outcomes), both reads the token allows. ESLint refuses imports of the server's code or a database driver in `server/mcp/src`.
-- [ ] 3.2 Serve it over stdio and over streamable HTTP at `/mcp`; verify a client can connect both ways and that a tool call without a valid token fails
+- [x] 3.2 Serve it over stdio and over streamable HTTP at `/mcp`; verify a client can connect both ways and that a tool call without a valid token fails
+  Note: `server/mcp/test/transports.test.ts` (both ways, missing, unknown and revoked tokens, a 2025-protocol client). Deployed as the `mcp` service of `deploy/docker-compose.yml` from the API image, without secrets; Caddy forwards `/mcp` to it. Checked once by hand: the image builds, Caddy validates the Caddyfile, and a client connected through Caddy to the containers. Not yet on the live server, which is not running yet.
 
 ## Workflow follow-up
 
