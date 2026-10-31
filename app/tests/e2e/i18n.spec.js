@@ -1,9 +1,9 @@
-// Task 1.2: Czech and English interface, from the browser language with
-// English as the fallback, and switchable by the reader.
+// Czech and English interface (add-map-core task 1.2), Czech by default whatever the
+// browser's language (default-to-czech task 1.1), switchable by the reader.
 import { expect, openApp, test } from './fixtures.js';
 
 test.describe('Czech browser', () => {
-  test.use({ locale: 'cs-CZ' });
+  test.use({ locale: 'cs-CZ', language: null });
   test('shows Czech labels', async ({ page }) => {
     await openApp(page);
     await expect(page.locator('html')).toHaveAttribute('lang', 'cs');
@@ -18,23 +18,42 @@ test.describe('Czech browser', () => {
   });
 });
 
-test.describe('English browser', () => {
-  test.use({ locale: 'en-US' });
-  test('shows English labels', async ({ page }) => {
+test.describe('English phone, first visit', () => {
+  test.use({ locale: 'en-US', language: null });
+  test('opens in Czech, and the language switch offers English', async ({ page }) => {
     await openApp(page);
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Find a municipality');
-    await expect(page.locator('#layers-button')).toHaveAttribute('aria-label', 'Map layers');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'cs');
+    await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Najít obec');
+    await expect(page.locator('#layers-button')).toHaveAttribute('aria-label', 'Vrstvy mapy');
     await page.locator('#search-input').fill('Pardubice');
     await page.locator('#search-results li').first().click();
-    await expect(page.locator('[data-testid="open-scans"]')).toHaveText('Open scans');
+    await expect(page.locator('[data-testid="open-scans"]')).toHaveText('Otevřít skeny');
+    await page.locator('#settings-button').click();
+    await expect(page.locator('#settings-title')).toHaveText('Nastavení');
+    await expect(page.getByLabel('English')).toBeVisible();
+    await expect(page.getByLabel('Čeština')).toBeChecked();
   });
 });
 
 test.describe('Other browser language', () => {
-  test.use({ locale: 'de-DE' });
-  test('falls back to English', async ({ page }) => {
+  test.use({ locale: 'de-DE', language: null });
+  test('opens in Czech too', async ({ page }) => {
     await openApp(page);
+    await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Najít obec');
+  });
+});
+
+test.describe('Choice remembered', () => {
+  test.use({ locale: 'cs-CZ', language: null });
+  test('a reader who switches to English gets English when opening the app again', async ({ page }) => {
+    await openApp(page);
+    await page.locator('#settings-button').click();
+    await page.getByLabel('English').check();
+    await expect(page.locator('#settings-title')).toHaveText('Settings');
+    await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Find a municipality');
+    await page.reload();
+    await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Find a municipality');
   });
 });

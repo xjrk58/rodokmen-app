@@ -1,5 +1,6 @@
-// Interface strings in Czech and English. The language comes from the
-// reader's choice (kept in localStorage), else navigator.language, else English.
+// Interface strings in Czech and English. The language is the reader's choice on
+// this device (kept in localStorage), else a signed-in Member's account language,
+// else Czech; the browser's language does not decide it (map-view, "Czech by default").
 
 export const LANGUAGES = /** @type {const} */ (['cs', 'en']);
 /** @typedef {typeof LANGUAGES[number]} Language */
@@ -9,7 +10,7 @@ const STORAGE_KEY = 'rodokmen.language';
 /** @type {Record<string, string>} */
 let strings = {};
 /** @type {Language} */
-let current = 'en';
+let current = 'cs';
 /** @type {Set<(lang: Language) => void>} */
 const listeners = new Set();
 /** Counts setLanguage calls, so a slow load of an earlier choice cannot undo a later one. */
@@ -23,17 +24,28 @@ function isLanguage(value) {
   return LANGUAGES.includes(/** @type {Language} */ (value));
 }
 
-/** @returns {Language} */
-export function detectLanguage() {
+/**
+ * The language the reader chose on this device, if any.
+ * @returns {Language | null}
+ */
+export function storedLanguage() {
   let stored = null;
   try {
     stored = localStorage.getItem(STORAGE_KEY);
   } catch {
     // storage blocked
   }
-  if (isLanguage(stored)) return stored;
-  const browser = (navigator.language || 'en').toLowerCase();
-  return browser === 'cs' || browser.startsWith('cs-') ? 'cs' : 'en';
+  return isLanguage(stored) ? stored : null;
+}
+
+/**
+ * The language to open in: the choice on this device, else the account's language of a
+ * signed-in Member, else Czech.
+ * @param {string | null} [accountLanguage]
+ * @returns {Language}
+ */
+export function detectLanguage(accountLanguage = null) {
+  return storedLanguage() ?? (isLanguage(accountLanguage) ? accountLanguage : 'cs');
 }
 
 /** @returns {Language} */
