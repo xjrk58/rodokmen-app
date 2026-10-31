@@ -55,9 +55,16 @@ fi
 
 log "deploying $target into api-$idle (active: $active)"
 docker pull "$target"
+# The database, the image store and Caddy are started if they are not running yet (first
+# deploy, reboot); the image store gets its bucket and keys (idempotent).
+compose up -d db garage caddy
+if ! ./scripts/storage-init.sh; then
+  log "the image store is not ready; nothing was switched"
+  serving=$([ "$active" != none ] && echo "api-$active keeps serving" || echo "nothing was serving yet")
+  alert "Deploy failed: the image store is not ready" "scripts/storage-init.sh failed before $target was started; $serving. See the deploy log."
+  exit 1
+fi
 set_var "API_IMAGE_${idle^^}" "$target"
-# The database and Caddy are started if they are not running yet (first deploy, reboot).
-compose up -d db caddy
 
 if compose up -d --no-deps --wait --wait-timeout 180 "api-$idle"; then
   log "api-$idle is healthy; switching"

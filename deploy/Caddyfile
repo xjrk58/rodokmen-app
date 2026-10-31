@@ -1,5 +1,5 @@
-# One domain over HTTPS (ADR 0007). Caddy gets and renews the certificate itself and
-# redirects plain HTTP to HTTPS on the same path.
+# One domain over HTTPS (ADR 0007), plus files.<domain> for image links. Caddy gets and renews
+# the certificates itself and redirects plain HTTP to HTTPS on the same path.
 {
 	email {$ACME_EMAIL}
 }
@@ -21,5 +21,47 @@
 		lb_try_duration 10s
 		lb_try_interval 250ms
 		fail_duration 5s
+	}
+}
+
+# Image links (README.md, "Image links"). The API signs every presigned link for this host, and
+# Caddy hands the request to Garage unchanged (same Host, same path, same query), so the
+# signature still matches. Garage refuses anything unsigned or expired. The session cookie is
+# host-only, so it is never sent here.
+files.{$DOMAIN} {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		# An image opened on its own can never act as a page.
+		Content-Security-Policy "sandbox"
+		# The app uploads with fetch() from its own origin; nothing else may read the answers.
+		Access-Control-Allow-Origin "https://{$DOMAIN}"
+		-Server
+	}
+
+	# Before a cross-origin PUT the browser asks first. Garage has no CORS rules, Caddy answers.
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Methods "GET, HEAD, PUT"
+		header Access-Control-Allow-Headers "content-type"
+		header Access-Control-Max-Age "3600"
+		respond 204
+	}
+
+	# Objects of the image bucket only: read, or written once through an upload link (at most 25 MB).
+	@object {
+		method GET HEAD PUT
+		path /rodokmen-images/*
+	}
+	handle @object {
+		request_body {
+			max_size 26MiB
+		}
+		reverse_proxy garage:3900
+	}
+
+	handle {
+		respond 404
 	}
 }

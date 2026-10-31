@@ -10,7 +10,8 @@
 #   PGHOST PGUSER PGPASSWORD PGDATABASE    the production database
 #   RESTIC_REPOSITORY RESTIC_PASSWORD      the repository (initialised once with `restic init`)
 #   AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY  credentials of an S3-compatible repository
-#   IMAGES_SOURCE                          the image bucket as an rclone remote, or a directory
+#   IMAGES_SOURCE                          the image bucket as an rclone remote (docker-compose.yml
+#                                          defines the remote "images" with RCLONE_CONFIG_IMAGES_*), or a directory
 #   WORK_DIR (/work)  STATUS_FILE (/status/backup.json)  BACKUP_HOST (rodokmen)
 set -Eeuo pipefail
 

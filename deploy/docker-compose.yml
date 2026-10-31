@@ -1,14 +1,26 @@
 # Rodokmen on one VPS (design.md, "Hosting"): PostgreSQL with PostGIS, the API (which also
-# serves app/), and Caddy for HTTPS. Two API slots, api-blue and api-green, let a deploy start
-# the new version next to the old one and switch only when it is healthy (scripts/deploy.sh).
+# serves app/), Garage for page images, and Caddy for HTTPS. Two API slots, api-blue and
+# api-green, let a deploy start the new version next to the old one and switch only when it is
+# healthy (scripts/deploy.sh).
 #
 # Configuration: .env (API, watchdog) and backup.env (Backup job) next to this file; see the
 # *.example files and README.md. Image tags of the two API slots and the watchdog come from
 # state/images.env, written by scripts/deploy.sh.
 #
-# Locally:  docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build db api-blue caddy
+# Locally:  docker compose -f deploy/docker-compose.yml --env-file deploy/.env up --build db garage api-blue caddy
+#           then deploy/scripts/storage-init.sh once for the Backup's key (README.md, "Local development")
 
 name: rodokmen
+
+# Page images in Garage (service garage), for the API and the watchdog (which checks the same
+# configuration). The API reaches Garage on this network and signs links for the files host,
+# which Caddy passes to Garage unchanged (README.md, "Image links"). The key is in .env.
+x-image-store: &image-store
+  S3_ENDPOINT: http://garage:3900
+  S3_PUBLIC_ENDPOINT: https://files.${DOMAIN:?set DOMAIN in .env}
+  S3_REGION: garage
+  S3_BUCKET: rodokmen-images
+  S3_FORCE_PATH_STYLE: 'true'
 
 x-api: &api
   build:
@@ -19,6 +31,7 @@ x-api: &api
     - path: .env
       required: true
   environment:
+    <<: *image-store
     NODE_ENV: production
     HOST: 0.0.0.0
     PORT: '3000'
@@ -28,6 +41,8 @@ x-api: &api
     DATABASE_URL: postgres://rodokmen:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/rodokmen
   depends_on:
     db:
+      condition: service_healthy
+    garage:
       condition: service_healthy
   healthcheck:
     test: ['CMD', 'node', 'dist/cli.js', 'health']
@@ -56,6 +71,37 @@ services:
       timeout: 5s
       retries: 20
     shm_size: 256mb
+    networks: [rodokmen]
+
+  # Page images (originals, display copies, pending uploads): Garage, a small S3-compatible
+  # server, on the volume images. Private: no published ports, and Caddy forwards only presigned
+  # requests for the bucket's objects. On first start it lays out its one node and creates the
+  # bucket and the API's key from .env; scripts/storage-init.sh adds the Backup's read-only key.
+  garage:
+    image: dxflrs/garage:v2.5.0
+    restart: unless-stopped
+    command: ['/garage', 'server', '--single-node', '--default-bucket']
+    environment:
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?set GARAGE_RPC_SECRET in .env}
+      GARAGE_DEFAULT_BUCKET: rodokmen-images
+      GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY_ID:?set S3_ACCESS_KEY_ID in .env}
+      GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY in .env}
+      # Startup and errors, without a line for every health check.
+      RUST_LOG: garage=info,garage_net=warn,garage_api_admin=warn
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - images:/var/lib/garage
+    healthcheck:
+      test: ['CMD', '/garage', 'health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+      start_interval: 2s
+    # Measured locally: about 10 MB in use, at most 39 MB (page cache included) while a 19 MB
+    # image went in and during a Backup. 128 MB leaves room for several uploads at once.
+    mem_limit: 128m
+    stop_grace_period: 20s
     networks: [rodokmen]
 
   api-blue:
@@ -91,6 +137,7 @@ services:
       - path: .env
         required: true
     environment:
+      <<: *image-store
       NODE_ENV: production
       PUBLIC_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
       WATCHDOG_URL: https://${DOMAIN:?set DOMAIN in .env}/api/health
@@ -117,16 +164,30 @@ services:
       PGPASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       WORK_DIR: /work
       STATUS_FILE: /status/backup.json
+      # Every image, copied out of Garage with the Backup's read-only key (scripts/storage-init.sh).
+      # The rclone remote "images" is defined here rather than in IMAGES_SOURCE, because rclone
+      # repeats the source in its error messages, and those go into the alert email.
+      IMAGES_SOURCE: images:rodokmen-images
+      RCLONE_CONFIG_IMAGES_TYPE: s3
+      RCLONE_CONFIG_IMAGES_PROVIDER: Other
+      RCLONE_CONFIG_IMAGES_ENDPOINT: http://garage:3900
+      RCLONE_CONFIG_IMAGES_REGION: garage
+      RCLONE_CONFIG_IMAGES_FORCE_PATH_STYLE: 'true'
+      RCLONE_CONFIG_IMAGES_ACCESS_KEY_ID: ${IMAGES_BACKUP_KEY_ID:?set IMAGES_BACKUP_KEY_ID in .env}
+      RCLONE_CONFIG_IMAGES_SECRET_ACCESS_KEY: ${IMAGES_BACKUP_SECRET_KEY:?set IMAGES_BACKUP_SECRET_KEY in .env}
     volumes:
       - backup_status:/status
       - backup_work:/work
     depends_on:
       db:
         condition: service_healthy
+      garage:
+        condition: service_healthy
     networks: [rodokmen]
 
 volumes:
   pgdata:
+  images:
   caddy_data:
   caddy_config:
   backup_status:

@@ -1,0 +1,31 @@
+# Garage, the S3-compatible store for page images (docker-compose.yml, service garage).
+# One node and one copy on the VPS: the nightly Backup (backup/backup.sh) is the copy elsewhere.
+# The RPC secret comes from GARAGE_RPC_SECRET in .env; the bucket and the API's key are created
+# on first start (--single-node --default-bucket), the Backup's read-only key by
+# scripts/storage-init.sh. Reference: https://garagehq.deuxfleurs.fr/documentation/reference-manual/configuration/
+
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+# SQLite rather than LMDB: slower, which a family archive never notices, and it survives a crash
+# or power loss of the one node more reliably.
+db_engine = "sqlite"
+# Few writes, no replica: sync every one to disk.
+metadata_fsync = true
+data_fsync = true
+# A consistent copy of the metadata next to it, for recovering from a damaged database.
+metadata_auto_snapshot_interval = "6h"
+
+replication_factor = 1
+# JPEG, WebP and HEIC are compressed already; don't spend CPU trying again.
+compression_level = "none"
+
+# Only the garage CLI inside the container talks RPC (docker compose exec garage /garage ...).
+rpc_bind_addr = "127.0.0.1:3901"
+rpc_public_addr = "127.0.0.1:3901"
+
+[s3_api]
+# S3_REGION of the API and the region in the Backup's rclone remote must match.
+s3_region = "garage"
+# On the Docker network only: the API and the Backup job use http://garage:3900, browsers reach
+# it through Caddy at https://files.<domain> (Caddyfile).
+api_bind_addr = "0.0.0.0:3900"
