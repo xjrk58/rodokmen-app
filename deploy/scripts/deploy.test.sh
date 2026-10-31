@@ -3,7 +3,8 @@
 # slots and stops the old one; a release that fails its health check is removed, the old slot
 # keeps serving, the Owner is alerted, and deploy.sh exits non-zero. Also that every deploy sets
 # up the image store (storage-init.sh): the Backup's read-only key is imported once, with its
-# secret on stdin only, and a deploy stops before starting anything when that fails.
+# secret on stdin only, and a deploy stops before starting anything when that fails. Caddy
+# reloads its Caddyfile on every deploy; Garage restarts only when garage.toml changed.
 # Run: bash deploy/scripts/deploy.test.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -11,6 +12,8 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 mkdir -p "$tmp/stack/scripts" "$tmp/bin"
 cp "$here/deploy.sh" "$here/storage-init.sh" "$tmp/stack/scripts/"
+mkdir -p "$tmp/stack/garage"
+echo 'replication_factor = 1' > "$tmp/stack/garage/garage.toml"
 backup_key=GK0123456789abcdef01234567
 backup_secret=$(printf 'ab%.0s' {1..32})
 printf 'IMAGES_BACKUP_KEY_ID=%s\nIMAGES_BACKUP_SECRET_KEY=%s\n' "$backup_key" "$backup_secret" > "$tmp/stack/.env"
@@ -44,9 +47,12 @@ grep -q "\"secretAccessKey\":\"$backup_secret\"" "$tmp/key" || fail "the Backup'
 grep -q "$backup_secret" "$DOCKER_LOG" && fail "the secret must not appear on a command line"
 grep -q "compose .* exec -T garage /garage bucket allow --read rodokmen-images --key $backup_key" "$DOCKER_LOG" || fail "the Backup's key may read the bucket"
 grep -q "compose .* exec -T garage /garage bucket deny --write --owner rodokmen-images --key $backup_key" "$DOCKER_LOG" || fail "the Backup's key may not write"
+grep -q "compose .* restart garage" "$DOCKER_LOG" && fail "Garage is not restarted on the first deploy"
+echo 'compression_level = "none"' >> garage/garage.toml
 
 deploy ghcr.io/x/app:v2 || fail "second deploy should succeed"
 grep -q "ImportKey" "$DOCKER_LOG" && fail "an existing key is not imported again"
+grep -q "compose .* restart garage" "$DOCKER_LOG" || fail "Garage restarts when garage.toml changed"
 [ "$(cat state/active)" = green ] || fail "second deploy switches to green"
 [ "$(cat state/previous)" = ghcr.io/x/app:v1 ] || fail "previous image recorded"
 grep -q "compose .* stop api-blue" "$DOCKER_LOG" || fail "old slot stopped after the switch"
@@ -56,6 +62,7 @@ grep -q "compose .* up -d --no-deps watchdog mcp" "$DOCKER_LOG" || fail "the MCP
 grep -q "compose .* exec -T caddy caddy reload" "$DOCKER_LOG" || fail "Caddy reads its Caddyfile again"
 
 if deploy ghcr.io/x/app:v3-broken; then fail "a broken release must fail the deploy"; fi
+grep -q "compose .* restart garage" "$DOCKER_LOG" && fail "Garage is not restarted when garage.toml is unchanged"
 [ "$(cat state/active)" = green ] || fail "the old slot stays active"
 grep -q "compose .* stop api-blue" "$DOCKER_LOG" || fail "the broken slot is stopped"
 grep -q "compose .* rm -f api-blue" "$DOCKER_LOG" || fail "the broken slot is removed"
@@ -75,4 +82,4 @@ grep -q "compose .* up -d --no-deps --wait" "$DOCKER_LOG" && fail "no slot is st
 grep -q "alert --subject Deploy failed: the image store is not ready" "$DOCKER_LOG" || fail "the Owner is alerted"
 mv env.good .env
 
-echo "deploy.sh: switch, failed health check, rollback and image store setup behave as specified"
+echo "deploy.sh: switch, failed health check, rollback, configuration reload and image store setup behave as specified"

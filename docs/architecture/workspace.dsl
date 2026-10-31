@@ -219,7 +219,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 properties {
                     "openspec" "add-tree-backend / operations"
                     "adr" "0007"
-                    "code" "deploy/Caddyfile"
+                    "code" "deploy/caddy/Caddyfile"
                 }
             }
 
@@ -388,7 +388,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 properties {
                     "openspec" "add-tree-backend / tree-model; add-proposals-and-review / evidence-media; add-vault-import / vault-import"
                     "adr" "0002"
-                    "code" "server/src/storage/images.ts, deploy/garage.toml, deploy/scripts/storage-init.sh"
+                    "code" "server/src/storage/images.ts, deploy/garage/garage.toml, deploy/scripts/storage-init.sh"
                 }
             }
 
@@ -883,7 +883,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         caddy -> bucket "Passes presigned image requests at files.<domain> through unchanged" "HTTP, port 3900" "Built" {
             properties {
                 "openspec" "add-tree-backend / operations"
-                "code" "deploy/Caddyfile"
+                "code" "deploy/caddy/Caddyfile"
             }
         }
         caddy -> mcp "Forwards /mcp" "Streamable HTTP" "Planned" {

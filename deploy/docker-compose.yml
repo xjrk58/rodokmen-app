@@ -88,8 +88,11 @@ services:
       GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:?set S3_SECRET_ACCESS_KEY in .env}
       # Startup and errors, without a line for every health check.
       RUST_LOG: garage=info,garage_net=warn,garage_api_admin=warn
+      # The folder, not the file: a deploy replaces the file, and only a mounted folder shows the
+      # new one. Garage reads it when it starts; deploy.sh restarts it when the file changed.
+      GARAGE_CONFIG_FILE: /etc/garage/garage.toml
     volumes:
-      - ./garage.toml:/etc/garage.toml:ro
+      - ./garage:/etc/garage:ro
       - images:/var/lib/garage
     healthcheck:
       test: ['CMD', '/garage', 'health']
@@ -123,7 +126,9 @@ services:
       DOMAIN: ${DOMAIN:?set DOMAIN in .env}
       ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # The folder, not the file: a deploy replaces the Caddyfile, and only a mounted folder shows
+      # the new one to Caddy (deploy.sh reloads it).
+      - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
     networks: [rodokmen]

@@ -22,7 +22,7 @@ server (#26, #38).
 | Image builds                       | GitHub Actions → GHCR                        | `ghcr.io/xjrk58/rodokmen-app:<commit>`                                                                                                        |
 | Restore test                       | GitHub Actions, monthly                      | restores the latest Backup into a throwaway container and checks records and images                                                           |
 
-Files in this folder: `docker-compose.yml`, `Caddyfile`, `garage.toml` (image store),
+Files in this folder: `docker-compose.yml`, `caddy/Caddyfile`, `garage/garage.toml` (image store),
 `Dockerfile` (API image, built from the repo root), `scripts/deploy.sh` (health-checked switch),
 `scripts/storage-init.sh` (bucket and keys of the image store), `backup/` (backup and restore
 scripts, backup image), `systemd/` (nightly timer), `.env.example`, `backup.env.example`.
@@ -239,9 +239,10 @@ A push to `main` runs `deploy.yml`: the workspace tests (`server-ci.yml`) and th
 pass, then the image is built and pushed, the stack definition (this folder, without `.env`
 files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
 
-1. it starts the database, Garage and Caddy if they are not running, and runs
-   `scripts/storage-init.sh` (bucket and keys; changes nothing when they exist). If that fails,
-   nothing else happens and the Owner gets an alert;
+1. it starts the database, Garage and Caddy if they are not running, reloads the Caddyfile,
+   restarts Garage if `garage.toml` changed, and runs `scripts/storage-init.sh` (bucket and keys;
+   changes nothing when they exist). If that fails, nothing else happens and the Owner gets an
+   alert;
 2. it starts the new image in the idle slot (`api-green` if `api-blue` serves, and back);
 3. the new container migrates the database and must pass its health check within 3 minutes;
 4. only then is the old slot stopped. Both slots answer to `api` for Caddy, so requests keep
@@ -252,8 +253,10 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
 **Migrations must work with the previous release still running**, since it serves while the new
 one migrates: add columns and tables in one release, remove the old ones in a later one.
 
-**Changes to `Caddyfile` or `garage.toml`** reach the running containers only when they restart
-(#47): after such a deploy, run `docker compose --env-file .env restart caddy` (or `garage`).
+**Configuration files** are mounted as folders (`caddy/`, `garage/`), not as single files: a
+deploy replaces each changed file with a new one, which a container with the old file mounted
+would never see. An invalid Caddyfile is refused by the reload, and Caddy keeps serving with the
+one it has; the deploy log says so.
 
 Rollback: run the `deploy` workflow by hand with `rollback` ticked, or on the VPS
 `./scripts/deploy.sh rollback`. State lives in `/opt/rodokmen/state/` (`active`, `previous`,

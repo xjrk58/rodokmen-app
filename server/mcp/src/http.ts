@@ -7,7 +7,7 @@ import { createRodokmenServer } from './server.js';
 
 /**
  * The MCP server over streamable HTTP at /mcp (agent-access spec, "MCP server"), behind the
- * same domain as the app (deploy/Caddyfile). Stateless: each request is served by a fresh
+ * same domain as the app (deploy/caddy/Caddyfile). Stateless: each request is served by a fresh
  * server instance holding the caller's token.
  *
  * Every request needs `Authorization: Bearer <Agent token>`. The token is checked with the API

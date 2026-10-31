@@ -27,5 +27,5 @@ rpc_public_addr = "127.0.0.1:3901"
 # S3_REGION of the API and the region in the Backup's rclone remote must match.
 s3_region = "garage"
 # On the Docker network only: the API and the Backup job use http://garage:3900, browsers reach
-# it through Caddy at https://files.<domain> (Caddyfile).
+# it through Caddy at https://files.<domain> (caddy/Caddyfile).
 api_bind_addr = "0.0.0.0:3900"
