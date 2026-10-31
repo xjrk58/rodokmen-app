@@ -2,7 +2,7 @@
 // range and decade play; a Person's life path; and "Family here" in the place sheet, also abroad.
 // Against the mocked API and the invented Tree, at both viewports.
 import { member, mockFamilyApi } from './family-api.js';
-import { P } from './family-data.js';
+import { detail, P } from './family-data.js';
 import { expect, test } from './fixtures.js';
 
 /**
@@ -98,4 +98,14 @@ test('a line from abroad: a family pin in another country shows the family Event
   await expect(sheet.getByTestId('family-here')).toContainText('residence (Other) 1846');
   await expect(sheet.getByTestId('outside')).toHaveText('Archive lookup and historical maps cover only the Czech lands.');
   await expect(sheet.getByTestId('open-scans')).toHaveCount(0);
+});
+
+test('a Place name with markup in it shows as text on the life path', async ({ page }) => {
+  const antonin = detail(16);
+  const place = antonin.events[0].event.place;
+  if (place) place.name = '<img src=x data-injected>';
+  await mockFamilyApi(page, { me: member('contributor'), extra: { [`GET persons/${P.antonin}`]: () => ({ json: antonin }) } });
+  await page.goto(`./#life/${P.antonin}`);
+  await expect(page.locator('.life-label').first()).toHaveText('1. <img src=x data-injected> 1840');
+  await expect(page.locator('[data-injected]')).toHaveCount(0);
 });

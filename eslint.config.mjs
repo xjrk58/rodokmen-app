@@ -98,7 +98,21 @@ export default defineConfig(
       '@typescript-eslint/no-unnecessary-type-assertion': 'off',
     },
   },
-  { files: ['app/app.js', 'app/src/**/*.js'], languageOptions: { globals: globals.browser } },
+  {
+    files: ['app/app.js', 'app/src/**/*.js'],
+    languageOptions: { globals: globals.browser },
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          // Leaflet puts string content of tooltips and popups in as HTML; text from the Tree must go in as a node.
+          selector:
+            'CallExpression[callee.property.name=/^(bindTooltip|bindPopup|setTooltipContent|setPopupContent|setContent)$/][arguments.0.type=/^(TemplateLiteral|Literal|BinaryExpression)$/]',
+          message: 'Leaflet treats a string as HTML: pass an element with text (h() from src/dom.js) instead.',
+        },
+      ],
+    },
+  },
   { files: ['app/sw.js'], languageOptions: { globals: globals.serviceworker } },
   // Node scripts and tests; Playwright's page.evaluate callbacks run in the browser.
   {

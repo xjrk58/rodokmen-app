@@ -128,7 +128,11 @@ function useGestures(o) {
   /** @param {PointerEvent} e */
   const down = (e) => {
     const svg = /** @type {SVGSVGElement} */ (e.currentTarget);
-    svg.setPointerCapture?.(e.pointerId);
+    try {
+      svg.setPointerCapture(e.pointerId);
+    } catch {
+      // a pointer the browser no longer tracks: nothing to capture
+    }
     g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (g.pointers.size === 1) {
       const el = e.target instanceof Element ? e.target.closest('[data-person]') : null;

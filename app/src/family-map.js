@@ -245,7 +245,13 @@ export class FamilyMap {
     this.path.addLayer(L.polyline(latlngs, { color: '#b5541c', weight: 3, opacity: 0.85, className: 'life-line' }));
     points.forEach((pt, i) => {
       const dot = L.circleMarker(latlngs[i], { radius: 7, color: '#fffdf8', weight: 2, fillColor: '#b5541c', fillOpacity: 1, className: 'life-point' });
-      dot.bindTooltip(`${i + 1}. ${pt.placeName} ${pt.years.join(', ')}`, { permanent: true, direction: 'top', className: 'life-label', offset: [0, -6] });
+      // A node, not a string: Leaflet puts a string in as HTML, and Place names come from the Tree.
+      dot.bindTooltip(h('span', {}, `${i + 1}. ${pt.placeName} ${pt.years.join(', ')}`), {
+        permanent: true,
+        direction: 'top',
+        className: 'life-label',
+        offset: [0, -6],
+      });
       this.path.addLayer(dot);
     });
     this.map.fitBounds(L.latLngBounds(latlngs).pad(0.4), { maxZoom: 12 });

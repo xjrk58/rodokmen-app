@@ -207,3 +207,34 @@ test('Living people are marked, and adoptive parents are named under the tree', 
   await expect(page.getByTestId('other-parents')).toContainText('Antonín Novák');
   await expect(box(page, P.karel)).toBeVisible();
 });
+
+test('on a phone, two fingers pinch the tree to zoom in and out', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'phone', 'touch needs the phone viewport');
+  await mockFamilyApi(page, { me: member('contributor') });
+  await page.goto(`./#person-${P.jan}`);
+  await expect(page.getByTestId('tree')).toHaveAttribute('data-focus', P.jan);
+  const scale = async () => Number(/scale\(([\d.]+)\)/.exec((await page.locator('.tree-view').getAttribute('style')) ?? '')?.[1]);
+  const before = await scale();
+  const area = /** @type {{ x: number, y: number, width: number, height: number }} */ (await page.getByTestId('tree').boundingBox());
+  const cx = area.x + area.width / 2;
+  const cy = area.y + area.height - 40;
+  const cdp = await context.newCDPSession(page);
+  /** @param {'touchStart' | 'touchMove' | 'touchEnd'} type @param {number} spread */
+  const touch = (type, spread) =>
+    cdp.send('Input.dispatchTouchEvent', {
+      type,
+      touchPoints:
+        type === 'touchEnd'
+          ? []
+          : [
+              { x: cx - spread, y: cy, id: 1 },
+              { x: cx + spread, y: cy, id: 2 },
+            ],
+    });
+  await touch('touchStart', 30);
+  for (const spread of [45, 60, 75, 90]) await touch('touchMove', spread);
+  await touch('touchEnd', 0);
+  await expect.poll(scale).toBeGreaterThan(before * 2);
+  // The pinch moved no focus.
+  await expect(page.getByTestId('tree')).toHaveAttribute('data-focus', P.jan);
+});
