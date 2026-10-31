@@ -1,8 +1,8 @@
 // Settings (family-view spec, "Owner settings in the app"): every Member's own language,
-// passkeys and sessions, and sign-out; for the Owner also the family: invitations, roles,
-// disabling and enabling Members, and the link from each Member to their Person. Settings that
-// later changes add (Agent accounts, scan reading, Family roots) get their own section here.
-// Other Members see nothing about anyone else.
+// passkeys and sessions, and sign-out; for the Owner also the Family roots and the family:
+// invitations, roles, disabling and enabling Members, and the link from each Member to their
+// Person. Settings that later changes add (Agent accounts, scan reading) get their own section
+// here. Other Members see nothing about anyone else.
 
 import * as API from './api.js';
 import { LANGUAGES, language, t } from './i18n.js';
@@ -310,6 +310,47 @@ function FamilySection({ me }) {
   </section>`;
 }
 
+/**
+ * The Family roots (tree-model spec, "Family roots"): the Persons the family descends from, from
+ * which every relation to the family is computed. Until the first is marked, the app shows
+ * everyone and this section asks the Owner to mark one.
+ * @param {{ refreshMe: SettingsProps['refreshMe'] }} props
+ */
+function FamilyRootsSection({ refreshMe }) {
+  const roots = useLoad((signal) => API.listFamilyRoots(signal));
+  const [adding, setAdding] = useState(false);
+  const [text, error, run] = useAction();
+  const change = (/** @type {string} */ personId, /** @type {boolean} */ familyRoot, /** @type {string} */ done) =>
+    run(async () => {
+      await API.setFamilyRoot(personId, familyRoot);
+      setAdding(false);
+      roots.reload();
+      await refreshMe();
+    }, done);
+  const items = roots.data?.items ?? [];
+  return html`<section class="card" data-testid="settings-family-roots">
+    <h2>${t('settings.familyRoots')}</h2>
+    <p class="muted small">${t('settings.familyRootsText')}</p>
+    ${roots.data && items.length === 0 ? html`<p class="prompt" role="note" data-testid="family-roots-prompt">${t('settings.familyRootsPrompt')}</p>` : null}
+    <ul class="plain-list" data-testid="family-roots">
+      ${items.map(
+        (p) =>
+          html`<li key=${p.id} data-testid="family-root" data-id=${p.id}>
+            <${PersonLine} person=${p} href=${`#people/${p.id}`} />
+            <button type="button" class="link-button" data-testid="family-root-remove" onClick=${() => void change(p.id, false, t('settings.rootRemoved'))}>
+              ${t('settings.remove')}
+            </button>
+          </li>`,
+      )}
+    </ul>
+    <button type="button" class="button" data-testid="family-root-add" aria-expanded=${adding ? 'true' : 'false'} onClick=${() => setAdding(!adding)}>
+      ${t('settings.addFamilyRoot')}
+    </button>
+    ${adding ? html`<${PersonPick} testid="root-person" onPick=${(/** @type {PersonSummary} */ p) => void change(p.id, true, t('settings.rootMarked'))} />` : null}
+    <${Status} text=${text} error=${error} testid="family-roots-status" />
+  </section>`;
+}
+
 /** @param {SettingsProps} props */
 export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
   const [text, error, run] = useAction();
@@ -325,6 +366,7 @@ export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
     <${LanguageSection} chooseLanguage=${chooseLanguage} />
     <${PasskeysSection} me=${me} refreshMe=${refreshMe} />
     <${SessionsSection} />
+    ${me.permissions.markFamilyRoots ? html`<${FamilyRootsSection} refreshMe=${refreshMe} />` : null}
     ${me.role === 'owner' ? html`<${FamilySection} me=${me} />` : null}
     <section class="card">
       <h2>${t('settings.about')}</h2>

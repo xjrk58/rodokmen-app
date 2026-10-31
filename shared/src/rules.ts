@@ -41,15 +41,17 @@ export function mayDecide(role: string): boolean {
  * - `propose`: submit Proposals and upload their images;
  * - `review`: see the review queue; `accept`, `reject`, `merge`, `undo`; `directEdit`: change the Tree at once;
  * - `ownAccount`: your own sessions, passkeys and email settings;
- * - `manageAccounts`: Members, invitations, roles, Agents and their tokens.
+ * - `manageAccounts`: Members, invitations, roles, Agents and their tokens;
+ * - `markFamilyRoots`: mark and unmark Family roots (tree-model spec, "Family roots").
  *
  * Agents read and propose, and nothing else. Members of every role read, propose and manage
  * their own account; Editors and the Owner also decide on Proposals and edit directly; only the
- * Owner manages accounts. An unknown role or action is refused.
+ * Owner manages accounts and marks Family roots. An unknown role or action is refused.
  */
 export function mayDo(role: string, action: string): boolean {
   //@ verify
   //@ contract agent-access: Read and propose only
+  //@ contract tree-model: Family roots
   // An Agent token allows reading the Tree and submitting Proposals ...
   //@ ensures role === 'agent' && action === 'read' ==> \result
   //@ ensures role === 'agent' && action === 'propose' ==> \result
@@ -64,12 +66,15 @@ export function mayDo(role: string, action: string): boolean {
   //@ ensures role === 'agent' && action === 'review' ==> !\result
   //@ ensures role === 'agent' && action === 'ownAccount' ==> !\result
   //@ ensures role === 'agent' && action === 'manageAccounts' ==> !\result
+  //@ ensures role === 'agent' && action === 'markFamilyRoots' ==> !\result
   // An Agent is never allowed what a Contributor is refused.
   //@ ensures role === 'agent' && \result ==> mayDo('contributor', action)
   // Deciding on Proposals is exactly the review rule (review spec, "Contributors never accept or merge").
   //@ ensures action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' ==> \result === mayDecide(role)
   // Only the Owner manages accounts; a role or action not listed is refused.
   //@ ensures action === 'manageAccounts' ==> \result === (role === 'owner')
+  // Only the Owner marks Family roots (tree-model spec, "Family roots").
+  //@ ensures action === 'markFamilyRoots' ==> \result === (role === 'owner')
   //@ ensures \result ==> role === 'agent' || role === 'contributor' || role === 'editor' || role === 'owner'
   if (role === 'agent') return action === 'read' || action === 'propose';
   const member = role === 'contributor' || role === 'editor' || role === 'owner';
@@ -77,7 +82,7 @@ export function mayDo(role: string, action: string): boolean {
   if (action === 'review' || action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' || action === 'directEdit') {
     return mayDecide(role);
   }
-  if (action === 'manageAccounts') return role === 'owner';
+  if (action === 'manageAccounts' || action === 'markFamilyRoots') return role === 'owner';
   return false;
 }
 
@@ -132,10 +137,10 @@ export function isCitationOperation(op: string): boolean {
   return op === 'createCitation' || op === 'attachCitation';
 }
 
-/** Operations that change no facts and so need no evidence: merges and the server's undo steps. */
+/** Operations that change no facts and so need no evidence: merges, the server's undo steps, and marking Family roots. */
 export function isFactFreeOperation(op: string): boolean {
   //@ verify
-  return op === 'mergePersons' || op === 'restoreRecord';
+  return op === 'mergePersons' || op === 'restoreRecord' || op === 'setFamilyRoot';
 }
 
 /**

@@ -10,6 +10,7 @@
 import { z } from 'zod';
 import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
 import { EdtfDate, Id, IsoDay, Version, WebUrl } from './common.js';
+import { SERVER_OPERATIONS, serverOnly, SetFamilyRoot, type CheckOptions } from './server-operations.js';
 import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RoleType, Sex, SourceType } from './tree.js';
 
 export const OPERATIONS_VERSION = 1;
@@ -234,6 +235,7 @@ export const RESTORABLE_TABLES = [
   'name_citation',
   'image',
   'image_person',
+  'family_root',
 ] as const;
 export const RestorableTable = z.enum(RESTORABLE_TABLES).meta({ id: 'RestorableTable' });
 export type RestorableTable = z.infer<typeof RestorableTable>;
@@ -269,6 +271,7 @@ export const Operation = z
     SetField,
     MergePersons,
     RestoreRecord,
+    SetFamilyRoot,
   ])
   .meta({ id: 'Operation' });
 
@@ -277,8 +280,8 @@ export type OperationInput = z.input<typeof Operation>;
 export type OperationName = Operation['op'];
 export const OPERATION_NAMES: OperationName[] = Operation.options.map((o) => o.shape.op.value);
 
-/** Operations a Member may submit. `restoreRecord` is the server's own; merges are Editors' only. */
-export const SUBMITTABLE_OPERATIONS: readonly OperationName[] = OPERATION_NAMES.filter((n) => n !== 'restoreRecord');
+/** Operations a Member may submit: all but the server's own (server-operations.ts). Merges are Editors' only. */
+export const SUBMITTABLE_OPERATIONS: readonly OperationName[] = OPERATION_NAMES.filter((n) => !SERVER_OPERATIONS.includes(n));
 export const EDITOR_ONLY_OPERATIONS: readonly OperationName[] = ['mergePersons'];
 
 // ---------------------------------------------------------------- whole Proposals
@@ -402,9 +405,9 @@ const opNameOf = (value: unknown): unknown => (typeof value === 'object' && valu
 const tempIdOf = (op: Operation): string | undefined => ('tempId' in op ? op.tempId : undefined);
 
 /** One parsed operation in context: who may use it, and its temporary ids (recorded in `temps`). */
-function checkOne(op: Operation, position: number, options: { editor: boolean; allowRestore?: boolean }, temps: Map<string, TempKind>): ProposalIssue[] {
-  if (op.op === 'restoreRecord' && !options.allowRestore)
-    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: restoreRecord is written only by an undo` }];
+function checkOne(op: Operation, position: number, options: CheckOptions, temps: Map<string, TempKind>): ProposalIssue[] {
+  const refused = serverOnly(op.op, options);
+  if (refused) return [{ code: 'not_allowed', position, message: `operation ${position + 1}: ${refused}` }];
   if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor)
     return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` }];
   const issues: ProposalIssue[] = [];
@@ -440,7 +443,7 @@ function checkOne(op: Operation, position: number, options: { editor: boolean; a
  * defined once and before use with the right kind, base versions present, who may use
  * which operation, and the evidence rule (satisfiesEvidenceRule in rules.ts).
  */
-export function checkOperations(raw: readonly unknown[], options: { editor: boolean; allowRestore?: boolean }): ProposalCheck {
+export function checkOperations(raw: readonly unknown[], options: CheckOptions): ProposalCheck {
   const issues: ProposalIssue[] = [];
   const operations: Operation[] = [];
   const temps = new Map<string, TempKind>();

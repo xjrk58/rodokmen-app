@@ -235,6 +235,11 @@ function restoreRecord(op: Op<'restoreRecord'>, { L, cs }: Say): string {
   return cs ? `vrací záznam (${what}) ${L(op.id)} do dřívější podoby` : `restores the ${what} record ${L(op.id)} to its earlier state`;
 }
 
+function setFamilyRoot(op: Op<'setFamilyRoot'>, { L, cs }: Say): string {
+  if (op.familyRoot) return cs ? `označuje osobu ${L(op.personId)} za kořen rodu` : `marks ${L(op.personId)} as a Family root`;
+  return cs ? `ruší osobu ${L(op.personId)} jako kořen rodu` : `no longer marks ${L(op.personId)} as a Family root`;
+}
+
 /**
  * One readable sentence per operation, in Czech or English, for review and history
  * ("adds godparent Anna Králová to the baptism (1801-03-12)"). Czech sentences use the
@@ -272,6 +277,8 @@ export function describeOperation(op: Operation, ctx: SummaryContext, language: 
       return cs ? `slučuje osobu ${L(op.mergeId)} do osoby ${L(op.keepId)}` : `merges ${L(op.mergeId)} into ${L(op.keepId)}`;
     case 'restoreRecord':
       return restoreRecord(op, say);
+    case 'setFamilyRoot':
+      return setFamilyRoot(op, say);
   }
 }
 

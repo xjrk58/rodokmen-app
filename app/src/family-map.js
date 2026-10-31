@@ -9,7 +9,7 @@ import { loadThrough } from './cache.js';
 import { h } from './dom.js';
 import { t } from './i18n.js';
 import { clusterPins, decades, familyHere, lifePath, pinsFromEvents, YEAR_MAX, YEAR_MIN } from './pins.js';
-import { isShown } from './relation.js';
+import { isShown, relationFilter, rootsKnown } from './relation.js';
 import { personAddress } from './routes.js';
 import { errorText } from './screen-parts.js';
 
@@ -52,6 +52,7 @@ export class FamilyMap {
   enable(on) {
     this.on = on;
     this.control.hidden = !on;
+    if (this.unrelatedRow) this.unrelatedRow.hidden = !rootsKnown();
     if (on) {
       this.pins.addTo(this.map);
       this.path.addTo(this.map);
@@ -90,12 +91,21 @@ export class FamilyMap {
     this.output = h('output', { 'data-testid': 'year-range', 'aria-live': 'polite' }, `${YEAR_MIN}–${YEAR_MAX}`);
     this.playButton = h('button', { type: 'button', class: 'round-button play', 'data-testid': 'year-play', 'aria-pressed': 'false' }, '▶');
     this.playButton.addEventListener('click', () => (this.player ? this.stop() : this.play()));
+    // Family pins count Relatives and Possible relatives unless the Member includes Unrelated people
+    // (family-map spec, "Family pins show the family"); without Family roots there is nothing to switch.
+    this.unrelatedInput = h('input', { type: 'checkbox', 'data-testid': 'map-include-unrelated' });
+    this.unrelatedInput.addEventListener('change', () => {
+      this.includeUnrelated = Boolean(this.unrelatedInput?.checked);
+      this.schedule(0);
+    });
+    this.unrelatedText = h('span', {}, t('people.includeUnrelated'));
+    this.unrelatedRow = h('label', { class: 'switch-row map-unrelated', hidden: true }, this.unrelatedInput, this.unrelatedText);
     this.translateControl();
     return h(
       'div',
       { class: 'year-filter', hidden: true, 'data-testid': 'year-filter' },
       this.playButton,
-      h('div', { class: 'year-sliders' }, this.output, this.fromInput, this.toInput),
+      h('div', { class: 'year-sliders' }, this.output, this.fromInput, this.toInput, this.unrelatedRow),
     );
   }
 
@@ -103,6 +113,7 @@ export class FamilyMap {
     this.fromInput?.setAttribute('aria-label', t('familyMap.from'));
     this.toInput?.setAttribute('aria-label', t('familyMap.to'));
     this.playButton?.setAttribute('aria-label', this.player ? t('familyMap.pause') : t('familyMap.play'));
+    if (this.unrelatedText) this.unrelatedText.textContent = t('people.includeUnrelated');
   }
 
   /** @param {number} from @param {number} to */
@@ -155,8 +166,9 @@ export class FamilyMap {
     const b = this.map.getBounds();
     /** @type {[number, number, number, number]} */
     const bbox = [Math.max(-180, b.getWest()), Math.max(-85, b.getSouth()), Math.min(180, b.getEast()), Math.min(85, b.getNorth())];
+    if (this.unrelatedRow) this.unrelatedRow.hidden = !rootsKnown();
     try {
-      const result = await mapEvents({ bbox, ...this.range }, controller.signal);
+      const result = await mapEvents({ bbox, ...this.range, relation: relationFilter(this.includeUnrelated) }, controller.signal);
       if (controller.signal.aborted) return;
       this.events = result.events;
       this.draw();

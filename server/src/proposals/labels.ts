@@ -128,6 +128,16 @@ async function linkLabels(db: Db, ids: string[], out: Labels): Promise<void> {
     .where('l.id', 'in', ids)
     .execute();
   for (const l of children) out.set(l.id, both(displayName(l.given, l.surname)));
+  const roots = await db
+    .selectFrom('family_root as r')
+    .innerJoin('name as n', (j) => j.onRef('n.person_id', '=', 'r.person_id').on('n.is_primary', '=', true))
+    .select(['r.id', 'n.given', 'n.surname'])
+    .where('r.id', 'in', ids)
+    .execute();
+  for (const r of roots) {
+    const who = displayName(r.given, r.surname);
+    out.set(r.id, { cs: `${who} (kořen rodu)`, en: `${who} (Family root)` });
+  }
 }
 
 /**

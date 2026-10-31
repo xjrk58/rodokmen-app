@@ -1,10 +1,11 @@
 // People: the list of Persons and the search by any Name, ignoring case and diacritics
 // (family-view spec, "People list and search"). Each result shows the primary Name and life
-// years, the Name that matched when it is another one, and "Show in tree".
+// years, the Name that matched when it is another one, and "Show in tree". Unrelated people
+// are left out until the Member switches them on ("Unrelated people hidden by default").
 
 import { listPersons } from './api.js';
 import { t } from './i18n.js';
-import { isShown, relationKnown } from './relation.js';
+import { isShown, relationFilter, rootsKnown } from './relation.js';
 import { personAddress, treeAddress } from './routes.js';
 import { AsOf, ErrorLine, PersonLine, useCachedLoad, useDebounced } from './screen-parts.js';
 import { html, useState } from './ui.js';
@@ -41,10 +42,16 @@ export function PeopleSearch({ cache }) {
   const [includeUnrelated, setIncludeUnrelated] = useState(false);
   const settled = useDebounced(query.trim(), SEARCH_DELAY_MS);
   const limit = PAGE * pages;
-  const loaded = useCachedLoad(`people:${settled}:${limit}`, (signal) => listPersons({ q: settled, offset: 0, limit }, signal), cache);
+  // Unrelated people are left out by the server, so that a page holds as many as it can.
+  const relation = relationFilter(includeUnrelated);
+  const loaded = useCachedLoad(
+    `people:${settled}:${relation ?? 'all'}:${limit}`,
+    (signal) => listPersons({ q: settled, offset: 0, limit, relation }, signal),
+    cache,
+  );
   const items = loaded.data?.items ?? [];
   const shown = items.filter((hit) => isShown(hit.person, includeUnrelated));
-  const showSwitch = relationKnown(items.map((hit) => hit.person));
+  const showSwitch = rootsKnown();
 
   return html`<div class="people-search">
     <form class="search people-box" role="search" onSubmit=${(/** @type {Event} */ e) => e.preventDefault()}>

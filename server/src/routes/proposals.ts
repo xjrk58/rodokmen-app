@@ -2,6 +2,8 @@ import {
   AcceptBody,
   ApiError,
   CreateUploadBody,
+  FamilyRootBody,
+  FamilyRootList,
   History,
   HistoryKind,
   IdParams,
@@ -26,6 +28,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { ApiProblem } from '../auth/problem.js';
+import { familyRootList, setFamilyRoot } from '../proposals/family-roots.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews, uploadView } from '../proposals/views.js';
@@ -37,6 +40,7 @@ const signedIn = { 401: ApiError, 429: RateLimited };
 const editorOnly = { 401: ApiError, 403: ApiError };
 /** Members only: an Agent has no email settings. */
 const ownAccount = { 401: ApiError, 403: ApiError };
+const ownerOnly = { 401: ApiError, 403: ApiError };
 
 /**
  * The write path into the Tree (proposals, review, tree-history, evidence-media and
@@ -173,6 +177,30 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       response: { 200: ProposalView, 400: ApiError, 404: ApiError, 409: ApiError, ...editorOnly },
     },
     handler: async (req) => mergePersons(deps, req.member!, req.params.id, req.body),
+  });
+
+  // ---------------------------------------------------------------- Family roots
+
+  app.get('/api/family-roots', {
+    schema: {
+      tags: ['Persons'],
+      summary: 'The Family roots the Owner marked, the first marked first; the relation to the family is computed from them',
+      response: { 200: FamilyRootList, ...signedIn },
+    },
+    handler: async () => familyRootList(deps),
+  });
+
+  app.put('/api/persons/:id/family-root', {
+    config: { action: 'markFamilyRoots' },
+    schema: {
+      tags: ['Persons'],
+      summary:
+        "Mark a Person as a Family root, or unmark them (Owner only). Logged as the Owner's direct change; every relation to the family is recomputed at once",
+      params: IdParams,
+      body: FamilyRootBody,
+      response: { 200: FamilyRootList, 404: ApiError, 409: ApiError, ...ownerOnly },
+    },
+    handler: async (req) => setFamilyRoot(deps, req.member!, req.params.id, req.body.familyRoot),
   });
 
   app.get('/api/history/:kind/:id', {

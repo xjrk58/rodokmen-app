@@ -1079,6 +1079,15 @@
           "caption"
         ]
       },
+      "RelationToFamilyInput": {
+        "type": "string",
+        "enum": [
+          "relative",
+          "possible",
+          "unrelated"
+        ],
+        "description": "Relation to the family, computed from the Family roots and Family links: relative (linked to a Family root through links each with a Citation of normal or higher confidence), possible (only through a weaker link) or unrelated. Unrelated for everyone until the Owner marks the first Family root"
+      },
       "PersonSummaryInput": {
         "type": "object",
         "properties": {
@@ -1118,6 +1127,13 @@
               "string",
               "null"
             ]
+          },
+          "relation": {
+            "$ref": "#/components/schemas/RelationToFamilyInput"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "The Owner marked this Person as a Family root"
           }
         },
         "required": [
@@ -1129,7 +1145,9 @@
           "displayName",
           "living",
           "birth",
-          "death"
+          "death",
+          "relation",
+          "familyRoot"
         ]
       },
       "PlaceRefInput": {
@@ -1589,6 +1607,13 @@
           "living": {
             "type": "boolean"
           },
+          "relation": {
+            "$ref": "#/components/schemas/RelationToFamilyInput"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "The Owner marked this Person as a Family root"
+          },
           "names": {
             "type": "array",
             "items": {
@@ -1626,11 +1651,40 @@
           "version",
           "sex",
           "living",
+          "relation",
+          "familyRoot",
           "names",
           "events",
           "familiesAsPartner",
           "familiesAsChild",
           "portraits"
+        ]
+      },
+      "FamilyRootBodyInput": {
+        "type": "object",
+        "properties": {
+          "familyRoot": {
+            "type": "boolean",
+            "description": "True marks the Person as a Family root, false unmarks them"
+          }
+        },
+        "required": [
+          "familyRoot"
+        ]
+      },
+      "FamilyRootListInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummaryInput"
+            },
+            "description": "The Family roots, the first marked first"
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "PedigreeInput": {
@@ -1847,13 +1901,18 @@
                       "type": "null"
                     }
                   ]
+                },
+                "weakLink": {
+                  "type": "boolean",
+                  "description": "Both partners are known, and no Citation of normal or higher confidence supports their link"
                 }
               },
               "required": [
                 "id",
                 "version",
                 "partner1Id",
-                "partner2Id"
+                "partner2Id",
+                "weakLink"
               ]
             }
           },
@@ -1873,13 +1932,18 @@
                 },
                 "linkType": {
                   "$ref": "#/components/schemas/ChildLinkTypeInput"
+                },
+                "weakLink": {
+                  "type": "boolean",
+                  "description": "The child's link to one of the Family's partners has no Citation of normal or higher confidence"
                 }
               },
               "required": [
                 "id",
                 "familyId",
                 "childId",
-                "linkType"
+                "linkType",
+                "weakLink"
               ]
             }
           }
@@ -2196,12 +2260,16 @@
                 },
                 "role": {
                   "$ref": "#/components/schemas/RoleTypeInput"
+                },
+                "relation": {
+                  "$ref": "#/components/schemas/RelationToFamilyInput"
                 }
               },
               "required": [
                 "id",
                 "displayName",
-                "role"
+                "role",
+                "relation"
               ]
             }
           }
@@ -3182,6 +3250,10 @@
           },
           "disableMembers": {
             "type": "boolean"
+          },
+          "markFamilyRoots": {
+            "type": "boolean",
+            "description": "Mark and unmark Family roots (the Owner)"
           }
         },
         "required": [
@@ -3189,7 +3261,8 @@
           "review",
           "inviteMembers",
           "changeRoles",
-          "disableMembers"
+          "disableMembers",
+          "markFamilyRoots"
         ]
       },
       "MeInput": {
@@ -3235,6 +3308,13 @@
               }
             ],
             "description": "The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)"
+          },
+          "familyRoots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "The Family roots the Owner marked, the first marked first. Empty until the first one: until then the relation to the family says nothing"
           }
         },
         "required": [
@@ -3246,7 +3326,8 @@
           "role",
           "permissions",
           "passkeyCount",
-          "person"
+          "person",
+          "familyRoots"
         ]
       },
       "UpdateMeBodyInput": {
@@ -4010,6 +4091,28 @@
           "retryAt"
         ]
       },
+      "SetFamilyRootInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setFamilyRoot"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "True marks the Person as a Family root, false unmarks them"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "familyRoot"
+        ],
+        "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
+      },
       "TempIdInput": {
         "type": "string",
         "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
@@ -4611,7 +4714,8 @@
           "event_citation",
           "name_citation",
           "image",
-          "image_person"
+          "image_person",
+          "family_root"
         ]
       },
       "RestoreRecordInput": {
@@ -4707,6 +4811,9 @@
           },
           {
             "$ref": "#/components/schemas/RestoreRecordInput"
+          },
+          {
+            "$ref": "#/components/schemas/SetFamilyRootInput"
           }
         ]
       },
@@ -6870,6 +6977,15 @@
         ],
         "additionalProperties": false
       },
+      "RelationToFamily": {
+        "type": "string",
+        "enum": [
+          "relative",
+          "possible",
+          "unrelated"
+        ],
+        "description": "Relation to the family, computed from the Family roots and Family links: relative (linked to a Family root through links each with a Citation of normal or higher confidence), possible (only through a weaker link) or unrelated. Unrelated for everyone until the Owner marks the first Family root"
+      },
       "PersonSummary": {
         "type": "object",
         "properties": {
@@ -6909,6 +7025,13 @@
               "string",
               "null"
             ]
+          },
+          "relation": {
+            "$ref": "#/components/schemas/RelationToFamily"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "The Owner marked this Person as a Family root"
           }
         },
         "required": [
@@ -6920,7 +7043,9 @@
           "displayName",
           "living",
           "birth",
-          "death"
+          "death",
+          "relation",
+          "familyRoot"
         ],
         "additionalProperties": false
       },
@@ -7394,6 +7519,13 @@
           "living": {
             "type": "boolean"
           },
+          "relation": {
+            "$ref": "#/components/schemas/RelationToFamily"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "The Owner marked this Person as a Family root"
+          },
           "names": {
             "type": "array",
             "items": {
@@ -7431,11 +7563,42 @@
           "version",
           "sex",
           "living",
+          "relation",
+          "familyRoot",
           "names",
           "events",
           "familiesAsPartner",
           "familiesAsChild",
           "portraits"
+        ],
+        "additionalProperties": false
+      },
+      "FamilyRootBody": {
+        "type": "object",
+        "properties": {
+          "familyRoot": {
+            "type": "boolean",
+            "description": "True marks the Person as a Family root, false unmarks them"
+          }
+        },
+        "required": [
+          "familyRoot"
+        ],
+        "additionalProperties": false
+      },
+      "FamilyRootList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummary"
+            },
+            "description": "The Family roots, the first marked first"
+          }
+        },
+        "required": [
+          "items"
         ],
         "additionalProperties": false
       },
@@ -7658,13 +7821,18 @@
                       "type": "null"
                     }
                   ]
+                },
+                "weakLink": {
+                  "type": "boolean",
+                  "description": "Both partners are known, and no Citation of normal or higher confidence supports their link"
                 }
               },
               "required": [
                 "id",
                 "version",
                 "partner1Id",
-                "partner2Id"
+                "partner2Id",
+                "weakLink"
               ],
               "additionalProperties": false
             }
@@ -7685,13 +7853,18 @@
                 },
                 "linkType": {
                   "$ref": "#/components/schemas/ChildLinkType"
+                },
+                "weakLink": {
+                  "type": "boolean",
+                  "description": "The child's link to one of the Family's partners has no Citation of normal or higher confidence"
                 }
               },
               "required": [
                 "id",
                 "familyId",
                 "childId",
-                "linkType"
+                "linkType",
+                "weakLink"
               ],
               "additionalProperties": false
             }
@@ -8015,12 +8188,16 @@
                 },
                 "role": {
                   "$ref": "#/components/schemas/RoleType"
+                },
+                "relation": {
+                  "$ref": "#/components/schemas/RelationToFamily"
                 }
               },
               "required": [
                 "id",
                 "displayName",
-                "role"
+                "role",
+                "relation"
               ],
               "additionalProperties": false
             }
@@ -9025,6 +9202,10 @@
           },
           "disableMembers": {
             "type": "boolean"
+          },
+          "markFamilyRoots": {
+            "type": "boolean",
+            "description": "Mark and unmark Family roots (the Owner)"
           }
         },
         "required": [
@@ -9032,7 +9213,8 @@
           "review",
           "inviteMembers",
           "changeRoles",
-          "disableMembers"
+          "disableMembers",
+          "markFamilyRoots"
         ],
         "additionalProperties": false
       },
@@ -9079,6 +9261,13 @@
               }
             ],
             "description": "The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)"
+          },
+          "familyRoots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "The Family roots the Owner marked, the first marked first. Empty until the first one: until then the relation to the family says nothing"
           }
         },
         "required": [
@@ -9090,7 +9279,8 @@
           "role",
           "permissions",
           "passkeyCount",
-          "person"
+          "person",
+          "familyRoots"
         ],
         "additionalProperties": false
       },
@@ -9884,6 +10074,29 @@
         ],
         "additionalProperties": false
       },
+      "SetFamilyRoot": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setFamilyRoot"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "True marks the Person as a Family root, false unmarks them"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "familyRoot"
+        ],
+        "additionalProperties": false,
+        "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
+      },
       "TempId": {
         "type": "string",
         "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
@@ -10512,7 +10725,8 @@
           "event_citation",
           "name_citation",
           "image",
-          "image_person"
+          "image_person",
+          "family_root"
         ]
       },
       "RestoreRecord": {
@@ -10609,6 +10823,9 @@
           },
           {
             "$ref": "#/components/schemas/RestoreRecord"
+          },
+          {
+            "$ref": "#/components/schemas/SetFamilyRoot"
           }
         ]
       },
@@ -11842,6 +12059,16 @@
           },
           {
             "schema": {
+              "type": "string",
+              "pattern": "^(relative|possible|unrelated)(,(relative|possible|unrelated))*$"
+            },
+            "in": "query",
+            "name": "relation",
+            "required": false,
+            "description": "Only Persons with these relations to the family, comma-separated (relative,possible); without it, everyone"
+          },
+          {
+            "schema": {
               "default": 50,
               "type": "integer",
               "minimum": 1,
@@ -12375,6 +12602,16 @@
             "name": "to",
             "required": true,
             "description": "Last year of the range (inclusive)"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^(relative|possible|unrelated)(,(relative|possible|unrelated))*$"
+            },
+            "in": "query",
+            "name": "relation",
+            "required": false,
+            "description": "Only Events in which a Person with one of these relations to the family takes part, comma-separated; without it, every Event"
           },
           {
             "schema": {
@@ -13863,6 +14100,126 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/family-roots": {
+      "get": {
+        "summary": "The Family roots the Owner marked, the first marked first; the relation to the family is computed from them",
+        "tags": [
+          "Persons"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyRootList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/family-root": {
+      "put": {
+        "summary": "Mark a Person as a Family root, or unmark them (Owner only). Logged as the Owner's direct change; every relation to the family is recomputed at once",
+        "tags": [
+          "Persons"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FamilyRootBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyRootList"
                 }
               }
             }

@@ -46,3 +46,6 @@ mergePersons
 restoreRecord
   cs: vrací záznam (person) Jan Novák (2) do dřívější podoby
   en: restores the person record Jan Novák (2) to its earlier state
+setFamilyRoot
+  cs: označuje osobu Anna Králová za kořen rodu
+  en: marks Anna Králová as a Family root

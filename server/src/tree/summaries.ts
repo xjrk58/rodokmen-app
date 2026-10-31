@@ -31,7 +31,7 @@ export function displayName(given: string, surname: string): string {
   return `${given} ${surname}`.trim();
 }
 
-/** Summaries (primary Name, Living, birth and death) of many Persons in two queries. */
+/** Summaries (primary Name, Living, birth and death, relation to the family) of many Persons in two queries. */
 export async function personSummaries(db: Db, ids: readonly string[], clock: Clock): Promise<Map<string, PersonSummary>> {
   const out = new Map<string, PersonSummary>();
   if (ids.length === 0) return out;
@@ -39,7 +39,8 @@ export async function personSummaries(db: Db, ids: readonly string[], clock: Clo
   const persons = await db
     .selectFrom('person as p')
     .innerJoin('name as n', (j) => j.onRef('n.person_id', '=', 'p.id').on('n.is_primary', '=', true))
-    .select(['p.id', 'p.version', 'p.sex', 'n.given', 'n.surname'])
+    .leftJoin('family_root as fr', 'fr.person_id', 'p.id')
+    .select(['p.id', 'p.version', 'p.sex', 'p.relation', 'n.given', 'n.surname', sql<boolean>`fr.id is not null`.as('family_root')])
     .where('p.id', 'in', unique)
     .execute();
   const vital = await db
@@ -80,6 +81,8 @@ export async function personSummaries(db: Db, ids: readonly string[], clock: Clo
       living: isLiving(livingFactsFromEvents(events), today),
       birth: earliestOf(events.filter((e) => e.type === 'birth' || e.type === 'baptism').map((e) => e.date)),
       death: earliestOf(events.filter((e) => e.type === 'death' || e.type === 'burial').map((e) => e.date)),
+      relation: p.relation,
+      familyRoot: p.family_root,
     });
   }
   return out;

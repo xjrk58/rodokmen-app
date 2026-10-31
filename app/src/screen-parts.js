@@ -101,17 +101,22 @@ export function ErrorLine({ error }) {
 }
 
 /**
- * The marks a Person carries wherever they appear: Living, and Possible relative once the Tree
- * knows the relation (src/relation.js).
- * @param {PersonSummary} person
- * @returns {string[]} labels
+ * The marks a Person carries wherever they appear: Living, Possible relative once the Tree knows
+ * the relation (src/relation.js), and Family root.
+ * @param {Pick<PersonSummary, 'living' | 'relation' | 'familyRoot'>} person
+ * @returns {{ kind: 'living' | 'possible' | 'root', text: string }[]}
  */
 export function personMarks(person) {
+  /** @type {{ kind: 'living' | 'possible' | 'root', text: string }[]} */
   const marks = [];
-  if (person.living) marks.push(t('person.living'));
-  if (relationOf(person) === 'possible') marks.push(t('person.possible'));
+  if (person.living) marks.push({ kind: 'living', text: t('person.living') });
+  if (relationOf(person) === 'possible') marks.push({ kind: 'possible', text: t('person.possible') });
+  if (person.familyRoot) marks.push({ kind: 'root', text: t('person.familyRoot') });
   return marks;
 }
+
+/** @param {{ marks: ReturnType<typeof personMarks> }} props */
+export const Marks = ({ marks }) => marks.map((m) => html` <span class=${`mark ${m.kind}`} data-testid="mark" data-mark=${m.kind}>${m.text}</span>`);
 
 /**
  * A Person's name, life years and marks on one line.
@@ -121,7 +126,5 @@ export function PersonLine({ person, href }) {
   const years = lifeYears(person);
   const marks = personMarks(person);
   const name = href ? html`<a href=${href} class="person-name">${person.displayName}</a>` : html`<span class="person-name">${person.displayName}</span>`;
-  return html`<span class="person-line">
-    ${name}${years ? html` <span class="years">${years}</span>` : null} ${marks.map((m) => html` <span class="mark" data-testid="mark">${m}</span>`)}
-  </span>`;
+  return html`<span class="person-line"> ${name}${years ? html` <span class="years">${years}</span>` : null} <${Marks} marks=${marks} /> </span>`;
 }

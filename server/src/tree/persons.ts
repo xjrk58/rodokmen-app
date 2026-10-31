@@ -1,4 +1,12 @@
-import { foldForSearch, isoDay, type ImageView, type PersonDetail, type PersonSearchQuery, type PersonSearchResult } from '@rodokmen/shared';
+import {
+  foldForSearch,
+  isoDay,
+  parseRelationFilter,
+  type ImageView,
+  type PersonDetail,
+  type PersonSearchQuery,
+  type PersonSearchResult,
+} from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Selectable } from 'kysely';
 import type { Db } from '../db/db.js';
@@ -17,7 +25,8 @@ export interface TreeDeps {
 /**
  * Persons by any of their Names, ignoring case and diacritics: every word of the query must
  * occur in one Name (given names, surname or the spelling as found). Backed by the trigram
- * index on name.search_text. Optionally narrowed by Place and by year range.
+ * index on name.search_text. Optionally narrowed by Place, by year range and by relation to the
+ * family (tree-read-api spec, "Filter by relation to the family"); each result states its relation.
  */
 export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuery): Promise<PersonSearchResult> {
   const tokens = q.q ? foldForSearch(q.q).split(' ').filter(Boolean) : [];
@@ -56,6 +65,10 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
       ),
     );
   }
+
+  // PersonSearchQuery checked that the filter names at least one relation.
+  const relations = parseRelationFilter(q.relation);
+  if (relations) query = query.where('p.relation', 'in', relations);
 
   let rows: Array<{ id: string; matched: string | null }>;
   if (tokens.length > 0) {
@@ -223,6 +236,8 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
     version: person.version,
     sex: person.sex,
     living: summaries.get(id)!.living,
+    relation: summaries.get(id)!.relation,
+    familyRoot: summaries.get(id)!.familyRoot,
     names: names.map((n) => ({
       id: n.id,
       version: n.version,

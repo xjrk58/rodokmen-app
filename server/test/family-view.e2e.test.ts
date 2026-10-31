@@ -1,5 +1,6 @@
 import { createServer } from 'node:net';
 import { mkdir } from 'node:fs/promises';
+import { Hourglass } from '@rodokmen/shared';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp, type RodokmenApp } from '../src/app.js';
@@ -12,9 +13,10 @@ import { createMember, ensureOwner, portOf, signIn, TestClock, testConfig } from
 
 /**
  * The family screens against the real server and the invented fixture Tree, in Chromium at
- * phone size (390 × 844): add-family-view tasks 2.1–2.4, 2a.2, 2a.5 and 3.1–3.4 end to end.
- * With FAMILY_SCREENSHOTS set to a folder, it saves phone screenshots of the tree home screen
- * and a person page there.
+ * phone size (390 × 844): add-family-view tasks 2.1–2.4, 2a.2, 2a.5, 2a.6 and 3.1–3.4 end to
+ * end; the relation to the family also at desktop size (1280 × 800). With FAMILY_SCREENSHOTS
+ * set to a folder, it saves phone screenshots of the tree home screen, a person page and the
+ * tree around a Possible relative there.
  */
 const model = generateFixture();
 const L = model.landmarks;
@@ -44,12 +46,11 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
   const mailer = new OutboxMailer();
   const contexts: BrowserContext[] = [];
 
-  async function phoneAs(member: Account): Promise<Page> {
+  async function phoneAs(member: Account, size: 'phone' | 'desktop' = 'phone'): Promise<Page> {
     const context = await browser.newContext({
-      viewport: { width: 390, height: 844 },
-      deviceScaleFactor: 2,
-      isMobile: true,
-      hasTouch: true,
+      ...(size === 'phone'
+        ? { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }
+        : { viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 }),
       locale: 'en-GB',
       serviceWorkers: 'block',
     });
@@ -217,4 +218,118 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
     expect(await page.locator('path.life-point').count()).toBeGreaterThanOrEqual(1);
     expect(await page.getByTestId('life-chip').textContent()).toContain('Jan Novák');
   }, 60_000);
+
+  // ---------------------------------------------------------------- the relation to the family (2.4, 2a.5, 2a.6)
+
+  it('Owner settings: until the first Family root the app shows everyone and asks the Owner to mark one; the Owner marks the founder', async () => {
+    const page = await phoneAs(owner);
+    await page.goto(`${origin}/#settings`);
+    const section = page.getByTestId('settings-family-roots');
+    await section.getByTestId('family-roots-prompt').waitFor();
+    await section.getByTestId('family-root-add').click();
+    await section.getByTestId('root-person-search').fill('Václav Novák');
+    // The Owner's account is in Czech; the picker lists everyone, also before any relation is known.
+    const founder = section
+      .getByTestId('root-person-results')
+      .getByRole('button')
+      .filter({ hasText: /Václav Novák/ });
+    await founder.first().waitFor();
+    const ids = await t.db.selectFrom('name').select('person_id').where('given', '=', 'Václav').where('surname', '=', 'Novák').execute();
+    expect(ids.map((i) => i.person_id)).toContain(L.founder);
+    // Pick the founder himself: the one born about 1745.
+    await founder.filter({ hasText: '1745' }).first().click();
+    await section.locator(`[data-testid="family-root"][data-id="${L.founder}"]`).waitFor();
+    expect(await section.getByTestId('family-roots-prompt').count()).toBe(0);
+    // And his wife, through the API the app uses.
+    const founding = model.families.find((f) => f.partner1Id === L.founder || f.partner2Id === L.founder)!;
+    const wife = founding.partner1Id === L.founder ? founding.partner2Id! : founding.partner1Id!;
+    expect((await inject(owner, 'PUT', `/api/persons/${wife}/family-root`, { familyRoot: true })).statusCode).toBe(200);
+    const relations = await t.db.selectFrom('person').select('relation').distinct().execute();
+    expect(relations.map((r) => r.relation).sort()).toEqual(['possible', 'relative', 'unrelated']);
+  }, 60_000);
+
+  for (const size of ['phone', 'desktop'] as const) {
+    it(`not linked (${size}): a Member without a link, with nothing remembered, opens the tree on a Family root`, async () => {
+      const unlinked = await createMember(t.db, 'contributor', { displayName: `Unlinked ${size}`, language: 'en' });
+      const page = await phoneAs(unlinked, size);
+      await page.goto(`${origin}/`);
+      await page.getByTestId('tree').waitFor();
+      expect(await page.getByTestId('tree').getAttribute('data-focus')).toBe(L.founder);
+      expect(page.url()).toBe(`${origin}/#person-${L.founder}`);
+    }, 60_000);
+
+    it(`weak link (${size}): a Possible relative in view is marked as one, with the weak link drawn differently`, async () => {
+      // A Possible relative whose own link to their parents is the weak one.
+      const possible = (await t.db.selectFrom('person').select('id').where('relation', '=', 'possible').where('merged_into_id', 'is', null).execute()).map(
+        (p) => p.id,
+      );
+      let chosen: string | null = null;
+      for (const id of possible) {
+        const tree = Hourglass.parse((await inject(relative, 'GET', `/api/persons/${id}/hourglass?up=3&down=2`)).json());
+        if (tree.childLinks.some((l) => l.childId === id && l.weakLink)) {
+          chosen = id;
+          break;
+        }
+      }
+      expect(chosen).not.toBeNull();
+      const page = await phoneAs(relative, size);
+      await page.goto(`${origin}/#person-${chosen}`);
+      const node = page.locator(`[data-testid="tree-person"][data-person="${chosen}"]`);
+      await node.waitFor();
+      expect(await node.getAttribute('class')).toMatch(/possible/);
+      expect(await node.getAttribute('aria-label')).toMatch(/possible relative/);
+      expect(await node.getByTestId('possible-mark').count()).toBe(1);
+      expect(await page.locator('.tree-lines .line.weak').count()).toBeGreaterThan(0);
+      // Living people are marked too, wherever the tree shows one.
+      for (const living of await page.locator('[data-testid="tree-person"].living').all()) expect(await living.textContent()).toMatch(/living/);
+      await page.waitForTimeout(700);
+      if (size === 'phone' && SHOTS) await page.screenshot({ path: `${SHOTS}/tree-relation.png` });
+    }, 60_000);
+
+    it(`village index entries (${size}): search lists only Relatives and Possible relatives until Unrelated people are switched on`, async () => {
+      // An Unrelated person with a surname that relatives share.
+      const unrelated = await t.db
+        .selectFrom('person as p')
+        .innerJoin('name as n', (j) => j.onRef('n.person_id', '=', 'p.id').on('n.is_primary', '=', true))
+        .select(['p.id', 'n.surname'])
+        .where('p.relation', '=', 'unrelated')
+        .where('p.merged_into_id', 'is', null)
+        .where((eb) =>
+          eb.exists(
+            eb
+              .selectFrom('person as q')
+              .innerJoin('name as m', (j) => j.onRef('m.person_id', '=', 'q.id').on('m.is_primary', '=', true))
+              .select('q.id')
+              .whereRef('m.surname', '=', 'n.surname')
+              .where('q.relation', '!=', 'unrelated'),
+          ),
+        )
+        .orderBy('p.id')
+        .executeTakeFirstOrThrow();
+      const page = await phoneAs(relative, size);
+      await page.goto(`${origin}/#people`);
+      await page.getByTestId('people-search').fill(unrelated.surname);
+      // Once the search has answered (the whole list shows until then), every result has that surname in one of its Names.
+      const fold = (x: string) => x.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+      await expect
+        .poll(async () => (await page.getByTestId('person-result').allTextContents()).every((x) => fold(x).includes(fold(unrelated.surname))))
+        .toBe(true);
+      expect(await page.getByTestId('person-result').count()).toBeGreaterThan(0);
+      expect(await page.locator(`[data-testid="person-result"][data-id="${unrelated.id}"]`).count()).toBe(0);
+      await page.getByTestId('include-unrelated').check();
+      await page.locator(`[data-testid="person-result"][data-id="${unrelated.id}"]`).waitFor();
+    }, 60_000);
+
+    it(`busy village (${size}): family pins count Relatives and Possible relatives until the Member includes Unrelated people`, async () => {
+      const page = await phoneAs(relative, size);
+      await page.goto(`${origin}/#map=14/49.93/15.91`);
+      await page.getByTestId('family-pin').first().waitFor();
+      const people = async () =>
+        (await page.getByTestId('family-pin').evaluateAll((pins) => pins.map((p) => Number(p.textContent)))).reduce((a, b) => a + b, 0);
+      await expect.poll(people).toBeGreaterThan(0);
+      const family = await people();
+      await page.getByTestId('map-include-unrelated').check();
+      await expect.poll(people).toBeGreaterThan(family);
+    }, 60_000);
+  }
 });

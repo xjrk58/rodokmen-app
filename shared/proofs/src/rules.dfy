@@ -50,7 +50,7 @@ function mayDo(role: string, action: string): bool
       if ((((((action == "review") || (action == "accept")) || (action == "reject")) || (action == "merge")) || (action == "undo")) || (action == "directEdit")) then
         mayDecide(role)
       else
-        ((action == "manageAccounts") && (role == "owner"))
+        (((action == "manageAccounts") || (action == "markFamilyRoots")) && (role == "owner"))
 }
 
 lemma mayDo_ensures(role: string, action: string)
@@ -65,9 +65,11 @@ lemma mayDo_ensures(role: string, action: string)
   ensures ((role == "agent") ==> (action == "review") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "ownAccount") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "manageAccounts") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "markFamilyRoots") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> mayDo(role, action) ==> mayDo("contributor", action))
   ensures (((((action == "accept") || (action == "reject")) || (action == "merge")) || (action == "undo")) ==> (mayDo(role, action) == mayDecide(role)))
   ensures ((action == "manageAccounts") ==> (mayDo(role, action) == (role == "owner")))
+  ensures ((action == "markFamilyRoots") ==> (mayDo(role, action) == (role == "owner")))
   ensures (mayDo(role, action) ==> ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner")))
 {
 }
@@ -103,7 +105,7 @@ function isCitationOperation(op: string): bool
 
 function isFactFreeOperation(op: string): bool
 {
-  ((op == "mergePersons") || (op == "restoreRecord"))
+  (((op == "mergePersons") || (op == "restoreRecord")) || (op == "setFamilyRoot"))
 }
 
 function sameRecord(a: RecordKey, b: RecordKey): bool

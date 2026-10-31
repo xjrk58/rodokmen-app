@@ -4,6 +4,9 @@
 // one Family and the adoptive child of another (Marie, 1885), a godmother (Rozálie), a man born,
 // married and buried in three villages (Antonín), Living people (Jaroslav, Bedřich), a village
 // abroad, and a line seven generations deep (Šimon, Vojtěch, Prokop, Václav, Tomáš, Jan, Karel).
+// With Family roots (Václav and Anna, see withRelations in family-api.js), Šimon, Vojtěch and Bedřich are
+// Possible relatives through weak links, and a godmother (Josefa) and a villager (Jakub Novák)
+// are Unrelated people.
 
 /** @typedef {import('../../src/types.js').PersonSummary} PersonSummary */
 /** @typedef {import('../../src/types.js').PersonDetail} PersonDetail */
@@ -47,6 +50,8 @@ export const PEOPLE = [
   [25, 'male', 'Bedřich', 'Novák', null, null],
   [26, 'male', 'Vojtěch', 'Novák', '1700', '1760'],
   [27, 'male', 'Šimon', 'Novák', '1675', '1730'],
+  [28, 'female', 'Josefa', 'Kmotrová', '1795', '1861'],
+  [29, 'male', 'Jakub', 'Novák', '1790', '1850-04-04'],
 ];
 
 /** @type {Array<[number, number | null, number | null, Array<[number, ChildLinkType]>]>} id, partner 1, partner 2, children */
@@ -111,6 +116,8 @@ const FAMILIES = [
       [25, 'birth'],
     ],
   ],
+  // A village couple with no link to the family.
+  [111, 29, 28, []],
 ];
 
 /** @type {Array<[number, string, number | null, { lat: number, lon: number }]>} id, name, house number (a House of the Place) or null, location */
@@ -200,11 +207,13 @@ export const EVENTS = [
       [14, 'child'],
       [10, 'father'],
       [12, 'mother'],
+      [28, 'godparent'],
     ],
     'normal',
   ],
   [409, 'birth', '1745~', 201, false, [[1, 'child']], 'low'],
   [410, 'residence', '1846', 204, false, [[11, 'other']], 'normal'],
+  [412, 'death', '1850-04-04', 202, false, [[29, 'deceased']], 'high'],
   [
     411,
     'baptism',
@@ -236,8 +245,16 @@ const person = (n) => {
 export function summary(n) {
   const [, sex, given, surname, birth, death] = person(n);
   const living = death === null && (birth === null || Number(birth.slice(0, 4)) > 1926);
-  return { id: ID(n), version: 1, sex, given, surname, displayName: `${given} ${surname}`, living, birth, death };
+  // Before the Owner marks a Family root, the server says "unrelated" for everyone (see withRelations).
+  return { id: ID(n), version: 1, sex, given, surname, displayName: `${given} ${surname}`, living, birth, death, relation: 'unrelated', familyRoot: false };
 }
+
+/** Weak child links (family, child): no Citation of normal or higher confidence. */
+const WEAK_CHILD_LINKS = [
+  [100, 26],
+  [101, 8],
+  [110, 25],
+];
 
 /** @param {string} id */
 export const numberOf = (id) => Number(id.slice(-12));
@@ -300,6 +317,8 @@ export function detail(n) {
     version: 1,
     sex,
     living: s.living,
+    relation: s.relation,
+    familyRoot: s.familyRoot,
     names: [
       { id: ID(1000 + n), version: 1, personId: ID(n), given, surname, type: 'birth', asFound: `${given} ${surname}`, primary: true, citations: [] },
       ...others.map((asFound, i) => ({
@@ -398,9 +417,23 @@ export function hourglass(focusId, up, down) {
     up,
     down,
     persons: [...persons.values()],
-    families: families.map(([id, a, b]) => ({ id: ID(id), version: 1, partner1Id: a === null ? null : ID(a), partner2Id: b === null ? null : ID(b) })),
+    families: families.map(([id, a, b]) => ({
+      id: ID(id),
+      version: 1,
+      partner1Id: a === null ? null : ID(a),
+      partner2Id: b === null ? null : ID(b),
+      weakLink: false,
+    })),
     childLinks: families.flatMap(([id, , , children]) =>
-      children.filter(([c]) => included.has(c)).map(([c, linkType]) => ({ id: ID(3000 + id * 10 + c), familyId: ID(id), childId: ID(c), linkType })),
+      children
+        .filter(([c]) => included.has(c))
+        .map(([c, linkType]) => ({
+          id: ID(3000 + id * 10 + c),
+          familyId: ID(id),
+          childId: ID(c),
+          linkType,
+          weakLink: WEAK_CHILD_LINKS.some(([f, k]) => f === id && k === c),
+        })),
     ),
   };
 }
@@ -422,4 +455,8 @@ export const P = {
   dorota: ID(23),
   jaroslav: ID(24),
   bedrich: ID(25),
+  vojtech: ID(26),
+  simon: ID(27),
+  josefa: ID(28),
+  jakub: ID(29),
 };

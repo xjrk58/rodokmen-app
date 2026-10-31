@@ -113,6 +113,7 @@
 /** @typedef {import('../../shared/src/schemas/api.js').PlaceEvent} PlaceEvent */
 /** @typedef {import('../../shared/src/schemas/tree.js').ChildLinkType} ChildLinkType */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonDetail} PersonDetail */
+/** @typedef {import('../../shared/src/schemas/api.js').FamilyRootList} FamilyRootList */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonSearchResult} PersonSearchResult */
 /** @typedef {PersonSearchResult['items'][number]} PersonSearchHit */
 /** @typedef {import('../../shared/src/schemas/api.js').PlaceSearchResult} PlaceSearchResult */

@@ -76,6 +76,15 @@ describe('MCP tools on the fixture Tree', () => {
     expect(narrowed.limit).toBe(5);
   });
 
+  it("search_persons states each result's relation to the family, and filters by it", async () => {
+    const all = PersonSearchResult.parse(await json('search_persons', { q: 'novak', limit: 200 })).items;
+    expect(all.length).toBeGreaterThan(0);
+    for (const h of all) expect(['relative', 'possible', 'unrelated']).toContain(h.person.relation);
+    // No Family root in the fixture: everyone is unrelated, so asking for the family finds nobody.
+    expect(PersonSearchResult.parse(await json('search_persons', { q: 'novak', relation: ['relative', 'possible'] })).items).toEqual([]);
+    expect(PersonSearchResult.parse(await json('search_persons', { q: 'novak', relation: ['unrelated'], limit: 200 })).items).toHaveLength(all.length);
+  });
+
   it('search_places finds a Place by its Czech, German or Latin name', async () => {
     for (const q of ['Kamenná Lhota', 'kamenna']) {
       expect(

@@ -48,11 +48,18 @@ function table(name: string): RestorableTable {
   return name;
 }
 
+/**
+ * Columns the server derives from other records (a Person's relation to the family, recomputed
+ * after every change): no change of the record itself, so left out of snapshots, the log and undo.
+ */
+export const DERIVED_COLUMNS: Partial<Record<RestorableTable, readonly string[]>> = { person: ['relation'] };
+const derived = (name: RestorableTable) => sql`${[...(DERIVED_COLUMNS[name] ?? [])]}::text[]`;
+
 export async function snapshot(db: Db, name: RestorableTable, id: string, lock = true): Promise<Snapshot | null> {
   const t = sql.table(table(name));
   const query = lock
-    ? sql<{ row: Snapshot }>`select to_jsonb(t.*) as row from ${t} t where t.id = ${id} for update`
-    : sql<{ row: Snapshot }>`select to_jsonb(t.*) as row from ${t} t where t.id = ${id}`;
+    ? sql<{ row: Snapshot }>`select to_jsonb(t.*) - ${derived(name)} as row from ${t} t where t.id = ${id} for update`
+    : sql<{ row: Snapshot }>`select to_jsonb(t.*) - ${derived(name)} as row from ${t} t where t.id = ${id}`;
   const { rows } = await query.execute(db);
   return rows[0]?.row ?? null;
 }
@@ -68,7 +75,7 @@ export async function restorableColumns(db: Db, name: RestorableTable): Promise<
     select column_name from information_schema.columns
     where table_schema = current_schema() and table_name = ${table(name)} and is_generated = 'NEVER'
     order by ordinal_position`.execute(db);
-  const columns = rows.map((r) => r.column_name).filter((c) => !META_COLUMNS.has(c));
+  const columns = rows.map((r) => r.column_name).filter((c) => !META_COLUMNS.has(c) && !(DERIVED_COLUMNS[name] ?? []).includes(c));
   columnCache.set(name, columns);
   return columns;
 }
@@ -152,7 +159,7 @@ export async function snapshotsMany(db: Db, name: RestorableTable, ids: readonly
   if (ids.length === 0) return new Map();
   const { rows } = await sql<{
     row: Snapshot;
-  }>`select to_jsonb(t.*) as row from ${sql.table(table(name))} t where t.id = any(${[...new Set(ids)]}::uuid[])`.execute(db);
+  }>`select to_jsonb(t.*) - ${derived(name)} as row from ${sql.table(table(name))} t where t.id = any(${[...new Set(ids)]}::uuid[])`.execute(db);
   return new Map(rows.map((r) => [r.row.id, r.row]));
 }
 

@@ -93,9 +93,10 @@ export function me(role) {
     displayName: editor ? 'Eva Editor' : 'Karel Contributor',
     language: 'en',
     role,
-    permissions: { propose: true, review: editor, inviteMembers: editor, changeRoles: false, disableMembers: false },
+    permissions: { propose: true, review: editor, inviteMembers: editor, changeRoles: false, disableMembers: false, markFamilyRoots: false },
     passkeyCount: 1,
     person: null,
+    familyRoots: [],
   };
 }
 
@@ -109,7 +110,19 @@ export function me(role) {
  */
 export function personHit(n, given, surname, birth = null) {
   return {
-    person: { id: ID(n), version: 1, sex: 'unknown', given, surname, displayName: `${given} ${surname}`, living: false, birth, death: null },
+    person: {
+      id: ID(n),
+      version: 1,
+      sex: 'unknown',
+      given,
+      surname,
+      displayName: `${given} ${surname}`,
+      living: false,
+      birth,
+      death: null,
+      relation: 'unrelated',
+      familyRoot: false,
+    },
     matchedName: `${given} ${surname}`,
   };
 }
@@ -127,6 +140,8 @@ export function personDetail(n, given, surname) {
     version: 1,
     sex: 'unknown',
     living: false,
+    relation: 'unrelated',
+    familyRoot: false,
     names: [{ id: ID(n + 1000), version: 1, personId: ID(n), given, surname, type: 'birth', asFound: `${given} ${surname}`, primary: true, citations: [] }],
     events: [],
     familiesAsPartner: [],

@@ -37,6 +37,7 @@ import { endSession } from '../auth/sessions.js';
 import type { Clock } from '../clock.js';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
+import { familyRootIds } from '../tree/relation.js';
 import { personSummaries } from '../tree/summaries.js';
 
 /** The linked Persons of these accounts, keyed by account id; a merged Person counts as the one it was merged into. */
@@ -72,6 +73,7 @@ export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promis
     permissions: permissionsFor(a.role),
     passkeyCount: n,
     person: persons.get(a.id) ?? null,
+    familyRoots: await familyRootIds(deps.db),
   };
 }
 
