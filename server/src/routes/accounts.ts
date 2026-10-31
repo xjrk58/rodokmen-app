@@ -10,6 +10,7 @@ import {
   MemberView,
   PasskeyList,
   permissionsFor,
+  RateLimited,
   SessionList,
 } from '@rodokmen/shared';
 import type { FastifyInstance } from 'fastify';
@@ -25,7 +26,6 @@ import {
   revokeInvitation,
   type AccountDeps,
 } from '../auth/accounts.js';
-import { requireRole } from '../auth/plugin.js';
 import { ApiProblem } from '../auth/problem.js';
 import { endSession } from '../auth/sessions.js';
 import type { Db } from '../db/db.js';
@@ -49,21 +49,25 @@ export async function meView(db: Db, a: Account): Promise<Me> {
   };
 }
 
-const signedIn = { 401: ApiError };
+const signedIn = { 401: ApiError, 429: RateLimited };
+/** Members only: an Agent has no sessions, passkeys or email settings to manage. */
+const ownAccount = { 401: ApiError, 403: ApiError };
 const ownerOnly = { 401: ApiError, 403: ApiError };
 
 /** The signed-in Member's own account, sessions and passkeys; the Owner's Member management. */
 export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
-  const owner = { preHandler: requireRole('owner') };
+  const owner = { config: { action: 'manageAccounts' as const } };
+  const own = { config: { action: 'ownAccount' as const } };
 
   app.get('/api/me', {
-    schema: { tags: ['Account'], summary: 'The signed-in Member, with role and permissions', response: { 200: Me, ...signedIn } },
+    schema: { tags: ['Account'], summary: 'The signed-in Member or Agent, with role and permissions', response: { 200: Me, ...signedIn } },
     handler: async (req) => meView(deps.db, req.member!),
   });
 
   app.get('/api/me/sessions', {
-    schema: { tags: ['Account'], summary: "The signed-in Member's open sessions", response: { 200: SessionList, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: "The signed-in Member's open sessions", response: { 200: SessionList, ...ownAccount } },
     handler: async (req) => {
       const rows = await deps.db
         .selectFrom('session')
@@ -88,7 +92,8 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   });
 
   app.delete('/api/me/sessions/:id', {
-    schema: { tags: ['Account'], summary: 'End one of your own sessions', params: IdParams, response: { 204: z.null(), 404: ApiError, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: 'End one of your own sessions', params: IdParams, response: { 204: z.null(), 404: ApiError, ...ownAccount } },
     handler: async (req, reply) => {
       const s = await deps.db
         .selectFrom('session')
@@ -104,7 +109,8 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   });
 
   app.get('/api/me/passkeys', {
-    schema: { tags: ['Account'], summary: "The signed-in Member's passkeys", response: { 200: PasskeyList, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: "The signed-in Member's passkeys", response: { 200: PasskeyList, ...ownAccount } },
     handler: async (req) => {
       const rows = await deps.db.selectFrom('passkey').selectAll().where('account_id', '=', req.member!.id).orderBy('created_at').execute();
       return {
@@ -120,7 +126,8 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   });
 
   app.delete('/api/me/passkeys/:id', {
-    schema: { tags: ['Account'], summary: 'Remove one of your passkeys', params: IdParams, response: { 204: z.null(), 404: ApiError, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: 'Remove one of your passkeys', params: IdParams, response: { 204: z.null(), 404: ApiError, ...ownAccount } },
     handler: async (req, reply) => {
       const r = await deps.db.deleteFrom('passkey').where('id', '=', req.params.id).where('account_id', '=', req.member!.id).executeTakeFirst();
       if (Number(r.numDeletedRows) === 0) throw new ApiProblem(404, 'not_found', 'No passkey of yours with this id.');

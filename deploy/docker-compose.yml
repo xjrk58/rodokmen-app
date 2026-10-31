@@ -82,6 +82,26 @@ services:
       - caddy_config:/config
     networks: [rodokmen]
 
+  # The MCP server (add-agent-access) at https://$DOMAIN/mcp, behind Caddy. A client of the API
+  # with each caller's Agent token: no .env, so no database password or other secret. Follows
+  # each release (scripts/deploy.sh).
+  mcp:
+    image: ${MCP_IMAGE:-ghcr.io/xjrk58/rodokmen-app:main}
+    restart: unless-stopped
+    command: ['node', '/srv/mcp/dist/http-main.js']
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: '3001'
+      PUBLIC_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
+      RODOKMEN_API_URL: http://api:3000
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://127.0.0.1:3001/mcp/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [rodokmen]
+
   # Alerts the Owner when the public health check fails for over 5 minutes or a Backup fails.
   watchdog:
     image: ${WATCHDOG_IMAGE:-ghcr.io/xjrk58/rodokmen-app:main}

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # The API image: Node 22, the built server, and the map app as static files: the
-# deployed files of app/ only, as listed by app/scripts/site-files.mjs.
+# deployed files of app/ only, as listed by app/scripts/site-files.mjs. The MCP server
+# (server/mcp, /srv/mcp) is in the same image; the `mcp` service of docker-compose.yml runs it.
 # Build from the repo root:  docker build -f deploy/Dockerfile .
 # Ignore rules: deploy/Dockerfile.dockerignore (used by BuildKit for this Dockerfile).
 
@@ -9,9 +10,10 @@ ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 CI=true
 RUN corepack enable
 WORKDIR /repo
 COPY . .
-RUN pnpm install --frozen-lockfile --filter @rodokmen/server... \
- && pnpm --filter @rodokmen/shared --filter @rodokmen/server run build \
+RUN pnpm install --frozen-lockfile --filter @rodokmen/server... --filter @rodokmen/mcp... \
+ && pnpm --filter @rodokmen/shared --filter @rodokmen/server --filter @rodokmen/mcp run build \
  && pnpm --filter @rodokmen/server deploy --prod --legacy /out \
+ && pnpm --filter @rodokmen/mcp deploy --prod --legacy /mcp \
  && node app/scripts/site-files.mjs --copy /site
 
 FROM node:22-bookworm-slim
@@ -19,6 +21,7 @@ ARG RELEASE=dev
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 APP_DIR=/srv/app RELEASE=$RELEASE
 WORKDIR /srv/server
 COPY --from=build /out ./
+COPY --from=build /mcp /srv/mcp
 COPY --from=build /site /srv/app
 USER node
 EXPOSE 3000

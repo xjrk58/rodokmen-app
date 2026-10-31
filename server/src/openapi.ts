@@ -1,11 +1,17 @@
+import type { Action } from '@rodokmen/shared';
 import type { FastifyInstance, RouteOptions } from 'fastify';
 import { jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { actionOf } from './auth/plugin.js';
 
 export interface RouteRecord {
   method: string;
   url: string;
   hasSchema: boolean;
   hasResponseSchema: boolean;
+  /** Reachable without signing in. Read when the route is added, before a scope may mark it public (pages). */
+  public: boolean;
+  /** What the route does, for the role-and-action rule (auth/plugin.ts). */
+  action: Action | null;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -22,6 +28,8 @@ export function trackRoutes(app: FastifyInstance): RouteRecord[] {
         url: route.url,
         hasSchema: route.schema !== undefined,
         hasResponseSchema: isRecord(response) && Object.keys(response).some((code) => /^[23]\d\d$/.test(code)),
+        public: route.config?.public === true,
+        action: actionOf({ method, config: route.config }),
       });
     }
   });

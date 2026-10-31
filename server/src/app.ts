@@ -16,6 +16,7 @@ import type { Db } from './db/db.js';
 import type { Mailer } from './mail/mailer.js';
 import { trackRoutes, transform, type RouteRecord } from './openapi.js';
 import { accountRoutes } from './routes/accounts.js';
+import { agentRoutes } from './routes/agents.js';
 import { authRoutes } from './routes/auth.js';
 import { pageRoutes } from './routes/pages.js';
 import { proposalRoutes } from './routes/proposals.js';
@@ -63,12 +64,17 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
         title: 'Rodokmen API',
         version: '0.1.0',
         description:
-          'Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member.',
+          'Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts, Agents and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member (session cookie) or an Agent token (Authorization: Bearer rdk_ag_…). Agents may only read and submit Proposals, within hourly limits (429 with retryAt beyond them).',
       },
       // Relative, so the committed description does not depend on where it was generated.
       servers: [{ url: '/' }],
-      components: { securitySchemes: { session: { type: 'apiKey', in: 'cookie', name: 'rdk_session' } } },
-      security: [{ session: [] }],
+      components: {
+        securitySchemes: {
+          session: { type: 'apiKey', in: 'cookie', name: 'rdk_session' },
+          agentToken: { type: 'http', scheme: 'bearer', description: 'An Agent token the Owner issued (rdk_ag_…)' },
+        },
+      },
+      security: [{ session: [] }, { agentToken: [] }],
     },
     transform,
     transformObject: jsonSchemaTransformObject,
@@ -111,6 +117,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   await app.register(treeRoutes, { db, clock, images });
   await app.register(proposalRoutes, { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) });
   await app.register(accountRoutes, accountDeps);
+  await app.register(agentRoutes, { db, clock });
   await app.register(authRoutes, {
     ...accountDeps,
     cookieSecure,

@@ -1,10 +1,50 @@
 import { describe, expect, it } from 'vitest';
-import { detectConflict, mayDecide, permissionsFor, satisfiesEvidenceRule, undoBlockers } from '../src/index.js';
+import { ACTIONS, detectConflict, fixedWindow, mayDecide, mayDo, permissionsFor, satisfiesEvidenceRule, undoBlockers } from '../src/index.js';
 
 describe('who may accept, reject or merge', () => {
   it('Editors and the Owner only; never Contributors or Agents', () => {
     expect(['owner', 'editor', 'contributor', 'agent', '', 'Editor'].map(mayDecide)).toEqual([true, true, false, false, false, false]);
     for (const role of ['contributor', 'editor', 'owner'] as const) expect(permissionsFor(role).review).toBe(mayDecide(role));
+  });
+});
+
+describe('what a role may do', () => {
+  const allowed = (role: string) => ACTIONS.filter((action) => mayDo(role, action));
+  it('Agents read and propose, and nothing else', () => {
+    expect(allowed('agent')).toEqual(['read', 'propose']);
+  });
+  it('Contributors also manage their own account; Editors also decide and edit directly; the Owner also manages accounts', () => {
+    expect(allowed('contributor')).toEqual(['read', 'propose', 'ownAccount']);
+    expect(allowed('editor')).toEqual(['read', 'propose', 'review', 'accept', 'reject', 'merge', 'undo', 'directEdit', 'ownAccount']);
+    expect(allowed('owner')).toEqual([...ACTIONS]);
+  });
+  it('an unknown role or action is refused', () => {
+    expect(allowed('Agent')).toEqual([]);
+    expect(allowed('')).toEqual([]);
+    expect(mayDo('owner', 'deleteEverything')).toBe(false);
+  });
+  it('permissions follow the rule', () => {
+    expect(permissionsFor('agent')).toEqual({ propose: true, review: false, inviteMembers: false, changeRoles: false, disableMembers: false });
+    expect(permissionsFor('owner').inviteMembers).toBe(true);
+  });
+});
+
+describe('the fixed-window limit', () => {
+  const HOUR = 3_600_000;
+  it('allows up to the limit in one window, then refuses until the window ends', () => {
+    let state = { windowStart: 0, count: 0 };
+    const allowed: boolean[] = [];
+    for (let i = 0; i < 61; i++) {
+      const d = fixedWindow(state.windowStart, state.count, 60, HOUR, 1000 + i * 1000);
+      allowed.push(d.allowed);
+      state = { windowStart: d.windowStart, count: d.count };
+    }
+    expect(allowed.filter(Boolean)).toHaveLength(60);
+    expect(allowed[60]).toBe(false);
+    expect(fixedWindow(0, 60, 60, HOUR, 59 * 60_000)).toEqual({ allowed: false, windowStart: 0, count: 60, retryAt: HOUR });
+  });
+  it('opens a new window once the old one is over', () => {
+    expect(fixedWindow(0, 60, 60, HOUR, HOUR)).toEqual({ allowed: true, windowStart: HOUR, count: 1, retryAt: HOUR });
   });
 });
 

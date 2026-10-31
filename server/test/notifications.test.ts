@@ -1,11 +1,10 @@
 import { ProposalList, type OperationInput } from '@rodokmen/shared';
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { Account } from '../src/db/types.js';
 import { DailyScheduler, pragueTime } from '../src/jobs/daily.js';
 import { MemoryImageStorage } from '../src/storage/images.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { createMember, ensureOwner, idOf, makeApp, MINUTE, signIn, type TestApp } from './helpers.js';
+import { createMember, ensureOwner, idOf, makeApp, MINUTE, signIn, type TestApp, type MemberAccount } from './helpers.js';
 
 const evidence = (tag: string): OperationInput[] => [
   { op: 'createSource', tempId: `tmp:s${tag}`, type: 'parish_register', title: `Invented register ${tag}` },
@@ -24,14 +23,14 @@ describe('notifications: the daily Editor digest and outcome emails', () => {
   let t: TestDatabase;
   let a: TestApp;
   let jobs: DailyScheduler;
-  let owner: Account;
-  let editor: Account;
-  let karel: Account;
-  let jana: Account;
+  let owner: MemberAccount;
+  let editor: MemberAccount;
+  let karel: MemberAccount;
+  let jana: MemberAccount;
   const cookies = new Map<string, string>();
-  const call = (m: Account, method: 'GET' | 'POST' | 'PUT', url: string, payload?: object) =>
+  const call = (m: MemberAccount, method: 'GET' | 'POST' | 'PUT', url: string, payload?: object) =>
     a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload }) });
-  const propose = async (m: Account, tag: string) => {
+  const propose = async (m: MemberAccount, tag: string) => {
     const res = await call(m, 'POST', '/api/proposals', {
       formatVersion: 1,
       idempotencyKey: randomBytes(8).toString('hex'),

@@ -25,7 +25,7 @@ A token is a random 256-bit value with a short visible prefix (for example `rdk_
 `server/mcp` uses the official TypeScript MCP SDK and calls the public API with the Agent's token; it has no database access of its own. That makes "nothing beyond the API" true by construction. It runs over stdio for local assistants and over streamable HTTP on the same domain, under `/mcp`.
 
 ### Rate limiting
-A fixed-window limit is kept per token in Postgres. That is enough at family scale and avoids running a separate store.
+A fixed-window limit is kept per Agent in Postgres, shared by all of its tokens, so a second token gives no more than the spec's limits. That is enough at family scale and avoids running a separate store.
 
 ### Seeding
 The research done so far lives in the Owner's Vault and enters the Tree through `add-vault-import`, which uses an Agent token from this change.
