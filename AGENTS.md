@@ -31,9 +31,10 @@ For code quality, use a deterministic, reliable tool wherever one can do the job
 
 The Owner's research lives in a private Vault (ADR 0010). Its names must never reach this repo, its issues or its PRs, all of which are public.
 
-- **Hooks:** `pnpm install` sets `core.hooksPath` to `.githooks`. The pre-commit and pre-push hooks run `scripts/vault-guard.mjs` against a private denylist and refuse changes, file names or commit messages containing a listed name.
-- **Issues and PRs:** before posting text to GitHub, check it with `node scripts/vault-guard.mjs --text -` (text on stdin).
-- **The denylist** is never committed. It lives at `~/.config/rodokmen/vault-denylist.txt`, or wherever `$RODOKMEN_DENYLIST` points. The Owner builds it from a Vault checkout with `node scripts/vault-guard.mjs --build-from-vault <path>`. The result holds full names, Places and document names, minus terms already public in this repo. Edit it freely.
+- **Hooks:** `pnpm install` sets `core.hooksPath` to `.githooks`. The hooks run `scripts/vault-guard.mjs` against a private denylist. Pre-commit refuses added lines and file names with a listed name. Pre-push checks every commit not yet on the remote one by one (lines, file names, messages), and the names of the pushed branches and tags. Never bypass them.
+- **Issues and PRs:** before posting text to GitHub, check it with `node scripts/vault-guard.mjs --text -` (text on stdin). To audit history, run `node scripts/vault-guard.mjs --range origin/main`.
+- **The denylist** is never committed. It lives at `~/.config/rodokmen/vault-denylist.txt`, or wherever `$RODOKMEN_DENYLIST` points. The Owner builds it from a Vault checkout with `node scripts/vault-guard.mjs --build-from-vault <path>` after a `git fetch`. It holds full names both ways round ("Given Surname", "Surname Given"), Places and document names, minus terms already in `origin/main`. Those are listed as comments in the file. `--include-surnames` adds surnames alone, which is off by default.
+- **Editing the denylist:** add your own terms under `# == manual ==` and terms that must never block under `# == never-block ==`. A rebuild keeps both sections and replaces only the generated ones. Matching ignores case, diacritics and punctuation, and also finds a name broken across lines.
 - **Without a denylist** the guard warns and passes, so contributors without the Vault aren't blocked. CI can't see the list, so it only tests the guard itself.
 
 ## Conventions
