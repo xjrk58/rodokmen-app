@@ -1,7 +1,7 @@
 // Working on the Tree: Propose, Drafts, my Proposals, the review queue
 // (Editors) and history. A full-screen panel over the map, opened by
 // "#work/…" addresses so links from emails land on the right screen:
-//   #work/propose[/kind]  #work/draft/<id>  #work/drafts
+//   #work/propose[/kind[/<person id>]]  #work/draft/<id>  #work/drafts
 //   #work/mine[/<id>]     #work/review[/<id>]  #work/history[/person/<id>]
 
 import { ApiError, getMe, getPerson, messageOf, myProposals, notificationSettings, setNotificationSettings, submitProposal, uploadImage } from './api.js';
@@ -20,6 +20,7 @@ import {
   storageEstimate,
 } from './drafts.js';
 import { onLanguageChange, t } from './i18n.js';
+import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
 import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
 import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
@@ -184,6 +185,8 @@ export class WorkPanel {
     this.leaveScreen();
     this.els.panel.hidden = true;
     history.pushState(null, '', location.pathname + location.search);
+    // pushState fires no hashchange; the app shell follows the address on hashchange.
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
   }
 
   /**
@@ -251,14 +254,14 @@ export class WorkPanel {
    */
   async renderView(view, a, b, signal) {
     const body = this.els.body;
-    if (view === 'propose') this.renderPropose(a);
+    if (view === 'propose') await this.renderPropose(a, b, signal);
     else if (view === 'draft' && a) await this.renderDraft(a, signal);
     else if (view === 'drafts') await this.renderDrafts(signal);
     else if (!this.me) body.replaceChildren(this.signInPrompt());
     else if (view === 'mine') await this.renderMine(a, signal);
     else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal);
     else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review }, signal);
-    else this.renderPropose(undefined);
+    else await this.renderPropose(undefined);
   }
 
   /** @param {string} view */
@@ -280,16 +283,30 @@ export class WorkPanel {
 
   signInPrompt() {
     if (this.me === undefined) return h('p', { class: 'empty' }, t('work.offline'));
-    return h('div', { class: 'empty' }, h('p', {}, t('work.signIn')), h('a', { class: 'button primary', href: '/auth/sign-in' }, t('work.signInButton')));
+    return h('div', { class: 'empty' }, h('p', {}, t('work.signIn')), h('a', { class: 'button primary', href: '#sign-in' }, t('work.signInButton')));
   }
 
-  /** @param {string | undefined} kind */
-  renderPropose(kind) {
+  /**
+   * A new Proposal of a kind; with a Person (#work/propose/correction/<id>, "Propose a change"
+   * on a person page), the correction form starts on that Person.
+   * @param {string | undefined} kind
+   * @param {string | undefined} [personId]
+   * @param {AbortSignal} [signal]
+   */
+  async renderPropose(kind, personId, signal) {
     if (!isKind(kind)) {
       this.els.body.replaceChildren(h('h2', {}, t('propose.title')), h('p', { class: 'muted' }, t('propose.intro')), kindChooser());
       return;
     }
-    this.showForm(newDraft(emptyForm(kind)), false);
+    const draft = newDraft(emptyForm(kind));
+    if (personId && draft.kind === 'correction') {
+      const person = await getPerson(personId, signal);
+      if (signal?.aborted) return;
+      const primary = person.names.find((n) => n.primary) ?? person.names[0];
+      const birth = person.events.find((e) => e.role === 'child' && (e.event.type === 'birth' || e.event.type === 'baptism'))?.event.date ?? null;
+      draft.form.person = { mode: 'existing', id: person.id, version: person.version, label: personText(primary?.given ?? '', primary?.surname ?? '', birth) };
+    }
+    this.showForm(draft, false);
   }
 
   /**

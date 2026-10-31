@@ -56,6 +56,8 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
       serviceWorkers: 'block',
     });
     contexts.push(context);
+    // The app opens in Czech by default; these tests read English labels, so the Member chose English on the device.
+    await context.addInitScript(() => localStorage.setItem('rodokmen.language', 'en'));
     // Map tiles and anything else off this server get a stub; nothing reaches the network.
     await context.route(
       (url) => !url.href.startsWith(origin),

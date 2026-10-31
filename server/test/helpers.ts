@@ -121,9 +121,9 @@ export function cookieFrom(response: { cookies: Array<{ name: string; value: str
   return `${SESSION_COOKIE}=${c.value}`;
 }
 
-/** The token in a link of an email body (…#token=XYZ). */
+/** The token in a link of an email body (…/#invite/XYZ or …/#link/XYZ). */
 export function tokenFromEmail(text: string): string {
-  const m = /#token=([A-Za-z0-9_-]+)/.exec(text);
+  const m = /#(?:invite|link)\/([A-Za-z0-9_-]+)/.exec(text);
   if (!m) throw new Error(`no token link in email:\n${text}`);
   return m[1]!;
 }

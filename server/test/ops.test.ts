@@ -265,7 +265,7 @@ describe('SMTP transport', () => {
       { rejectUnauthorized: false },
     );
     await mailer.send(
-      signInLinkEmail({ to: 'jana@example.test', language: 'cs', displayName: 'Jana', link: 'https://rodokmen.example/auth/link#token=abc', minutes: 15 }),
+      signInLinkEmail({ to: 'jana@example.test', language: 'cs', displayName: 'Jana', link: 'https://rodokmen.example/#link/abc', minutes: 15 }),
     );
     expect(received).toHaveLength(1);
     const m = received[0]!;

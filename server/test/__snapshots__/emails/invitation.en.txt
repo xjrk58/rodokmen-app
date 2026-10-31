@@ -6,7 +6,7 @@ Petr Dvořák invites you to Rodokmen, our family's shared family tree, with a m
 
 Accept the invitation with this link. It is valid for 7 days and works only once.
 
-https://rodokmen.example/auth/invite#token=EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+https://rodokmen.example/#invite/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
 
 When it opens, you choose the name others will see and your language. Then you save a passkey on your phone, so you never need a password.
 

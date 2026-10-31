@@ -173,10 +173,11 @@ describe('odd encodings of API paths never skip the session check', () => {
     });
   }
 
-  it('the sign-in pages, their files and the map app stay public', async () => {
-    for (const url of ['/auth/sign-in', '/auth/invite', '/auth/auth.js', '/auth/auth.css']) {
-      expect((await bare.app.inject({ method: 'GET', url })).statusCode, url).toBe(200);
-      expect((await bare.app.inject({ method: 'HEAD', url })).statusCode, `HEAD ${url}`).toBe(200);
+  it('the app, which holds the sign-in screens, stays public; the old sign-in pages are gone', async () => {
+    for (const url of ['/auth/sign-in', '/auth/invite', '/auth/auth.js']) {
+      // Not a file of the app (404), and without the app not a route at all (401).
+      expect((await withMap.app.inject({ method: 'GET', url })).statusCode, url).toBe(404);
+      expect((await bare.app.inject({ method: 'GET', url })).statusCode, url).toBe(401);
     }
     expect((await bare.app.inject({ method: 'GET', url: '/' })).statusCode).toBe(200);
     const map = await withMap.app.inject({ method: 'GET', url: '/' });

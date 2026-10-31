@@ -91,6 +91,27 @@
 // Types only, from the Zod schemas in shared/src/schemas (the app does not load Zod).
 
 /** @typedef {import('../../shared/src/schemas/accounts.js').Me} Me */
+/** @typedef {import('../../shared/src/schemas/accounts.js').MemberView} MemberView */
+/** @typedef {import('../../shared/src/schemas/accounts.js').MemberRole} MemberRole */
+/** @typedef {import('../../shared/src/schemas/accounts.js').InvitationView} InvitationView */
+/** @typedef {import('../../shared/src/schemas/accounts.js').SessionView} SessionView */
+/** @typedef {import('../../shared/src/schemas/accounts.js').UpdateMeBody} UpdateMeBody */
+/** @typedef {{ items: import('../../shared/src/schemas/accounts.js').MemberView[] }} MemberList */
+/** @typedef {{ items: import('../../shared/src/schemas/accounts.js').InvitationView[] }} InvitationList */
+/** @typedef {{ items: import('../../shared/src/schemas/accounts.js').SessionView[] }} SessionList */
+/** @typedef {{ items: { id: string, name: string, createdAt: string, lastUsedAt: string | null, backedUp: boolean }[] }} PasskeyList */
+/** @typedef {{ status: import('../../shared/src/schemas/accounts.js').InvitationStatus, language: 'cs' | 'en', message: string }} InvitationCheck */
+/** @typedef {{ ok: true, member: Me }} SignedIn */
+/** @typedef {import('../../shared/src/schemas/api.js').PersonSummary} PersonSummary */
+/** @typedef {import('../../shared/src/schemas/api.js').EventSummary} EventSummary */
+/** @typedef {import('../../shared/src/schemas/api.js').CitationSummary} CitationSummary */
+/** @typedef {import('../../shared/src/schemas/api.js').CitationDetail} CitationDetail */
+/** @typedef {import('../../shared/src/schemas/api.js').Hourglass} Hourglass */
+/** @typedef {import('../../shared/src/schemas/api.js').MapEvent} MapEvent */
+/** @typedef {import('../../shared/src/schemas/api.js').MapEventsResult} MapEventsResult */
+/** @typedef {import('../../shared/src/schemas/api.js').PlaceEvents} PlaceEvents */
+/** @typedef {import('../../shared/src/schemas/api.js').PlaceEvent} PlaceEvent */
+/** @typedef {import('../../shared/src/schemas/tree.js').ChildLinkType} ChildLinkType */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonDetail} PersonDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonSearchResult} PersonSearchResult */
 /** @typedef {PersonSearchResult['items'][number]} PersonSearchHit */
