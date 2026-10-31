@@ -11,12 +11,19 @@ import { DEFAULT_APP_DIR } from '../src/routes/pages.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { createMember, ensureOwner, portOf, signIn, TestClock, testConfig } from './helpers.js';
 
+declare global {
+  interface Window {
+    /** Exposed by this test to each page: reports a violation of the app's Content-Security-Policy. */
+    reportCspViolation?: (v: string) => Promise<void>;
+  }
+}
+
 /**
  * The family screens against the real server and the invented fixture Tree, in Chromium at
  * phone size (390 × 844): add-family-view tasks 2.1–2.4, 2a.2, 2a.5, 2a.6 and 3.1–3.4 end to
- * end; the relation to the family also at desktop size (1280 × 800). With FAMILY_SCREENSHOTS
- * set to a folder, it saves phone screenshots of the tree home screen, a person page and the
- * tree around a Possible relative there.
+ * end; the relation to the family also at desktop size (1280 × 800), with no violation of the
+ * app's Content-Security-Policy (#52). With FAMILY_SCREENSHOTS set to a folder, it saves phone
+ * screenshots of the tree home screen, a person page and the tree around a Possible relative there.
  */
 const model = generateFixture();
 const L = model.landmarks;
@@ -55,14 +62,25 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       serviceWorkers: 'block',
     });
     contexts.push(context);
+    // The server sends the app's Content-Security-Policy (#52): the screens must work within it.
+    const violations: string[] = [];
+    await context.exposeBinding('reportCspViolation', (_source, v: string) => void violations.push(v));
+    await context.addInitScript(() => {
+      document.addEventListener('securitypolicyviolation', (e) => void window.reportCspViolation?.(`${e.effectiveDirective} ${e.blockedURI} ${e.sample}`));
+    });
     await context.route(
       (url) => !url.href.startsWith(origin),
       (route) => route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1PX }),
     );
     const token = (await signIn(t.db, clock, member)).split('=')[1]!;
     await context.addCookies([{ name: 'rdk_session', value: token, url: origin }]);
-    return context.newPage();
+    const page = await context.newPage();
+    cspViolations.set(page, violations);
+    return page;
   }
+  const cspViolations = new WeakMap<Page, string[]>();
+  /** The policy violations a page reported so far. */
+  const violationsOf = (page: Page) => cspViolations.get(page) ?? [];
 
   const inject = async (member: Account, method: 'GET' | 'PUT' | 'POST', url: string, payload?: object) =>
     app.inject({ method, url, headers: { cookie: await signIn(t.db, clock, member), origin }, ...(payload ? { payload } : {}) });
@@ -246,6 +264,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
     expect((await inject(owner, 'PUT', `/api/persons/${wife}/family-root`, { familyRoot: true })).statusCode).toBe(200);
     const relations = await t.db.selectFrom('person').select('relation').distinct().execute();
     expect(relations.map((r) => r.relation).sort()).toEqual(['possible', 'relative', 'unrelated']);
+    expect(violationsOf(page)).toEqual([]);
   }, 60_000);
 
   for (const size of ['phone', 'desktop'] as const) {
@@ -256,6 +275,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       await page.getByTestId('tree').waitFor();
       expect(await page.getByTestId('tree').getAttribute('data-focus')).toBe(L.founder);
       expect(page.url()).toBe(`${origin}/#person-${L.founder}`);
+      expect(violationsOf(page)).toEqual([]);
     }, 60_000);
 
     it(`weak link (${size}): a Possible relative in view is marked as one, with the weak link drawn differently`, async () => {
@@ -284,6 +304,12 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       for (const living of await page.locator('[data-testid="tree-person"].living').all()) expect(await living.textContent()).toMatch(/living/);
       await page.waitForTimeout(700);
       if (size === 'phone' && SHOTS) await page.screenshot({ path: `${SHOTS}/tree-relation.png` });
+      // The Owner's person page with its Family root button, under the same policy.
+      const owners = await phoneAs(owner, size);
+      await owners.goto(`${origin}/#people/${chosen}`);
+      await owners.getByTestId('family-root-toggle').waitFor();
+      expect(violationsOf(page)).toEqual([]);
+      expect(violationsOf(owners)).toEqual([]);
     }, 60_000);
 
     it(`village index entries (${size}): search lists only Relatives and Possible relatives until Unrelated people are switched on`, async () => {
@@ -318,6 +344,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       expect(await page.locator(`[data-testid="person-result"][data-id="${unrelated.id}"]`).count()).toBe(0);
       await page.getByTestId('include-unrelated').check();
       await page.locator(`[data-testid="person-result"][data-id="${unrelated.id}"]`).waitFor();
+      expect(violationsOf(page)).toEqual([]);
     }, 60_000);
 
     it(`busy village (${size}): family pins count Relatives and Possible relatives until the Member includes Unrelated people`, async () => {
@@ -330,6 +357,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       const family = await people();
       await page.getByTestId('map-include-unrelated').check();
       await expect.poll(people).toBeGreaterThan(family);
+      expect(violationsOf(page)).toEqual([]);
     }, 60_000);
   }
 });
