@@ -1,10 +1,10 @@
-// add-family-view: the addresses, the focus fallback order, the relation stand-in and the
+// add-family-view: the addresses, the focus fallback order, the relation to the family and the
 // cache's eviction order, as pure functions.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { CACHE_LIMIT, toEvict } from '../../src/cache.js';
 import { chooseFocus, clampDepth } from '../../src/focus.js';
-import { familyRoots, isShown, relationKnown, relationOf } from '../../src/relation.js';
+import { familyRoots, isShown, relationFilter, relationKnown, relationOf, rootsKnown, setFamilyRoots } from '../../src/relation.js';
 import { lifeAddress, needsMember, parseRoute, personAddress, treeAddress } from '../../src/routes.js';
 import { P, summary } from '../e2e/family-data.js';
 
@@ -42,7 +42,7 @@ test('focus: the address, then the remembered focus, then the own Person, then a
   assert.deepEqual(chooseFocus({ ...all, address: null, remembered: null }), { kind: 'person', id: P.dorota, from: 'own' });
   // Not linked: a Family root.
   assert.deepEqual(chooseFocus({ address: null, remembered: null, own: null, roots: [P.vaclav] }), { kind: 'person', id: P.vaclav, from: 'root' });
-  // No Family root exists yet (add-vault-import): search.
+  // No Family root marked yet: search.
   assert.deepEqual(chooseFocus({ address: null, remembered: null, own: null, roots: [] }), { kind: 'search' });
 });
 
@@ -54,19 +54,36 @@ test('depth stays within 1 to 6', () => {
   assert.equal(clampDepth(2.5, 2), 2);
 });
 
-test('relation: until add-vault-import computes it, everyone is shown and there are no Family roots', () => {
-  const p = summary(10);
+test('relation: until the Owner marks a Family root, everyone is shown, nobody is marked, and search is not filtered', () => {
+  setFamilyRoots([]);
+  // Before the first root the server says "unrelated" for everyone, which says nothing yet.
+  const p = { ...summary(10), relation: 'unrelated' };
+  assert.equal(rootsKnown(), false);
   assert.equal(relationOf(p), null);
   assert.equal(isShown(p, false), true);
   assert.equal(relationKnown([p, summary(7)]), false);
+  assert.equal(relationFilter(false), null);
   assert.deepEqual(familyRoots(null), []);
-  // Once Persons carry a relation, Unrelated people are hidden unless switched on.
-  const unrelated = { ...p, relation: 'unrelated' };
-  assert.equal(relationOf(unrelated), 'unrelated');
-  assert.equal(isShown(unrelated, false), false);
-  assert.equal(isShown(unrelated, true), true);
-  assert.equal(isShown({ ...p, relation: 'possible' }, false), true);
-  assert.equal(relationKnown([p, unrelated]), true);
+  assert.deepEqual(familyRoots(/** @type {any} */ ({ familyRoots: [] })), []);
+});
+
+test('relation: with Family roots, Unrelated people are hidden unless switched on, and search asks for the family only', () => {
+  setFamilyRoots([P.vaclav]);
+  try {
+    const unrelated = { ...summary(10), relation: 'unrelated' };
+    assert.equal(rootsKnown(), true);
+    assert.equal(relationOf(unrelated), 'unrelated');
+    assert.equal(isShown(unrelated, false), false);
+    assert.equal(isShown(unrelated, true), true);
+    assert.equal(isShown({ ...unrelated, relation: 'possible' }, false), true);
+    assert.equal(isShown({ ...unrelated, relation: 'relative' }, false), true);
+    assert.equal(relationKnown([unrelated]), true);
+    assert.equal(relationFilter(false), 'relative,possible');
+    assert.equal(relationFilter(true), null);
+    assert.deepEqual(familyRoots(/** @type {any} */ ({ familyRoots: [P.karel, P.dorota] })), [P.karel, P.dorota]);
+  } finally {
+    setFamilyRoots([]);
+  }
 });
 
 test('the cache keeps at most its limit, dropping the least recently used first', () => {

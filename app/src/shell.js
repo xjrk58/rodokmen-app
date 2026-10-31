@@ -9,6 +9,7 @@ import { forgetFocus } from './focus.js';
 import { language, onLanguageChange, setLanguage, storedLanguage, t } from './i18n.js';
 import { PeopleScreen } from './people-screen.js';
 import { PersonScreen } from './person-screen.js';
+import { setFamilyRoots } from './relation.js';
 import { needsMember, parseRoute } from './routes.js';
 import { SettingsScreen } from './settings-screen.js';
 import { SignInScreen } from './sign-in-screen.js';
@@ -107,6 +108,8 @@ export class Shell {
   /** @param {Me | null} me */
   setMe(me) {
     this.me = me;
+    // The relation to the family means something once the Owner marked a Family root (src/relation.js).
+    setFamilyRoots(me?.familyRoots ?? []);
     document.body.classList.toggle('signed-in', me !== null);
     if (me && !this.offline) void writeCached('me', me);
     this.o.onMember(me);
@@ -180,7 +183,8 @@ export class Shell {
     let content = null;
     if (screen === 'tree' && me) content = html`<${TreeScreen} me=${me} focus=${route.screen === 'tree' ? route.focus : null} cache=${cache} />`;
     else if (screen === 'people') content = html`<${PeopleScreen} cache=${cache} />`;
-    else if (screen === 'person' && route.screen === 'person') content = html`<${PersonScreen} key=${route.id} id=${route.id} cache=${cache} />`;
+    else if (screen === 'person' && route.screen === 'person')
+      content = html`<${PersonScreen} key=${route.id} id=${route.id} cache=${cache} me=${me} refreshMe=${() => this.refreshMe()} />`;
     else if (screen === 'settings' && me)
       content = html`<${SettingsScreen}
         me=${me}

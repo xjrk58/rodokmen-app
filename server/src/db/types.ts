@@ -10,6 +10,7 @@ import type {
   PlaceType,
   ProposalKind,
   ProposalStatus,
+  Relation,
   RestorableTable,
   RoleType,
   Sex,
@@ -45,6 +46,13 @@ export interface PersonTable extends RecordColumns {
   sex: Generated<Sex>;
   /** Set when the Person was merged into another; the record stays as a redirect. */
   merged_into_id: ColumnType<string | null, string | null | undefined, string | null>;
+  /** Derived by the relation rule (server/src/tree/relation.ts); written only there. */
+  relation: Generated<Relation>;
+}
+
+/** A Person the Owner marked as a Family root. */
+export interface FamilyRootTable extends RecordColumns {
+  person_id: string;
 }
 
 export interface NameTable extends RecordColumns {
@@ -378,6 +386,7 @@ export interface JobDeliveryTable {
 
 export interface Database {
   person: PersonTable;
+  family_root: FamilyRootTable;
   name: NameTable;
   family: FamilyTable;
   family_child: FamilyChildTable;

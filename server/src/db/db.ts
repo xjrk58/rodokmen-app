@@ -8,6 +8,7 @@ import * as m0004 from './migrations/0004_proposals.js';
 import * as m0005 from './migrations/0005_fold_spaces.js';
 import * as m0006 from './migrations/0006_agents.js';
 import * as m0007 from './migrations/0007_member_person.js';
+import * as m0008 from './migrations/0008_family_relation.js';
 import { messageOf } from '../errors.js';
 import type { Database } from './types.js';
 
@@ -45,6 +46,7 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0005_fold_spaces': m0005,
   '0006_agents': m0006,
   '0007_member_person': m0007,
+  '0008_family_relation': m0008,
 };
 
 const provider: MigrationProvider = { getMigrations: async () => MIGRATIONS };

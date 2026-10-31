@@ -108,7 +108,7 @@ describe('migrations on an empty database', () => {
     );
   });
 
-  it('the Proposals, fold, Agent and Member-Person migrations can be rolled back and applied again', async () => {
+  it('the Proposals, fold, Agent, Member-Person and family relation migrations can be rolled back and applied again', async () => {
     const migrator = new Migrator({
       db,
       provider: { getMigrations: async () => MIGRATIONS },
@@ -118,6 +118,7 @@ describe('migrations on an empty database', () => {
     const down = await migrator.migrateTo('0003_accounts');
     expect(down.error).toBeUndefined();
     expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([
+      ['0008_family_relation', 'Success'],
       ['0007_member_person', 'Success'],
       ['0006_agents', 'Success'],
       ['0005_fold_spaces', 'Success'],
@@ -128,6 +129,25 @@ describe('migrations on an empty database', () => {
       const p = await tx.insertInto('person').values({ sex: 'female' }).returning('id').executeTakeFirstOrThrow();
       await tx.insertInto('name').values({ person_id: p.id, given: 'Dana', surname: 'Invented', type: 'birth', as_found: 'Dana', is_primary: true }).execute();
     });
-    expect(await migrateToLatest(db)).toEqual(['0004_proposals', '0005_fold_spaces', '0006_agents', '0007_member_person']);
+    expect(await migrateToLatest(db)).toEqual(['0004_proposals', '0005_fold_spaces', '0006_agents', '0007_member_person', '0008_family_relation']);
+  });
+
+  it('a change of the derived relation is no change of the Person: it bumps no version', async () => {
+    const p = await db.transaction().execute(async (tx) => {
+      const row = await tx.insertInto('person').values({ sex: 'male' }).returning(['id', 'version', 'relation']).executeTakeFirstOrThrow();
+      await tx.insertInto('name').values({ person_id: row.id, given: 'Ota', surname: 'Invented', type: 'birth', as_found: 'Ota', is_primary: true }).execute();
+      return row;
+    });
+    expect(p.relation).toBe('unrelated');
+    const related = await db
+      .updateTable('person')
+      .set({ relation: 'relative' })
+      .where('id', '=', p.id)
+      .returning(['version', 'relation'])
+      .executeTakeFirstOrThrow();
+    expect(related).toEqual({ version: p.version, relation: 'relative' });
+    const changed = await db.updateTable('person').set({ sex: 'female' }).where('id', '=', p.id).returning('version').executeTakeFirstOrThrow();
+    expect(changed.version).toBe(p.version + 1);
+    await expect(sql`update person set relation = 'cousin' where id = ${p.id}`.execute(db)).rejects.toThrow(/person_relation_check/);
   });
 });

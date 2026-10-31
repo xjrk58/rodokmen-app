@@ -45,6 +45,7 @@ const SLOT = BOX.w + COL_GAP;
  * @property {string} d SVG path data
  * @property {'couple' | 'parents' | 'child'} kind a couple, from a couple to their children's bar, from the bar to one child
  * @property {ChildLinkType | null} linkType for a child line: how the child belongs to the Family (other than birth is drawn dashed)
+ * @property {boolean} weak a weak link: no Citation of normal or higher confidence supports it (drawn differently)
  */
 
 /**
@@ -89,6 +90,7 @@ const otherPartner = (f, id) => (f.partner1Id === id ? f.partner2Id : f.partner1
  * @typedef {object} Ancestors a couple of ancestors and theirs
  * @property {string} familyId
  * @property {ChildLinkType} linkType how the child below belongs to this Family
+ * @property {boolean} weak the child's link to this Family is weak
  * @property {string | null} top shown in the upper row: the father, when known
  * @property {string | null} bottom the mother
  * @property {[Ancestors | null, Ancestors | null]} parents of top and of bottom
@@ -185,7 +187,13 @@ export function layoutHourglass(data) {
       if (p.id === null) continue;
       const other = /** @type {number} */ (centre.get(p.id));
       const [a, b] = other < self ? [other, self] : [self, other];
-      lines.push({ key: `couple:${p.familyId}`, d: `M${a + BOX.w / 2} ${y + BOX.h / 2}H${b - BOX.w / 2}`, kind: 'couple', linkType: null });
+      lines.push({
+        key: `couple:${p.familyId}`,
+        d: `M${a + BOX.w / 2} ${y + BOX.h / 2}H${b - BOX.w / 2}`,
+        kind: 'couple',
+        linkType: null,
+        weak: familyById.get(p.familyId)?.weakLink === true,
+      });
     }
     const filled = u.groups.filter((g) => g.children.length > 0);
     const childrenWidth =
@@ -204,13 +212,13 @@ export function layoutHourglass(data) {
         const cx = place(c, x, generation - 1);
         tops.push(cx);
         const link = /** @type {ChildLink} */ (g.links.get(c.id));
-        lines.push({ key: `child:${link.id}`, d: `M${cx} ${bar}V${childTop}`, kind: 'child', linkType: link.linkType });
+        lines.push({ key: `child:${link.id}`, d: `M${cx} ${bar}V${childTop}`, kind: 'child', linkType: link.linkType, weak: link.weakLink === true });
         x += c.width + COL_GAP;
       }
       x += GROUP_GAP - COL_GAP;
       const from = Math.min(ox, ...tops);
       const to = Math.max(ox, ...tops);
-      lines.push({ key: `parents:${g.familyId}`, d: `M${ox} ${oy}V${bar}M${from} ${bar}H${to}`, kind: 'parents', linkType: null });
+      lines.push({ key: `parents:${g.familyId}`, d: `M${ox} ${oy}V${bar}M${from} ${bar}H${to}`, kind: 'parents', linkType: null, weak: false });
     }
     return self;
   };
@@ -259,7 +267,7 @@ export function layoutHourglass(data) {
     /** @type {[Ancestors | null, Ancestors | null]} */
     const parents = [top ? ancestorsOf(top, generation + 1) : null, bottom ? ancestorsOf(bottom, generation + 1) : null];
     const slots = Math.max(1, (parents[0]?.slots ?? 0) + (parents[1]?.slots ?? 0));
-    return { familyId: chosen.family.id, linkType: chosen.link.linkType, top, bottom, parents, slots };
+    return { familyId: chosen.family.id, linkType: chosen.link.linkType, weak: chosen.link.weakLink === true, top, bottom, parents, slots };
   };
 
   /** @param {number} generation */
@@ -288,6 +296,7 @@ export function layoutHourglass(data) {
         d: `M${up.cx} ${up.bottom}V${mid}H${side}V${y + BOX.h / 2}H${x}`,
         kind: 'parents',
         linkType: fatherSide.linkType,
+        weak: fatherSide.weak,
       });
     }
     if (motherSide) {
@@ -300,6 +309,7 @@ export function layoutHourglass(data) {
         d: `M${up.cx} ${up.bottom}V${mid}H${side}V${row}H${x + BOX.w}`,
         kind: 'parents',
         linkType: motherSide.linkType,
+        weak: motherSide.weak,
       });
     }
     const bottom = a.bottom || !a.top ? y + CARD_H : y + BOX.h;
@@ -309,7 +319,7 @@ export function layoutHourglass(data) {
   const tree = ancestorsOf(data.focusId, 1);
   if (tree) {
     const parents = placeAncestors(tree, -(tree.slots * SLOT) / 2, 1);
-    lines.push({ key: `parents:${tree.familyId}`, d: `M${parents.cx} ${parents.bottom}V0`, kind: 'parents', linkType: tree.linkType });
+    lines.push({ key: `parents:${tree.familyId}`, d: `M${parents.cx} ${parents.bottom}V0`, kind: 'parents', linkType: tree.linkType, weak: tree.weak });
   }
 
   const otherParents = parentFamilies(data.focusId)

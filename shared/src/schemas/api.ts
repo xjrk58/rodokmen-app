@@ -3,6 +3,7 @@
  * serialises responses with these, and the OpenAPI description is generated from them.
  */
 import { z } from 'zod';
+import { RELATIONS } from '../relation.js';
 import { EdtfDate, GeoPoint, Id, IsoDay, Paging, Period, Version } from './common.js';
 import {
   ChildLinkType,
@@ -25,6 +26,21 @@ import {
 
 // ---------------------------------------------------------------- shared pieces
 
+/** The relation to the family (tree-model spec, "Relation to the family is computed"; shared/src/relation.ts). */
+export const RelationToFamily = z.enum(RELATIONS).meta({
+  id: 'RelationToFamily',
+  description:
+    'Relation to the family, computed from the Family roots and Family links: relative (linked to a Family root through links each with a Citation of normal or higher confidence), possible (only through a weaker link) or unrelated. Unrelated for everyone until the Owner marks the first Family root',
+});
+
+const RELATION_LIST = new RegExp(`^(${RELATIONS.join('|')})(,(${RELATIONS.join('|')}))*$`);
+
+/** The relation filter of search and the map Events query (tree-read-api spec, "Filter by relation to the family"). */
+export const RelationFilter = z
+  .string()
+  .regex(RELATION_LIST, `a comma-separated list of ${RELATIONS.join(', ')}`)
+  .describe('Only Persons with these relations to the family, comma-separated (relative,possible); without it, everyone');
+
 export const PersonSummary = z
   .object({
     id: Id,
@@ -36,6 +52,8 @@ export const PersonSummary = z
     living: z.boolean().describe('Computed from Events by the Living rule'),
     birth: z.string().nullable().describe('EDTF date of the earliest birth or baptism Event'),
     death: z.string().nullable().describe('EDTF date of the earliest death or burial Event'),
+    relation: RelationToFamily,
+    familyRoot: z.boolean().describe('The Owner marked this Person as a Family root'),
   })
   .meta({ id: 'PersonSummary' });
 
@@ -89,6 +107,7 @@ export const PersonSearchQuery = z.object({
   placeId: Id.optional().describe('Only Persons with an Event at this Place or one of its Houses'),
   from: z.coerce.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or after this year'),
   to: z.coerce.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or before this year'),
+  relation: RelationFilter.optional(),
   ...Paging.shape,
 });
 
@@ -138,6 +157,8 @@ export const PersonDetail = z
     version: Version,
     sex: Sex,
     living: z.boolean(),
+    relation: RelationToFamily,
+    familyRoot: z.boolean().describe('The Owner marked this Person as a Family root'),
     names: z.array(NameView),
     events: z.array(PersonEventView).describe('Ordered by the earliest date each could be'),
     familiesAsPartner: z.array(PartnerFamilyView),
@@ -145,6 +166,14 @@ export const PersonDetail = z
     portraits: z.array(z.lazy(() => ImageView)),
   })
   .meta({ id: 'PersonDetail' });
+
+// ---------------------------------------------------------------- Family roots
+
+export const FamilyRootBody = z
+  .object({ familyRoot: z.boolean().describe('True marks the Person as a Family root, false unmarks them') })
+  .meta({ id: 'FamilyRootBody' });
+
+export const FamilyRootList = z.object({ items: z.array(PersonSummary).describe('The Family roots, the first marked first') }).meta({ id: 'FamilyRootList' });
 
 // ---------------------------------------------------------------- Pedigree
 
@@ -193,8 +222,24 @@ export const Hourglass = z
         person: PersonSummary,
       }),
     ),
-    families: z.array(z.object({ id: Id, version: Version, partner1Id: Id.nullable(), partner2Id: Id.nullable() })),
-    childLinks: z.array(z.object({ id: Id, familyId: Id, childId: Id, linkType: ChildLinkType })),
+    families: z.array(
+      z.object({
+        id: Id,
+        version: Version,
+        partner1Id: Id.nullable(),
+        partner2Id: Id.nullable(),
+        weakLink: z.boolean().describe('Both partners are known, and no Citation of normal or higher confidence supports their link'),
+      }),
+    ),
+    childLinks: z.array(
+      z.object({
+        id: Id,
+        familyId: Id,
+        childId: Id,
+        linkType: ChildLinkType,
+        weakLink: z.boolean().describe("The child's link to one of the Family's partners has no Citation of normal or higher confidence"),
+      }),
+    ),
   })
   .meta({ id: 'Hourglass' });
 
@@ -228,6 +273,9 @@ export const MapEventsQuery = z.object({
     .describe('Map area as minLon,minLat,maxLon,maxLat (WGS 84)'),
   from: z.coerce.number().int().min(1).max(9999).describe('First year of the range'),
   to: z.coerce.number().int().min(1).max(9999).describe('Last year of the range (inclusive)'),
+  relation: RelationFilter.optional().describe(
+    'Only Events in which a Person with one of these relations to the family takes part, comma-separated; without it, every Event',
+  ),
   limit: z.coerce.number().int().min(1).max(5000).default(2000),
 });
 
@@ -242,7 +290,7 @@ export const MapEvent = z
     location: GeoPoint.describe('Location of the House, else of the Place'),
     place: PlaceRef.nullable(),
     house: HouseRef.nullable(),
-    persons: z.array(z.object({ id: Id, displayName: z.string(), role: RoleType })),
+    persons: z.array(z.object({ id: Id, displayName: z.string(), role: RoleType, relation: RelationToFamily })),
   })
   .meta({ id: 'MapEvent' });
 
@@ -383,6 +431,8 @@ export type HouseRef = z.infer<typeof HouseRef>;
 export type EventSummary = z.infer<typeof EventSummary>;
 export type CitationSummary = z.infer<typeof CitationSummary>;
 export type PersonDetail = z.infer<typeof PersonDetail>;
+export type FamilyRootList = z.infer<typeof FamilyRootList>;
+export type RelationFilter = z.infer<typeof RelationFilter>;
 export type PersonSearchQuery = z.infer<typeof PersonSearchQuery>;
 export type PersonSearchResult = z.infer<typeof PersonSearchResult>;
 export type Pedigree = z.infer<typeof Pedigree>;

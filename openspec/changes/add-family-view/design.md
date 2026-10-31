@@ -45,8 +45,10 @@ The layout is a pure function (`app/src/hourglass-layout.js`) from the API's hou
 
 As built: `PUT /api/members/:id/person` (Owner only; a merged Person is linked as the kept one), shown as `me.person` and in the Owner's list of Members. Every Member changes their own language (and display name) with `PATCH /api/me`; choosing a language in the app sets it on the device and on the account, so emails follow it.
 
-### The relation to the family, until add-vault-import
-Relatives, Possible relatives, Unrelated people and Family roots come from `add-vault-import` (its tasks 1.3 and 1.4), which is not built yet. The app reads the relation in one module, `app/src/relation.js`: with no relation known everyone is shown, the switch for Unrelated people stays hidden, nobody is marked as a Possible relative, and an unlinked Member's tree opens on search because there is no Family root. Wiring it in later means filling in `relationOf()` and `familyRoots()` there.
+### The relation to the family
+Relatives, Possible relatives, Unrelated people and Family roots come from `add-vault-import` (its tasks 1.3 and 1.4, built under #15 with this change's tasks 2.4, 2a.5 and 2a.6). The app reads the relation in one module, `app/src/relation.js`. Every Person the API returns states its `relation` and whether it is a `familyRoot`; `me.familyRoots` lists the Family roots, the first marked first.
+
+Until the Owner marks the first Family root, the server says "unrelated" for everyone, which says nothing yet: the app treats the relation as unknown, shows everyone, hides the switch for Unrelated people, marks nobody as a Possible relative, and an unlinked Member's tree opens on search. Owner settings then asks the Owner to mark a Family root. Once there is one, search and the map Events query ask the server for Relatives and Possible relatives only (`relation=relative,possible`, so a page of results holds as many of the family as it can), each with a switch to include Unrelated people; the tree hides Unrelated people but the focus; Possible relatives carry a mark wherever they appear (a "?" badge and a dashed box in the tree), and a weak link (no Citation of normal or higher confidence, `weakLink` in the hourglass) is drawn dotted in their colour. The Owner marks and unmarks Family roots in settings and on the person page.
 
 ### Map layers
 Family pins come from the map query (bounding box plus year range) and use Leaflet marker clustering. The year slider debounces its requests. The life path is a polyline in date order.

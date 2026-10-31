@@ -61,6 +61,7 @@ const examples: OperationInput[] = [
   { op: 'setField', record: 'event', id: ids.event, baseVersion: 2, set: { date: '1850-11-03', placeId: ids.place } },
   { op: 'mergePersons', keepId: ids.anna, mergeId: ids.dup, keepBaseVersion: 1, mergeBaseVersion: 1 },
   { op: 'restoreRecord', table: 'person', id: ids.dup, baseVersion: 2, values: { id: ids.dup, sex: 'male', merged_into_id: null } },
+  { op: 'setFamilyRoot', personId: ids.anna, familyRoot: true },
 ];
 
 describe('links in Sources', () => {
@@ -158,5 +159,10 @@ describe('typed operations', () => {
     expect(checkOperations([examples[14]], { editor: true }).issues).toEqual([]);
     expect(checkOperations([examples[15]], { editor: true }).issues[0]!.code).toBe('not_allowed');
     expect(checkOperations([examples[15]], { editor: true, allowRestore: true }).issues).toEqual([]);
+  });
+
+  it('nobody submits setFamilyRoot: the Owner marks Family roots through their own route, which needs no Citation', () => {
+    expect(checkOperations([examples[16]], { editor: true }).issues[0]!.code).toBe('not_allowed');
+    expect(checkOperations([examples[16]], { editor: true, allowFamilyRoots: true }).issues).toEqual([]);
   });
 });

@@ -2,14 +2,16 @@
 // the focus Person, 3 generations up and 2 down unless the Member changes it (1 to 6), with pan
 // and pinch-zoom. Tapping a Person makes them the focus; a second tap on the focus Person, or a
 // long press on anyone, opens their person page. Moving the focus slides every box to its new
-// place, so the Member keeps their bearings.
+// place, so the Member keeps their bearings. Living people and Possible relatives are marked,
+// weak links are drawn dotted, and Unrelated people appear only when switched on ("Relation
+// shown in the tree").
 
 import { getHourglass } from './api.js';
 import { chooseFocus, MAX_DEPTH, MIN_DEPTH, rememberDepth, rememberedDepth, rememberedFocus, rememberFocus } from './focus.js';
 import { BOX, layoutHourglass, lifeYears } from './hourglass-layout.js';
 import { t } from './i18n.js';
 import { PeopleSearch } from './people-screen.js';
-import { familyRoots, isShown, relationKnown, relationOf } from './relation.js';
+import { familyRoots, isShown, relationKnown, relationOf, rootsKnown } from './relation.js';
 import { personAddress, treeAddress } from './routes.js';
 import { AsOf, ErrorLine, useCachedLoad } from './screen-parts.js';
 import { html, useEffect, useMemo, useRef, useState } from './ui.js';
@@ -101,6 +103,14 @@ function PersonBox({ node, focus, onTap }) {
     <text x="6" y="16" class="given" textLength=${given.squeeze ?? undefined} lengthAdjust="spacingAndGlyphs">${given.text}</text>
     <text x="6" y="30" class="surname" textLength=${surname.squeeze ?? undefined} lengthAdjust="spacingAndGlyphs">${surname.text}</text>
     <text x="6" y="44" class="years">${years}</text>
+    ${
+      possible
+        ? html`<g class="possible-mark" data-testid="possible-mark" aria-hidden="true" transform=${`translate(${BOX.w - 2} 2)`}>
+            <circle r="8" />
+            <text text-anchor="middle" y="4.5">?</text>
+          </g>`
+        : null
+    }
     ${node.moreAbove ? html`<path class="more" data-testid="more-above" d=${`M${BOX.w - 15} 11l5 -5l5 5`} />` : null}
     ${node.moreBelow ? html`<path class="more" data-testid="more-below" d=${`M${BOX.w - 15} ${BOX.h - 11}l5 5l5 -5`} />` : null}
   </g>`;
@@ -269,6 +279,8 @@ function TreeCanvas({ data, depthKey }) {
   );
   const [view, setView] = useState(/** @type {View} */ ({ x: 0, y: 0, k: 1 }));
   const [ready, setReady] = useState(false);
+  // Weak links are drawn differently once the Tree has Family roots (src/relation.js).
+  const known = rootsKnown();
 
   const fitView = () => {
     const svg = svgRef.current;
@@ -307,8 +319,9 @@ function TreeCanvas({ data, depthKey }) {
               html`<path
                 key=${l.key}
                 d=${l.d}
-                class=${`line ${l.kind}${l.linkType && l.linkType !== 'birth' ? ' dashed' : ''}`}
+                class=${`line ${l.kind}${l.linkType && l.linkType !== 'birth' ? ' dashed' : ''}${l.weak && known ? ' weak' : ''}`}
                 data-link=${l.linkType ?? undefined}
+                data-weak=${l.weak && known ? 'true' : undefined}
               />`,
           )}
         </g>
@@ -331,6 +344,7 @@ function TreeCanvas({ data, depthKey }) {
         ? html`<label class="switch-row unrelated-switch"
             ><input
               type="checkbox"
+              data-testid="tree-include-unrelated"
               checked=${includeUnrelated}
               onChange=${(/** @type {Event} */ e) => setIncludeUnrelated(/** @type {HTMLInputElement} */ (e.currentTarget).checked)}
             /><span>${t('people.includeUnrelated')}</span></label

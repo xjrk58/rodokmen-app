@@ -1,6 +1,7 @@
 import type { Hourglass, Pedigree } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { TreeDeps } from './persons.js';
+import { familyLinks, isWeak } from './relation.js';
 import { personSummaries } from './summaries.js';
 
 /**
@@ -156,7 +157,8 @@ export async function descendants(
  * The hourglass around a focus Person in one request (family-tree spec, "Hourglass layout"):
  * ancestors `up` generations above, descendants `down` generations below, the partners of the
  * focus Person and of every descendant, and the Families and child links between them. Persons
- * in the top and bottom rows say whether the Tree knows more beyond them.
+ * in the top and bottom rows say whether the Tree knows more beyond them, and each Family and
+ * child link whether it is a weak link (src/tree/relation.ts).
  */
 export async function hourglass(deps: TreeDeps, focusId: string, up: number, down: number): Promise<Hourglass | null> {
   const anc = await ancestors(deps, focusId, up + 1);
@@ -201,12 +203,18 @@ export async function hourglass(deps: TreeDeps, focusId: string, up: number, dow
 
   const families = new Map([...anc.families, ...des.families].map((f) => [f.id, f]));
   const childLinks = new Map([...anc.childLinks, ...des.childLinks].map((l) => [l.id, l]));
+  // Weak links are drawn differently (family-tree spec, "Relation shown in the tree").
+  const weak = new Set(
+    (await familyLinks(deps.db, { familyIds: [...families.keys()], childLinkIds: [...childLinks.keys()] }))
+      .filter(isWeak)
+      .map((l) => `${l.kind}:${l.recordId}`),
+  );
   return {
     focusId,
     up,
     down,
     persons: [...persons.values()].sort((a, b) => b.generation - a.generation || a.person.id.localeCompare(b.person.id)),
-    families: [...families.values()].sort((a, b) => a.id.localeCompare(b.id)),
-    childLinks: [...childLinks.values()],
+    families: [...families.values()].sort((a, b) => a.id.localeCompare(b.id)).map((f) => ({ ...f, weakLink: weak.has(`partner:${f.id}`) })),
+    childLinks: [...childLinks.values()].map((l) => ({ ...l, weakLink: weak.has(`parent:${l.id}`) })),
   };
 }

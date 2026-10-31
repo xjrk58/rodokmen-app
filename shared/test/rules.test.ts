@@ -13,7 +13,7 @@ describe('what a role may do', () => {
   it('Agents read and propose, and nothing else', () => {
     expect(allowed('agent')).toEqual(['read', 'propose']);
   });
-  it('Contributors also manage their own account; Editors also decide and edit directly; the Owner also manages accounts', () => {
+  it('Contributors also manage their own account; Editors also decide and edit directly; the Owner also manages accounts and marks Family roots', () => {
     expect(allowed('contributor')).toEqual(['read', 'propose', 'ownAccount']);
     expect(allowed('editor')).toEqual(['read', 'propose', 'review', 'accept', 'reject', 'merge', 'undo', 'directEdit', 'ownAccount']);
     expect(allowed('owner')).toEqual([...ACTIONS]);
@@ -24,8 +24,17 @@ describe('what a role may do', () => {
     expect(mayDo('owner', 'deleteEverything')).toBe(false);
   });
   it('permissions follow the rule', () => {
-    expect(permissionsFor('agent')).toEqual({ propose: true, review: false, inviteMembers: false, changeRoles: false, disableMembers: false });
+    expect(permissionsFor('agent')).toEqual({
+      propose: true,
+      review: false,
+      inviteMembers: false,
+      changeRoles: false,
+      disableMembers: false,
+      markFamilyRoots: false,
+    });
     expect(permissionsFor('owner').inviteMembers).toBe(true);
+    expect(permissionsFor('owner').markFamilyRoots).toBe(true);
+    expect(permissionsFor('editor').markFamilyRoots).toBe(false);
   });
 });
 

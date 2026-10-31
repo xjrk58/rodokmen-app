@@ -17,6 +17,7 @@ import { outcomeEmail } from '../mail/templates.js';
 import { uploadKeys, type ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { applyOperations, RECORD_TABLES, translateDbError, type ApplyResult, type UploadMove } from './apply.js';
+import { recomputeRelations } from '../tree/relation.js';
 import { snapshot } from './records.js';
 import { canReview, findConflicts, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
 
@@ -34,6 +35,7 @@ function targetColumns(op: Operation): { target_table: string | null; target_id:
   const t = baseTargetOf(op);
   if (op.op === 'mergePersons') return { target_table: 'person', target_id: op.mergeId, base_version: op.mergeBaseVersion };
   if (op.op === 'restoreRecord') return { target_table: op.table, target_id: op.id, base_version: op.baseVersion };
+  if (op.op === 'setFamilyRoot') return { target_table: 'person', target_id: op.personId, base_version: null };
   if (!t) return { target_table: null, target_id: null, base_version: null };
   return { target_table: RECORD_TABLES[t.record], target_id: t.id, base_version: t.baseVersion ?? null };
 }
@@ -325,7 +327,16 @@ async function followUploads(tx: Db, applied: ApplyResult, now: Date): Promise<v
   }
 }
 
-/** Applies a pending Proposal in the caller's transaction and writes its log entry. */
+/** Tables whose changes can change a relation to the family: Family links, their Events' Roles and Citations, Persons and Family roots. */
+const RELATION_TABLES: ReadonlySet<string> = new Set(['person', 'family', 'family_child', 'event', 'event_role', 'event_citation', 'citation', 'family_root']);
+const affectsRelation = (applied: ApplyResult): boolean => applied.changes.list().some((c) => RELATION_TABLES.has(c.table));
+
+/**
+ * Applies a pending Proposal in the caller's transaction, writes its log entry, and recomputes
+ * the relation to the family when the Proposal changed a Family link, a Citation, a Person or a
+ * Family root (tree-model spec, "Relation follows the evidence"). Accepting, direct changes,
+ * merges, undos and Family roots all come through here.
+ */
 async function acceptInTransaction(
   tx: Db,
   deps: ProposalDeps,
@@ -347,6 +358,7 @@ async function acceptInTransaction(
   const applied = await applyOperations(tx, effective, { proposalId: proposal.id, authorId: proposal.author_id });
   await writeLog(tx, proposal, editor, now, applied);
   await followUploads(tx, applied, now);
+  if (affectsRelation(applied)) await recomputeRelations(tx);
   const updated = await tx
     .updateTable('proposal')
     .set({ status: 'accepted', decided_at: now, decided_by: editor.id, decision_note: body.note })

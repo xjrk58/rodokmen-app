@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/server';
-import { Operation, OPERATIONS_VERSION, ProposalStatus } from '@rodokmen/shared';
+import { Operation, OPERATIONS_VERSION, ProposalStatus, RELATIONS } from '@rodokmen/shared';
 import { z } from 'zod';
 import { ApiCallError, type Api } from './api.js';
 
@@ -65,17 +65,22 @@ export function createRodokmenServer(api: Api): McpServer {
     {
       title: 'Search Persons',
       description:
-        'Search Persons in the Tree by any part of any of their Names (case and diacritics are ignored), optionally only those with an Event at a Place or in a range of years.',
+        'Search Persons in the Tree by any part of any of their Names (case and diacritics are ignored), optionally only those with an Event at a Place, in a range of years, or with a relation to the family. Each result states its relation: relative, possible (a Possible relative, linked only through a weakly supported link) or unrelated.',
       inputSchema: z.object({
         q: z.string().min(1).max(200).optional().describe('Any part of any Name, such as "Novák" or "Jan Novak"'),
         placeId: Id.optional().describe('Only Persons with an Event at this Place or one of its Houses'),
         from: z.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or after this year'),
         to: z.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or before this year'),
+        relation: z
+          .array(z.enum(RELATIONS))
+          .min(1)
+          .optional()
+          .describe('Only Persons with these relations to the family, such as ["relative", "possible"]; without it, everyone'),
         ...Paging,
       }),
       annotations: readOnly,
     },
-    async (args) => call(() => api.get('/api/persons', args)),
+    async ({ relation, ...args }) => call(() => api.get('/api/persons', { ...args, ...(relation ? { relation: [...new Set(relation)].join(',') } : {}) })),
   );
 
   server.registerTool(

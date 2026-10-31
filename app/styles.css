@@ -1334,6 +1334,23 @@ body.signed-in .screen {
 .tree-lines .line.dashed {
   stroke-dasharray: 5 4;
 }
+/* A weak link: no Citation of normal or higher confidence supports it. */
+.tree-lines .line.weak {
+  stroke: var(--possible);
+  stroke-width: 2;
+  stroke-dasharray: 1.5 3.5;
+  stroke-linecap: round;
+}
+.tree-node .possible-mark circle {
+  fill: var(--possible);
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+.tree-node .possible-mark text {
+  fill: #fff;
+  font-weight: 700;
+  font-size: 12px;
+}
 .zoom-buttons {
   position: absolute;
   right: 10px;
@@ -1435,6 +1452,18 @@ body.signed-in .screen {
   flex-wrap: wrap;
   gap: 8px;
   margin: 12px 0 4px;
+}
+.person-actions .form-status {
+  flex-basis: 100%;
+  margin: 0;
+}
+.card .prompt {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--note);
+  border: 1px solid var(--note-line);
+  font-size: 14px;
 }
 .names,
 .families,
@@ -1557,6 +1586,17 @@ body.signed-in .screen {
 }
 .year-sliders input {
   width: 100%;
+}
+.year-sliders .map-unrelated {
+  min-height: 32px;
+  font-size: 13px;
+}
+.year-sliders .map-unrelated input {
+  width: 18px;
+}
+.mark.possible {
+  background: #f3ead2;
+  color: var(--possible);
 }
 .year-sliders output {
   font-weight: 600;

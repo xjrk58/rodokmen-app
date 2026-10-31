@@ -49,7 +49,7 @@ export function mapEvents(bbox, from, to) {
       location: /** @type {{ lat: number, lon: number }} */ (s.house?.location ?? s.place?.location),
       place: s.place,
       house: s.house,
-      persons: e[5].map(([n, role]) => ({ id: ID(n), displayName: summary(n).displayName, role })),
+      persons: e[5].map(([n, role]) => ({ id: ID(n), displayName: summary(n).displayName, role, relation: summary(n).relation })),
     })),
   };
 }
@@ -70,6 +70,52 @@ export function placeEvents(placeId) {
   };
 }
 
+// ---------------------------------------------------------------- the relation to the family
+
+/** The Family roots of the invented Tree, once the Owner marked them. */
+export const ROOTS = [1, 2];
+/** Possible relatives with those roots: reached only through a weak link. */
+export const POSSIBLE = [25, 26, 27];
+/** Unrelated people: no Family link at all (a godmother, a villager). */
+export const UNRELATED = [28, 29];
+
+/**
+ * The relation of an invented Person with these Family roots, as the server computes it.
+ * @param {number} n
+ * @param {readonly number[]} roots
+ * @returns {'relative' | 'possible' | 'unrelated'}
+ */
+export function relationWith(n, roots) {
+  if (roots.length === 0 || UNRELATED.includes(n)) return 'unrelated';
+  return POSSIBLE.includes(n) ? 'possible' : 'relative';
+}
+
+/**
+ * Puts the relation to the family into every Person of an API answer, as the server would with
+ * these Family roots: in Person summaries and details (`relation`, `familyRoot`) and in the
+ * Persons of map Events (`relation`).
+ * @template T
+ * @param {T} json
+ * @param {readonly number[]} roots
+ * @returns {T}
+ */
+export function withRelations(json, roots) {
+  /** @param {unknown} v @returns {unknown} */
+  const walk = (v) => {
+    if (Array.isArray(v)) return v.map(walk);
+    if (!v || typeof v !== 'object') return v;
+    /** @type {Record<string, unknown>} */
+    const out = Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));
+    if ('relation' in out && typeof out.id === 'string' && PEOPLE.some(([n]) => ID(n) === out.id) && ('displayName' in out || 'names' in out)) {
+      const n = numberOf(out.id);
+      out.relation = relationWith(n, roots);
+      if ('familyRoot' in out) out.familyRoot = roots.includes(n);
+    }
+    return out;
+  };
+  return /** @type {T} */ (walk(json));
+}
+
 /** @typedef {import('../../src/types.js').Me} Me */
 /** @typedef {{ status?: number, json?: unknown }} Reply */
 /** @typedef {(match: RegExpExecArray, url: URL, body: unknown) => Reply | Promise<Reply>} Handler */
@@ -77,7 +123,7 @@ export function placeEvents(placeId) {
 /**
  * A signed-in Member of the invented Tree.
  * @param {'contributor' | 'editor' | 'owner'} role
- * @param {{ person?: number | null, language?: 'cs' | 'en' }} [o] person: the Member's own Person
+ * @param {{ person?: number | null, language?: 'cs' | 'en', roots?: readonly number[] }} [o] person: the Member's own Person; roots: the Family roots
  * @returns {Me}
  */
 export function member(role, o = {}) {
@@ -94,19 +140,26 @@ export function member(role, o = {}) {
       inviteMembers: role === 'owner',
       changeRoles: role === 'owner',
       disableMembers: role === 'owner',
+      markFamilyRoots: role === 'owner',
     },
     passkeyCount: 1,
-    person: o.person ? summary(o.person) : null,
+    person: o.person ? withRelations(summary(o.person), o.roots ?? []) : null,
+    familyRoots: (o.roots ?? []).map(ID),
   };
 }
 
 /**
  * Answers the Tree API from the invented Tree; `extra` handlers (by "METHOD path" regex source)
- * come first. Anything else gets 404. Returns the requests made, as "METHOD path?query".
+ * come first. Anything else gets 404. Returns the requests made, as "METHOD path?query". The
+ * relation to the family follows the Family roots of `me` (none: everyone unrelated), and search
+ * and the map Events query honour the relation filter.
  * @param {import('@playwright/test').Page | import('@playwright/test').BrowserContext} target
  * @param {{ me: Me | null, extra?: Record<string, Handler> }} o
  */
 export async function mockFamilyApi(target, o) {
+  const roots = () => (o.me?.familyRoots ?? []).map(numberOf);
+  /** @param {URL} url @returns {string[] | null} */
+  const filter = (url) => url.searchParams.get('relation')?.split(',') ?? null;
   /** @type {string[]} */
   const calls = [];
   /** @type {[RegExp, Handler][]} */
@@ -118,12 +171,25 @@ export async function mockFamilyApi(target, o) {
       (m, url) => ({ json: hourglassFor(m[1], Number(url.searchParams.get('up')), Number(url.searchParams.get('down'))) }),
     ],
     [/^GET persons\/([0-9a-f-]+)$/, (m) => ({ json: detail(numberOf(m[1])) })],
-    [/^GET persons$/, (_m, url) => ({ json: { ...search(url.searchParams.get('q') ?? ''), limit: Number(url.searchParams.get('limit') ?? 50) } })],
+    [
+      /^GET persons$/,
+      (_m, url) => {
+        const found = withRelations(search(url.searchParams.get('q') ?? ''), roots());
+        const only = filter(url);
+        const items = only ? found.items.filter((hit) => only.includes(hit.person.relation)) : found.items;
+        return { json: { items, limit: Number(url.searchParams.get('limit') ?? 50), offset: 0 } };
+      },
+    ],
     [
       /^GET map\/events$/,
-      (_m, url) => ({
-        json: mapEvents((url.searchParams.get('bbox') ?? '').split(',').map(Number), Number(url.searchParams.get('from')), Number(url.searchParams.get('to'))),
-      }),
+      (_m, url) => {
+        const found = withRelations(
+          mapEvents((url.searchParams.get('bbox') ?? '').split(',').map(Number), Number(url.searchParams.get('from')), Number(url.searchParams.get('to'))),
+          roots(),
+        );
+        const only = filter(url);
+        return { json: only ? { ...found, events: found.events.filter((e) => e.persons.some((p) => only.includes(p.relation))) } : found };
+      },
     ],
     [/^GET places\/([0-9a-f-]+)\/events$/, (m) => ({ json: placeEvents(m[1]) })],
     [/^GET citations\/([0-9a-f-]+)$/, (m) => ({ json: citation(m[1]) })],
@@ -144,7 +210,7 @@ export async function mockFamilyApi(target, o) {
         const m = pattern.exec(key);
         if (!m) continue;
         const reply = await handler(m, url, body);
-        return route.fulfill({ status: reply.status ?? 200, json: reply.json ?? null }).catch(() => undefined);
+        return route.fulfill({ status: reply.status ?? 200, json: withRelations(reply.json ?? null, roots()) }).catch(() => undefined);
       }
       return route.fulfill({ status: 404, json: { code: 'not_found', message: `No mock for ${key}` } }).catch(() => undefined);
     },

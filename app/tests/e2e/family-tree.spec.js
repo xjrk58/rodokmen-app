@@ -200,8 +200,10 @@ test('Living people are marked, and adoptive parents are named under the tree', 
   await expect(box(page, P.jaroslav)).toHaveClass(/living/);
   await expect(box(page, P.jaroslav)).toContainText('living');
   await expect(box(page, P.antonin)).not.toHaveClass(/living/);
-  // Unrelated people cannot be told apart yet (add-vault-import), so there is no switch for them.
-  await expect(page.getByText('Include unrelated people')).toHaveCount(0);
+  // Without a Family root, Unrelated people cannot be told apart, so there is no switch for them and no weak link.
+  await expect(page.getByTestId('tree-include-unrelated')).toHaveCount(0);
+  await expect(page.locator('.tree-lines .line.weak')).toHaveCount(0);
+  await expect(page.getByTestId('possible-mark')).toHaveCount(0);
   await page.goto(`./#person-${P.marieAdopted}`);
   await expect(page.getByTestId('other-parents')).toContainText('Adoptive parents');
   await expect(page.getByTestId('other-parents')).toContainText('Antonín Novák');

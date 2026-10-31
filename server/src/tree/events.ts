@@ -1,4 +1,12 @@
-import { isoDay, type EventDetail, type FamilyDetail, type MapEventsQuery, type MapEventsResult, type PlaceEvents } from '@rodokmen/shared';
+import {
+  isoDay,
+  parseRelationFilter,
+  type EventDetail,
+  type FamilyDetail,
+  type MapEventsQuery,
+  type MapEventsResult,
+  type PlaceEvents,
+} from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { TreeDeps } from './persons.js';
@@ -84,7 +92,9 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
 
 /**
  * Events for the map: those whose possible date range overlaps the year range and whose
- * House (else Place) lies inside the bounding box. Undated Events are left out.
+ * House (else Place) lies inside the bounding box. Undated Events are left out. With a relation
+ * filter, only Events in which someone of those relations takes part (tree-read-api spec, "Filter
+ * by relation to the family"); every Person of an Event comes with their relation.
  */
 export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsResult> {
   // MapEventsQuery checked that bbox is four numbers.
@@ -93,6 +103,8 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
   const to = isoDay(Math.max(q.from, q.to), 12, 31);
   const envelope = sql`ST_MakeEnvelope(${minLon}, ${minLat}, ${maxLon}, ${maxLat}, 4326)`;
   const location = sql`coalesce(h.location, p.location)::geometry`;
+  // MapEventsQuery checked that the filter names at least one relation.
+  const relations = parseRelationFilter(q.relation);
   const rows = await db
     .selectFrom('event as e')
     .leftJoin('house as h', 'h.id', 'e.house_id')
@@ -113,6 +125,18 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
     ])
     .where('e.date_earliest', '<=', to)
     .where('e.date_latest', '>=', from)
+    .$if(relations !== null, (w) =>
+      w.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom('event_role as fr')
+            .innerJoin('person as fp', 'fp.id', 'fr.person_id')
+            .select(sql`1`.as('x'))
+            .whereRef('fr.event_id', '=', 'e.id')
+            .where('fp.relation', 'in', relations ?? []),
+        ),
+      ),
+    )
     .where(sql<boolean>`${location} && ${envelope}`)
     .where(sql<boolean>`ST_Intersects(${location}, ${envelope})`)
     .orderBy('e.date_earliest')
@@ -126,7 +150,8 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
     ? await db
         .selectFrom('event_role as r')
         .innerJoin('name as n', (j) => j.onRef('n.person_id', '=', 'r.person_id').on('n.is_primary', '=', true))
-        .select(['r.event_id', 'r.person_id', 'r.role', 'n.given', 'n.surname'])
+        .innerJoin('person as rp', 'rp.id', 'r.person_id')
+        .select(['r.event_id', 'r.person_id', 'r.role', 'n.given', 'n.surname', 'rp.relation'])
         .where(
           'r.event_id',
           'in',
@@ -149,7 +174,9 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
       location: locations.get(s.id)!,
       place: s.place,
       house: s.house,
-      persons: roles.filter((r) => r.event_id === s.id).map((r) => ({ id: r.person_id, displayName: displayName(r.given, r.surname), role: r.role })),
+      persons: roles
+        .filter((r) => r.event_id === s.id)
+        .map((r) => ({ id: r.person_id, displayName: displayName(r.given, r.surname), role: r.role, relation: r.relation })),
     })),
   };
 }

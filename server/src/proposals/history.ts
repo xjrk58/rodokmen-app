@@ -1,5 +1,6 @@
 import {
   describeOperations,
+  mayDo,
   undoBlockers,
   type Dependency,
   type HistoryEntry,
@@ -279,6 +280,17 @@ async function undoOperations(tx: Db, logged: Awaited<ReturnType<typeof laterEdi
 }
 
 /**
+ * Whether undoing would mark or unmark a Family root, which only the Owner does (tree-model spec,
+ * "Family roots"): the Proposal changed a Family root, and not by merging two Persons (a merge
+ * keeps the root, on the kept Person, and its undo puts it back where it was).
+ */
+async function changesFamilyRoots(db: Db, proposalId: string, changes: readonly LoggedChange[]): Promise<boolean> {
+  if (!changes.some((c) => c.table === 'family_root')) return false;
+  const ops = await db.selectFrom('proposal_operation').select('op').where('proposal_id', '=', proposalId).execute();
+  return !ops.some((o) => o.op === 'mergePersons');
+}
+
+/**
  * Undoes an accepted Proposal as a whole: the inverse operations come from the logged
  * before-snapshots and are applied at once as a new, logged Proposal of kind "undo". Records
  * edited again since need the Editor's choice per field (or, for records the undo would
@@ -293,7 +305,10 @@ export async function undoProposal(deps: ProposalDeps, editor: Account, proposal
       if (!original) throw new ApiProblem(404, 'not_found', 'No Proposal with this id.');
       if (original.status !== 'accepted') throw new ApiProblem(409, 'not_accepted', 'Only an accepted Proposal can be undone.');
       if (original.undone_by_proposal_id) throw new ApiProblem(409, 'already_undone', 'This Proposal was already undone.');
-      const ops = await undoOperations(tx, await laterEdits(tx, proposalId, true), body);
+      const logged = await laterEdits(tx, proposalId, true);
+      if (!mayDo(editor.role, 'markFamilyRoots') && (await changesFamilyRoots(tx, proposalId, logged.changes)))
+        throw new ApiProblem(403, 'forbidden', 'Only the Owner marks Family roots, so only the Owner can undo this.');
+      const ops = await undoOperations(tx, logged, body);
       if (ops.length === 0) throw new ApiProblem(409, 'nothing_to_undo', 'Every change of this Proposal is kept; there is nothing to undo.');
       const deletions = ops.flatMap((o) => (o.op === 'restoreRecord' && o.values === null ? [{ table: o.table, id: o.id }] : []));
       const blockedBy = await blockingProposals(tx, proposalId, deletions);

@@ -152,6 +152,13 @@ async function merge(ctx: Ctx, position: number, op: Extract<Operation, { op: 'm
   for (const s of await db.selectFrom('source').select('id').where('account_given_by_person_id', '=', gone).execute()) {
     await rows.update('source', s.id, { account_given_by_person_id: keep });
   }
+  // A Family root stays one: the kept Person is a root when either was (tree-model spec, "Family roots").
+  const goneRoot = await db.selectFrom('family_root').select('id').where('person_id', '=', gone).executeTakeFirst();
+  if (goneRoot) {
+    const keepRoot = await db.selectFrom('family_root').select('id').where('person_id', '=', keep).executeTakeFirst();
+    if (keepRoot) await rows.remove('family_root', goneRoot.id);
+    else await rows.update('family_root', goneRoot.id, { person_id: keep });
+  }
   // Earlier merges into the merged Person now point at the kept one, so links never chain.
   for (const p of await db.selectFrom('person').select('id').where('merged_into_id', '=', gone).execute()) {
     await rows.update('person', p.id, { merged_into_id: keep });
@@ -326,6 +333,14 @@ async function setField(ctx: Ctx, position: number, op: Op<'setField'>) {
   await ctx.rows.update(name, op.id, setFieldColumns(op.set));
 }
 
+/** The Owner marks or unmarks a Family root: one family_root record per root. */
+async function setFamilyRoot(ctx: Ctx, position: number, op: Op<'setFamilyRoot'>) {
+  await checkBase(ctx, position, 'person', op.personId, undefined, 'the Person');
+  const existing = await ctx.db.selectFrom('family_root').select('id').where('person_id', '=', op.personId).executeTakeFirst();
+  if (op.familyRoot && !existing) await ctx.rows.insert('family_root', { person_id: op.personId });
+  else if (!op.familyRoot && existing) await ctx.rows.remove('family_root', existing.id);
+}
+
 async function restoreRecord(ctx: Ctx, position: number, op: Op<'restoreRecord'>) {
   const current = await snapshot(ctx.db, op.table, op.id);
   if (op.baseVersion !== null && current && current.version !== op.baseVersion) throw new ConflictProblem(position, `the ${op.table.replace('_', ' ')} record`);
@@ -361,6 +376,8 @@ function applyOne(ctx: Ctx, position: number, op: Operation): Promise<void> {
       return merge(ctx, position, op);
     case 'restoreRecord':
       return restoreRecord(ctx, position, op);
+    case 'setFamilyRoot':
+      return setFamilyRoot(ctx, position, op);
   }
 }
 

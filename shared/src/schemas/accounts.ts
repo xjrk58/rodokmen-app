@@ -21,7 +21,19 @@ export const AccountRole = z
  * What an API route does, as the role-and-action rule `mayDo` (shared/src/rules.ts) sees it.
  * Every route names one (server/src/auth/plugin.ts); a GET that names none reads.
  */
-export const ACTIONS = ['read', 'propose', 'review', 'accept', 'reject', 'merge', 'undo', 'directEdit', 'ownAccount', 'manageAccounts'] as const;
+export const ACTIONS = [
+  'read',
+  'propose',
+  'review',
+  'accept',
+  'reject',
+  'merge',
+  'undo',
+  'directEdit',
+  'ownAccount',
+  'manageAccounts',
+  'markFamilyRoots',
+] as const;
 export type Action = (typeof ACTIONS)[number];
 
 /** What a role allows, from the role-and-action rule. Editors and the Owner review Proposals; only the Owner manages Members and Agents. */
@@ -32,6 +44,7 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
     inviteMembers: mayDo(role, 'manageAccounts'),
     changeRoles: mayDo(role, 'manageAccounts'),
     disableMembers: mayDo(role, 'manageAccounts'),
+    markFamilyRoots: mayDo(role, 'markFamilyRoots'),
   };
 }
 
@@ -42,6 +55,7 @@ export const Permissions = z
     inviteMembers: z.boolean(),
     changeRoles: z.boolean(),
     disableMembers: z.boolean(),
+    markFamilyRoots: z.boolean().describe('Mark and unmark Family roots (the Owner)'),
   })
   .meta({ id: 'Permissions' });
 
@@ -59,6 +73,9 @@ export const Me = z
     permissions: Permissions,
     passkeyCount: z.number().int(),
     person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)'),
+    familyRoots: z
+      .array(Id)
+      .describe('The Family roots the Owner marked, the first marked first. Empty until the first one: until then the relation to the family says nothing'),
   })
   .meta({ id: 'Me' });
 

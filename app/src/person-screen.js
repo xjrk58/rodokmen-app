@@ -1,14 +1,14 @@
 // The person page (family-view spec, "Person page"): all Names, the Events the Person took part
 // in with their Role, Place or House and date, the Families as partner and as child, and each
 // Citation with its confidence and images. It offers "Show in tree", the life path on the map,
-// "Propose a change" and the record's history. It renders from the device first and refreshes
-// when online, with "as of" when the copy shown is not fresh.
+// "Propose a change" and the record's history, and to the Owner marking a Family root. It renders
+// from the device first and refreshes when online, with "as of" when the copy shown is not fresh.
 
-import { getCitation, getPerson } from './api.js';
+import { getCitation, getPerson, setFamilyRoot } from './api.js';
 import { lifeYears } from './hourglass-layout.js';
 import { t } from './i18n.js';
 import { lifeAddress, personAddress, treeAddress } from './routes.js';
-import { AsOf, ErrorLine, errorText, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
+import { AsOf, ErrorLine, errorText, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
 import { html, useState } from './ui.js';
 
 /** @typedef {import('./types.js').PersonDetail} PersonDetail */
@@ -140,8 +140,36 @@ function Families({ person }) {
   </ul>`;
 }
 
-/** @param {{ id: string, cache: boolean }} props */
-export function PersonScreen({ id, cache }) {
+/**
+ * The Owner marks or unmarks the Person as a Family root (tree-model spec, "Family roots").
+ * @param {{ person: PersonDetail, done: () => Promise<void> }} props
+ */
+function FamilyRootButton({ person, done }) {
+  const [status, setStatus] = useState({ text: '', error: false });
+  const toggle = async () => {
+    setStatus({ text: '', error: false });
+    try {
+      await setFamilyRoot(person.id, !person.familyRoot);
+      await done();
+      setStatus({ text: person.familyRoot ? t('person.rootRemoved') : t('person.rootMarked'), error: false });
+    } catch (error) {
+      setStatus({ text: errorText(error), error: true });
+    }
+  };
+  return html`<button
+      type="button"
+      class="button"
+      data-testid="family-root-toggle"
+      aria-pressed=${person.familyRoot ? 'true' : 'false'}
+      onClick=${() => void toggle()}
+    >
+      ${person.familyRoot ? t('person.unmarkRoot') : t('person.markRoot')}
+    </button>
+    <p class=${`form-status${status.error ? ' error' : ''}`} role="status" data-testid="family-root-status">${status.text}</p>`;
+}
+
+/** @param {{ id: string, cache: boolean, me?: import('./types.js').Me | null, refreshMe?: () => Promise<void> }} props */
+export function PersonScreen({ id, cache, me = null, refreshMe }) {
   const loaded = useCachedLoad(`person:${id}`, (signal) => getPerson(id, signal), cache);
   /** @type {PersonDetail | null} */
   const person = loaded.data?.id === id ? loaded.data : null;
@@ -154,13 +182,13 @@ export function PersonScreen({ id, cache }) {
   const name = primary ? `${primary.given} ${primary.surname}`.trim() : '';
   const birth = person.events.find((e) => e.role === 'child' && (e.event.type === 'birth' || e.event.type === 'baptism'))?.event.date ?? null;
   const death = person.events.find((e) => e.role === 'deceased')?.event.date ?? null;
-  const marks = personMarks({ ...person, given: primary?.given ?? '', surname: primary?.surname ?? '', displayName: name, birth, death });
+  const marks = personMarks(person);
   return html`<section class="screen-body person-page" data-testid="person-screen" data-id=${person.id}>
     <header class="person-head">
       ${person.portraits[0] ? html`<img class="portrait" src=${person.portraits[0].url} alt="" />` : null}
       <div>
         <h1 data-testid="person-title">${name}</h1>
-        <p class="muted">${lifeYears({ birth, death })} ${marks.map((m) => html`<span class="mark" data-testid="mark">${m}</span>`)}</p>
+        <p class="muted">${lifeYears({ birth, death })} <${Marks} marks=${marks} /></p>
       </div>
     </header>
     <${AsOf} asOf=${loaded.asOf} />
@@ -170,6 +198,17 @@ export function PersonScreen({ id, cache }) {
       <a class="button" href=${lifeAddress(person.id)} data-testid="life-path">${t('person.lifePath')}</a>
       <a class="button" href=${`#work/propose/correction/${person.id}`} data-testid="propose-change">${t('person.propose')}</a>
       <a class="button" href=${`#work/history/person/${person.id}`} data-testid="history">${t('person.history')}</a>
+      ${
+        me?.permissions.markFamilyRoots
+          ? html`<${FamilyRootButton}
+              person=${person}
+              done=${async () => {
+                loaded.reload();
+                await refreshMe?.();
+              }}
+            />`
+          : null
+      }
     </nav>
     <h2>${t('person.names')}</h2>
     <${Names} person=${person} cache=${cache} />

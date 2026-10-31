@@ -120,23 +120,31 @@ export const getPerson = (id, signal) => api(`persons/${encodeURIComponent(id)}`
 export const getHourglass = (id, depth, signal) => api(`persons/${encodeURIComponent(id)}/hourglass?up=${depth.up}&down=${depth.down}`, { signal });
 
 /**
- * People list and search: every Person by any Name, or all of them alphabetically without a query.
- * @param {{ q: string, offset: number, limit: number }} o
+ * People list and search: every Person by any Name, or all of them alphabetically without a query;
+ * with `relation`, only Persons of those relations to the family (relative,possible).
+ * @param {{ q: string, offset: number, limit: number, relation?: string | null }} o
  * @param {AbortSignal} [signal]
  * @returns {Promise<PersonSearchResult>}
  */
 export const listPersons = (o, signal) =>
-  api(`persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}limit=${o.limit}&offset=${o.offset}`, { signal });
+  api(
+    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}limit=${o.limit}&offset=${o.offset}`,
+    { signal },
+  );
 
 /** @param {string} id @param {AbortSignal} [signal] @returns {Promise<import('./types.js').CitationDetail>} */
 export const getCitation = (id, signal) => api(`citations/${encodeURIComponent(id)}`, { signal });
 
 /**
- * @param {{ bbox: [number, number, number, number], from: number, to: number }} q
+ * @param {{ bbox: [number, number, number, number], from: number, to: number, relation?: string | null }} q
  * @param {AbortSignal} [signal]
  * @returns {Promise<import('./types.js').MapEventsResult>}
  */
-export const mapEvents = (q, signal) => api(`map/events?bbox=${q.bbox.map((n) => n.toFixed(5)).join(',')}&from=${q.from}&to=${q.to}&limit=5000`, { signal });
+export const mapEvents = (q, signal) =>
+  api(
+    `map/events?bbox=${q.bbox.map((n) => n.toFixed(5)).join(',')}&from=${q.from}&to=${q.to}${q.relation ? `&relation=${encodeURIComponent(q.relation)}` : ''}&limit=5000`,
+    { signal },
+  );
 
 /** @param {string} placeId @param {AbortSignal} [signal] @returns {Promise<import('./types.js').PlaceEvents>} */
 export const placeEvents = (placeId, signal) => api(`places/${encodeURIComponent(placeId)}/events`, { signal });
@@ -183,6 +191,14 @@ export const setDisabled = (id, disabled) => api(`members/${encodeURIComponent(i
 
 /** @param {string} id @param {string | null} personId @returns {Promise<import('./types.js').MemberView>} */
 export const linkPerson = (id, personId) => api(`members/${encodeURIComponent(id)}/person`, { method: 'PUT', body: { personId } });
+
+// ---------------------------------------------------------------- Family roots
+
+/** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').FamilyRootList>} */
+export const listFamilyRoots = (signal) => api('family-roots', { signal });
+
+/** The Owner marks or unmarks a Family root. @param {string} personId @param {boolean} familyRoot @returns {Promise<import('./types.js').FamilyRootList>} */
+export const setFamilyRoot = (personId, familyRoot) => api(`persons/${encodeURIComponent(personId)}/family-root`, { method: 'PUT', body: { familyRoot } });
 
 // ---------------------------------------------------------------- signing in (public routes)
 
