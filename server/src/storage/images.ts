@@ -19,6 +19,17 @@ import type { Clock } from '../clock.js';
 export const IMAGE_LINK_SECONDS = 5 * 60;
 export const UPLOAD_LINK_SECONDS = 15 * 60;
 
+/**
+ * Where one upload's files live while it is pending. The phone writes `link` with its presigned
+ * PUT, and that link stays valid for UPLOAD_LINK_SECONDS whatever the server does, so the
+ * uploader could still replace the file after it was checked. Once its SHA-256 matches, the
+ * checked bytes are written to `verified`, which no upload link reaches, and only that copy is
+ * used from then on (issue #52); the file at `link` is deleted.
+ */
+export function uploadKeys(uploadId: string): { link: string; verified: string; display: string } {
+  return { link: `pending/${uploadId}/original`, verified: `pending/${uploadId}/verified`, display: `pending/${uploadId}/display.webp` };
+}
+
 export interface ImageLink {
   url: string;
   expiresAt: Date;
