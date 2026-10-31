@@ -6,17 +6,17 @@ Nothing here contains real credentials; every value below is a placeholder.
 
 ## What runs where
 
-| Piece                              | Where                                        | Notes                                                                                                                                     |
-| ---------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `db` (PostgreSQL 16 + PostGIS 3.4) | VPS, Docker volume `pgdata`                  | never exposed outside the Docker network                                                                                                  |
-| `api-blue`, `api-green`            | VPS                                          | the API, which also serves `app/` at `/` and the sign-in pages at `/auth/`. One slot runs; the other takes the next release (see Deploys) |
-| `caddy`                            | VPS, ports 80 and 443                        | HTTPS for one domain, automatic certificates, HTTP → HTTPS redirect                                                                       |
-| `watchdog`                         | VPS                                          | emails the Owner when the public health check fails for over 5 minutes, or a Backup fails or is missing                                   |
-| `backup` (job)                     | VPS, nightly via systemd                     | `pg_dump` + copy of the image bucket → restic at a second EU provider                                                                     |
-| Images                             | Hetzner Object Storage, private bucket       | handed out only as presigned links valid 5 minutes                                                                                        |
-| Email                              | an EU transactional email service, over SMTP | invitations, sign-in links, alerts                                                                                                        |
-| Image builds                       | GitHub Actions → GHCR                        | `ghcr.io/xjrk58/rodokmen-app:<commit>`                                                                                                    |
-| Restore test                       | GitHub Actions, monthly                      | restores the latest Backup into a throwaway container                                                                                     |
+| Piece                              | Where                                        | Notes                                                                                                                              |
+| ---------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `db` (PostgreSQL 16 + PostGIS 3.4) | VPS, Docker volume `pgdata`                  | never exposed outside the Docker network                                                                                           |
+| `api-blue`, `api-green`            | VPS                                          | the API, which also serves `app/` (with its sign-in screens) at `/`. One slot runs; the other takes the next release (see Deploys) |
+| `caddy`                            | VPS, ports 80 and 443                        | HTTPS for one domain, automatic certificates, HTTP → HTTPS redirect                                                                |
+| `watchdog`                         | VPS                                          | emails the Owner when the public health check fails for over 5 minutes, or a Backup fails or is missing                            |
+| `backup` (job)                     | VPS, nightly via systemd                     | `pg_dump` + copy of the image bucket → restic at a second EU provider                                                              |
+| Images                             | Hetzner Object Storage, private bucket       | handed out only as presigned links valid 5 minutes                                                                                 |
+| Email                              | an EU transactional email service, over SMTP | invitations, sign-in links, alerts                                                                                                 |
+| Image builds                       | GitHub Actions → GHCR                        | `ghcr.io/xjrk58/rodokmen-app:<commit>`                                                                                             |
+| Restore test                       | GitHub Actions, monthly                      | restores the latest Backup into a throwaway container                                                                              |
 
 Files in this folder: `docker-compose.yml`, `Caddyfile`, `Dockerfile` (API image, built from the
 repo root), `scripts/deploy.sh` (health-checked switch), `backup/` (backup and restore scripts,

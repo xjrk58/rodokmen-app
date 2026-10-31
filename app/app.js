@@ -1,16 +1,19 @@
-// Rodokmen map: entry point. Loads the language and the reference data, then
-// wires the map, search, place sheet, layers panel and settings together.
+// Rodokmen: entry point. Loads the language, finds out who is signed in (the tree is their
+// home screen, the map everyone else's), loads the reference data, then wires the map, search,
+// place sheet, layers panel, settings, the family screens and the work panel together.
 
 import { ArchiveIndex } from './src/archive-lookup.js';
 import { loadData } from './src/data.js';
 import { Gazetteer } from './src/gazetteer.js';
 import { required } from './src/dom.js';
+import { FamilyMap } from './src/family-map.js';
 import { detectLanguage, onLanguageChange, setLanguage, t } from './src/i18n.js';
 import { LayersPanel } from './src/layers-panel.js';
 import { createMap } from './src/map.js';
 import { PlaceSheet } from './src/place-sheet.js';
 import { SearchBox } from './src/search-box.js';
 import { Settings } from './src/settings.js';
+import { Shell } from './src/shell.js';
 import { registerServiceWorker } from './src/sw-client.js';
 import { WorkPanel } from './src/work.js';
 
@@ -57,7 +60,7 @@ async function main() {
   await setLanguage(detectLanguage());
 
   // Drafts and the #work screens need no map data: they work even when it fails to load.
-  new WorkPanel({
+  const work = new WorkPanel({
     panel: byId('work', HTMLElement),
     body: byId('work-body', HTMLElement),
     nav: byId('work-nav', HTMLElement),
@@ -67,6 +70,26 @@ async function main() {
     toast: byId('drafts-toast', HTMLElement),
   });
 
+  // The family screens need no map data either. The map waits for who is signed in, because the
+  // tabs change its size and only the map screen owns the address.
+  /** @type {FamilyMap | null} */
+  let familyMap = null;
+  /** @type {import('./src/map.js').MapView | null} */
+  let mapShown = null;
+  const shell = new Shell({
+    root: byId('family', HTMLElement),
+    onMember: (me) => {
+      work.me = me;
+      mapShown?.resize();
+      familyMap?.enable(me !== null);
+    },
+    onRoute: (route, screen) => {
+      if (screen === 'map') mapShown?.resize();
+      if (familyMap && screen === 'map') void familyMap.showLife(route.screen === 'map' ? route.life : null);
+    },
+  });
+  const started = shell.start();
+
   let data;
   try {
     data = await loadData();
@@ -74,20 +97,29 @@ async function main() {
     console.error(error);
     message.textContent = t('error.data');
     message.hidden = false;
+    await started;
     document.body.dataset.ready = 'error';
     return;
   }
+  await started;
 
   const index = new ArchiveIndex(data.districts, data.archives);
   const gazetteer = new Gazetteer(data.municipalities);
-  const mapView = createMap(byId('map', HTMLElement), data);
+  const mapView = createMap(byId('map', HTMLElement), data, () => document.body.dataset.screen === 'map');
+  mapShown = mapView;
 
+  /** @type {(family: { placeId: string }) => HTMLElement} */
+  const familyHere = (family) => (familyMap ? familyMap.familyHere(family) : document.createElement('div'));
   const sheet = new PlaceSheet(byId('place-sheet', HTMLElement), {
     index,
     gazetteer,
     viewers: data.layers.viewers,
     onClose: () => mapView.clearMarker(),
+    familyHere,
   });
+  familyMap = new FamilyMap({ mapView, sheet, cache: () => shell.me !== null });
+  familyMap.enable(shell.me !== null);
+  if (shell.route.screen === 'map' && shell.route.life) void familyMap.showLife(shell.route.life);
 
   const search = new SearchBox(byId('search', HTMLFormElement), {
     gazetteer,
@@ -112,6 +144,7 @@ async function main() {
 
   const settings = new Settings(byId('settings', HTMLDialogElement), byId('settings-button', HTMLButtonElement), {
     overlays: data.layers.overlays,
+    chooseLanguage: (lang) => shell.chooseLanguage(lang),
   });
 
   mapView.onTap((lat, lon) => {
@@ -136,6 +169,7 @@ async function main() {
     search.refresh();
     layers.render();
     settings.render();
+    familyMap?.translateControl();
   });
 
   document.body.dataset.ready = 'true';

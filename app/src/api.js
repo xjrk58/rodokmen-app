@@ -111,6 +111,93 @@ export const getMe = (signal) => api('me', { signal });
 /** @param {string} id @param {AbortSignal} [signal] @returns {Promise<PersonDetail>} */
 export const getPerson = (id, signal) => api(`persons/${encodeURIComponent(id)}`, { signal });
 
+/**
+ * @param {string} id
+ * @param {{ up: number, down: number }} depth
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import('./types.js').Hourglass>}
+ */
+export const getHourglass = (id, depth, signal) => api(`persons/${encodeURIComponent(id)}/hourglass?up=${depth.up}&down=${depth.down}`, { signal });
+
+/**
+ * People list and search: every Person by any Name, or all of them alphabetically without a query.
+ * @param {{ q: string, offset: number, limit: number }} o
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<PersonSearchResult>}
+ */
+export const listPersons = (o, signal) =>
+  api(`persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}limit=${o.limit}&offset=${o.offset}`, { signal });
+
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<import('./types.js').CitationDetail>} */
+export const getCitation = (id, signal) => api(`citations/${encodeURIComponent(id)}`, { signal });
+
+/**
+ * @param {{ bbox: [number, number, number, number], from: number, to: number }} q
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import('./types.js').MapEventsResult>}
+ */
+export const mapEvents = (q, signal) => api(`map/events?bbox=${q.bbox.map((n) => n.toFixed(5)).join(',')}&from=${q.from}&to=${q.to}&limit=5000`, { signal });
+
+/** @param {string} placeId @param {AbortSignal} [signal] @returns {Promise<import('./types.js').PlaceEvents>} */
+export const placeEvents = (placeId, signal) => api(`places/${encodeURIComponent(placeId)}/events`, { signal });
+
+// ---------------------------------------------------------------- own account
+
+/** @param {import('./types.js').UpdateMeBody} body @returns {Promise<Me>} */
+export const updateMe = (body) => api('me', { method: 'PATCH', body });
+
+/** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').SessionList>} */
+export const mySessions = (signal) => api('me/sessions', { signal });
+
+/** @param {string} id @returns {Promise<null>} */
+export const endSession = (id) => api(`me/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+/** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').PasskeyList>} */
+export const myPasskeys = (signal) => api('me/passkeys', { signal });
+
+/** @param {string} id @returns {Promise<null>} */
+export const removePasskey = (id) => api(`me/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+/** @returns {Promise<null>} */
+export const signOut = () => api('auth/sign-out', { method: 'POST' });
+
+// ---------------------------------------------------------------- the Owner's Member management
+
+/** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').MemberList>} */
+export const listMembers = (signal) => api('members', { signal });
+
+/** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').InvitationList>} */
+export const listInvitations = (signal) => api('invitations', { signal });
+
+/** @param {{ email: string, language: 'cs' | 'en' }} body @returns {Promise<import('./types.js').InvitationView>} */
+export const invite = (body) => api('invitations', { method: 'POST', body });
+
+/** @param {string} id @returns {Promise<null>} */
+export const revokeInvitation = (id) => api(`invitations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+/** @param {string} id @param {import('./types.js').MemberRole} role @returns {Promise<import('./types.js').MemberView>} */
+export const changeRole = (id, role) => api(`members/${encodeURIComponent(id)}/role`, { method: 'PUT', body: { role } });
+
+/** @param {string} id @param {boolean} disabled @returns {Promise<import('./types.js').MemberView>} */
+export const setDisabled = (id, disabled) => api(`members/${encodeURIComponent(id)}/${disabled ? 'disable' : 'enable'}`, { method: 'POST' });
+
+/** @param {string} id @param {string | null} personId @returns {Promise<import('./types.js').MemberView>} */
+export const linkPerson = (id, personId) => api(`members/${encodeURIComponent(id)}/person`, { method: 'PUT', body: { personId } });
+
+// ---------------------------------------------------------------- signing in (public routes)
+
+/** @param {string} token @returns {Promise<import('./types.js').InvitationCheck>} */
+export const checkInvitation = (token) => api('auth/invitation/check', { method: 'POST', body: { token } });
+
+/** @param {{ token: string, displayName: string, language: 'cs' | 'en' }} body @returns {Promise<import('./types.js').SignedIn>} */
+export const acceptInvitation = (body) => api('auth/invitation/accept', { method: 'POST', body });
+
+/** @param {string} email @returns {Promise<unknown>} */
+export const requestEmailLink = (email) => api('auth/email-link', { method: 'POST', body: { email } });
+
+/** @param {string} token @returns {Promise<import('./types.js').SignedIn>} */
+export const verifyEmailLink = (token) => api('auth/email-link/verify', { method: 'POST', body: { token } });
+
 /** @param {string} q @returns {Promise<PersonSearchResult>} */
 export const searchPersons = (q) => api(`persons?q=${encodeURIComponent(q)}&limit=8`);
 

@@ -107,8 +107,6 @@ export default defineConfig(
   },
 
   // ---------------------------------------------------------------- JavaScript without type information
-  // The sign-in pages, served as they are.
-  { files: ['server/public/**/*.js'], languageOptions: { globals: globals.browser, sourceType: 'module' } },
   // Workspace tooling: this file and scripts/.
   { files: ['*.mjs', 'scripts/**/*.mjs'], languageOptions: { globals: globals.node } },
 

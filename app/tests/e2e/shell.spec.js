@@ -7,7 +7,8 @@ test('opens on the whole Czech Republic with district and national borders', asy
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(m.text());
+    // The app asks who is signed in; without a server (as on the preview) that request fails, as expected.
+    if (m.type() === 'error' && !m.location().url.endsWith('/api/me')) errors.push(m.text());
   });
   await openApp(page);
   await expect(page.locator('path.district-boundary')).toHaveCount(77);

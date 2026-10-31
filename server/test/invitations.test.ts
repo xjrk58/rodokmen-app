@@ -53,7 +53,7 @@ describe('invitations', () => {
     expect(email.subject).toBe('Your invitation to Rodokmen');
     expect(email.text).toContain(owner.display_name);
     const token = tokenFromEmail(email.text);
-    expect(email.text).toContain(`${a.config.publicOrigin}/auth/invite#token=${token}`);
+    expect(email.text).toContain(`${a.config.publicOrigin}/#invite/${token}`);
 
     // Only the hash is stored.
     const stored = await t.db.selectFrom('invitation').select('token_hash').where('id', '=', view.id).executeTakeFirstOrThrow();

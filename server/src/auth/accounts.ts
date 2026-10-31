@@ -63,7 +63,7 @@ export async function createInvitation(deps: AccountDeps, owner: Account, emailI
       .returningAll()
       .executeTakeFirstOrThrow();
     await deps.mailer.send(
-      invitationEmail({ to: email, language, inviterName: owner.display_name, link: `${deps.publicOrigin}/auth/invite#token=${token}`, days: INVITATION_DAYS }),
+      invitationEmail({ to: email, language, inviterName: owner.display_name, link: `${deps.publicOrigin}/#invite/${token}`, days: INVITATION_DAYS }),
     );
     return inserted;
   });
@@ -178,7 +178,7 @@ export async function requestEmailLink(deps: AccountDeps, emailInput: string): P
       to: account.email,
       language: account.language,
       displayName: account.display_name,
-      link: `${deps.publicOrigin}/auth/link#token=${token}`,
+      link: `${deps.publicOrigin}/#link/${token}`,
       minutes: SIGN_IN_LINK_MINUTES,
     }),
   );

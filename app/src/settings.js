@@ -12,7 +12,7 @@ export class Settings {
   /**
    * @param {HTMLDialogElement} dialog
    * @param {HTMLButtonElement} openButton
-   * @param {{ overlays: OverlayConfig[] }} deps
+   * @param {{ overlays: OverlayConfig[], chooseLanguage?: (lang: Language) => Promise<void> }} deps chooseLanguage: also saves it for a signed-in Member
    */
   constructor(dialog, openButton, deps) {
     this.dialog = dialog;
@@ -35,7 +35,7 @@ export class Settings {
       radio.addEventListener('change', () => {
         const lang = LANGUAGES.find((l) => l === radio.value);
         if (!lang) return;
-        setLanguage(lang, { remember: true }).catch((error) => {
+        (deps.chooseLanguage ? deps.chooseLanguage(lang) : setLanguage(lang, { remember: true })).catch((error) => {
           // The strings did not load: the page stays in its language, and so do the radios.
           console.error(error);
           this.syncLanguage();
