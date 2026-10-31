@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
+import { crc32 } from 'node:zlib';
 import { ProposalView, UploadTicket, UploadView, type OperationInput } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { DailyScheduler } from '../src/jobs/daily.js';
 import { createImageStorage, MemoryImageStorage } from '../src/storage/images.js';
-import { HEIC_MESSAGE, processImage, sniffImageType } from '../src/storage/process.js';
+import { HEIC_MESSAGE, MAX_INPUT_PIXELS, processImage, sniffImageType, TOO_MANY_PIXELS_MESSAGE } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { createMember, DAY, ensureOwner, errorOf, makeApp, signIn, TestClock, testConfig, type TestApp } from './helpers.js';
 
@@ -25,6 +26,24 @@ function heicContainer(): Buffer {
   ftyp.writeUInt32BE(0, 12);
   ftyp.write('mif1heic', 16, 'latin1');
   return Buffer.concat([ftyp, Buffer.alloc(2048, 0x11)]);
+}
+
+/** A small PNG whose header claims width × height pixels; its image data is a few bytes. */
+function pngClaiming(width: number, height: number): Buffer {
+  const chunk = (type: string, data: Buffer) => {
+    const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
+    const out = Buffer.alloc(body.length + 8);
+    out.writeUInt32BE(data.length, 0);
+    body.copy(out, 4);
+    out.writeUInt32BE(crc32(body), body.length + 4);
+    return out;
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr.set([8, 2, 0, 0, 0], 8); // 8-bit RGB
+  const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  return Buffer.concat([signature, chunk('IHDR', ihdr), chunk('IDAT', Buffer.from([0x78, 0x9c, 0x03, 0x00])), chunk('IEND', Buffer.alloc(0))]);
 }
 
 describe('images: uploads, display copies, privacy and deletion', () => {
@@ -147,6 +166,16 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     // A file larger than announced is refused when it is checked.
     const big = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(limit + 10)]);
     await expect(processImage(big)).rejects.toMatchObject({ statusCode: 413, code: 'too_large' });
+  });
+
+  it('refuses an image with more pixels than a 25 MB file can hold, from its header alone', async () => {
+    expect(MAX_INPUT_PIXELS).toBe(8 * 25_000_000);
+    const bomb = pngClaiming(20_000, 10_001); // 200,020,000 pixels in under 100 bytes
+    expect(bomb.length).toBeLessThan(100);
+    await expect(processImage(bomb)).rejects.toMatchObject({ statusCode: 413, code: 'too_large', message: TOO_MANY_PIXELS_MESSAGE });
+    expect(TOO_MANY_PIXELS_MESSAGE).toMatch(/at most 200 million pixels/);
+    // Just within the limit, the same file gets as far as decoding (and fails there, having no data).
+    await expect(processImage(pngClaiming(20_000, 10_000))).rejects.toMatchObject({ statusCode: 415, code: 'image_unreadable' });
   });
 
   it('signs upload links for exactly the announced type and size, valid 15 minutes', async () => {
