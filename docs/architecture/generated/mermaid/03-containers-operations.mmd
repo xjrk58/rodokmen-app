@@ -27,17 +27,18 @@ graph TB
         style 48 fill:#ffffff,stroke:#777777,color:#555555
       end
 
-      24["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates and forwards to<br />the active API slot.</div>"]
+      24["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates and forwards to<br />the active API slot; passes<br />presigned image requests at<br />files.<domain> to the image<br />bucket unchanged.</div>"]
       style 24 fill:#438dd5,stroke:#2e6295,color:#ffffff
       25["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
       style 25 fill:#438dd5,stroke:#2e6295,color:#ffffff
       44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
       style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: S3-compatible object storage]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads.</div>")]
+      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
       style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 
     24-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->25
+    24-- "<div>Passes presigned image<br />requests at files.<domain><br />through unchanged</div><div style='font-size: 70%'>[HTTP, port 3900]</div>" -->45
     25-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->44
     25-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->45
     25-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->45
@@ -46,7 +47,7 @@ graph TB
     46-- "<div>Reads the status of the last<br />Backup</div><div style='font-size: 70%'>[backup.json on a shared volume]</div>" -->47
     46-- "<div>Sends alerts to the Owner</div><div style='font-size: 70%'>[SMTP]</div>" -->66
     47-- "<div>Dumps the database and counts<br />its records</div><div style='font-size: 70%'>[pg_dump]</div>" -->44
-    47-- "<div>Copies every image</div><div style='font-size: 70%'>[rclone, read-only key]</div>" -->45
+    47-- "<div>Copies every image</div><div style='font-size: 70%'>[rclone over the S3 API, read-only key]</div>" -->45
     47-- "<div>Stores encrypted,<br />deduplicated Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->67
     48-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->44
     48-. "<div>Commits the Export to<br />rodokmen-export</div><div style='font-size: 70%'>[Git over SSH, deploy key]</div>" .->70

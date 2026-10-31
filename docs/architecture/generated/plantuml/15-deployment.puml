@@ -1,5 +1,5 @@
 @startuml
-title <size:24>Deployment: production</size>\n<size:24>Production: one VPS in Germany, object storage, Backups and email.</size>
+title <size:24>Deployment: production</size>\n<size:24>Production: one VPS in Germany with the images on it, Backups and email.</size>
 
 set separator none
 left to right direction
@@ -42,48 +42,48 @@ Deployment_Node(Production.Phoneorcomputer, "Phone or computer", $type="Android 
   ContainerDb(Production.Phoneorcomputer.Ondevicestore_1, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
 }
 
-Deployment_Node(Production.HetznerCloud, "Hetzner Cloud", $type="Hetzner", $descr="Germany, EU.", $tags="Deployment Node,Built", $link="") {
-  Deployment_Node(Production.HetznerCloud.VPS, "VPS", $type="Ubuntu 24.04, 2 vCPU, 4 GB", $descr="One server for one family; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
-    Deployment_Node(Production.HetznerCloud.VPS.systemdtimer, "systemd timer", $type="rodokmen-backup.timer", $descr="Starts the Backup job every night at 02:30 Prague time.", $tags="Infrastructure Node,Built", $link="")
-    Deployment_Node(Production.HetznerCloud.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.caddy, "caddy", $type="caddy:2-alpine", $descr="Ports 80 and 443.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, "Reverse proxy", $techn="Caddy 2", $descr="Serves the one domain over HTTPS with automatic certificates and forwards to the active API slot.", $tags="Container,Built", $link="")
+Deployment_Node(Production.netcup, "netcup", $type="netcup", $descr="Nürnberg, Germany, EU.", $tags="Deployment Node,Built", $link="") {
+  Deployment_Node(Production.netcup.VPS, "VPS", $type="VPS 500 G12, Ubuntu 24.04, 4 GB", $descr="One server for one family at rodokmen.dev; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
+    Deployment_Node(Production.netcup.VPS.systemdtimer, "systemd timer", $type="rodokmen-backup.timer", $descr="Starts the Backup job every night at 02:30 Prague time.", $tags="Infrastructure Node,Built", $link="")
+    Deployment_Node(Production.netcup.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
+      Deployment_Node(Production.netcup.VPS.DockerCompose.caddy, "caddy", $type="caddy:2-alpine", $descr="Ports 80 and 443, for <domain> and files.<domain>.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, "Reverse proxy", $techn="Caddy 2", $descr="Serves the one domain over HTTPS with automatic certificates and forwards to the active API slot; passes presigned image requests at files.<domain> to the image bucket unchanged.", $tags="Container,Built", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.mcp, "mcp", $type="Not in the compose file yet", $descr="Behind Caddy at /mcp.", $tags="Deployment Node,Planned", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.mcp, "mcp", $type="Not in the compose file yet", $descr="Behind Caddy at /mcp.", $tags="Deployment Node,Planned", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.mcp.MCPserver_1, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.db, "db", $type="postgis/postgis:16-3.4", $descr="Volume pgdata; never exposed outside Docker.", $tags="Deployment Node,Built", $link="") {
-        ContainerDb(Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.db, "db", $type="postgis/postgis:16-3.4", $descr="Volume pgdata; never exposed outside Docker.", $tags="Deployment Node,Built", $link="") {
+        ContainerDb(Production.netcup.VPS.DockerCompose.db.Database_1, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.watchdog, "watchdog", $type="rodokmen-app image", $descr="Runs all the time.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, "Watchdog", $techn="Node 22, API image, cli.js watchdog", $descr="Emails the Owner when the health check fails for over 5 minutes or a Backup fails or is missing.", $tags="Container,Built", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.garage, "garage", $type="dxflrs/garage:v2.5.0", $descr="Volume images; one node, reached from outside only through Caddy.", $tags="Deployment Node,Built", $link="") {
+        ContainerDb(Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Image bucket", $techn="Garage (S3-compatible), on the VPS", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads. Reached by browsers only with presigned links at files.<domain>.", $tags="Container,Built,Data store", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.backup, "backup", $type="rodokmen-backup:local", $descr="Profile jobs; runs once a night.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, "Backup job", $techn="pg_dump, rclone, restic", $descr="Every night stores the database and all images, encrypted, keeping 30 daily and 12 monthly Backups.", $tags="Container,Built", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.watchdog, "watchdog", $type="rodokmen-app image", $descr="Runs all the time.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.watchdog.Watchdog_1, "Watchdog", $techn="Node 22, API image, cli.js watchdog", $descr="Emails the Owner when the health check fails for over 5 minutes or a Backup fails or is missing.", $tags="Container,Built", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.backup, "backup", $type="rodokmen-backup:local", $descr="Profile jobs; runs once a night.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.backup.Backupjob_1, "Backup job", $techn="pg_dump, rclone, restic", $descr="Every night stores the database and all images, encrypted, keeping 30 daily and 12 monthly Backups.", $tags="Container,Built", $link="")
+      }
+
+      Deployment_Node(Production.netcup.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.export.Exportjob_1, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
       }
 
     }
 
-  }
-
-  Deployment_Node(Production.HetznerCloud.HetznerObjectStorage, "Hetzner Object Storage", $type="S3-compatible", $descr="Private bucket, for example rodokmen-images.", $tags="Deployment Node,Built", $link="") {
-    ContainerDb(Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Image bucket", $techn="S3-compatible object storage", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads.", $tags="Container,Built,Data store", $link="")
   }
 
 }
@@ -102,31 +102,32 @@ Deployment_Node(Production.Anthropic, "Anthropic", $type="SaaS", $descr="Only wh
 
 Rel(Production.Phoneorcomputer.AppPWA_1, Production.Phoneorcomputer.Serviceworker_1, "Fetches the app, data and tiles through it", $techn="Service Worker API", $tags="Built", $link="")
 Rel(Production.Phoneorcomputer.AppPWA_1, Production.Phoneorcomputer.Ondevicestore_1, "Keeps Drafts and photos; later caches Tree records", $techn="IndexedDB", $tags="In progress", $link="")
-Rel(Production.Phoneorcomputer.AppPWA_1, Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, "Loads the app and calls the JSON API", $techn="HTTPS, session cookie", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Forwards every request to the active API slot", $techn="HTTP, port 3000", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Forwards every request to the active API slot", $techn="HTTP, port 3000", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, "Forwards /mcp", $techn="Streamable HTTP", $tags="Planned", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.mcp.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Reads and writes the Tree, accounts and sessions", $techn="SQL", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Reads and writes the Tree, accounts and sessions", $techn="SQL", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, Production.HetznerCloud.VPS.DockerCompose.caddy.Reverseproxy_1, "Checks the public health check every minute", $techn="HTTPS", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Dumps the database and counts its records", $techn="pg_dump", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, "Reads the status of the last Backup", $techn="backup.json on a shared volume", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, Production.HetznerCloud.VPS.DockerCompose.db.Database_1, "Reads the Tree and the slug table", $techn="SQL", $tags="Planned", $link="")
-Rel(Production.Phoneorcomputer.AppPWA_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Uploads photos and shows images", $techn="HTTPS PUT and GET, presigned links", $tags="In progress", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, Production.HetznerCloud.HetznerObjectStorage.Imagebucket_1, "Copies every image", $techn="rclone, read-only key", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, Production.SecondEUprovider.Backupstorage_1, "Stores encrypted, deduplicated Backups", $techn="restic over HTTPS", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.watchdog.Watchdog_1, Production.EUemailprovider.EUemailservice_1, "Sends alerts to the Owner", $techn="SMTP", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
-Rel(Production.HetznerCloud.VPS.systemdtimer, Production.HetznerCloud.VPS.DockerCompose.backup.Backupjob_1, "Starts nightly", $techn="docker compose --profile jobs run", $tags="Built", $link="")
+Rel(Production.Phoneorcomputer.AppPWA_1, Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, "Loads the app and calls the JSON API", $techn="HTTPS, session cookie", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Forwards every request to the active API slot", $techn="HTTP, port 3000", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Forwards every request to the active API slot", $techn="HTTP, port 3000", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, Production.netcup.VPS.DockerCompose.mcp.MCPserver_1, "Forwards /mcp", $techn="Streamable HTTP", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.mcp.MCPserver_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.mcp.MCPserver_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.netcup.VPS.DockerCompose.db.Database_1, "Reads and writes the Tree, accounts and sessions", $techn="SQL", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.netcup.VPS.DockerCompose.db.Database_1, "Reads and writes the Tree, accounts and sessions", $techn="SQL", $tags="Built", $link="")
+Rel(Production.Phoneorcomputer.AppPWA_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Uploads photos and shows images", $techn="HTTPS PUT and GET at files.<domain>, presigned links", $tags="In progress", $link="")
+Rel(Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Passes presigned image requests at files.<domain> through unchanged", $techn="HTTP, port 3900", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="In progress", $link="")
+Rel(Production.netcup.VPS.DockerCompose.watchdog.Watchdog_1, Production.netcup.VPS.DockerCompose.caddy.Reverseproxy_1, "Checks the public health check every minute", $techn="HTTPS", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.backup.Backupjob_1, Production.netcup.VPS.DockerCompose.db.Database_1, "Dumps the database and counts its records", $techn="pg_dump", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.backup.Backupjob_1, Production.netcup.VPS.DockerCompose.garage.Imagebucket_1, "Copies every image", $techn="rclone over the S3 API, read-only key", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.watchdog.Watchdog_1, Production.netcup.VPS.DockerCompose.backup.Backupjob_1, "Reads the status of the last Backup", $techn="backup.json on a shared volume", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.export.Exportjob_1, Production.netcup.VPS.DockerCompose.db.Database_1, "Reads the Tree and the slug table", $techn="SQL", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.backup.Backupjob_1, Production.SecondEUprovider.Backupstorage_1, "Stores encrypted, deduplicated Backups", $techn="restic over HTTPS", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.watchdog.Watchdog_1, Production.EUemailprovider.EUemailservice_1, "Sends alerts to the Owner", $techn="SMTP", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.systemdtimer, Production.netcup.VPS.DockerCompose.backup.Backupjob_1, "Starts nightly", $techn="docker compose --profile jobs run", $tags="Built", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

@@ -39,7 +39,7 @@ graph TB
 
       22[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
       style 22 fill:#438dd5,stroke:#c25e00,color:#ffffff
-      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: S3-compatible object storage]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads.</div>")]
+      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
       style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 

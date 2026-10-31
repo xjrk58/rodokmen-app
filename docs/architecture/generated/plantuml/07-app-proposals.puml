@@ -49,7 +49,7 @@ System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") 
   }
 
   ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
-  ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="S3-compatible object storage", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads.", $tags="Container,Built,Data store", $link="")
+  ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="Garage (S3-compatible), on the VPS", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads. Reached by browsers only with presigned links at files.<domain>.", $tags="Container,Built,Data store", $link="")
 }
 
 Rel(Rodokmen.AppPWA.Proposalforms, Rodokmen.APIserver.TreereadAPI, "Looks up Persons, Places and Sources to link", $techn="JSON/HTTPS", $tags="In progress", $link="")

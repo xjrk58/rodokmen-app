@@ -3,7 +3,7 @@ sequenceDiagram
   actor 2 as Contributor<br />[Person]
   participant 7 as App (PWA)<br />[Container: HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9]
   participant 22 as On-device store<br />[Container: IndexedDB]
-  participant 45 as Image bucket<br />[Container: S3-compatible object storage]
+  participant 45 as Image bucket<br />[Container: Garage (S3-compatible), on the VPS]
   participant 25 as API server<br />[Container: TypeScript on Node 22, Fastify, Zod, Kysely]
   participant 44 as Database<br />[Container: PostgreSQL 16 with PostGIS 3.4]
   actor 3 as Editor<br />[Person]
@@ -13,7 +13,7 @@ sequenceDiagram
 
   2->>7: Writes a Draft without signal, with a photo of the register page<br />[Browser]
   7->>22: Keeps the Draft and the photo<br />[IndexedDB]
-  7->>45: Back online: uploads the photo to pending/<br />[HTTPS PUT and GET, presigned links]
+  7->>45: Back online: uploads the photo to pending/<br />[HTTPS PUT and GET at files.<domain>, presigned links]
   7->>25: Submits it: typed operations, base versions, idempotency key<br />[JSON/HTTPS, session cookie]
   25->>44: Stores it as pending#59; only its author and the Editors see it<br />[SQL]
   3->>7: Opens the review queue, fixes a misread year and accepts<br />[Browser]
