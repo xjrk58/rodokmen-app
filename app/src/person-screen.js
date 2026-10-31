@@ -27,7 +27,7 @@ function Citation({ citation, cache }) {
   const d = loaded.data;
   return html`<li class="citation-item" data-testid="citation">
     <button type="button" class="link-button citation-head" aria-expanded=${open ? 'true' : 'false'} onClick=${() => setOpen(!open)}>
-      <span>${citation.sourceTitle}${citation.page ? `, ${t('person.page', { page: citation.page })}` : ''}</span>
+      <span>${citation.sourceTitle}${citation.page ? `, ${/^\d/.test(citation.page) ? t('person.page', { page: citation.page }) : citation.page}` : ''}</span>
       <span class=${`chip confidence ${citation.confidence}`} data-testid="confidence"
         >${t('person.confidence', { confidence: t(`confidence.${citation.confidence}`) })}</span
       >

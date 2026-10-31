@@ -101,8 +101,8 @@ function PersonBox({ node, focus, onTap }) {
     <text x="6" y="16" class="given" textLength=${given.squeeze ?? undefined} lengthAdjust="spacingAndGlyphs">${given.text}</text>
     <text x="6" y="30" class="surname" textLength=${surname.squeeze ?? undefined} lengthAdjust="spacingAndGlyphs">${surname.text}</text>
     <text x="6" y="44" class="years">${years}</text>
-    ${node.moreAbove ? html`<path class="more" d=${`M${BOX.w / 2 - 6} -4l6 -6l6 6`} />` : null}
-    ${node.moreBelow ? html`<path class="more" d=${`M${BOX.w / 2 - 6} ${BOX.h + 4}l6 6l6 -6`} />` : null}
+    ${node.moreAbove ? html`<path class="more" data-testid="more-above" d=${`M${BOX.w - 15} 11l5 -5l5 5`} />` : null}
+    ${node.moreBelow ? html`<path class="more" data-testid="more-below" d=${`M${BOX.w - 15} ${BOX.h - 11}l5 5l5 -5`} />` : null}
   </g>`;
 }
 
