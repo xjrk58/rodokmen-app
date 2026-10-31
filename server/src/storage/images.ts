@@ -4,9 +4,13 @@ import type { Config } from '../config.js';
 import type { Clock } from '../clock.js';
 
 /**
- * Images live in a private, S3-compatible bucket (Hetzner Object Storage in production).
- * Members only ever get presigned GET links, valid for {@link IMAGE_LINK_SECONDS}. The
- * tree-model spec allows at most 10 minutes; we use 5.
+ * Images live in a private, S3-compatible bucket: in production, Garage in the Compose stack on
+ * the VPS (deploy/docker-compose.yml). Members only ever get presigned GET links, valid for
+ * {@link IMAGE_LINK_SECONDS}. The tree-model spec allows at most 10 minutes; we use 5.
+ *
+ * The server talks to the store at `s3.endpoint` (internal), while links are signed for
+ * `s3.publicEndpoint`, the host browsers reach (files.<domain>, passed through unchanged by
+ * Caddy so that the signatures stay valid).
  *
  * Uploads go straight from the phone to the bucket with a presigned PUT link into the
  * `pending/` prefix ({@link UPLOAD_LINK_SECONDS}); the server then checks the file, writes a
@@ -48,6 +52,7 @@ export function imageLink(
   return full || !image.display_key ? storage.link(image.storage_key, image.content_type) : storage.link(image.display_key, 'image/webp');
 }
 
+/** The client for the server's own requests, at the internal endpoint. */
 export function createS3Client(s3: Config['s3']): S3Client {
   return new S3Client({
     endpoint: s3.endpoint,
@@ -57,19 +62,35 @@ export function createS3Client(s3: Config['s3']): S3Client {
   });
 }
 
+/**
+ * The client that only signs links, for the public endpoint. It adds no checksums: by default
+ * the SDK would sign the CRC32 of an empty body into every upload link, and the store then
+ * refuses the real upload. Uploads are checked against their SHA-256 when they are completed.
+ */
+function createLinkSigner(s3: Config['s3']): S3Client {
+  return new S3Client({
+    endpoint: s3.publicEndpoint,
+    region: s3.region,
+    forcePathStyle: s3.forcePathStyle,
+    credentials: { accessKeyId: s3.accessKeyId, secretAccessKey: s3.secretAccessKey },
+    requestChecksumCalculation: 'WHEN_REQUIRED',
+  });
+}
+
 export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Client = createS3Client(s3)): ImageStorage {
   const Bucket = s3.bucket;
+  const signer = createLinkSigner(s3);
   return {
     async link(storageKey, contentType) {
       const signingDate = clock.now();
       const command = new GetObjectCommand({ Bucket, Key: storageKey, ResponseContentType: contentType, ResponseCacheControl: 'private, max-age=300' });
-      const url = await getSignedUrl(client, command, { expiresIn: IMAGE_LINK_SECONDS, signingDate });
+      const url = await getSignedUrl(signer, command, { expiresIn: IMAGE_LINK_SECONDS, signingDate });
       return { url, expiresAt: new Date(signingDate.getTime() + IMAGE_LINK_SECONDS * 1000) };
     },
     async uploadLink(storageKey, contentType, byteSize) {
       const signingDate = clock.now();
       const command = new PutObjectCommand({ Bucket, Key: storageKey, ContentType: contentType, ContentLength: byteSize });
-      const url = await getSignedUrl(client, command, {
+      const url = await getSignedUrl(signer, command, {
         expiresIn: UPLOAD_LINK_SECONDS,
         signingDate,
         signableHeaders: new Set(['content-type', 'content-length']),

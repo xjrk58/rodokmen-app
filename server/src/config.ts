@@ -33,8 +33,11 @@ const Env = z
     /** Where alerts go: the Owner's address. */
     ALERT_EMAIL: z.string().optional(),
 
+    /** Where the server reaches the image store, e.g. http://garage:3900 on the Docker network. */
     S3_ENDPOINT: z.url().optional(),
-    S3_REGION: z.string().default('fsn1'),
+    /** Where browsers reach it, if not at S3_ENDPOINT: the host image links are signed for (deploy/README.md, "Image links"). */
+    S3_PUBLIC_ENDPOINT: z.url().optional(),
+    S3_REGION: z.string().default('garage'),
     S3_BUCKET: z.string().optional(),
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
@@ -57,6 +60,13 @@ const Env = z
     need('S3_BUCKET', 'image bucket');
     need('S3_ACCESS_KEY_ID', 'object storage key');
     need('S3_SECRET_ACCESS_KEY', 'object storage secret');
+    const linkEndpoint = env.S3_PUBLIC_ENDPOINT ?? env.S3_ENDPOINT;
+    if (linkEndpoint && !linkEndpoint.startsWith('https://'))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['S3_PUBLIC_ENDPOINT'],
+        message: 'image links must be https:// in production; set S3_PUBLIC_ENDPOINT when S3_ENDPOINT is internal',
+      });
   });
 
 export interface Config {
@@ -79,6 +89,8 @@ export interface Config {
   };
   s3: {
     endpoint: string;
+    /** The endpoint presigned links point at; S3_PUBLIC_ENDPOINT, or else `endpoint`. */
+    publicEndpoint: string;
     region: string;
     bucket: string;
     accessKeyId: string;
@@ -99,6 +111,8 @@ export function loadConfig(source: Record<string, string | undefined> = process.
   const origin = new URL(e.PUBLIC_ORIGIN);
   const publicOrigin = origin.origin;
   const s3Configured = Boolean(e.S3_ENDPOINT && e.S3_BUCKET && e.S3_ACCESS_KEY_ID && e.S3_SECRET_ACCESS_KEY);
+  // Development and test fall back to placeholders: links have the right shape but lead nowhere.
+  const s3Endpoint = e.S3_ENDPOINT ?? 'https://objectstorage.invalid';
   return {
     env: e.NODE_ENV,
     host: e.HOST,
@@ -126,8 +140,8 @@ export function loadConfig(source: Record<string, string | undefined> = process.
       alertEmail: e.ALERT_EMAIL,
     },
     s3: {
-      // Development and test fall back to placeholders: links have the right shape but lead nowhere.
-      endpoint: e.S3_ENDPOINT ?? 'https://objectstorage.invalid',
+      endpoint: s3Endpoint,
+      publicEndpoint: e.S3_PUBLIC_ENDPOINT ?? s3Endpoint,
       region: e.S3_REGION,
       bucket: e.S3_BUCKET ?? 'rodokmen-images-dev',
       accessKeyId: e.S3_ACCESS_KEY_ID ?? 'dev-access-key',

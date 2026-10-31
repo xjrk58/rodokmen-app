@@ -159,6 +159,7 @@ describe('read API on the fixture Tree', () => {
     expect(c.images).toHaveLength(1);
     const image = c.images[0]!;
     const url = new URL(image.url);
+    expect(url.origin).toBe('https://files.rodokmen.dev');
     expect(url.searchParams.get('X-Amz-Expires')).toBe('300');
     expect(new Date(image.urlExpiresAt).getTime() - a.clock.now().getTime()).toBe(300_000);
     const redirect = await get(`/api/images/${image.id}`);

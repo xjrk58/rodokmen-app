@@ -8,34 +8,65 @@ import { SmtpMailer } from '../src/mail/mailer.js';
 import { sendAlert } from '../src/ops/alerts.js';
 import { signInLinkEmail } from '../src/mail/templates.js';
 import { backupStatusReader, BACKUP_MAX_AGE_MS, HEALTH_ALERT_AFTER_MS, Watchdog } from '../src/ops/watchdog.js';
-import { createImageStorage, IMAGE_LINK_SECONDS } from '../src/storage/images.js';
+import { createImageStorage, createS3Client, IMAGE_LINK_SECONDS } from '../src/storage/images.js';
 import { MINUTE, portOf, TestClock } from './helpers.js';
 
 describe('presigned image links (no network)', () => {
   const clock = new TestClock(new Date('2026-10-29T10:00:00Z'));
+  // As in deploy/docker-compose.yml: the server reaches Garage on the Docker network, browsers
+  // reach it at the files host through Caddy.
   const s3 = loadConfig({
     NODE_ENV: 'test',
-    S3_ENDPOINT: 'https://fsn1.your-objectstorage.com',
-    S3_REGION: 'fsn1',
+    S3_ENDPOINT: 'http://garage:3900',
+    S3_PUBLIC_ENDPOINT: 'https://files.rodokmen.dev',
+    S3_REGION: 'garage',
     S3_BUCKET: 'rodokmen-images',
     S3_ACCESS_KEY_ID: 'AKEXAMPLE',
     S3_SECRET_ACCESS_KEY: 'secret',
   }).s3;
-  const storage = createImageStorage(s3, clock);
+  // The server's own requests are recorded where they would be sent, and never sent.
+  const client = createS3Client(s3);
+  const sent: unknown[] = [];
+  client.middlewareStack.add(
+    () => async (args) => {
+      const r = args.request;
+      if (typeof r !== 'object' || r === null || !('protocol' in r && 'hostname' in r && 'port' in r && 'method' in r && 'path' in r))
+        throw new Error('not an HTTP request');
+      sent.push({ protocol: r.protocol, hostname: r.hostname, port: r.port, method: r.method, path: r.path });
+      return { response: {}, output: { $metadata: {} } };
+    },
+    { step: 'finalizeRequest', name: 'captureInsteadOfSending' },
+  );
+  const storage = createImageStorage(s3, clock, client);
 
-  it('signs a GET for the private bucket, valid for 5 minutes', async () => {
+  it('signs a GET for the private bucket on the files host, valid for 5 minutes', async () => {
     const { url, expiresAt } = await storage.link('citations/abc/page-1.jpg', 'image/jpeg');
     const u = new URL(url);
-    expect(u.origin).toBe('https://fsn1.your-objectstorage.com');
+    expect(u.origin).toBe('https://files.rodokmen.dev');
     expect(u.pathname).toBe('/rodokmen-images/citations/abc/page-1.jpg');
     expect(u.searchParams.get('X-Amz-Algorithm')).toBe('AWS4-HMAC-SHA256');
-    expect(u.searchParams.get('X-Amz-Credential')).toBe('AKEXAMPLE/20261029/fsn1/s3/aws4_request');
+    expect(u.searchParams.get('X-Amz-Credential')).toBe('AKEXAMPLE/20261029/garage/s3/aws4_request');
     expect(u.searchParams.get('X-Amz-Date')).toBe('20261029T100000Z');
     expect(u.searchParams.get('X-Amz-Expires')).toBe(String(IMAGE_LINK_SECONDS));
     expect(u.searchParams.get('X-Amz-SignedHeaders')).toBe('host');
     expect(u.searchParams.get('X-Amz-Signature')).toMatch(/^[0-9a-f]{64}$/);
     expect(u.searchParams.get('response-content-type')).toBe('image/jpeg');
     expect(expiresAt.toISOString()).toBe('2026-10-29T10:05:00.000Z');
+  });
+
+  it('signs uploads for the files host too, and talks to the store itself on the internal endpoint', async () => {
+    const upload = new URL((await storage.uploadLink('pending/x/original', 'image/jpeg', 1234)).url);
+    expect(upload.origin).toBe('https://files.rodokmen.dev');
+    expect(upload.pathname).toBe('/rodokmen-images/pending/x/original');
+    // No checksum of a body the signer never saw (Garage refuses such an upload).
+    expect([...upload.searchParams.keys()].filter((k) => /checksum/i.test(k))).toEqual([]);
+    sent.length = 0;
+    await storage.put('pending/x/display.webp', Buffer.from('webp'), 'image/webp');
+    await storage.delete('pending/x/original');
+    expect(sent).toEqual([
+      { protocol: 'http:', hostname: 'garage', port: 3900, method: 'PUT', path: '/rodokmen-images/pending/x/display.webp' },
+      { protocol: 'http:', hostname: 'garage', port: 3900, method: 'DELETE', path: '/rodokmen-images/pending/x/original' },
+    ]);
   });
 
   it('a shared image link is signed to expire within 10 minutes, long before 30 minutes have passed', async () => {
@@ -53,6 +84,35 @@ describe('presigned image links (no network)', () => {
     clock.advance(1000);
     const a2 = (await storage.link('a.jpg', 'image/jpeg')).url;
     expect(new Set([a, b, a2]).size).toBe(3);
+  });
+});
+
+describe('image storage in production', () => {
+  const production = {
+    NODE_ENV: 'production',
+    PUBLIC_ORIGIN: 'https://rodokmen.dev',
+    MAIL_TRANSPORT: 'smtp',
+    SMTP_HOST: 'smtp.example.eu',
+    ALERT_EMAIL: 'owner@example.eu',
+    S3_ENDPOINT: 'http://garage:3900',
+    S3_BUCKET: 'rodokmen-images',
+    S3_ACCESS_KEY_ID: 'GK0123456789abcdef01234567',
+    S3_SECRET_ACCESS_KEY: 'secret',
+  };
+
+  it('refuses to start when image links would not be https', () => {
+    expect(() => loadConfig(production)).toThrow(/S3_PUBLIC_ENDPOINT: image links must be https:\/\//);
+    expect(() => loadConfig({ ...production, S3_PUBLIC_ENDPOINT: 'http://files.rodokmen.dev' })).toThrow(/S3_PUBLIC_ENDPOINT/);
+  });
+
+  it('signs links for S3_PUBLIC_ENDPOINT and keeps S3_ENDPOINT for the server', () => {
+    expect(loadConfig({ ...production, S3_PUBLIC_ENDPOINT: 'https://files.rodokmen.dev' }).s3).toMatchObject({
+      endpoint: 'http://garage:3900',
+      publicEndpoint: 'https://files.rodokmen.dev',
+      configured: true,
+    });
+    // A store reached at a public https endpoint (as with a hosted bucket) needs no second one.
+    expect(loadConfig({ ...production, S3_ENDPOINT: 'https://s3.example.eu' }).s3.publicEndpoint).toBe('https://s3.example.eu');
   });
 });
 

@@ -102,6 +102,7 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     const s3 = createImageStorage(testConfig(t.url).s3, new TestClock());
     const link = await s3.uploadLink('pending/x/original', 'image/jpeg', 1234);
     const url = new URL(link.url);
+    expect(url.origin).toBe('https://files.rodokmen.dev');
     expect(url.pathname).toBe('/rodokmen-images-test/pending/x/original');
     expect(url.searchParams.get('X-Amz-Expires')).toBe('900');
     expect(url.searchParams.get('X-Amz-SignedHeaders')).toBe('content-length;content-type;host');
