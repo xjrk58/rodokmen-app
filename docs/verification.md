@@ -29,6 +29,8 @@ this page with `node scripts/verification-trace.mjs`.
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `widenAbout` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `yearDate` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Living people are computed | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `isLivingOn` | shared/src/living.ts | see below |
+| tree-model: Relation follows the evidence | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
+| tree-model: Relation to the family is computed | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
 
 ## Assumed, not proved
 
@@ -43,6 +45,8 @@ A verified function's `requires` are proved wherever a verified function calls i
   - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)`; `s.kind === 'before' ==> isValidDay(s.end.last)`; `s.kind === 'after' ==> isValidDay(s.start.first)`
 - `isLivingOn` (shared/src/living.ts):
   - its requires, where unverified code calls it (`isLiving`): `1 <= today.month && today.month <= 12 && 1 <= today.day && today.day <= 31`; `forall(i: nat, i < birthLatest.length ==> 1 <= birthLatest[i].month && birthLatest[i].month <= 12 && 1 <= birthLatest[i].day && birthLatest[i].day <= 31)`
+- `relationLevels` (shared/src/relation.ts):
+  - its requires, where unverified code calls it (`relationsOf`): `isRoot.length === count`; `forall(i: nat, i < links.length ==> 0 <= links[i].a && links[i].a < count && 0 <= links[i].b && links[i].b < count)`
 - `detectConflict` (shared/src/rules.ts):
   - uses `valueOf`, an extern (see below)
 - `fixedWindow` (shared/src/rules.ts):
@@ -57,6 +61,7 @@ A verified function's `requires` are proved wherever a verified function calls i
 Also proved, with no requirement of their own; the traced functions rely on their contracts.
 
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
+- shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
 - shared/src/rules.ts: `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
 ## Proof additions
@@ -64,7 +69,31 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
 - shared/proofs/src/edtf.dfy: `JSStringLtAsymmetric`, `JSStringLtTotal`, `JSStringLtTransitive`, `compareByEarliest_transitive`
+- shared/proofs/src/relation.dfy: `ReachedIsLeast`, `EvidenceOnlyAdds`, `CitationAddedKeepsStrength`
 - shared/proofs/src/rules.dfy: assertions only
+
+## Scope
+
+Where a proof covers less than its requirement, exactly what it does and does not prove.
+
+- **The relation to the family** (`relationLevels`, shared/src/relation.ts; tree-model "Relation to the family is
+  computed" and "Relation follows the evidence"). Proved, for any Persons, Family roots and links: both searches
+  (`reachFrom`) stop (a round that reaches someone new leaves fewer unreached: a `decreases` added in relation.dfy);
+  every Family root is a Relative; a link with a Citation of normal or higher confidence to a Relative leads to a
+  Relative, whatever its other Citations ("Linked through a confirmed marriage", "Evidence improves"); any link to a
+  Relative or Possible relative leads to at least a Possible relative; whoever is no root and has only links whose
+  Citations are all of low or very low confidence, or that have none, is no Relative ("Only a weak link"); whoever
+  is no root and has no Family link is Unrelated ("Godparent from the same village": a Role at an Event is no input);
+  with no Family root everyone is Unrelated; `isConfirming` holds for normal, high and very high and not for low or
+  very low. Each search also returns a certificate: everyone it reached who is no start came through a link it may
+  follow from someone reached earlier (`isSupported`, `order`). The lemmas `ReachedIsLeast` and
+  `EvidenceOnlyAdds` in relation.dfy prove that a certified search reached exactly the least set closed under its
+  links, so no one without a chain of such links from a root, and that with links that only gain Citations it
+  reaches everyone it reached before; relation.dfy asserts that both searches of `relationLevels` are certified.
+  Not proved: that `relationLevels` as a whole never lowers a relation when evidence improves (it follows from the
+  two lemmas applied to its two searches, which no lemma composes); the Family links and Citations the server
+  gathers (server/src/tree/relation.ts) and that it recomputes after every accepted change, which
+  server/test/relation.test.ts tests against the fixture Tree.
 
 ## Trusted base
 
@@ -105,7 +134,8 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   `hasProposal` in rules.ts), so that it is proved from the element at hand, and give `.dfy` hints (`var x :| …`)
   when a proof chains several.
 
-Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts and
-shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
-(optionals occur only in `===` and `!==`, where order does not matter), and the generated `.dfy.gen` was read for it.
+Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts,
+shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code
+or in a specification (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of
+relation.ts compare two plain integers, emitted in their order), and the generated `.dfy.gen` was read for it.
 Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.

@@ -9,3 +9,4 @@ export * from './schemas/accounts.js';
 export * from './schemas/proposals.js';
 export * from './schemas/proposal-summaries.js';
 export * from './schemas/review.js';
+export * from './relation.js';

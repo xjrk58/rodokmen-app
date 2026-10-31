@@ -64,10 +64,33 @@ const KNOWN_ISSUES = [
 
 // What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
 const SWAP_CHECK = [
-  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts and',
-  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
-  '(optionals occur only in `===` and `!==`, where order does not matter), and the generated `.dfy.gen` was read for it.',
+  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts,',
+  'shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code',
+  'or in a specification (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of',
+  'relation.ts compare two plain integers, emitted in their order), and the generated `.dfy.gen` was read for it.',
   'Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
+];
+
+// Exactly what a proof covers where that is less than its requirement, written by hand: update it with the proof.
+const SCOPES = [
+  `**The relation to the family** (\`relationLevels\`, shared/src/relation.ts; tree-model "Relation to the family is
+  computed" and "Relation follows the evidence"). Proved, for any Persons, Family roots and links: both searches
+  (\`reachFrom\`) stop (a round that reaches someone new leaves fewer unreached: a \`decreases\` added in relation.dfy);
+  every Family root is a Relative; a link with a Citation of normal or higher confidence to a Relative leads to a
+  Relative, whatever its other Citations ("Linked through a confirmed marriage", "Evidence improves"); any link to a
+  Relative or Possible relative leads to at least a Possible relative; whoever is no root and has only links whose
+  Citations are all of low or very low confidence, or that have none, is no Relative ("Only a weak link"); whoever
+  is no root and has no Family link is Unrelated ("Godparent from the same village": a Role at an Event is no input);
+  with no Family root everyone is Unrelated; \`isConfirming\` holds for normal, high and very high and not for low or
+  very low. Each search also returns a certificate: everyone it reached who is no start came through a link it may
+  follow from someone reached earlier (\`isSupported\`, \`order\`). The lemmas \`ReachedIsLeast\` and
+  \`EvidenceOnlyAdds\` in relation.dfy prove that a certified search reached exactly the least set closed under its
+  links, so no one without a chain of such links from a root, and that with links that only gain Citations it
+  reaches everyone it reached before; relation.dfy asserts that both searches of \`relationLevels\` are certified.
+  Not proved: that \`relationLevels\` as a whole never lowers a relation when evidence improves (it follows from the
+  two lemmas applied to its two searches, which no lemma composes); the Family links and Citations the server
+  gathers (server/src/tree/relation.ts) and that it recomputes after every accepted change, which
+  server/test/relation.test.ts tests against the fixture Tree.`,
 ];
 
 const problems = [];
@@ -379,6 +402,12 @@ out.push('');
 for (const a of additions.sort((x, y) => x.dfy.localeCompare(y.dfy)))
   out.push(`- ${a.dfy}: ${a.lemmas.length > 0 ? a.lemmas.map((l) => `\`${l}\``).join(', ') : 'assertions only'}`);
 if (additions.length === 0) out.push('- none');
+out.push('');
+out.push('## Scope');
+out.push('');
+out.push('Where a proof covers less than its requirement, exactly what it does and does not prove.');
+out.push('');
+for (const scope of SCOPES) out.push(`- ${scope}`);
 out.push('');
 out.push('## Trusted base');
 out.push('');
