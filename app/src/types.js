@@ -82,7 +82,7 @@
 
 /**
  * @typedef {object} LayersConfig
- * @property {{ url: string, attribution: string, maxZoom: number }} base
+ * @property {{ url: string, attribution: string, maxZoom: number, referrerPolicy?: Exclude<ReferrerPolicy, ''> }} base referrerPolicy: what its tiles send as Referer (the app sends none)
  * @property {OverlayConfig[]} overlays
  * @property {ViewerLink[]} viewers
  */

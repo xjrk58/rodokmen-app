@@ -11,7 +11,10 @@ export function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
   for (const [name, value] of Object.entries(attrs)) {
     if (value === false || value === null || value === undefined) continue;
-    el.setAttribute(name, value === true ? '' : value);
+    // A style attribute counts as an inline style, which the app's Content-Security-Policy
+    // refuses; the same declarations set through the DOM are allowed.
+    if (name === 'style') el.style.cssText = value === true ? '' : value;
+    else el.setAttribute(name, value === true ? '' : value);
   }
   for (const child of children) {
     if (child === null || child === undefined || child === false) continue;

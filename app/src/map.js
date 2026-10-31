@@ -50,6 +50,8 @@ export function createMap(container, data, shown = () => true) {
     maxZoom: data.layers.base.maxZoom,
     attribution: data.layers.base.attribution,
     crossOrigin: true,
+    // The page sends no Referer; OpenStreetMap's tile policy asks for one (layers.json).
+    referrerPolicy: data.layers.base.referrerPolicy ?? false,
   }).addTo(map);
 
   // Panes: overlays (tiles) < archive regions < boundaries < marker.
