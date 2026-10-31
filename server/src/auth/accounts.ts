@@ -31,7 +31,9 @@ export function normaliseEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+/** A Member's account as the Owner sees it. Agents are listed with their tokens instead (auth/agents.ts). */
 export function memberView(a: Account): MemberView {
+  if (a.role === 'agent' || a.email === null) throw new Error(`account ${a.id} is an Agent, not a Member`);
   return {
     id: a.id,
     version: a.version,
@@ -197,7 +199,7 @@ export async function requestEmailLink(deps: AccountDeps, emailInput: string): P
   if (!issued) return;
   await deps.mailer.send(
     signInLinkEmail({
-      to: account.email,
+      to: email,
       language: account.language,
       displayName: account.display_name,
       link: `${deps.publicOrigin}/auth/link#token=${token}`,
@@ -226,12 +228,12 @@ export async function consumeEmailLink(deps: AccountDeps, token: string, userAge
 // ---------------------------------------------------------------- roles and disabling
 
 export async function listMembers(deps: AccountDeps): Promise<MemberView[]> {
-  const rows = await deps.db.selectFrom('account').selectAll().orderBy('display_name').orderBy('id').execute();
+  const rows = await deps.db.selectFrom('account').selectAll().where('role', '<>', 'agent').orderBy('display_name').orderBy('id').execute();
   return rows.map(memberView);
 }
 
 async function loadMember(db: Db, id: string): Promise<Account> {
-  const a = await db.selectFrom('account').selectAll().where('id', '=', id).executeTakeFirst();
+  const a = await db.selectFrom('account').selectAll().where('id', '=', id).where('role', '<>', 'agent').executeTakeFirst();
   if (!a) throw new ApiProblem(404, 'not_found', 'No Member with this id.');
   return a;
 }

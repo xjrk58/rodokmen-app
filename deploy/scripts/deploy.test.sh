@@ -51,6 +51,9 @@ grep -q "ImportKey" "$DOCKER_LOG" && fail "an existing key is not imported again
 [ "$(cat state/previous)" = ghcr.io/x/app:v1 ] || fail "previous image recorded"
 grep -q "compose .* stop api-blue" "$DOCKER_LOG" || fail "old slot stopped after the switch"
 grep -q "^WATCHDOG_IMAGE=ghcr.io/x/app:v2$" state/images.env || fail "watchdog follows the release"
+grep -q "^MCP_IMAGE=ghcr.io/x/app:v2$" state/images.env || fail "the MCP server follows the release"
+grep -q "compose .* up -d --no-deps watchdog mcp" "$DOCKER_LOG" || fail "the MCP server is restarted with the release"
+grep -q "compose .* exec -T caddy caddy reload" "$DOCKER_LOG" || fail "Caddy reads its Caddyfile again"
 
 if deploy ghcr.io/x/app:v3-broken; then fail "a broken release must fail the deploy"; fi
 [ "$(cat state/active)" = green ] || fail "the old slot stays active"

@@ -1,0 +1,33 @@
+{
+  "name": "@rodokmen/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rodokmen MCP server: lets AI assistants search the Tree and submit Proposals with an Agent token, as a client of the public API",
+  "type": "module",
+  "bin": {
+    "rodokmen-mcp": "dist/stdio.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "stdio": "tsx --conditions=@rodokmen/source src/stdio.ts",
+    "http": "tsx --conditions=@rodokmen/source src/http.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "2.1.2",
+    "@modelcontextprotocol/server": "2.4.0",
+    "@rodokmen/shared": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "^4.1.12"
+  }
+}

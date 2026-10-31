@@ -90,7 +90,7 @@ export async function registrationOptions(deps: PasskeyDeps, account: Account) {
   const options = await generateRegistrationOptions({
     rpName: deps.rpName,
     rpID: deps.rpId,
-    userName: account.email,
+    userName: account.email ?? account.display_name,
     userDisplayName: account.display_name,
     userID: new TextEncoder().encode(account.id),
     attestationType: 'none',

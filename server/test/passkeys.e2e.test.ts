@@ -150,8 +150,8 @@ describe('passkeys in a real browser (virtual WebAuthn authenticator)', () => {
       .values({ email: 'leaving@example.test', display_name: 'Leaving', language: 'en' })
       .returningAll()
       .executeTakeFirstOrThrow();
-    await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: member.email } });
-    await page.goto(`${origin}/auth/link#token=${tokenFromEmail(mailer.lastTo(member.email)!.text)}`);
+    await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: 'leaving@example.test' } });
+    await page.goto(`${origin}/auth/link#token=${tokenFromEmail(mailer.lastTo('leaving@example.test')!.text)}`);
     await page.click('#link-sign-in');
     await page.click('#register-passkey');
     await page.locator('#done').waitFor();

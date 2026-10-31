@@ -70,6 +70,7 @@ export async function resolveSession(db: Db, clock: Clock, options: SessionOptio
     .where('s.ended_at', 'is', null)
     .where('s.expires_at', '>', now)
     .where('a.disabled_at', 'is', null)
+    .where('a.role', '<>', 'agent')
     .executeTakeFirst();
   if (!row) return null;
   const { session_id, session_seen, ...account } = row;

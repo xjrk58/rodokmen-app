@@ -12,6 +12,7 @@ import {
   ProposalList,
   ProposalListQuery,
   ProposalView,
+  RateLimited,
   RejectBody,
   ReviewQuery,
   SubmitProposalBody,
@@ -24,7 +25,6 @@ import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
-import { requireRole } from '../auth/plugin.js';
 import { ApiProblem } from '../auth/problem.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
@@ -32,25 +32,30 @@ import { canReview, proposalViews, uploadView } from '../proposals/views.js';
 import { imageLink } from '../storage/images.js';
 import { processImage, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
-const signedIn = { 401: ApiError };
+/** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
+const signedIn = { 401: ApiError, 429: RateLimited };
 const editorOnly = { 401: ApiError, 403: ApiError };
+/** Members only: an Agent has no email settings. */
+const ownAccount = { 401: ApiError, 403: ApiError };
 
 /**
  * The write path into the Tree (proposals, review, tree-history, evidence-media and
- * notifications specs). Members submit Proposals; only Editors accept, reject, merge and undo.
+ * notifications specs). Members and Agents submit Proposals; only Editors accept, reject, merge
+ * and undo (each route names its action; auth/plugin.ts asks the role-and-action rule).
  */
 export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDeps) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
-  const editor = { preHandler: requireRole('editor') };
   const { db } = deps;
 
   app.post('/api/proposals', {
+    // An Agent's submits count against its hourly Proposal limit.
+    config: { action: 'propose', agentLimit: 'proposal' },
     schema: {
       tags: ['Proposals'],
       summary:
         'Submit a Proposal: one finding with all its changes and at least one Citation. Retrying with the same idempotency key returns the same Proposal. Editors may apply a direct change at once',
       body: SubmitProposalBody,
-      response: { 200: ProposalView, 201: ProposalView, 400: ApiError, 409: ApiError, ...editorOnly },
+      response: { 200: ProposalView, 201: ProposalView, 400: ApiError, 403: ApiError, 409: ApiError, ...signedIn },
     },
     handler: async (req, reply) => {
       const { view, created } = await submitProposal(deps, req.member!, req.body);
@@ -77,7 +82,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.get('/api/review', {
-    ...editor,
+    config: { action: 'review' },
     schema: {
       tags: ['Review'],
       summary: 'The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)',
@@ -107,7 +112,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.post('/api/proposals/:id/accept', {
-    ...editor,
+    config: { action: 'accept' },
     schema: {
       tags: ['Review'],
       summary: 'Accept a Proposal as a whole, optionally after corrections and with per-field choices for conflicts (Editors only)',
@@ -119,7 +124,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.post('/api/proposals/:id/reject', {
-    ...editor,
+    config: { action: 'reject' },
     schema: {
       tags: ['Review'],
       summary: 'Reject a Proposal as a whole, with a note for the author (Editors only)',
@@ -131,7 +136,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.get('/api/proposals/:id/undo', {
-    ...editor,
+    config: { action: 'undo' },
     schema: {
       tags: ['History'],
       summary: 'What undoing an accepted Proposal involves: records edited again since, field by field (Editors only)',
@@ -147,7 +152,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.post('/api/proposals/:id/undo', {
-    ...editor,
+    config: { action: 'undo' },
     schema: {
       tags: ['History'],
       summary: 'Undo an accepted Proposal as a whole, at once and logged; later edits need a choice per field (Editors only)',
@@ -159,7 +164,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.post('/api/persons/:id/merge', {
-    ...editor,
+    config: { action: 'merge' },
     schema: {
       tags: ['Review'],
       summary: 'Merge another Person into this one: Names, Roles, Family links and Citations move here, and the other record redirects (Editors only)',
@@ -183,6 +188,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   // ---------------------------------------------------------------- images
 
   app.post('/api/uploads', {
+    config: { action: 'propose' },
     schema: {
       tags: ['Images'],
       summary: 'Start an image upload: returns a presigned PUT link into pending/. JPEG, PNG, WebP or HEIC, at most 25 MB',
@@ -212,6 +218,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   });
 
   app.post('/api/uploads/:id/complete', {
+    config: { action: 'propose' },
     schema: {
       tags: ['Images'],
       summary: 'Finish an upload: the server checks the file and makes its WebP display copy (HEIC is converted, or refused with a message)',
@@ -282,16 +289,18 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
   // ---------------------------------------------------------------- outcome emails
 
   app.get('/api/me/notifications', {
-    schema: { tags: ['Account'], summary: 'Your email settings', response: { 200: NotificationSettings, ...signedIn } },
+    config: { action: 'ownAccount' },
+    schema: { tags: ['Account'], summary: 'Your email settings', response: { 200: NotificationSettings, ...ownAccount } },
     handler: async (req) => ({ outcomeEmails: req.member!.outcome_emails }),
   });
 
   app.put('/api/me/notifications', {
+    config: { action: 'ownAccount' },
     schema: {
       tags: ['Account'],
       summary: 'Turn outcome emails about your Proposals on or off. Editors keep the daily digest while they are Editors',
       body: NotificationSettings,
-      response: { 200: NotificationSettings, 400: ApiError, ...signedIn },
+      response: { 200: NotificationSettings, 400: ApiError, ...ownAccount },
     },
     handler: async (req) => {
       const row = await db

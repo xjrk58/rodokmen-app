@@ -6,6 +6,8 @@ type Unknown(==, 0)
 
 function {:axiom} valueOf(values: seq<FieldValue>, field: string): Unknown
 
+datatype WindowDecision = WindowDecision(allowed: bool, windowStart: int, count: int, retryAt: int)
+
 datatype FieldConflictResult = FieldConflictResult(field: string, proposed: Unknown, current: Unknown)
 
 datatype ConflictResult = ConflictResult(baseVersion: int, currentVersion: Option<int>, fields: seq<FieldConflictResult>)
@@ -33,6 +35,64 @@ lemma mayDecide_ensures(role: string)
   ensures ((role == "editor") ==> mayDecide(role))
   ensures ((role == "owner") ==> mayDecide(role))
   ensures (mayDecide(role) ==> ((role == "editor") || (role == "owner")))
+{
+}
+
+function mayDo(role: string, action: string): bool
+{
+  if (role == "agent") then
+    ((action == "read") || (action == "propose"))
+  else
+    var member := (((role == "contributor") || (role == "editor")) || (role == "owner"));
+    if (((action == "read") || (action == "propose")) || (action == "ownAccount")) then
+      member
+    else
+      if ((((((action == "review") || (action == "accept")) || (action == "reject")) || (action == "merge")) || (action == "undo")) || (action == "directEdit")) then
+        mayDecide(role)
+      else
+        ((action == "manageAccounts") && (role == "owner"))
+}
+
+lemma mayDo_ensures(role: string, action: string)
+  ensures ((role == "agent") ==> (action == "read") ==> mayDo(role, action))
+  ensures ((role == "agent") ==> (action == "propose") ==> mayDo(role, action))
+  ensures ((role == "agent") ==> mayDo(role, action) ==> ((action == "read") || (action == "propose")))
+  ensures ((role == "agent") ==> (action == "accept") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "reject") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "merge") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "undo") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "directEdit") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "review") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "ownAccount") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "manageAccounts") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> mayDo(role, action) ==> mayDo("contributor", action))
+  ensures (((((action == "accept") || (action == "reject")) || (action == "merge")) || (action == "undo")) ==> (mayDo(role, action) == mayDecide(role)))
+  ensures ((action == "manageAccounts") ==> (mayDo(role, action) == (role == "owner")))
+  ensures (mayDo(role, action) ==> ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner")))
+{
+}
+
+function fixedWindow(windowStart: int, count: int, limit: int, windowMs: int, now: int): WindowDecision
+  requires (limit > 0)
+{
+  if (now >= (windowStart + windowMs)) then
+    WindowDecision(true, now, 1, now)
+  else
+    if (count < limit) then
+      WindowDecision(true, windowStart, (count + 1), now)
+    else
+      WindowDecision(false, windowStart, count, (windowStart + windowMs))
+}
+
+lemma fixedWindow_ensures(windowStart: int, count: int, limit: int, windowMs: int, now: int)
+  requires (limit > 0)
+  ensures (fixedWindow(windowStart, count, limit, windowMs, now).allowed ==> (fixedWindow(windowStart, count, limit, windowMs, now).count <= limit))
+  ensures ((now < (windowStart + windowMs)) ==> (count >= limit) ==> !(fixedWindow(windowStart, count, limit, windowMs, now).allowed))
+  ensures (!(fixedWindow(windowStart, count, limit, windowMs, now).allowed) ==> ((fixedWindow(windowStart, count, limit, windowMs, now).retryAt == (windowStart + windowMs)) && (fixedWindow(windowStart, count, limit, windowMs, now).retryAt > now)))
+  ensures (!(fixedWindow(windowStart, count, limit, windowMs, now).allowed) ==> ((fixedWindow(windowStart, count, limit, windowMs, now).windowStart == windowStart) && (fixedWindow(windowStart, count, limit, windowMs, now).count == count)))
+  ensures (fixedWindow(windowStart, count, limit, windowMs, now).allowed ==> (now < (windowStart + windowMs)) ==> ((fixedWindow(windowStart, count, limit, windowMs, now).windowStart == windowStart) && (fixedWindow(windowStart, count, limit, windowMs, now).count == (count + 1))))
+  ensures ((now < (windowStart + windowMs)) ==> (count < limit) ==> fixedWindow(windowStart, count, limit, windowMs, now).allowed)
+  ensures ((now >= (windowStart + windowMs)) ==> ((fixedWindow(windowStart, count, limit, windowMs, now).allowed && (fixedWindow(windowStart, count, limit, windowMs, now).windowStart == now)) && (fixedWindow(windowStart, count, limit, windowMs, now).count == 1)))
 {
 }
 
