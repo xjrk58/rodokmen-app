@@ -78,6 +78,13 @@ describe('presigned image links (no network)', () => {
     expect(clock.now().getTime() + 30 * MINUTE).toBeGreaterThan(validUntil);
   });
 
+  it("names the origin of its links for the app's policy: the files host, with the bucket in it unless path-style", async () => {
+    expect(await storage.linkOrigin()).toBe('https://files.rodokmen.dev');
+    const virtualHosted = createImageStorage({ ...s3, forcePathStyle: false }, clock);
+    expect(await virtualHosted.linkOrigin()).toBe('https://rodokmen-images.files.rodokmen.dev');
+    expect(new URL((await virtualHosted.link('a.jpg', 'image/jpeg')).url).origin).toBe(await virtualHosted.linkOrigin());
+  });
+
   it('signs differently for each key and each moment', async () => {
     const a = (await storage.link('a.jpg', 'image/jpeg')).url;
     const b = (await storage.link('b.jpg', 'image/jpeg')).url;

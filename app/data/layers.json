@@ -1,7 +1,8 @@
 {
-  "$comment": "Map layers and historical map viewers. Overlays are WMS services requested in Web Mercator (EPSG:3857); set enabled to false for a service that does not deliver aligned images (task 5.1 of add-map-core). Viewer URLs may contain {name} for the Municipality name.",
+  "$comment": "Map layers and historical map viewers. Overlays are WMS services requested in Web Mercator (EPSG:3857); set enabled to false for a service that does not deliver aligned images (task 5.1 of add-map-core). Viewer URLs may contain {name} for the Municipality name. The app sends no Referer (Referrer-Policy: no-referrer), but OpenStreetMap's tile policy requires one: the base layer's referrerPolicy strict-origin sends the app's origin with its tiles, never a path. The server allows the hosts of the base and overlay URLs in the app's Content-Security-Policy.",
   "base": {
     "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    "referrerPolicy": "strict-origin",
     "attribution": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>",
     "maxZoom": 19
   },

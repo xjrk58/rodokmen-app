@@ -9,7 +9,9 @@
 		Strict-Transport-Security "max-age=31536000"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
-		Referrer-Policy "same-origin"
+		# Only where the API sent none: the app's files go out with no-referrer and their
+		# Content-Security-Policy, which the API sets itself so that they apply everywhere.
+		?Referrer-Policy "same-origin"
 		-Server
 	}
 

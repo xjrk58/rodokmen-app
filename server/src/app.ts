@@ -123,7 +123,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
     cookieSecure,
     passkeys: { db, clock, rpId: config.rpId, rpName: 'Rodokmen', origin: config.publicOrigin },
   });
-  await app.register(pageRoutes, { appDir: config.appDir, log: (msg) => app.log.info(msg) });
+  await app.register(pageRoutes, { appDir: config.appDir, imageOrigin: await images.linkOrigin(), log: (msg) => app.log.info(msg) });
   if (deps.extraRoutes) await app.register(async (scope) => deps.extraRoutes!(scope));
 
   await app.ready();

@@ -3,7 +3,7 @@ import type { Db } from '../db/db.js';
 import type { Mailer } from '../mail/mailer.js';
 import { digestEmail } from '../mail/templates.js';
 import { proposalDigestLines } from '../proposals/views.js';
-import type { ImageStorage } from '../storage/images.js';
+import { uploadKeys, type ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { messageOf } from '../errors.js';
 
@@ -153,6 +153,9 @@ export async function deleteUnusedImages(deps: JobDeps, now: Date): Promise<JobR
   for (const u of uploads) {
     await deps.images.delete(u.storage_key);
     await deps.images.delete(u.display_key);
+    // Anything put at the upload link after the check (the link outlives it, see uploadKeys).
+    const link = uploadKeys(u.id).link;
+    if (link !== u.storage_key) await deps.images.delete(link);
     await deps.db.updateTable('upload').set({ status: 'deleted', deleted_at: now }).where('id', '=', u.id).execute();
   }
   return { detail: `deleted ${uploads.length} uploads`, complete: true };

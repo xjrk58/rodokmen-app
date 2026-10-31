@@ -14,7 +14,7 @@ import type { Account, Proposal } from '../db/types.js';
 import { ApiProblem } from '../auth/problem.js';
 import type { Mailer } from '../mail/mailer.js';
 import { outcomeEmail } from '../mail/templates.js';
-import type { ImageStorage } from '../storage/images.js';
+import { uploadKeys, type ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { applyOperations, RECORD_TABLES, translateDbError, type ApplyResult, type UploadMove } from './apply.js';
 import { snapshot } from './records.js';
@@ -172,11 +172,15 @@ async function transaction<T extends { moves?: UploadMove[] }>(db: Db, fn: (tx: 
   }
 }
 
-/** After commit: the pending copies of accepted images are no longer needed. */
+/**
+ * After commit: the pending copies of accepted images are no longer needed, nor anything put at
+ * the upload link after the check (the link outlives it, see uploadKeys).
+ */
 async function finishMoves(deps: ProposalDeps, moves: readonly UploadMove[]): Promise<void> {
   for (const m of moves) {
-    await deps.images.delete(m.from.original).catch((e) => deps.log?.('could not delete a pending image', e));
-    await deps.images.delete(m.from.display).catch((e) => deps.log?.('could not delete a pending image', e));
+    for (const key of new Set([m.from.original, m.from.display, uploadKeys(m.uploadId).link])) {
+      await deps.images.delete(key).catch((e) => deps.log?.('could not delete a pending image', e));
+    }
   }
 }
 

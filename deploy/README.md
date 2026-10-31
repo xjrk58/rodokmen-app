@@ -51,8 +51,13 @@ server, and serve every image itself. The files host needs no change to the app,
 traffic out of Node, and works the same if the images later move to a hosted S3 service (point
 `S3_ENDPOINT` and `S3_PUBLIC_ENDPOINT` at it).
 
-**Content Security Policy:** the app sends none today (the sign-in pages have one, and show no
-images). If the app gets one, `img-src` and `connect-src` must allow `https://files.<domain>`.
+**Content Security Policy:** the API sends the app's files with a Content-Security-Policy and
+`Referrer-Policy: no-referrer` (`server/src/csp.ts`), so they apply in every environment, not only
+behind Caddy. The policy allows scripts and styles from the app's own origin only, never inline;
+images and fetches also from the host image links point at (`https://files.<domain>`, from
+`S3_PUBLIC_ENDPOINT`) and from the map hosts in `app/data/layers.json`, plus `data:` and `blob:`
+images. A new map host needs only an entry in `layers.json`. Caddy adds `Referrer-Policy:
+same-origin` only to answers that have none.
 
 **Memory:** Garage is limited to 128 MB in `docker-compose.yml`. Measured locally, it used about
 10 MB, and at most 39 MB with page cache while a 19 MB image went in and during a Backup.

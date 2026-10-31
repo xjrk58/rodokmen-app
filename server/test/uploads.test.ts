@@ -38,14 +38,18 @@ describe('images: uploads, display copies, privacy and deletion', () => {
   const call = (m: Account, method: 'GET' | 'POST', url: string, payload?: object) =>
     a.app.inject({ method, url, headers: { cookie: cookies.get(m.id)! }, ...(payload === undefined ? {} : { payload }) });
 
+  /** What the store does with a PUT to an upload link: it writes the bytes at the link's key. */
+  async function putAtLink(putUrl: string, body: Buffer, contentType: string) {
+    await storage.put(new URL(putUrl).pathname.replace('/bucket/', ''), body, contentType);
+  }
+
   /** What the app does: ask for a link, PUT the bytes there, then ask the server to finish. */
   async function upload(m: Account, body: Buffer, contentType = 'image/jpeg') {
     const ticket = await call(m, 'POST', '/api/uploads', { contentType, byteSize: body.length, sha256: sha(body) });
     expect(ticket.statusCode, ticket.body).toBe(201);
     const { upload: u, putUrl } = UploadTicket.parse(ticket.json());
-    const key = new URL(putUrl).pathname.replace('/bucket/', '');
-    expect(key).toBe(`pending/${u.id}/original`);
-    await storage.put(key, body, contentType);
+    expect(new URL(putUrl).pathname).toBe(`/bucket/pending/${u.id}/original`);
+    await putAtLink(putUrl, body, contentType);
     return call(m, 'POST', `/api/uploads/${u.id}/complete`);
   }
 
@@ -71,7 +75,9 @@ describe('images: uploads, display copies, privacy and deletion', () => {
       expect(res.statusCode, res.body).toBe(200);
       const view = UploadView.parse(res.json());
       expect(view).toMatchObject({ status: 'ready', contentType: `image/${format}`, width: 3000, height: 2000, byteSize: original.length });
-      expect(storage.objects.get(`pending/${view.id}/original`)!.body.equals(original)).toBe(true);
+      // The checked original is kept where the upload link cannot reach; the file at the link is gone.
+      expect(storage.objects.get(`pending/${view.id}/verified`)!.body.equals(original)).toBe(true);
+      expect(storage.objects.has(`pending/${view.id}/original`)).toBe(false);
       const display = await sharp(storage.objects.get(`pending/${view.id}/display.webp`)!.body).metadata();
       expect([display.format, display.width, display.height]).toEqual(['webp', 2000, 1333]);
     }
@@ -84,6 +90,51 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     const res = await upload(author, heic, 'image/heic');
     expect(res.statusCode).toBe(415);
     expect(res.json()).toMatchObject({ code: 'heic_unsupported', message: HEIC_MESSAGE });
+  });
+
+  it('an upload to the link after the check changes neither the kept nor the shown image, nor the accepted one (issue #52)', async () => {
+    const original = await picture('jpeg', 1200, 1600);
+    // Other bytes of the same size, as a presigned PUT signed for that size would accept.
+    const other = Buffer.from(original);
+    other.fill(0x55, 1000, 3000);
+    expect([other.length, sha(other) === sha(original)]).toEqual([original.length, false]);
+
+    const ticket = UploadTicket.parse(
+      (await call(author, 'POST', '/api/uploads', { contentType: 'image/jpeg', byteSize: original.length, sha256: sha(original) })).json(),
+    );
+    const id = ticket.upload.id;
+    await putAtLink(ticket.putUrl, original, 'image/jpeg');
+    expect((await call(author, 'POST', `/api/uploads/${id}/complete`)).statusCode).toBe(200);
+    const display = storage.objects.get(`pending/${id}/display.webp`)!.body;
+
+    // The link is valid for minutes more: the uploader puts other bytes there and finishes again.
+    a.clock.advance(60_000);
+    await putAtLink(ticket.putUrl, other, 'image/jpeg');
+    const again = await call(author, 'POST', `/api/uploads/${id}/complete`);
+    expect(again.statusCode).toBe(200);
+    expect(UploadView.parse(again.json())).toMatchObject({ id, status: 'ready', width: 1200, height: 1600 });
+    const row = await t.db.selectFrom('upload').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+    expect(row).toMatchObject({ storage_key: `pending/${id}/verified`, sha256: sha(original) });
+    expect(storage.objects.get(row.storage_key)!.body.equals(original)).toBe(true);
+    expect(storage.objects.get(row.display_key)!.body.equals(display)).toBe(true);
+    // Shown and opened in full: the checked file, never the one at the link.
+    expect((await call(editor, 'GET', `/api/uploads/${id}`)).headers.location).toContain(`pending/${id}/display.webp`);
+    expect((await call(editor, 'GET', `/api/uploads/${id}?full=true`)).headers.location).toContain(`pending/${id}/verified`);
+
+    // Accepted, the Tree holds the checked bytes, and the file at the link is removed.
+    const ops: OperationInput[] = [
+      { op: 'createSource', tempId: 'tmp:s', type: 'other', title: 'Invented postcard, 1911' },
+      { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:s', transcription: 'Greetings from …', readOn: '2026-10-20', confidence: 'normal' },
+      { op: 'addImage', uploadId: id, kind: 'photo', citationId: 'tmp:c', caption: 'Invented postcard' },
+    ];
+    const proposal = await call(author, 'POST', '/api/proposals', { formatVersion: 1, idempotencyKey: `img-${id}`, operations: ops });
+    expect(proposal.statusCode, proposal.body).toBe(201);
+    expect((await call(editor, 'POST', `/api/proposals/${ProposalView.parse(proposal.json()).id}/accept`, {})).statusCode).toBe(200);
+    const image = await t.db.selectFrom('image').selectAll().where('caption', '=', 'Invented postcard').executeTakeFirstOrThrow();
+    expect(image.sha256).toBe(sha(original));
+    expect(storage.objects.get(image.storage_key)!.body.equals(original)).toBe(true);
+    expect(storage.objects.get(image.display_key!)!.body.equals(display)).toBe(true);
+    expect([...storage.objects.keys()].filter((k) => k.startsWith(`pending/${id}/`))).toEqual([]);
   });
 
   it('accepts images up to 25 MB and refuses larger ones', async () => {
@@ -134,7 +185,7 @@ describe('images: uploads, display copies, privacy and deletion', () => {
   it('accepting moves the images out of pending/; then every Member sees them, and the original on request', async () => {
     const { proposal, uploadId } = await proposalWithImage();
     expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/accept`, {})).statusCode).toBe(200);
-    expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(false);
+    expect([...storage.objects.keys()].filter((k) => k.startsWith(`pending/${uploadId}/`))).toEqual([]);
     const image = await t.db.selectFrom('image').selectAll().where('caption', 'is', null).where('kind', '=', 'photo').executeTakeFirstOrThrow();
     expect(image.storage_key).toBe(`images/${image.id}/original`);
     expect(storage.objects.has(image.storage_key)).toBe(true);
@@ -155,12 +206,13 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     const jobs = new DailyScheduler({ db: t.db, clock: a.clock, mailer: a.mailer, images: storage, publicOrigin: 'http://localhost:3000' });
     // The job runs daily at 03:30 Prague time; 29 days later the image is still there.
     a.clock.current = new Date('2026-11-27T03:00:00Z');
+    // Something put at its upload link after the check goes with it.
+    await storage.put(`pending/${uploadId}/original`, Buffer.from('late'), 'image/jpeg');
     expect(await jobs.tick()).toContain('delete-unused-images');
-    expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(true);
+    expect(storage.objects.has(`pending/${uploadId}/verified`)).toBe(true);
     a.clock.current = new Date('2026-11-29T03:00:00Z');
     expect(await jobs.tick()).toContain('delete-unused-images');
-    expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(false);
-    expect(storage.objects.has(`pending/${uploadId}/display.webp`)).toBe(false);
+    expect([...storage.objects.keys()].filter((k) => k.startsWith(`pending/${uploadId}/`))).toEqual([]);
     expect((await call(author, 'GET', `/api/uploads/${uploadId}`)).statusCode).toBe(410);
     a.clock.current = new Date(a.clock.current.getTime() + DAY);
   });
@@ -179,7 +231,7 @@ describe('images: uploads, display copies, privacy and deletion', () => {
       storage.copy = copy;
     }
     expect([...storage.objects.keys()].filter((k) => k.startsWith('images/')).sort()).toEqual(before);
-    expect(storage.objects.has(`pending/${uploadId}/original`)).toBe(true);
+    expect(storage.objects.has(`pending/${uploadId}/verified`)).toBe(true);
     expect(ProposalView.parse((await call(editor, 'GET', `/api/proposals/${proposal.id}`)).json()).status).toBe('pending');
     expect((await call(editor, 'POST', `/api/proposals/${proposal.id}/accept`, {})).statusCode).toBe(200);
   });

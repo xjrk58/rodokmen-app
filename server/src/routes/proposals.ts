@@ -29,7 +29,7 @@ import { ApiProblem } from '../auth/problem.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews, uploadView } from '../proposals/views.js';
-import { imageLink } from '../storage/images.js';
+import { imageLink, uploadKeys } from '../storage/images.js';
 import { processImage, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
 /** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
@@ -198,13 +198,14 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     handler: async (req, reply) => {
       if (req.body.byteSize > IMAGE_MAX_BYTES) throw new ApiProblem(413, 'too_large', TOO_LARGE_MESSAGE);
       const id = uuidv7();
+      const keys = uploadKeys(id);
       const row = await db
         .insertInto('upload')
         .values({
           id,
           author_id: req.member!.id,
-          storage_key: `pending/${id}/original`,
-          display_key: `pending/${id}/display.webp`,
+          storage_key: keys.link,
+          display_key: keys.display,
           declared_type: req.body.contentType,
           declared_size: req.body.byteSize,
           declared_sha256: req.body.sha256,
@@ -221,7 +222,8 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     config: { action: 'propose' },
     schema: {
       tags: ['Images'],
-      summary: 'Finish an upload: the server checks the file and makes its WebP display copy (HEIC is converted, or refused with a message)',
+      summary:
+        'Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message)',
       params: IdParams,
       response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, ...signedIn },
     },
@@ -237,14 +239,24 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
         if (processed.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
       } catch (error) {
         await deps.images.delete(u.storage_key).catch(() => undefined);
-        await db.updateTable('upload').set({ status: 'deleted', deleted_at: deps.clock.now() }).where('id', '=', u.id).execute();
+        await db
+          .updateTable('upload')
+          .set({ status: 'deleted', deleted_at: deps.clock.now() })
+          .where('id', '=', u.id)
+          .where('status', '=', 'waiting')
+          .execute();
         throw error;
       }
+      // The upload link stays valid for its 15 minutes, so the file it points at could still be
+      // replaced. The bytes just checked go where no link reaches, and only they are used.
+      const verified = uploadKeys(u.id).verified;
+      await deps.images.put(verified, original, processed.contentType);
       await deps.images.put(u.display_key, processed.display, 'image/webp');
       const row = await db
         .updateTable('upload')
         .set({
           status: 'ready',
+          storage_key: verified,
           content_type: processed.contentType,
           byte_size: processed.byteSize,
           sha256: processed.sha256,
@@ -252,9 +264,17 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
           height: processed.height,
         })
         .where('id', '=', u.id)
+        .where('status', '=', 'waiting')
         .returningAll()
-        .executeTakeFirstOrThrow();
-      return uploadView(row);
+        .executeTakeFirst();
+      await deps.images.delete(u.storage_key).catch((e: unknown) => deps.log?.('could not delete an uploaded file after checking it', e));
+      if (row) return uploadView(row);
+      // Another request for the same upload got there first: it finished it (with the same
+      // checked bytes, so the files written here are its files too), or refused it.
+      const current = await db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
+      if (current.status === 'ready') return uploadView(current);
+      for (const key of [verified, u.display_key]) await deps.images.delete(key).catch(() => undefined);
+      throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
     },
   });
 
