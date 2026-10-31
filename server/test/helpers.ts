@@ -33,8 +33,10 @@ export function testConfig(databaseUrl: string, overrides: Record<string, string
     DATABASE_URL: databaseUrl,
     RELEASE: 'test',
     APP_DIR: '/nonexistent-app-dir',
-    S3_ENDPOINT: 'https://fsn1.your-objectstorage.com',
-    S3_REGION: 'fsn1',
+    // As in deploy/docker-compose.yml: Garage inside, links signed for the files host.
+    S3_ENDPOINT: 'http://garage:3900',
+    S3_PUBLIC_ENDPOINT: 'https://files.rodokmen.dev',
+    S3_REGION: 'garage',
     S3_BUCKET: 'rodokmen-images-test',
     S3_ACCESS_KEY_ID: 'TESTKEY',
     S3_SECRET_ACCESS_KEY: 'test-secret',

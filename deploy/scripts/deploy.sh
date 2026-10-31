@@ -55,11 +55,26 @@ fi
 
 log "deploying $target into api-$idle (active: $active)"
 docker pull "$target"
-set_var "API_IMAGE_${idle^^}" "$target"
-# The database and Caddy are started if they are not running yet (first deploy, reboot), and
-# Caddy reads its Caddyfile again, which this deploy may have changed.
-compose up -d db caddy
+# The database, the image store and Caddy are started if they are not running yet (first
+# deploy, reboot). Then both take the configuration this deploy copied; caddy/ and garage/ are
+# mounted as folders, so the containers see the new files. Caddy reloads its Caddyfile (if the new
+# one is invalid, Caddy keeps the one it has). Garage reads garage.toml only when it starts, so it
+# restarts when the file changed. Then the image store gets its bucket and keys (idempotent).
+compose up -d db garage caddy
 compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile || log "could not reload the Caddyfile; Caddy keeps the one it has"
+garage_conf=$(sha256sum garage/garage.toml | cut -d' ' -f1)
+if [ -f "$STATE/garage.sha256" ] && [ "$(cat "$STATE/garage.sha256")" != "$garage_conf" ]; then
+  log "garage.toml changed; restarting Garage"
+  compose restart garage
+fi
+echo "$garage_conf" > "$STATE/garage.sha256"
+if ! ./scripts/storage-init.sh; then
+  log "the image store is not ready; nothing was switched"
+  serving=$([ "$active" != none ] && echo "api-$active keeps serving" || echo "nothing was serving yet")
+  alert "Deploy failed: the image store is not ready" "scripts/storage-init.sh failed before $target was started; $serving. See the deploy log."
+  exit 1
+fi
+set_var "API_IMAGE_${idle^^}" "$target"
 
 if compose up -d --no-deps --wait --wait-timeout 180 "api-$idle"; then
   log "api-$idle is healthy; switching"

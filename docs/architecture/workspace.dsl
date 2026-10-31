@@ -214,12 +214,12 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 }
             }
 
-            caddy = container "Reverse proxy" "Serves the one domain over HTTPS with automatic certificates and forwards to the active API slot." "Caddy 2" {
+            caddy = container "Reverse proxy" "Serves the one domain over HTTPS with automatic certificates and forwards to the active API slot; passes presigned image requests at files.<domain> to the image bucket unchanged." "Caddy 2" {
                 tags "Built"
                 properties {
                     "openspec" "add-tree-backend / operations"
                     "adr" "0007"
-                    "code" "deploy/Caddyfile"
+                    "code" "deploy/caddy/Caddyfile"
                 }
             }
 
@@ -383,12 +383,12 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 }
             }
 
-            bucket = container "Image bucket" "Private page images, photos and portraits: originals, display copies, and pending/ uploads." "S3-compatible object storage" {
+            bucket = container "Image bucket" "Private page images, photos and portraits: originals, display copies, and pending/ uploads. Reached by browsers only with presigned links at files.<domain>." "Garage (S3-compatible), on the VPS" {
                 tags "Built" "Data store"
                 properties {
                     "openspec" "add-tree-backend / tree-model; add-proposals-and-review / evidence-media; add-vault-import / vault-import"
                     "adr" "0002"
-                    "code" "server/src/storage/images.ts"
+                    "code" "server/src/storage/images.ts, deploy/garage/garage.toml, deploy/scripts/storage-init.sh"
                 }
             }
 
@@ -848,7 +848,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "note" "Used by the dynamic view; static views show the hop through the reverse proxy"
             }
         }
-        pwa -> bucket "Uploads photos and shows images" "HTTPS PUT and GET, presigned links" "In progress" {
+        pwa -> bucket "Uploads photos and shows images" "HTTPS PUT and GET at files.<domain>, presigned links" "In progress" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
                 "adr" "0002"
@@ -878,6 +878,12 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             properties {
                 "openspec" "add-tree-backend / operations"
                 "adr" "0007"
+            }
+        }
+        caddy -> bucket "Passes presigned image requests at files.<domain> through unchanged" "HTTP, port 3900" "Built" {
+            properties {
+                "openspec" "add-tree-backend / operations"
+                "code" "deploy/caddy/Caddyfile"
             }
         }
         caddy -> mcp "Forwards /mcp" "Streamable HTTP" "Planned" {
@@ -968,7 +974,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-tree-backend / operations"
             }
         }
-        backupJob -> bucket "Copies every image" "rclone, read-only key" "Built" {
+        backupJob -> bucket "Copies every image" "rclone over the S3 API, read-only key" "Built" {
             properties {
                 "openspec" "add-tree-backend / operations"
             }
@@ -1020,7 +1026,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0007"
             }
         }
-        actions -> backupStorage "Restores the latest Backup monthly and compares counts" "restic" "Built" {
+        actions -> backupStorage "Restores the latest Backup monthly and checks record and image counts" "restic" "Built" {
             properties {
                 "openspec" "add-tree-backend / operations"
             }
@@ -1484,13 +1490,13 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 }
             }
 
-            hetznerNode = deploymentNode "Hetzner Cloud" "Germany, EU." "Hetzner" {
+            netcupNode = deploymentNode "netcup" "Nürnberg, Germany, EU." "netcup" {
                 tags "Built"
                 properties {
                     "openspec" "add-tree-backend / operations"
                     "adr" "0007"
                 }
-                deploymentNode "VPS" "One server for one family; firewall allows 22, 80 and 443." "Ubuntu 24.04, 2 vCPU, 4 GB" {
+                deploymentNode "VPS" "One server for one family at rodokmen.dev; firewall allows 22, 80 and 443." "VPS 500 G12, Ubuntu 24.04, 4 GB" {
                     tags "Built"
                     properties {
                         "openspec" "add-tree-backend / operations"
@@ -1508,7 +1514,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                             "openspec" "add-tree-backend / operations"
                             "code" "deploy/docker-compose.yml"
                         }
-                        deploymentNode "caddy" "Ports 80 and 443." "caddy:2-alpine" {
+                        deploymentNode "caddy" "Ports 80 and 443, for <domain> and files.<domain>." "caddy:2-alpine" {
                             tags "Built"
                             caddyInstance = containerInstance caddy {
                                 tags "Built"
@@ -1538,6 +1544,12 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                                 tags "Built"
                             }
                         }
+                        deploymentNode "garage" "Volume images; one node, reached from outside only through Caddy." "dxflrs/garage:v2.5.0" {
+                            tags "Built"
+                            bucketInstance = containerInstance bucket {
+                                tags "Built"
+                            }
+                        }
                         deploymentNode "watchdog" "Runs all the time." "rodokmen-app image" {
                             tags "Built"
                             containerInstance watchdog {
@@ -1556,12 +1568,6 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                                 tags "Planned"
                             }
                         }
-                    }
-                }
-                deploymentNode "Hetzner Object Storage" "Private bucket, for example rodokmen-images." "S3-compatible" {
-                    tags "Built"
-                    bucketInstance = containerInstance bucket {
-                        tags "Built"
                     }
                 }
             }
@@ -1766,7 +1772,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             autolayout lr
         }
 
-        deployment * production "15-deployment" "Production: one VPS in Germany, object storage, Backups and email." {
+        deployment * production "15-deployment" "Production: one VPS in Germany with the images on it, Backups and email." {
             title "Deployment: production"
             include *
             exclude githubNode assistantNode ownerNode

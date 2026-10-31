@@ -4,144 +4,145 @@ graph LR
   subgraph diagram ["Deployment: production"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    subgraph 228 ["Phone or computer"]
-      style 228 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 229 ["Phone or computer"]
+      style 229 fill:#ffffff,stroke:#888888,color:#000000
 
-      229["<div style='font-weight: bold'>App (PWA)</div><div style='font-size: 70%; margin-top: 0px'>[Container: HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9]</div><div style='font-size: 80%; margin-top:10px'>The only interface: the map<br />for anyone; for Members a<br />Tree home, Proposals and<br />review.</div>"]
-      style 229 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      230["<div style='font-weight: bold'>Service worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Service Worker, Cache Storage]</div><div style='font-size: 80%; margin-top:10px'>Precaches the app and<br />reference data per release<br />and keeps up to 2,000 viewed<br />tiles, so the map works<br />offline.</div>"]
+      230["<div style='font-weight: bold'>App (PWA)</div><div style='font-size: 70%; margin-top: 0px'>[Container: HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9]</div><div style='font-size: 80%; margin-top:10px'>The only interface: the map<br />for anyone; for Members a<br />Tree home, Proposals and<br />review.</div>"]
       style 230 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      232[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
-      style 232 fill:#438dd5,stroke:#c25e00,color:#ffffff
+      231["<div style='font-weight: bold'>Service worker</div><div style='font-size: 70%; margin-top: 0px'>[Container: Service Worker, Cache Storage]</div><div style='font-size: 80%; margin-top:10px'>Precaches the app and<br />reference data per release<br />and keeps up to 2,000 viewed<br />tiles, so the map works<br />offline.</div>"]
+      style 231 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      233[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
+      style 233 fill:#438dd5,stroke:#c25e00,color:#ffffff
     end
 
-    subgraph 238 ["Hetzner Cloud"]
-      style 238 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 239 ["netcup"]
+      style 239 fill:#ffffff,stroke:#888888,color:#000000
 
-      subgraph 239 ["VPS"]
-        style 239 fill:#ffffff,stroke:#888888,color:#000000
-
-        240["<div style='font-weight: bold'>systemd timer</div><div style='font-size: 70%; margin-top: 0px'>[Infrastructure Node: rodokmen-backup.timer]</div><div style='font-size: 80%; margin-top:10px'>Starts the Backup job every<br />night at 02:30 Prague time.</div>"]
+      subgraph 240 ["VPS"]
         style 240 fill:#ffffff,stroke:#888888,color:#000000
-        subgraph 241 ["Docker Compose"]
-          style 241 fill:#ffffff,stroke:#888888,color:#000000
 
-          subgraph 242 ["caddy"]
-            style 242 fill:#ffffff,stroke:#888888,color:#000000
+        241["<div style='font-weight: bold'>systemd timer</div><div style='font-size: 70%; margin-top: 0px'>[Infrastructure Node: rodokmen-backup.timer]</div><div style='font-size: 80%; margin-top:10px'>Starts the Backup job every<br />night at 02:30 Prague time.</div>"]
+        style 241 fill:#ffffff,stroke:#888888,color:#000000
+        subgraph 242 ["Docker Compose"]
+          style 242 fill:#ffffff,stroke:#888888,color:#000000
 
-            243["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates and forwards to<br />the active API slot.</div>"]
-            style 243 fill:#438dd5,stroke:#2e6295,color:#ffffff
+          subgraph 243 ["caddy"]
+            style 243 fill:#ffffff,stroke:#888888,color:#000000
+
+            244["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates and forwards to<br />the active API slot; passes<br />presigned image requests at<br />files.<domain> to the image<br />bucket unchanged.</div>"]
+            style 244 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 246 ["api-blue"]
-            style 246 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 247 ["api-blue"]
+            style 247 fill:#ffffff,stroke:#888888,color:#000000
 
-            247["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
-            style 247 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            248["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
+            style 248 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 252 ["api-green"]
-            style 252 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 253 ["api-green"]
+            style 253 fill:#ffffff,stroke:#888888,color:#000000
 
-            253["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
-            style 253 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            254["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
+            style 254 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 258 ["mcp"]
-            style 258 fill:#ffffff,stroke:#777777,color:#555555
-
-            259["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API.</div>"]
+          subgraph 259 ["mcp"]
             style 259 fill:#ffffff,stroke:#777777,color:#555555
+
+            260["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API.</div>"]
+            style 260 fill:#ffffff,stroke:#777777,color:#555555
           end
 
-          subgraph 263 ["db"]
-            style 263 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 264 ["db"]
+            style 264 fill:#ffffff,stroke:#888888,color:#000000
 
-            264[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
-            style 264 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            265[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
+            style 265 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 269 ["watchdog"]
-            style 269 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 270 ["garage"]
+            style 270 fill:#ffffff,stroke:#888888,color:#000000
 
-            270["<div style='font-weight: bold'>Watchdog</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, API image, cli.js watchdog]</div><div style='font-size: 80%; margin-top:10px'>Emails the Owner when the<br />health check fails for over 5<br />minutes or a Backup fails or<br />is missing.</div>"]
-            style 270 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            271[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
+            style 271 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 272 ["backup"]
-            style 272 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 279 ["watchdog"]
+            style 279 fill:#ffffff,stroke:#888888,color:#000000
 
-            273["<div style='font-weight: bold'>Backup job</div><div style='font-size: 70%; margin-top: 0px'>[Container: pg_dump, rclone, restic]</div><div style='font-size: 80%; margin-top:10px'>Every night stores the<br />database and all images,<br />encrypted, keeping 30 daily<br />and 12 monthly Backups.</div>"]
-            style 273 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            280["<div style='font-weight: bold'>Watchdog</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, API image, cli.js watchdog]</div><div style='font-size: 80%; margin-top:10px'>Emails the Owner when the<br />health check fails for over 5<br />minutes or a Backup fails or<br />is missing.</div>"]
+            style 280 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 276 ["export"]
-            style 276 fill:#ffffff,stroke:#777777,color:#555555
+          subgraph 282 ["backup"]
+            style 282 fill:#ffffff,stroke:#888888,color:#000000
 
-            277["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
-            style 277 fill:#ffffff,stroke:#777777,color:#555555
+            283["<div style='font-weight: bold'>Backup job</div><div style='font-size: 70%; margin-top: 0px'>[Container: pg_dump, rclone, restic]</div><div style='font-size: 80%; margin-top:10px'>Every night stores the<br />database and all images,<br />encrypted, keeping 30 daily<br />and 12 monthly Backups.</div>"]
+            style 283 fill:#438dd5,stroke:#2e6295,color:#ffffff
+          end
+
+          subgraph 287 ["export"]
+            style 287 fill:#ffffff,stroke:#777777,color:#555555
+
+            288["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
+            style 288 fill:#ffffff,stroke:#777777,color:#555555
           end
 
         end
 
       end
 
-      subgraph 279 ["Hetzner Object Storage"]
-        style 279 fill:#ffffff,stroke:#888888,color:#000000
-
-        280[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: S3-compatible object storage]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads.</div>")]
-        style 280 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      end
-
     end
 
-    subgraph 288 ["Second EU provider"]
-      style 288 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 290 ["Second EU provider"]
+      style 290 fill:#ffffff,stroke:#888888,color:#000000
 
-      289["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
-      style 289 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      291["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
+      style 291 fill:#8c8c8c,stroke:#616161,color:#ffffff
     end
 
-    subgraph 291 ["EU email provider"]
-      style 291 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 293 ["EU email provider"]
+      style 293 fill:#ffffff,stroke:#888888,color:#000000
 
-      292["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
-      style 292 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      294["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
+      style 294 fill:#8c8c8c,stroke:#616161,color:#ffffff
     end
 
-    subgraph 298 ["Anthropic"]
-      style 298 fill:#ffffff,stroke:#777777,color:#555555
+    subgraph 300 ["Anthropic"]
+      style 300 fill:#ffffff,stroke:#777777,color:#555555
 
-      299["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
-      style 299 fill:#ffffff,stroke:#777777,color:#555555
+      301["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
+      style 301 fill:#ffffff,stroke:#777777,color:#555555
     end
 
-    229-- "<div>Fetches the app, data and<br />tiles through it</div><div style='font-size: 70%'>[Service Worker API]</div>" -->230
-    229-. "<div>Keeps Drafts and photos;<br />later caches Tree records</div><div style='font-size: 70%'>[IndexedDB]</div>" .->232
-    229-- "<div>Loads the app and calls the<br />JSON API</div><div style='font-size: 70%'>[HTTPS, session cookie]</div>" -->243
-    243-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->247
-    243-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->253
-    243-. "<div>Forwards /mcp</div><div style='font-size: 70%'>[Streamable HTTP]</div>" .->259
-    259-. "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->247
-    259-. "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->253
-    247-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->264
-    253-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->264
-    270-- "<div>Checks the public health<br />check every minute</div><div style='font-size: 70%'>[HTTPS]</div>" -->243
-    273-- "<div>Dumps the database and counts<br />its records</div><div style='font-size: 70%'>[pg_dump]</div>" -->264
-    270-- "<div>Reads the status of the last<br />Backup</div><div style='font-size: 70%'>[backup.json on a shared volume]</div>" -->273
-    277-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->264
-    229-. "<div>Uploads photos and shows<br />images</div><div style='font-size: 70%'>[HTTPS PUT and GET, presigned links]</div>" .->280
-    247-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->280
-    247-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->280
-    253-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->280
-    253-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->280
-    273-- "<div>Copies every image</div><div style='font-size: 70%'>[rclone, read-only key]</div>" -->280
-    273-- "<div>Stores encrypted,<br />deduplicated Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->289
-    247-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->292
-    253-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->292
-    270-- "<div>Sends alerts to the Owner</div><div style='font-size: 70%'>[SMTP]</div>" -->292
-    247-. "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" .->299
-    253-. "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" .->299
-    240-- "<div>Starts nightly</div><div style='font-size: 70%'>[docker compose --profile jobs run]</div>" -->273
+    230-- "<div>Fetches the app, data and<br />tiles through it</div><div style='font-size: 70%'>[Service Worker API]</div>" -->231
+    230-. "<div>Keeps Drafts and photos;<br />later caches Tree records</div><div style='font-size: 70%'>[IndexedDB]</div>" .->233
+    230-- "<div>Loads the app and calls the<br />JSON API</div><div style='font-size: 70%'>[HTTPS, session cookie]</div>" -->244
+    244-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->248
+    244-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->254
+    244-. "<div>Forwards /mcp</div><div style='font-size: 70%'>[Streamable HTTP]</div>" .->260
+    260-. "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->248
+    260-. "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->254
+    248-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->265
+    254-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->265
+    230-. "<div>Uploads photos and shows<br />images</div><div style='font-size: 70%'>[HTTPS PUT and GET at files.<domain>, presigned links]</div>" .->271
+    244-- "<div>Passes presigned image<br />requests at files.<domain><br />through unchanged</div><div style='font-size: 70%'>[HTTP, port 3900]</div>" -->271
+    248-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->271
+    248-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->271
+    254-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->271
+    254-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->271
+    280-- "<div>Checks the public health<br />check every minute</div><div style='font-size: 70%'>[HTTPS]</div>" -->244
+    283-- "<div>Dumps the database and counts<br />its records</div><div style='font-size: 70%'>[pg_dump]</div>" -->265
+    283-- "<div>Copies every image</div><div style='font-size: 70%'>[rclone over the S3 API, read-only key]</div>" -->271
+    280-- "<div>Reads the status of the last<br />Backup</div><div style='font-size: 70%'>[backup.json on a shared volume]</div>" -->283
+    288-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->265
+    283-- "<div>Stores encrypted,<br />deduplicated Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->291
+    248-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->294
+    254-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->294
+    280-- "<div>Sends alerts to the Owner</div><div style='font-size: 70%'>[SMTP]</div>" -->294
+    248-. "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" .->301
+    254-. "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" .->301
+    241-- "<div>Starts nightly</div><div style='font-size: 70%'>[docker compose --profile jobs run]</div>" -->283
 
   end

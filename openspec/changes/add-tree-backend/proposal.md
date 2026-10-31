@@ -10,7 +10,7 @@ Several Members need to reach one Tree from their phones, with roles and Backups
 - A PostgreSQL + PostGIS schema for the Tree: Persons with Names, Families, Events with Roles, Places, Houses, Parishes, Estates, Sources, and Citations with confidence and images.
 - A read-only JSON API with an OpenAPI description, open to Members and Agents only.
 - Member accounts: invitation by the Owner, sign-in with a passkey or an emailed link, and three roles (Contributor, Editor, Owner).
-- Operations: one domain over HTTPS on a Hetzner VPS in Germany, deploys from CI, email through an EU transactional service, and nightly encrypted Backups to a second EU provider.
+- Operations: one domain over HTTPS on a netcup VPS in Germany, with the images on the same server, deploys from CI, email through an EU transactional service, and nightly encrypted Backups to a second EU provider.
 
 Out of scope: changing the Tree (Proposals, review, history and undo come in `add-proposals-and-review`); Agent accounts and the MCP server (`add-agent-access`); family screens in the app (`add-family-view`); Exports and erasure (`add-exports-and-erasure`); GEDCOM import. Until `add-proposals-and-review` lands, the Tree holds only test fixtures.
 
@@ -27,5 +27,5 @@ Out of scope: changing the Tree (Proposals, review, history and undo come in `ad
 ## Impact
 
 - New packages `server/` and `shared/`; the repo becomes a pnpm workspace with `app/`.
-- New infrastructure: a Hetzner VPS and object storage, a domain with DNS, an EU email service, a second EU provider for Backups.
+- New infrastructure: a netcup VPS (with an S3-compatible image store on it), the domain rodokmen.dev with DNS, an EU email service, a second EU provider for Backups.
 - New GitHub Actions secrets for deployment, Backups and email.

@@ -33,7 +33,7 @@ Person(Contributor, "Contributor", $descr="A Member who reads the Tree and submi
 box "Rodokmen\n<size:12>[Software System]</size>"
   Container(Rodokmen.AppPWA, "App (PWA)", $techn="HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9", $descr="The only interface: the map for anyone; for Members a Tree home, Proposals and review.", $tags="Container,Built,Browser", $link="")
   ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
-  ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="S3-compatible object storage", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads.", $tags="Container,Built,Data store", $link="")
+  ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="Garage (S3-compatible), on the VPS", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads. Reached by browsers only with presigned links at files.<domain>.", $tags="Container,Built,Data store", $link="")
   Container(Rodokmen.APIserver, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
   ContainerDb(Rodokmen.Database, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
   Container(Rodokmen.Exportjob, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
@@ -46,7 +46,7 @@ end box
 
 Rel(Contributor, Rodokmen.AppPWA, "1: Writes a Draft without signal, with a photo of the register page", $techn="Browser", $tags="In progress", $link="")
 Rel(Rodokmen.AppPWA, Rodokmen.Ondevicestore, "2: Keeps the Draft and the photo", $techn="IndexedDB", $tags="In progress", $link="")
-Rel(Rodokmen.AppPWA, Rodokmen.Imagebucket, "3: Back online: uploads the photo to pending/", $techn="HTTPS PUT and GET, presigned links", $tags="In progress", $link="")
+Rel(Rodokmen.AppPWA, Rodokmen.Imagebucket, "3: Back online: uploads the photo to pending/", $techn="HTTPS PUT and GET at files.<domain>, presigned links", $tags="In progress", $link="")
 Rel(Rodokmen.AppPWA, Rodokmen.APIserver, "4: Submits it: typed operations, base versions, idempotency key", $techn="JSON/HTTPS, session cookie", $tags="In progress", $link="")
 Rel(Rodokmen.APIserver, Rodokmen.Database, "5: Stores it as pending; only its author and the Editors see it", $techn="SQL", $tags="In progress", $link="")
 Rel(Editor, Rodokmen.AppPWA, "6: Opens the review queue, fixes a misread year and accepts", $techn="Browser", $tags="In progress", $link="")

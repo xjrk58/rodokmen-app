@@ -1,10 +1,12 @@
 name: backup-restore-test
 
 # Monthly restore test (operations spec): restores the latest Backup from the second provider
-# into a throwaway PostGIS container, checks that the record counts match production at Backup
-# time and that every image is there, and emails the Owner if not.
+# into a throwaway PostGIS container, checks that the record counts and the number of image files
+# match production at Backup time and that every image of the Tree has its files, and emails the
+# Owner if not (deploy/backup/restore-check.sh).
 #
-# To see it fail on purpose, run it by hand with "empty_table" set (for example "person").
+# To see it fail on purpose, run it by hand with "empty_table" set (for example "person"), or
+# with "remove_image" ticked (one restored image file is deleted before comparing).
 #
 # Secrets (environment "backups"): RESTIC_REPOSITORY, RESTIC_PASSWORD, BACKUP_S3_ACCESS_KEY_ID,
 # BACKUP_S3_SECRET_ACCESS_KEY, and for the alert: SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER,
@@ -18,6 +20,10 @@ on:
         description: Deliberately empty this table in the scratch restore (the test must then fail)
         required: false
         default: ''
+      remove_image:
+        description: Deliberately delete one restored image file (the test must then fail)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -51,6 +57,7 @@ jobs:
       PGPASSWORD: restore
       SCRATCH_DB: rodokmen_restore
       EMPTY_TABLE: ${{ inputs.empty_table }}
+      REMOVE_IMAGE: ${{ inputs.remove_image && '1' || '' }}
     steps:
       - uses: actions/checkout@v7
       - name: Install restic and the PostgreSQL 16 client
@@ -58,7 +65,7 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q restic postgresql-client-16
           echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
-      - name: Restore the latest Backup and compare record counts
+      - name: Restore the latest Backup and compare record and image counts
         run: deploy/backup/restore-check.sh
       - name: Alert the Owner
         if: failure()
@@ -72,4 +79,4 @@ jobs:
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
         run: |
           deploy/backup/send-alert.sh "Monthly restore test failed" \
-            "The restore test of the latest Backup failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}${EMPTY_TABLE:+ (table $EMPTY_TABLE was emptied on purpose)}"
+            "The restore test of the latest Backup failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}${EMPTY_TABLE:+ (table $EMPTY_TABLE was emptied on purpose)}${REMOVE_IMAGE:+ (an image file was deleted on purpose)}"

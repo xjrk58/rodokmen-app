@@ -41,19 +41,19 @@ Deployment_Node(Production.Ownerscomputer, "Owner's computer", $type="Node 22", 
   Container(Production.Ownerscomputer.Vaultimporter_1, "Vault importer", $techn="Node 22 CLI in server/, Agent token", $descr="Reads the Vault once and submits one Proposal per Source note as an import batch; can be re-run.", $tags="Container,Planned", $link="")
 }
 
-Deployment_Node(Production.HetznerCloud, "Hetzner Cloud", $type="Hetzner", $descr="Germany, EU.", $tags="Deployment Node,Built", $link="") {
-  Deployment_Node(Production.HetznerCloud.VPS, "VPS", $type="Ubuntu 24.04, 2 vCPU, 4 GB", $descr="One server for one family; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
-    Deployment_Node(Production.HetznerCloud.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+Deployment_Node(Production.netcup, "netcup", $type="netcup", $descr="Nürnberg, Germany, EU.", $tags="Deployment Node,Built", $link="") {
+  Deployment_Node(Production.netcup.VPS, "VPS", $type="VPS 500 G12, Ubuntu 24.04, 4 GB", $descr="One server for one family at rodokmen.dev; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
+    Deployment_Node(Production.netcup.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
+      Deployment_Node(Production.netcup.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
       }
 
-      Deployment_Node(Production.HetznerCloud.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
-        Container(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
+      Deployment_Node(Production.netcup.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.export.Exportjob_1, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
       }
 
     }
@@ -74,16 +74,16 @@ Deployment_Node(Production.GitHub, "GitHub", $type="SaaS", $descr="github.com", 
   System(Production.GitHub.Vault_1, "Vault", $descr="The Owner's Markdown notes in the private rodokmen-data repo, about 4,100 people with scans; frozen after the import.", $tags="Software System,External,Planned", $link="")
 }
 
-Rel(Production.Assistantsmachine.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Production.Ownerscomputer.Vaultimporter_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
-Rel(Production.Assistantsmachine.MCPserver_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Production.Ownerscomputer.Vaultimporter_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
-Rel(Production.GitHub.GitHubActions_1, Production.HetznerCloud.VPS.DockerCompose.apiblue.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
-Rel(Production.GitHub.GitHubActions_1, Production.HetznerCloud.VPS.DockerCompose.apigreen.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
-Rel(Production.GitHub.GitHubActions_1, Production.SecondEUprovider.Backupstorage_1, "Restores the latest Backup monthly and compares counts", $techn="restic", $tags="Built", $link="")
+Rel(Production.Assistantsmachine.MCPserver_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.Ownerscomputer.Vaultimporter_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Production.Assistantsmachine.MCPserver_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.Ownerscomputer.Vaultimporter_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
+Rel(Production.GitHub.GitHubActions_1, Production.SecondEUprovider.Backupstorage_1, "Restores the latest Backup monthly and checks record and image counts", $techn="restic", $tags="Built", $link="")
 Rel(Production.GitHub.GitHubActions_1, Production.GitHub.GitHubContainerRegistry_1, "Pushes the API image", $techn="OCI", $tags="Built", $link="")
 Rel(Production.GitHub.GitHubActions_1, Production.GitHub.GitHubPages_1, "Publishes app/ on every push to main", $techn="Pages deploy", $tags="Built", $link="")
-Rel(Production.HetznerCloud.VPS.DockerCompose.export.Exportjob_1, Production.GitHub.rodokmenexportrepo_1, "Commits changed notes and family.ged; one fresh commit after an erasure", $techn="Git over SSH, deploy key", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.export.Exportjob_1, Production.GitHub.rodokmenexportrepo_1, "Commits changed notes and family.ged; one fresh commit after an erasure", $techn="Git over SSH, deploy key", $tags="Planned", $link="")
 Rel(Production.Ownerscomputer.Vaultimporter_1, Production.GitHub.Vault_1, "Reads notes, scans and PDFs", $techn="Git checkout", $tags="Planned", $link="")
 
 SHOW_LEGEND(true)
