@@ -19,6 +19,11 @@ test('the site has the shell and its data, and no tests, scripts, package files 
     'data/municipalities.json',
     'vendor/leaflet/leaflet-src.esm.js',
     'vendor/leaflet/LICENSE',
+    'vendor/preact/preact.module.js',
+    'vendor/preact/hooks.module.js',
+    'vendor/preact/LICENSE',
+    'vendor/htm/htm.module.js',
+    'vendor/htm/LICENSE',
   ])
     assert.ok(files.includes(needed), needed);
   for (const file of files) {
