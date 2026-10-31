@@ -40,6 +40,8 @@ export interface UploadLink extends ImageLink {
 }
 
 export interface ImageStorage {
+  /** The origin every link points at (files.<domain> in production), for the app's Content-Security-Policy. */
+  linkOrigin(): Promise<string>;
   /** A presigned GET link to the object, expiring after IMAGE_LINK_SECONDS. */
   link(storageKey: string, contentType: string): Promise<ImageLink>;
   /** A presigned PUT link for exactly this content type and size. */
@@ -92,6 +94,10 @@ export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Cli
   const Bucket = s3.bucket;
   const signer = createLinkSigner(s3);
   return {
+    async linkOrigin() {
+      // Signed like every link: path-style, or with the bucket in the host name, as the SDK decides.
+      return new URL(await getSignedUrl(signer, new GetObjectCommand({ Bucket, Key: 'origin' }), { expiresIn: 60 })).origin;
+    },
     async link(storageKey, contentType) {
       const signingDate = clock.now();
       const command = new GetObjectCommand({ Bucket, Key: storageKey, ResponseContentType: contentType, ResponseCacheControl: 'private, max-age=300' });
@@ -140,6 +146,9 @@ export class MemoryImageStorage implements ImageStorage {
     public baseUrl = 'https://storage.invalid/bucket/',
   ) {}
 
+  async linkOrigin(): Promise<string> {
+    return new URL(this.baseUrl).origin;
+  }
   async link(storageKey: string): Promise<ImageLink> {
     const expiresAt = new Date(this.clock.now().getTime() + IMAGE_LINK_SECONDS * 1000);
     return { url: `${this.baseUrl}${storageKey}?expires=${expiresAt.getTime()}`, expiresAt };
