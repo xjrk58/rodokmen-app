@@ -1,7 +1,8 @@
 import { ApiError, type MemberRole, type UiLanguage } from '@rodokmen/shared';
-import type { AddressInfo } from 'node:net';
+import { createServer, type AddressInfo } from 'node:net';
 import { z } from 'zod';
 import { buildApp, type RodokmenApp } from '../src/app.js';
+import { createAgent } from '../src/auth/agents.js';
 import { createSession, SESSION_COOKIE } from '../src/auth/sessions.js';
 import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db/db.js';
@@ -66,25 +67,46 @@ export async function makeApp(
 
 let counter = 0;
 
+/** A Member's account: unlike an Agent's, it always has an email. */
+export type MemberAccount = Account & { email: string };
+
+export function asMember(a: Account): MemberAccount {
+  if (a.email === null) throw new Error(`account ${a.id} is an Agent`);
+  return { ...a, email: a.email };
+}
+
 /** Creates a Member directly in the database (the Owner first, if none exists). */
 export async function createMember(
   db: Db,
   role: MemberRole = 'contributor',
   fields: { email?: string; displayName?: string; language?: UiLanguage } = {},
-): Promise<Account> {
+): Promise<MemberAccount> {
   counter += 1;
   const email = fields.email ?? `member${counter}-${Math.random().toString(36).slice(2, 8)}@example.test`;
-  return db
-    .insertInto('account')
-    .values({ email, display_name: fields.displayName ?? `Member ${counter}`, language: fields.language ?? 'en', role })
-    .returningAll()
-    .executeTakeFirstOrThrow();
+  return asMember(
+    await db
+      .insertInto('account')
+      .values({ email, display_name: fields.displayName ?? `Member ${counter}`, language: fields.language ?? 'en', role })
+      .returningAll()
+      .executeTakeFirstOrThrow(),
+  );
 }
 
-export async function ensureOwner(db: Db): Promise<Account> {
+export async function ensureOwner(db: Db): Promise<MemberAccount> {
   const existing = await db.selectFrom('account').selectAll().where('role', '=', 'owner').executeTakeFirst();
-  return existing ?? createMember(db, 'owner', { displayName: 'Owner Example', language: 'cs' });
+  return existing ? asMember(existing) : createMember(db, 'owner', { displayName: 'Owner Example', language: 'cs' });
 }
+
+/** An Agent the Owner created, with its first token (as POST /api/agents does). */
+export async function createAgentWithToken(db: Db, clock: Clock, name = 'Invented Agent'): Promise<{ agent: Account; token: string; tokenId: string }> {
+  const owner = await ensureOwner(db);
+  const { agent, token } = await createAgent({ db, clock }, owner, name, null);
+  const account = await db.selectFrom('account').selectAll().where('id', '=', agent.id).executeTakeFirstOrThrow();
+  return { agent: account, token: token.token, tokenId: token.id };
+}
+
+/** The Authorization header of an Agent token. */
+export const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
 
 /** A session cookie header for a Member, as if they had signed in. */
 export async function signIn(db: Db, clock: Clock, account: Account): Promise<string> {
@@ -120,4 +142,18 @@ export function idOf(res: { json(): unknown }): string {
 export function portOf(address: AddressInfo | string | null): number {
   if (address === null || typeof address === 'string') throw new Error('the server is not listening on a TCP port');
   return address.port;
+}
+
+/** A TCP port nothing listens on right now. */
+export async function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer();
+    srv.unref();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const address = srv.address();
+      if (address === null || typeof address === 'string') return reject(new Error('no TCP port'));
+      srv.close(() => resolve(address.port));
+    });
+  });
 }

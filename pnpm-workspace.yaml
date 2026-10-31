@@ -1,6 +1,8 @@
 packages:
   - app
   - server
+  # The MCP server (add-agent-access): a client of the API, no database access of its own.
+  - server/mcp
   - shared
 
 overrides:

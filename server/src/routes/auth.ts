@@ -126,7 +126,8 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
 
   // Registering a passkey needs a session: from an invitation, an emailed link, or another passkey.
   app.post('/api/auth/passkey/registration/options', {
-    schema: { tags: ['Sign-in'], summary: 'Start registering a passkey on this device', response: { 200: WebAuthnJson, 401: ApiError } },
+    config: { action: 'ownAccount' },
+    schema: { tags: ['Sign-in'], summary: 'Start registering a passkey on this device', response: { 200: WebAuthnJson, 401: ApiError, 403: ApiError } },
     handler: async (req, reply) => {
       if (!req.member) return unauthorized(reply);
       const { options, challengeId } = await registrationOptions(deps.passkeys, req.member);
@@ -136,11 +137,12 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
   });
 
   app.post('/api/auth/passkey/registration/verify', {
+    config: { action: 'ownAccount' },
     schema: {
       tags: ['Sign-in'],
       summary: 'Finish registering a passkey',
       body: PasskeyRegistrationVerifyBody,
-      response: { 201: z.object({ id: z.uuid() }), 400: ApiError, 401: ApiError, 409: ApiError },
+      response: { 201: z.object({ id: z.uuid() }), 400: ApiError, 401: ApiError, 403: ApiError, 409: ApiError },
     },
     handler: async (req, reply) => {
       if (!req.member) return unauthorized(reply);

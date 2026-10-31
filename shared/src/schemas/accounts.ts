@@ -1,24 +1,37 @@
 /**
- * Member accounts (member-accounts spec): invitations, sign-in, roles and sessions.
+ * Member accounts (member-accounts spec): invitations, sign-in, roles and sessions; and Agent
+ * accounts with their tokens (agent-access spec).
  */
 import { z } from 'zod';
-import { mayDecide } from '../rules.js';
+import { mayDecide, mayDo } from '../rules.js';
 import { PersonSummary } from './api.js';
-import { Id, UiLanguage, Version } from './common.js';
+import { ApiError, Id, UiLanguage, Version } from './common.js';
 
 /** Every Member has exactly one role. There is exactly one Owner. */
 export const MemberRole = z.enum(['contributor', 'editor', 'owner']).meta({ id: 'MemberRole', description: 'Contributor (the default), Editor or Owner' });
 
 export const MEMBER_ROLE_RANK = { contributor: 0, editor: 1, owner: 2 } as const satisfies Record<z.infer<typeof MemberRole>, number>;
 
-/** What a role allows. Editors and the Owner review Proposals; only the Owner manages Members. */
-export function permissionsFor(role: z.infer<typeof MemberRole>) {
+/** The role of any account: a Member's, or `agent` for an Agent the Owner created (agent-access spec). */
+export const AccountRole = z
+  .enum(['contributor', 'editor', 'owner', 'agent'])
+  .meta({ id: 'AccountRole', description: 'A Member role, or agent for an Agent account (read and propose only)' });
+
+/**
+ * What an API route does, as the role-and-action rule `mayDo` (shared/src/rules.ts) sees it.
+ * Every route names one (server/src/auth/plugin.ts); a GET that names none reads.
+ */
+export const ACTIONS = ['read', 'propose', 'review', 'accept', 'reject', 'merge', 'undo', 'directEdit', 'ownAccount', 'manageAccounts'] as const;
+export type Action = (typeof ACTIONS)[number];
+
+/** What a role allows, from the role-and-action rule. Editors and the Owner review Proposals; only the Owner manages Members and Agents. */
+export function permissionsFor(role: z.infer<typeof AccountRole>) {
   return {
-    propose: true,
+    propose: mayDo(role, 'propose'),
     review: mayDecide(role),
-    inviteMembers: role === 'owner',
-    changeRoles: role === 'owner',
-    disableMembers: role === 'owner',
+    inviteMembers: mayDo(role, 'manageAccounts'),
+    changeRoles: mayDo(role, 'manageAccounts'),
+    disableMembers: mayDo(role, 'manageAccounts'),
   };
 }
 
@@ -39,10 +52,10 @@ export const Me = z
   .object({
     id: Id,
     version: Version,
-    email: z.string(),
+    email: z.string().nullable().describe('Null for an Agent, which has no email'),
     displayName: z.string(),
     language: UiLanguage,
-    role: MemberRole,
+    role: AccountRole,
     permissions: Permissions,
     passkeyCount: z.number().int(),
     person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)'),
@@ -160,7 +173,84 @@ export const PasskeyLoginVerifyBody = z.object({ response: WebAuthnJson }).meta(
 
 export const SignedIn = z.object({ ok: z.literal(true), member: Me }).meta({ id: 'SignedIn' });
 
+// ---------------------------------------------------------------- Agents (agent-access spec)
+
+/** Agent token prefix: `rdk_ag_` and 64 hex digits (256 random bits). */
+export const AGENT_TOKEN_PATTERN = /^rdk_ag_[0-9a-f]{64}$/;
+/** Requests an Agent may make per hour (agent-access spec, "Rate limits"). */
+export const AGENT_PROPOSALS_PER_HOUR = 60;
+export const AGENT_READS_PER_HOUR = 1000;
+
+export const AgentName = z.string().trim().min(1).max(100);
+
+const TokenLabel = z.string().trim().min(1).max(100).describe('What the token is for, such as the machine it runs on');
+
+export const CreateAgentBody = z
+  .object({ name: AgentName.describe("The Agent's name, shown next to its Proposals"), tokenLabel: TokenLabel.optional() })
+  .meta({ id: 'CreateAgentBody' });
+
+export const CreateAgentTokenBody = z.object({ label: TokenLabel.optional() }).meta({ id: 'CreateAgentTokenBody' });
+
+export const AgentTokenView = z
+  .object({
+    id: Id,
+    prefix: z.string().describe('The first characters of the token, to tell tokens apart'),
+    label: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+    lastUsedAt: z.iso.datetime().nullable(),
+    revokedAt: z.iso.datetime().nullable(),
+  })
+  .meta({ id: 'AgentTokenView' });
+
+export const IssuedAgentToken = AgentTokenView.safeExtend({
+  token: z.string().describe('The whole token. It is shown only in this answer; only its hash is stored'),
+}).meta({ id: 'IssuedAgentToken' });
+
+export const WindowUsage = z
+  .object({
+    count: z.number().int().describe('Requests counted in the current window'),
+    limit: z.number().int().describe('Requests allowed per window'),
+    windowEndsAt: z.iso.datetime().nullable().describe('End of the current window; null when none is open'),
+  })
+  .meta({ id: 'WindowUsage' });
+
+export const AgentUsage = z
+  .object({
+    proposals: WindowUsage.describe('Submitted Proposals, per hour'),
+    reads: WindowUsage.describe('Every other request (reads, and image uploads for Proposals), per hour'),
+  })
+  .meta({ id: 'AgentUsage' });
+
+export const AgentView = z
+  .object({
+    id: Id,
+    name: z.string(),
+    disabled: z.boolean(),
+    createdAt: z.iso.datetime(),
+    lastSeenAt: z.iso.datetime().nullable(),
+    tokens: z.array(AgentTokenView).describe('Newest first, revoked ones included'),
+    usage: AgentUsage,
+  })
+  .meta({ id: 'AgentView' });
+
+export const AgentList = z.object({ items: z.array(AgentView) }).meta({ id: 'AgentList' });
+
+export const CreatedAgent = z
+  .object({ agent: AgentView, token: IssuedAgentToken.describe("The Agent's first token, shown in full only here") })
+  .meta({ id: 'CreatedAgent' });
+
+export const AgentTokenParams = z.object({ id: Id, tokenId: Id });
+
+/** 429: an Agent over its hourly limit, with the time after which it may try again. */
+export const RateLimited = ApiError.safeExtend({
+  retryAt: z.iso.datetime().describe('When the current window ends and the request may be made again'),
+}).meta({ id: 'RateLimited' });
+
 export type MemberRole = z.infer<typeof MemberRole>;
+export type AccountRole = z.infer<typeof AccountRole>;
+export type AgentView = z.infer<typeof AgentView>;
+export type AgentTokenView = z.infer<typeof AgentTokenView>;
+export type IssuedAgentToken = z.infer<typeof IssuedAgentToken>;
 export type Me = z.infer<typeof Me>;
 export type MemberView = z.infer<typeof MemberView>;
 export type UpdateMeBody = z.infer<typeof UpdateMeBody>;

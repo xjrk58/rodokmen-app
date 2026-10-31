@@ -1,7 +1,6 @@
 import { CitationDetail, EventDetail, Operation, PersonDetail, PersonSearchResult, ProposalView, UploadTicket } from '@rodokmen/shared';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
-import { createServer } from 'node:net';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -13,7 +12,7 @@ import { OutboxMailer } from '../src/mail/mailer.js';
 import { DEFAULT_APP_DIR } from '../src/routes/pages.js';
 import { MemoryImageStorage } from '../src/storage/images.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { createMember, ensureOwner, signIn, TestClock, testConfig } from './helpers.js';
+import { createMember, ensureOwner, freePort, signIn, TestClock, testConfig } from './helpers.js';
 
 /**
  * The app's Proposal screens against the real server and database, in Chromium at phone size
@@ -24,19 +23,6 @@ import { createMember, ensureOwner, signIn, TestClock, testConfig } from './help
 const L = generateFixture().landmarks;
 const SCREENSHOT = process.env.REVIEW_SCREENSHOT;
 const PNG_1PX = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=', 'base64');
-
-async function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const srv = createServer();
-    srv.unref();
-    srv.on('error', reject);
-    srv.listen(0, '127.0.0.1', () => {
-      const address = srv.address();
-      if (address === null || typeof address === 'string') return reject(new Error('no TCP port'));
-      srv.close(() => resolve(address.port));
-    });
-  });
-}
 
 async function photo(text: string): Promise<Buffer> {
   // An invented "register page": ruled lines of scribbles under a heading.
@@ -139,7 +125,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
           { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 },
           (_req, body, done) => done(null, body),
         );
-        scope.put('/test-storage/*', { schema: { hide: true } }, async (req, reply) => {
+        scope.put('/test-storage/*', { config: { action: 'propose' }, schema: { hide: true } }, async (req, reply) => {
           const key = new URL(req.url, origin).pathname.replace('/test-storage/', '');
           await storage.put(key, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.headers['content-type'] ?? 'application/octet-stream');
           return reply.code(200).send();

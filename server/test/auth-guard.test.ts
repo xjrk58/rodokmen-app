@@ -55,7 +55,7 @@ describe('Members and Agents only', () => {
     expect((await a.app.inject({ method: 'GET', url: '/api/no-such-route' })).statusCode).toBe(401);
   });
 
-  it('refuses tokens until Agent accounts exist, and unknown or ended sessions', async () => {
+  it('refuses unknown tokens, and unknown or ended sessions', async () => {
     const bearer = await a.app.inject({ method: 'GET', url: `/api/persons/${L.janNovak}`, headers: { authorization: 'Bearer rdk_ag_0000000000000000000000' } });
     expect(bearer.statusCode).toBe(401);
     const forged = await a.app.inject({

@@ -195,7 +195,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
     expect(await page.getByTestId('settings-language').count()).toBe(1);
     expect(await page.getByTestId('settings-passkeys').count()).toBe(1);
     expect(await page.getByTestId('settings-family').count()).toBe(0);
-    expect(await page.getByText(owner.email).count()).toBe(0);
+    expect(await page.getByText(owner.email ?? 'no email').count()).toBe(0);
   }, 60_000);
 
   it('family on the map: pins at the fixture villages, "Family here" in the place sheet, and a life path', async () => {

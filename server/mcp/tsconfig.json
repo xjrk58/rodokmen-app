@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "customConditions": ["@rodokmen/source"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "rootDir": "..",
+    "outDir": "dist"
+  },
+  "include": ["src", "test", "vitest.config.ts"]
+}

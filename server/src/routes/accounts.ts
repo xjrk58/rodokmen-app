@@ -11,6 +11,7 @@ import {
   MemberView,
   PasskeyList,
   permissionsFor,
+  RateLimited,
   SessionList,
   UpdateMeBody,
   type PersonSummary,
@@ -31,7 +32,6 @@ import {
   updateOwnAccount,
   type AccountDeps,
 } from '../auth/accounts.js';
-import { requireRole } from '../auth/plugin.js';
 import { ApiProblem } from '../auth/problem.js';
 import { endSession } from '../auth/sessions.js';
 import type { Clock } from '../clock.js';
@@ -75,21 +75,24 @@ export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promis
   };
 }
 
-/** Members as the Owner sees them, each with their linked Person. */
+/** Members as the Owner sees them, each with their linked Person. Agents are listed with their tokens instead (auth/agents.ts). */
 async function memberViews(deps: { db: Db; clock: Clock }, accounts: readonly Account[]): Promise<MemberView[]> {
   const persons = await linkedPersons(deps, accounts);
-  return accounts.map((a) => ({
-    id: a.id,
-    version: a.version,
-    email: a.email,
-    displayName: a.display_name,
-    language: a.language,
-    role: a.role,
-    disabled: a.disabled_at !== null,
-    createdAt: new Date(a.created_at).toISOString(),
-    lastSeenAt: a.last_seen_at ? new Date(a.last_seen_at).toISOString() : null,
-    person: persons.get(a.id) ?? null,
-  }));
+  return accounts.map((a) => {
+    if (a.role === 'agent' || a.email === null) throw new Error(`account ${a.id} is an Agent, not a Member`);
+    return {
+      id: a.id,
+      version: a.version,
+      email: a.email,
+      displayName: a.display_name,
+      language: a.language,
+      role: a.role,
+      disabled: a.disabled_at !== null,
+      createdAt: new Date(a.created_at).toISOString(),
+      lastSeenAt: a.last_seen_at ? new Date(a.last_seen_at).toISOString() : null,
+      person: persons.get(a.id) ?? null,
+    };
+  });
 }
 
 async function memberView(deps: { db: Db; clock: Clock }, a: Account): Promise<MemberView> {
@@ -97,31 +100,40 @@ async function memberView(deps: { db: Db; clock: Clock }, a: Account): Promise<M
   return view!;
 }
 
-const signedIn = { 401: ApiError };
+const signedIn = { 401: ApiError, 429: RateLimited };
+/** Members only: an Agent has no sessions, passkeys or email settings to manage. */
+const ownAccount = { 401: ApiError, 403: ApiError };
 const ownerOnly = { 401: ApiError, 403: ApiError };
 
 /** The signed-in Member's own account, sessions and passkeys; the Owner's Member management. */
 export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
-  const owner = { preHandler: requireRole('owner') };
+  const owner = { config: { action: 'manageAccounts' as const } };
+  const own = { config: { action: 'ownAccount' as const } };
 
   app.get('/api/me', {
-    schema: { tags: ['Account'], summary: 'The signed-in Member, with role, permissions and their own Person', response: { 200: Me, ...signedIn } },
+    schema: {
+      tags: ['Account'],
+      summary: 'The signed-in Member or Agent, with role, permissions and, for a Member, their own Person',
+      response: { 200: Me, ...signedIn },
+    },
     handler: async (req) => meView(deps, req.member!),
   });
 
   app.patch('/api/me', {
+    ...own,
     schema: {
       tags: ['Account'],
       summary: 'Change your own display name or language (the language of the app and of emails)',
       body: UpdateMeBody,
-      response: { 200: Me, 400: ApiError, ...signedIn },
+      response: { 200: Me, 400: ApiError, ...ownAccount },
     },
     handler: async (req) => meView(deps, await updateOwnAccount(deps, req.member!, req.body)),
   });
 
   app.get('/api/me/sessions', {
-    schema: { tags: ['Account'], summary: "The signed-in Member's open sessions", response: { 200: SessionList, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: "The signed-in Member's open sessions", response: { 200: SessionList, ...ownAccount } },
     handler: async (req) => {
       const rows = await deps.db
         .selectFrom('session')
@@ -146,7 +158,8 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   });
 
   app.delete('/api/me/sessions/:id', {
-    schema: { tags: ['Account'], summary: 'End one of your own sessions', params: IdParams, response: { 204: z.null(), 404: ApiError, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: 'End one of your own sessions', params: IdParams, response: { 204: z.null(), 404: ApiError, ...ownAccount } },
     handler: async (req, reply) => {
       const s = await deps.db
         .selectFrom('session')
@@ -162,7 +175,8 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   });
 
   app.get('/api/me/passkeys', {
-    schema: { tags: ['Account'], summary: "The signed-in Member's passkeys", response: { 200: PasskeyList, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: "The signed-in Member's passkeys", response: { 200: PasskeyList, ...ownAccount } },
     handler: async (req) => {
       const rows = await deps.db.selectFrom('passkey').selectAll().where('account_id', '=', req.member!.id).orderBy('created_at').execute();
       return {
@@ -178,7 +192,8 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   });
 
   app.delete('/api/me/passkeys/:id', {
-    schema: { tags: ['Account'], summary: 'Remove one of your passkeys', params: IdParams, response: { 204: z.null(), 404: ApiError, ...signedIn } },
+    ...own,
+    schema: { tags: ['Account'], summary: 'Remove one of your passkeys', params: IdParams, response: { 204: z.null(), 404: ApiError, ...ownAccount } },
     handler: async (req, reply) => {
       const r = await deps.db.deleteFrom('passkey').where('id', '=', req.params.id).where('account_id', '=', req.member!.id).executeTakeFirst();
       if (Number(r.numDeletedRows) === 0) throw new ApiProblem(404, 'not_found', 'No passkey of yours with this id.');

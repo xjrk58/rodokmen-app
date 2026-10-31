@@ -6,7 +6,8 @@ import * as m0002 from './migrations/0002_tree.js';
 import * as m0003 from './migrations/0003_accounts.js';
 import * as m0004 from './migrations/0004_proposals.js';
 import * as m0005 from './migrations/0005_fold_spaces.js';
-import * as m0006 from './migrations/0006_member_person.js';
+import * as m0006 from './migrations/0006_agents.js';
+import * as m0007 from './migrations/0007_member_person.js';
 import { messageOf } from '../errors.js';
 import type { Database } from './types.js';
 
@@ -42,7 +43,8 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0003_accounts': m0003,
   '0004_proposals': m0004,
   '0005_fold_spaces': m0005,
-  '0006_member_person': m0006,
+  '0006_agents': m0006,
+  '0007_member_person': m0007,
 };
 
 const provider: MigrationProvider = { getMigrations: async () => MIGRATIONS };

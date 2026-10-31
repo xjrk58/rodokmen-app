@@ -175,7 +175,7 @@ export async function requestEmailLink(deps: AccountDeps, emailInput: string): P
   if (!issued) return;
   await deps.mailer.send(
     signInLinkEmail({
-      to: account.email,
+      to: email,
       language: account.language,
       displayName: account.display_name,
       link: `${deps.publicOrigin}/#link/${token}`,
@@ -203,12 +203,13 @@ export async function consumeEmailLink(deps: AccountDeps, token: string, userAge
 
 // ---------------------------------------------------------------- roles and disabling
 
+/** The Members (Agents are listed with their tokens instead, auth/agents.ts). */
 export async function listMembers(deps: AccountDeps): Promise<Account[]> {
-  return deps.db.selectFrom('account').selectAll().orderBy('display_name').orderBy('id').execute();
+  return deps.db.selectFrom('account').selectAll().where('role', '<>', 'agent').orderBy('display_name').orderBy('id').execute();
 }
 
 async function loadMember(db: Db, id: string): Promise<Account> {
-  const a = await db.selectFrom('account').selectAll().where('id', '=', id).executeTakeFirst();
+  const a = await db.selectFrom('account').selectAll().where('id', '=', id).where('role', '<>', 'agent').executeTakeFirst();
   if (!a) throw new ApiProblem(404, 'not_found', 'No Member with this id.');
   return a;
 }

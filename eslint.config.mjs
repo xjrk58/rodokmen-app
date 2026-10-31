@@ -74,7 +74,7 @@ export default defineConfig(
     extends: [tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       globals: globals.node,
-      parserOptions: { project: ['server/tsconfig.json', 'shared/tsconfig.json'], tsconfigRootDir: root },
+      parserOptions: { project: ['server/tsconfig.json', 'server/mcp/tsconfig.json', 'shared/tsconfig.json'], tsconfigRootDir: root },
     },
     rules: {
       ...typedRules,
@@ -82,6 +82,23 @@ export default defineConfig(
       '@typescript-eslint/no-import-type-side-effects': 'error',
       // `x as T` that narrows without a check: validate with Zod or a type guard instead.
       '@typescript-eslint/no-unsafe-type-assertion': 'error',
+    },
+  },
+
+  // The MCP server is a client of the public API (add-agent-access design): it may not reach the
+  // database or the server's code, so it can offer nothing the Agent token may not do there.
+  {
+    files: ['server/mcp/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['../../src/*', '../../src/**', '**/server/src/**'], message: 'server/mcp calls the API over HTTP; it does not use the server code.' },
+            { group: ['kysely', 'kysely/*', 'pg', 'pg-*'], message: 'server/mcp has no database access; call the API.' },
+          ],
+        },
+      ],
     },
   },
 

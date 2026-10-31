@@ -56,8 +56,10 @@ fi
 log "deploying $target into api-$idle (active: $active)"
 docker pull "$target"
 set_var "API_IMAGE_${idle^^}" "$target"
-# The database and Caddy are started if they are not running yet (first deploy, reboot).
+# The database and Caddy are started if they are not running yet (first deploy, reboot), and
+# Caddy reads its Caddyfile again, which this deploy may have changed.
 compose up -d db caddy
+compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile || log "could not reload the Caddyfile; Caddy keeps the one it has"
 
 if compose up -d --no-deps --wait --wait-timeout 180 "api-$idle"; then
   log "api-$idle is healthy; switching"
@@ -66,7 +68,8 @@ if compose up -d --no-deps --wait --wait-timeout 180 "api-$idle"; then
   [ -n "$previous" ] && echo "$previous" > "$STATE/previous"
   if [ "$active" != none ]; then compose stop "api-$active"; fi
   set_var WATCHDOG_IMAGE "$target"
-  compose up -d --no-deps watchdog
+  set_var MCP_IMAGE "$target"
+  compose up -d --no-deps watchdog mcp
   log "deployed $target"
 else
   log "api-$idle failed its health check; the previous version keeps serving"

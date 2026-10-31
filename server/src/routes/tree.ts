@@ -24,6 +24,7 @@ import {
   PlaceEventsQuery,
   PlaceSearchQuery,
   PlaceSearchResult,
+  RateLimited,
   SourceDetail,
   SourceSearchQuery,
   SourceSearchResult,
@@ -39,8 +40,9 @@ import { getPerson, searchPersons, type TreeDeps } from '../tree/persons.js';
 import { findHousesByNumber, getEstate, getHouse, getParish, getPlace, searchPlaces } from '../tree/places.js';
 import { getCitation, getSource, searchSources } from '../tree/sources.js';
 
-const read = { 401: ApiError };
-const detail = { 401: ApiError, 404: ApiError };
+/** Members and Agents read; Agents within their hourly limit. */
+const read = { 401: ApiError, 429: RateLimited };
+const detail = { 401: ApiError, 404: ApiError, 429: RateLimited };
 
 function found<T>(value: T | null, what: string): T {
   if (value === null) throw new ApiProblem(404, 'not_found', `No ${what} with this id.`);
@@ -49,7 +51,7 @@ function found<T>(value: T | null, what: string): T {
 
 const mergedRedirect = { 308: z.null().describe('Location: the same route for the Person this one was merged into') };
 
-/** The read-only Tree API (tree-read-api spec). Members only; see auth/plugin.ts. */
+/** The read-only Tree API (tree-read-api spec). Members and Agents; see auth/plugin.ts. */
 export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   const app = fastify.withTypeProvider<ZodTypeProvider>();
 

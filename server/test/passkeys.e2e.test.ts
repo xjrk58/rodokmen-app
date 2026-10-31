@@ -168,9 +168,8 @@ describe('signing in with passkeys in the app (virtual WebAuthn authenticator)',
   it('shared link: a Member who opens the address of a cousin in the tree sees that cousin after signing in', async () => {
     const { context, page } = await phone();
     // Marta saved a passkey on this phone first.
-    const marta = await t.db.selectFrom('account').selectAll().where('email', '=', 'marta@example.test').executeTakeFirstOrThrow();
-    await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: marta.email } });
-    await page.goto(`${origin}/#link/${tokenFromEmail(mailer.lastTo(marta.email)!.text)}`);
+    await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: 'marta@example.test' } });
+    await page.goto(`${origin}/#link/${tokenFromEmail(mailer.lastTo('marta@example.test')!.text)}`);
     await page.getByTestId('link-sign-in').click();
     await page.getByTestId('register-passkey').click();
     await page.getByTestId('tree-start').waitFor();
@@ -195,8 +194,8 @@ describe('signing in with passkeys in the app (virtual WebAuthn authenticator)',
       .values({ email: 'leaving@example.test', display_name: 'Leaving', language: 'en' })
       .returningAll()
       .executeTakeFirstOrThrow();
-    await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: member.email } });
-    await page.goto(`${origin}/#link/${tokenFromEmail(mailer.lastTo(member.email)!.text)}`);
+    await app.inject({ method: 'POST', url: '/api/auth/email-link', payload: { email: 'leaving@example.test' } });
+    await page.goto(`${origin}/#link/${tokenFromEmail(mailer.lastTo('leaving@example.test')!.text)}`);
     await page.getByTestId('link-sign-in').click();
     await page.getByTestId('register-passkey').click();
     await page.getByTestId('tree-start').waitFor();
