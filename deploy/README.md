@@ -6,17 +6,18 @@ Nothing here contains real credentials; every value below is a placeholder.
 
 ## What runs where
 
-| Piece                              | Where                                        | Notes                                                                                                                                     |
-| ---------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `db` (PostgreSQL 16 + PostGIS 3.4) | VPS, Docker volume `pgdata`                  | never exposed outside the Docker network                                                                                                  |
-| `api-blue`, `api-green`            | VPS                                          | the API, which also serves `app/` at `/` and the sign-in pages at `/auth/`. One slot runs; the other takes the next release (see Deploys) |
-| `caddy`                            | VPS, ports 80 and 443                        | HTTPS for one domain, automatic certificates, HTTP → HTTPS redirect                                                                       |
-| `watchdog`                         | VPS                                          | emails the Owner when the public health check fails for over 5 minutes, or a Backup fails or is missing                                   |
-| `backup` (job)                     | VPS, nightly via systemd                     | `pg_dump` + copy of the image bucket → restic at a second EU provider                                                                     |
-| Images                             | Hetzner Object Storage, private bucket       | handed out only as presigned links valid 5 minutes                                                                                        |
-| Email                              | an EU transactional email service, over SMTP | invitations, sign-in links, alerts                                                                                                        |
-| Image builds                       | GitHub Actions → GHCR                        | `ghcr.io/xjrk58/rodokmen-app:<commit>`                                                                                                    |
-| Restore test                       | GitHub Actions, monthly                      | restores the latest Backup into a throwaway container                                                                                     |
+| Piece                              | Where                                        | Notes                                                                                                                                         |
+| ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db` (PostgreSQL 16 + PostGIS 3.4) | VPS, Docker volume `pgdata`                  | never exposed outside the Docker network                                                                                                      |
+| `api-blue`, `api-green`            | VPS                                          | the API, which also serves `app/` at `/` and the sign-in pages at `/auth/`. One slot runs; the other takes the next release (see Deploys)     |
+| `caddy`                            | VPS, ports 80 and 443                        | HTTPS for one domain, automatic certificates, HTTP → HTTPS redirect                                                                           |
+| `mcp`                              | VPS                                          | the MCP server for AI assistants at `/mcp` (add-agent-access): a client of the API with each caller's Agent token, without secrets of its own |
+| `watchdog`                         | VPS                                          | emails the Owner when the public health check fails for over 5 minutes, or a Backup fails or is missing                                       |
+| `backup` (job)                     | VPS, nightly via systemd                     | `pg_dump` + copy of the image bucket → restic at a second EU provider                                                                         |
+| Images                             | Hetzner Object Storage, private bucket       | handed out only as presigned links valid 5 minutes                                                                                            |
+| Email                              | an EU transactional email service, over SMTP | invitations, sign-in links, alerts                                                                                                            |
+| Image builds                       | GitHub Actions → GHCR                        | `ghcr.io/xjrk58/rodokmen-app:<commit>`                                                                                                        |
+| Restore test                       | GitHub Actions, monthly                      | restores the latest Backup into a throwaway container                                                                                         |
 
 Files in this folder: `docker-compose.yml`, `Caddyfile`, `Dockerfile` (API image, built from the
 repo root), `scripts/deploy.sh` (health-checked switch), `backup/` (backup and restore scripts,
@@ -199,6 +200,41 @@ rclone copy /tmp/restore/work/images "<IMAGES_SOURCE remote, with a write key>"
 
 then deploy as usual. (Once erasure exists, `add-exports-and-erasure`, the erasure list is
 reapplied before the API accepts requests.)
+
+## Agents and the MCP server
+
+Agents (AI assistants with their own account, add-agent-access) read the Tree and submit
+Proposals, and nothing else. Only the Owner creates them, through the API; there is no screen for
+it yet. Signed in as the Owner, in the browser's developer console on the Rodokmen page:
+
+```js
+// Create an Agent; the answer holds its first token, shown only this once.
+await (
+  await fetch('/api/agents', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Register reader' }) })
+).json();
+// List Agents with their tokens (by prefix) and this hour's use of their limits.
+await (await fetch('/api/agents')).json();
+// Another token for an Agent, or revoke one at once:
+await (await fetch('/api/agents/<agent id>/tokens', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json();
+await fetch('/api/agents/<agent id>/tokens/<token id>', { method: 'DELETE' });
+// Stop an Agent (all its tokens) and let it go on again:
+await fetch('/api/agents/<agent id>/disable', { method: 'POST' });
+await fetch('/api/agents/<agent id>/enable', { method: 'POST' });
+```
+
+Keep a token like a password: whoever has it can read the whole Tree. Each Agent may submit 60
+Proposals and make 1,000 other requests an hour.
+
+An assistant connects in one of two ways:
+
+- **Streamable HTTP:** the URL `https://<domain>/mcp` with the header
+  `Authorization: Bearer <token>`. Each request there checks the token with the API first, which
+  counts as one of the Agent's requests.
+- **stdio**, on the assistant's machine, from a checkout of this repo after `pnpm install` and
+  `pnpm build`: the command `node server/mcp/dist/stdio.js` with the environment variables
+  `RODOKMEN_URL=https://<domain>` and `RODOKMEN_TOKEN=<token>`.
+
+The `mcp` service restarts with each deploy, so MCP connections drop for a moment then.
 
 ## When an alert arrives
 

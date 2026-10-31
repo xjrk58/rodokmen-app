@@ -108,7 +108,7 @@ describe('migrations on an empty database', () => {
     );
   });
 
-  it('the Proposals and fold migrations can be rolled back and applied again', async () => {
+  it('the Proposals, fold and Agent migrations can be rolled back and applied again', async () => {
     const migrator = new Migrator({
       db,
       provider: { getMigrations: async () => MIGRATIONS },
@@ -118,6 +118,7 @@ describe('migrations on an empty database', () => {
     const down = await migrator.migrateTo('0003_accounts');
     expect(down.error).toBeUndefined();
     expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([
+      ['0006_agents', 'Success'],
       ['0005_fold_spaces', 'Success'],
       ['0004_proposals', 'Success'],
     ]);
@@ -126,6 +127,6 @@ describe('migrations on an empty database', () => {
       const p = await tx.insertInto('person').values({ sex: 'female' }).returning('id').executeTakeFirstOrThrow();
       await tx.insertInto('name').values({ person_id: p.id, given: 'Dana', surname: 'Invented', type: 'birth', as_found: 'Dana', is_primary: true }).execute();
     });
-    expect(await migrateToLatest(db)).toEqual(['0004_proposals', '0005_fold_spaces']);
+    expect(await migrateToLatest(db)).toEqual(['0004_proposals', '0005_fold_spaces', '0006_agents']);
   });
 });

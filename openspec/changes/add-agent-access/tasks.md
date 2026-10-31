@@ -2,20 +2,26 @@
 
 ## 1. Agent accounts and tokens
 
-- [ ] 1.1 Add the `agent` role, Agent creation by the Owner, and token issue, list and revoke (hashed, shown once, visible prefix); verify the revoke scenario
-- [ ] 1.2 Enforce read-and-propose-only for Agent tokens on every route; verify the accept-own-Proposal scenario and a direct edit attempt both return 403
-- [ ] 1.2a Prove the role-and-action rule with `lsc check` in `shared/src/rules.ts`, with `//@ contract agent-access: Read and propose only` and ensures for each refused action and for the accept-own-Proposal scenario; verify with `pnpm verify` and `pnpm verify:trace`, and that allowing `accept` for Agents makes `lsc check` fail
-- [ ] 1.3 Show the Agent badge in the review queue and record history; verify with a Playwright screenshot of an Agent Proposal
+- [x] 1.1 Add the `agent` role, Agent creation by the Owner, and token issue, list and revoke (hashed, shown once, visible prefix); verify the revoke scenario
+  Note: API only (`/api/agents`, `server/test/agents.test.ts`); creating an Agent issues its first token, so every Agent has one. The Owner can also disable an Agent, which stops all its tokens at once (design goal "stop any Agent at once"). The Owner settings screen is a follow-up issue (#45).
+- [x] 1.2 Enforce read-and-propose-only for Agent tokens on every route; verify the accept-own-Proposal scenario and a direct edit attempt both return 403
+  Note: every route names its action and the auth plugin asks `mayDo` for each request; a test calls every registered route with an Agent token and expects 403 exactly where the action is neither `read` nor `propose`.
+- [x] 1.2a Prove the role-and-action rule with `lsc check` in `shared/src/rules.ts`, with `//@ contract agent-access: Read and propose only` and ensures for each refused action and for the accept-own-Proposal scenario; verify with `pnpm verify` and `pnpm verify:trace`, and that allowing `accept` for Agents makes `lsc check` fail
+- [x] 1.3 Show the Agent badge in the review queue and record history; verify with a Playwright screenshot of an Agent Proposal
+  Note: `server/test/app-agent.e2e.test.ts` runs against the real server at phone and desktop size; it writes the screenshots when `AGENT_SCREENSHOT_DIR` is set.
 
 ## 2. Limits
 
-- [ ] 2.1 Add per-token fixed-window limits (60 Proposals and 1,000 reads per hour) with retry time; verify the 61st-Proposal scenario with a fake clock
-- [ ] 2.2 Prove the fixed-window decision with `lsc check`, with `//@ contract agent-access: Rate limits` and ensures for the 61st-Proposal scenario and the retry time; verify with `pnpm verify` and `pnpm verify:trace`, and that allowing one request over the limit makes `lsc check` fail
+- [x] 2.1 Add per-token fixed-window limits (60 Proposals and 1,000 reads per hour) with retry time; verify the 61st-Proposal scenario with a fake clock
+  Note: the windows are kept per Agent and shared by its tokens, as the spec says "Each Agent" (per token, an Agent with two tokens could submit 120 an hour). Every submit counts against the 60, refused ones and retries included; every other allowed request (reads, and image uploads for Proposals) counts against the 1,000. Requests refused with 401 or 403 do not count.
+- [x] 2.2 Prove the fixed-window decision with `lsc check`, with `//@ contract agent-access: Rate limits` and ensures for the 61st-Proposal scenario and the retry time; verify with `pnpm verify` and `pnpm verify:trace`, and that allowing one request over the limit makes `lsc check` fail
 
 ## 3. MCP server
 
-- [ ] 3.1 Create `server/mcp` with tools for searching Persons and Places, reading records, reading ancestors and descendants, and submitting Proposals, calling the API with the Agent token; verify each tool against the fixture tree in an integration test
-- [ ] 3.2 Serve it over stdio and over streamable HTTP at `/mcp`; verify a client can connect both ways and that a tool call without a valid token fails
+- [x] 3.1 Create `server/mcp` with tools for searching Persons and Places, reading records, reading ancestors and descendants, and submitting Proposals, calling the API with the Agent token; verify each tool against the fixture tree in an integration test
+  Note: `@modelcontextprotocol/server` 2.4.0 (the SDK's v2 line, which replaces `@modelcontextprotocol/sdk`). Besides the listed tools, `search_sources` (to cite an existing Source) and `list_my_proposals` (to follow outcomes), both reads the token allows. ESLint refuses imports of the server's code or a database driver in `server/mcp/src`.
+- [x] 3.2 Serve it over stdio and over streamable HTTP at `/mcp`; verify a client can connect both ways and that a tool call without a valid token fails
+  Note: `server/mcp/test/transports.test.ts` (both ways, missing, unknown and revoked tokens, a 2025-protocol client). Deployed as the `mcp` service of `deploy/docker-compose.yml` from the API image, without secrets; Caddy forwards `/mcp` to it. Checked once by hand: the image builds, Caddy validates the Caddyfile, and a client connected through Caddy to the containers. Not yet on the live server, which is not running yet.
 
 ## Workflow follow-up
 

@@ -14,6 +14,8 @@ this page with `node scripts/verification-trace.mjs`.
 
 | Requirement | Specified in | Function | File | Assumed, not proved |
 |---|---|---|---|---|
+| agent-access: Rate limits | openspec/changes/add-agent-access/specs/agent-access/spec.md | `fixedWindow` | shared/src/rules.ts | see below |
+| agent-access: Read and propose only | openspec/changes/add-agent-access/specs/agent-access/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
@@ -43,6 +45,8 @@ A verified function's `requires` are proved wherever a verified function calls i
   - its requires, where unverified code calls it (`isLiving`): `1 <= today.month && today.month <= 12 && 1 <= today.day && today.day <= 31`; `forall(i: nat, i < birthLatest.length ==> 1 <= birthLatest[i].month && birthLatest[i].month <= 12 && 1 <= birthLatest[i].day && birthLatest[i].day <= 31)`
 - `detectConflict` (shared/src/rules.ts):
   - uses `valueOf`, an extern (see below)
+- `fixedWindow` (shared/src/rules.ts):
+  - its requires, where unverified code calls it (server/src/auth/limits.ts): `limit > 0`
 - `valueOf` (shared/src/rules.ts):
   - an extern (`//@ extern`, or a call into another file): it has no contract, so the proofs assume only that it is a deterministic function
 - `daysInMonth` (shared/src/edtf.ts), supporting:

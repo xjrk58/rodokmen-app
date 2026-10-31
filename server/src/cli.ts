@@ -57,8 +57,9 @@ const COMMANDS: Record<string, Command> = {
     const mailer = createMailer(config, (line) => console.log(line));
     const deps = { db, clock: systemClock, mailer, publicOrigin: config.publicOrigin, session: { idleDays: config.sessionIdleDays } };
     const owner = await createOwner(deps, values.email, values.name, UiLanguage.parse(values.language));
-    await requestEmailLink(deps, owner.email);
-    console.log(`Owner ${owner.email} created; a sign-in link was emailed. After signing in, register a passkey.`);
+    const email = owner.email ?? values.email;
+    await requestEmailLink(deps, email);
+    console.log(`Owner ${email} created; a sign-in link was emailed. After signing in, register a passkey.`);
     await db.destroy();
     return 0;
   },

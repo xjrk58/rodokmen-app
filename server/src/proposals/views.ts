@@ -24,8 +24,8 @@ import { snapshotsMany, type Snapshot } from './records.js';
  * Reading Proposals: their stored operations, conflicts with the current Tree, and the views
  * shown in review, to authors and in the Editor digest.
  */
-/** Agents (add-agent-access) will have their own role; until then no account is one. */
-export const isAgent = (a: Pick<Account, 'role'>): boolean => (a.role as string) === 'agent';
+/** An Agent account (agent-access spec): its Proposals carry the Agent badge. */
+export const isAgent = (a: Pick<Account, 'role'>): boolean => a.role === 'agent';
 export const canReview = (a: Pick<Account, 'role'>): boolean => mayDecide(a.role);
 
 export function authorRef(a: Pick<Account, 'id' | 'display_name' | 'role'>): AuthorRef {

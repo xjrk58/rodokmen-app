@@ -71,7 +71,8 @@ export async function sendDigests(deps: JobDeps, day: string, job = 'editor-dige
   if (pending.length === 0) return { detail: 'nothing pending', complete: true };
   const lines = await proposalDigestLines(deps.db, pending);
   const accounts = await deps.db.selectFrom('account').selectAll().where('disabled_at', 'is', null).orderBy('id').execute();
-  const editors = accounts.filter((a) => permissionsFor(a.role).review);
+  // Agents never review and have no email.
+  const editors = accounts.flatMap((a) => (permissionsFor(a.role).review && a.email !== null ? [{ ...a, email: a.email }] : []));
   const deliveries = new Map(
     (await deps.db.selectFrom('job_delivery').selectAll().where('job', '=', job).where('day', '=', day).execute()).map((d) => [d.account_id, d]),
   );

@@ -65,6 +65,17 @@ function authorLine(author) {
   );
 }
 
+/**
+ * "By {author} · accepted by {editor}" in the reader's language, with the author's name (and
+ * the Agent badge) as in the review queue.
+ * @param {HistoryEntry} e
+ */
+function historyByline(e) {
+  const mark = '\u0001';
+  const [before = '', after = ''] = t('history.by', { author: mark, editor: e.acceptedBy.displayName }).split(mark);
+  return h('p', { class: 'small', 'data-testid': 'history-by' }, before, authorLine(e.author), after);
+}
+
 /** @param {CitationPreview} c */
 function citationBlock(c) {
   return h(
@@ -351,7 +362,7 @@ function historyEntry(e, canUndo, onUndone) {
     'article',
     { class: 'card history-entry', 'data-testid': 'history-entry' },
     h('header', { class: 'card-head' }, h('span', { class: 'chip' }, t(`kind.${e.kind}`)), h('span', { class: 'muted small' }, formatDate(e.acceptedAt))),
-    h('p', { class: 'small' }, t('history.by', { author: e.author.displayName, editor: e.acceptedBy.displayName })),
+    historyByline(e),
     h('ol', { class: 'changes' }, ...e.summaries.map((s) => h('li', {}, s[lang]))),
     ...e.corrections.map((c) => h('p', { class: 'muted small' }, t('history.corrected', { editor: c.by.displayName, change: c.summary[lang] }))),
     e.citations.length

@@ -2,14 +2,13 @@ import { InvitationList, InvitationView, Me, SignedIn } from '@rodokmen/shared';
 import { z } from 'zod';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashToken } from '../src/auth/sessions.js';
-import type { Account } from '../src/db/types.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { cookieFrom, createMember, DAY, ensureOwner, errorOf, makeApp, MINUTE, signIn, tokenFromEmail, type TestApp } from './helpers.js';
+import { cookieFrom, createMember, DAY, ensureOwner, errorOf, makeApp, MINUTE, signIn, tokenFromEmail, type TestApp, type MemberAccount } from './helpers.js';
 
 describe('invitations', () => {
   let t: TestDatabase;
   let a: TestApp;
-  let owner: Account;
+  let owner: MemberAccount;
   let ownerCookie: string;
 
   const invite = async (email: string, language: 'cs' | 'en', cookie = ownerCookie) =>
