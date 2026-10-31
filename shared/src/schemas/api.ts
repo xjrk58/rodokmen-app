@@ -103,7 +103,15 @@ export const PersonSearchResult = z
   .object({ items: z.array(PersonSearchHit), limit: z.number().int(), offset: z.number().int() })
   .meta({ id: 'PersonSearchResult' });
 
-export const PersonEventView = z.object({ roleId: Id, role: RoleType, roleDetail: z.string().nullable(), event: EventSummary }).meta({ id: 'PersonEventView' });
+export const PersonEventView = z
+  .object({
+    roleId: Id,
+    role: RoleType,
+    roleDetail: z.string().nullable(),
+    event: EventSummary,
+    citations: z.array(CitationSummary).describe("The Event's Citations"),
+  })
+  .meta({ id: 'PersonEventView' });
 
 export const PartnerFamilyView = z
   .object({
@@ -161,6 +169,35 @@ export const Pedigree = z
   })
   .meta({ id: 'Pedigree' });
 
+// ---------------------------------------------------------------- Hourglass
+
+export const HourglassQuery = z.object({
+  up: z.coerce.number().int().min(1).max(6).default(3).describe('Generations of ancestors above the focus Person'),
+  down: z.coerce.number().int().min(1).max(6).default(2).describe('Generations of descendants below the focus Person'),
+});
+
+export const Hourglass = z
+  .object({
+    focusId: Id,
+    up: z.number().int(),
+    down: z.number().int(),
+    persons: z.array(
+      z.object({
+        generation: z
+          .number()
+          .int()
+          .describe('0 for the focus Person and their partners; 1 their parents, 2 grandparents …; -1 their children, -2 grandchildren …'),
+        relation: z.enum(['focus', 'ancestor', 'descendant', 'partner']).describe('"partner": a partner of the focus Person or of a descendant'),
+        moreAbove: z.boolean().describe('An ancestor in the top row whose own parents are known but not included'),
+        moreBelow: z.boolean().describe('A descendant in the bottom row whose own children are known but not included'),
+        person: PersonSummary,
+      }),
+    ),
+    families: z.array(z.object({ id: Id, version: Version, partner1Id: Id.nullable(), partner2Id: Id.nullable() })),
+    childLinks: z.array(z.object({ id: Id, familyId: Id, childId: Id, linkType: ChildLinkType })),
+  })
+  .meta({ id: 'Hourglass' });
+
 // ---------------------------------------------------------------- Families
 
 export const FamilyDetail = z
@@ -217,6 +254,22 @@ export const MapEventsResult = z
   .meta({ id: 'MapEventsResult' });
 
 // ---------------------------------------------------------------- Places, Houses, Parishes, Estates
+
+export const PlaceEventsQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(2000).default(1000),
+});
+
+export const PlaceEvent = EventSummary.safeExtend({
+  persons: z.array(z.object({ role: RoleType, roleDetail: z.string().nullable(), person: PersonSummary })),
+}).meta({ id: 'PlaceEvent' });
+
+export const PlaceEvents = z
+  .object({
+    place: PlaceRef,
+    events: z.array(PlaceEvent).describe('Events at the Place and at its Houses, ordered by the earliest date each could be; undated last'),
+    truncated: z.boolean().describe('True when more Events matched than the limit'),
+  })
+  .meta({ id: 'PlaceEvents' });
 
 export const PlaceSearchQuery = z.object({
   q: z.string().trim().min(1).max(200).optional().describe('Any part of any name of the Place; case and diacritics are ignored'),
@@ -333,6 +386,9 @@ export type PersonDetail = z.infer<typeof PersonDetail>;
 export type PersonSearchQuery = z.infer<typeof PersonSearchQuery>;
 export type PersonSearchResult = z.infer<typeof PersonSearchResult>;
 export type Pedigree = z.infer<typeof Pedigree>;
+export type Hourglass = z.infer<typeof Hourglass>;
+export type PlaceEvent = z.infer<typeof PlaceEvent>;
+export type PlaceEvents = z.infer<typeof PlaceEvents>;
 export type FamilyDetail = z.infer<typeof FamilyDetail>;
 export type EventDetail = z.infer<typeof EventDetail>;
 export type MapEventsQuery = z.infer<typeof MapEventsQuery>;

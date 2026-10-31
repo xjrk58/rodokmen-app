@@ -1,12 +1,4 @@
-import {
-  INVITATION_DAYS,
-  SIGN_IN_LINK_MINUTES,
-  type InvitationStatus,
-  type InvitationView,
-  type MemberRole,
-  type MemberView,
-  type UiLanguage,
-} from '@rodokmen/shared';
+import { INVITATION_DAYS, SIGN_IN_LINK_MINUTES, type InvitationStatus, type InvitationView, type MemberRole, type UiLanguage } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
@@ -29,20 +21,6 @@ export const SIGN_IN_LINKS_PER_HOUR = 5;
 
 export function normaliseEmail(email: string): string {
   return email.trim().toLowerCase();
-}
-
-export function memberView(a: Account): MemberView {
-  return {
-    id: a.id,
-    version: a.version,
-    email: a.email,
-    displayName: a.display_name,
-    language: a.language,
-    role: a.role,
-    disabled: a.disabled_at !== null,
-    createdAt: new Date(a.created_at).toISOString(),
-    lastSeenAt: a.last_seen_at ? new Date(a.last_seen_at).toISOString() : null,
-  };
 }
 
 function invitationStatus(i: { accepted_at: Date | null; revoked_at: Date | null; expires_at: Date }, now: Date): InvitationStatus {
@@ -225,9 +203,8 @@ export async function consumeEmailLink(deps: AccountDeps, token: string, userAge
 
 // ---------------------------------------------------------------- roles and disabling
 
-export async function listMembers(deps: AccountDeps): Promise<MemberView[]> {
-  const rows = await deps.db.selectFrom('account').selectAll().orderBy('display_name').orderBy('id').execute();
-  return rows.map(memberView);
+export async function listMembers(deps: AccountDeps): Promise<Account[]> {
+  return deps.db.selectFrom('account').selectAll().orderBy('display_name').orderBy('id').execute();
 }
 
 async function loadMember(db: Db, id: string): Promise<Account> {
@@ -241,7 +218,7 @@ async function loadMember(db: Db, id: string): Promise<Account> {
  * the Owner hands ownership over: the current Owner becomes an Editor in the same transaction.
  * The new role applies from the Member's next request, since roles are read on every request.
  */
-export async function changeRole(deps: AccountDeps, owner: Account, targetId: string, role: MemberRole): Promise<MemberView> {
+export async function changeRole(deps: AccountDeps, owner: Account, targetId: string, role: MemberRole): Promise<Account> {
   if (targetId === owner.id) throw new ApiProblem(409, 'owner_role', 'The Owner keeps the Owner role until handing it to another Member.');
   return deps.db.transaction().execute(async (tx) => {
     const target = await loadMember(tx, targetId);
@@ -249,13 +226,12 @@ export async function changeRole(deps: AccountDeps, owner: Account, targetId: st
       if (target.disabled_at) throw new ApiProblem(409, 'member_disabled', 'A disabled Member cannot become the Owner.');
       await tx.updateTable('account').set({ role: 'editor' }).where('id', '=', owner.id).execute();
     }
-    const updated = await tx.updateTable('account').set({ role }).where('id', '=', target.id).returningAll().executeTakeFirstOrThrow();
-    return memberView(updated);
+    return tx.updateTable('account').set({ role }).where('id', '=', target.id).returningAll().executeTakeFirstOrThrow();
   });
 }
 
 /** Disabling ends all of the Member's sessions at once; their next request answers 401. */
-export async function disableMember(deps: AccountDeps, owner: Account, targetId: string): Promise<MemberView> {
+export async function disableMember(deps: AccountDeps, owner: Account, targetId: string): Promise<Account> {
   if (targetId === owner.id) throw new ApiProblem(409, 'owner_disable', 'The Owner cannot be disabled.');
   return deps.db.transaction().execute(async (tx) => {
     const target = await loadMember(tx, targetId);
@@ -268,14 +244,58 @@ export async function disableMember(deps: AccountDeps, owner: Account, targetId:
       .executeTakeFirstOrThrow();
     await endAllSessions(tx, deps.clock, target.id);
     await tx.updateTable('sign_in_link').set({ used_at: now }).where('account_id', '=', target.id).where('used_at', 'is', null).execute();
-    return memberView(updated);
+    return updated;
   });
 }
 
-export async function enableMember(deps: AccountDeps, targetId: string): Promise<MemberView> {
+export async function enableMember(deps: AccountDeps, targetId: string): Promise<Account> {
   await loadMember(deps.db, targetId);
-  const updated = await deps.db.updateTable('account').set({ disabled_at: null }).where('id', '=', targetId).returningAll().executeTakeFirstOrThrow();
-  return memberView(updated);
+  return deps.db.updateTable('account').set({ disabled_at: null }).where('id', '=', targetId).returningAll().executeTakeFirstOrThrow();
+}
+
+/**
+ * Links a Member to the Person who is them in the Tree, or removes the link (Owner only, see
+ * routes/accounts.ts). A Person merged into another is linked as the kept one.
+ */
+export async function linkPerson(deps: AccountDeps, targetId: string, personId: string | null): Promise<Account> {
+  await loadMember(deps.db, targetId);
+  let kept: string | null = null;
+  if (personId !== null) {
+    kept = await keptPerson(deps.db, personId);
+    if (kept === null) throw new ApiProblem(404, 'person_not_found', 'No Person with this id.');
+  }
+  return deps.db.updateTable('account').set({ person_id: kept }).where('id', '=', targetId).returningAll().executeTakeFirstOrThrow();
+}
+
+/** The Person a Person id stands for now: itself, or the one it was merged into; null when there is none. */
+export async function keptPerson(db: Db, personId: string): Promise<string | null> {
+  let id = personId;
+  // Merges can chain (a kept Person merged again later); a cycle cannot arise, but the walk is bounded anyway.
+  for (let hop = 0; hop < 20; hop++) {
+    const row = await db.selectFrom('person').select('merged_into_id').where('id', '=', id).executeTakeFirst();
+    if (!row) return null;
+    if (!row.merged_into_id) return id;
+    id = row.merged_into_id;
+  }
+  return null;
+}
+
+/** A Member changes their own display name or language. */
+export async function updateOwnAccount(
+  deps: AccountDeps,
+  member: Account,
+  change: { displayName?: string | undefined; language?: UiLanguage | undefined },
+): Promise<Account> {
+  return deps.db
+    .updateTable('account')
+    .set({
+      ...(change.displayName !== undefined ? { display_name: change.displayName.trim() } : {}),
+      ...(change.language !== undefined ? { language: change.language } : {}),
+      updated_at: deps.clock.now(),
+    })
+    .where('id', '=', member.id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 /** Creates the first account, the Owner. Refuses when any account exists. */

@@ -3,6 +3,7 @@
  */
 import { z } from 'zod';
 import { mayDecide } from '../rules.js';
+import { PersonSummary } from './api.js';
 import { Id, UiLanguage, Version } from './common.js';
 
 /** Every Member has exactly one role. There is exactly one Owner. */
@@ -44,8 +45,14 @@ export const Me = z
     role: MemberRole,
     permissions: Permissions,
     passkeyCount: z.number().int(),
+    person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)'),
   })
   .meta({ id: 'Me' });
+
+export const UpdateMeBody = z
+  .object({ displayName: DisplayName.optional(), language: UiLanguage.optional() })
+  .refine((b) => b.displayName !== undefined || b.language !== undefined, { message: 'Give displayName, language or both' })
+  .meta({ id: 'UpdateMeBody', description: 'Change your own display name or language (the language of the app and of emails)' });
 
 export const MemberView = z
   .object({
@@ -58,10 +65,15 @@ export const MemberView = z
     disabled: z.boolean(),
     createdAt: z.iso.datetime(),
     lastSeenAt: z.iso.datetime().nullable(),
+    person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, when the Owner has linked one'),
   })
   .meta({ id: 'MemberView' });
 
 export const MemberList = z.object({ items: z.array(MemberView) }).meta({ id: 'MemberList' });
+
+export const LinkPersonBody = z
+  .object({ personId: Id.nullable().describe('The Person who is this Member in the Tree; null removes the link') })
+  .meta({ id: 'LinkPersonBody' });
 
 export const ChangeRoleBody = z
   .object({ role: MemberRole })
@@ -151,6 +163,7 @@ export const SignedIn = z.object({ ok: z.literal(true), member: Me }).meta({ id:
 export type MemberRole = z.infer<typeof MemberRole>;
 export type Me = z.infer<typeof Me>;
 export type MemberView = z.infer<typeof MemberView>;
+export type UpdateMeBody = z.infer<typeof UpdateMeBody>;
 export type SessionView = z.infer<typeof SessionView>;
 export type InvitationView = z.infer<typeof InvitationView>;
 export type InvitationStatus = z.infer<typeof InvitationStatus>;

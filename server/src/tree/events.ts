@@ -1,10 +1,10 @@
-import { isoDay, type EventDetail, type FamilyDetail, type MapEventsQuery, type MapEventsResult } from '@rodokmen/shared';
+import { isoDay, type EventDetail, type FamilyDetail, type MapEventsQuery, type MapEventsResult, type PlaceEvents } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { TreeDeps } from './persons.js';
 import { estatesAt, parishesAt } from './places.js';
 import { citationSummariesFor } from './sources.js';
-import { displayName, compareEarliestDays, eventSummaries, personSummaries, summarizeEvents } from './summaries.js';
+import { displayName, compareEarliestDays, eventSummaries, personSummaries, placeRefs, summarizeEvents } from './summaries.js';
 
 export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<EventDetail | null> {
   const [summary] = await eventSummaries(db, [id]);
@@ -150,6 +150,52 @@ export async function mapEvents(db: Db, q: MapEventsQuery): Promise<MapEventsRes
       place: s.place,
       house: s.house,
       persons: roles.filter((r) => r.event_id === s.id).map((r) => ({ id: r.person_id, displayName: displayName(r.given, r.surname), role: r.role })),
+    })),
+  };
+}
+
+/**
+ * The Events at a Place and at its Houses, with who took part (family-map spec, "Family here"):
+ * the place sheet groups them by Person. Ordered by the earliest date each could be.
+ */
+export async function placeEvents({ db, clock }: TreeDeps, placeId: string, limit: number): Promise<PlaceEvents | null> {
+  const place = (await placeRefs(db, [placeId])).get(placeId);
+  if (!place) return null;
+  const rows = await db
+    .selectFrom('event as e')
+    .leftJoin('house as h', 'h.id', 'e.house_id')
+    .select(['e.id', 'e.version', 'e.type', 'e.type_detail', 'e.date', 'e.date_earliest', 'e.date_latest', 'e.place_id', 'e.house_id', 'e.description'])
+    .where((eb) => eb.or([eb('e.place_id', '=', placeId), eb('h.place_id', '=', placeId)]))
+    .orderBy(sql`e.date_earliest asc nulls last`)
+    .orderBy('e.id')
+    .limit(limit + 1)
+    .execute();
+  const kept = rows.slice(0, limit);
+  const summaries = await summarizeEvents(db, kept);
+  const roles = kept.length
+    ? await db
+        .selectFrom('event_role')
+        .select(['event_id', 'person_id', 'role', 'role_detail'])
+        .where(
+          'event_id',
+          'in',
+          kept.map((r) => r.id),
+        )
+        .orderBy('sort_order')
+        .orderBy('id')
+        .execute()
+    : [];
+  const persons = await personSummaries(
+    db,
+    roles.map((r) => r.person_id),
+    clock,
+  );
+  return {
+    place,
+    truncated: rows.length > limit,
+    events: summaries.map((e) => ({
+      ...e,
+      persons: roles.filter((r) => r.event_id === e.id).map((r) => ({ role: r.role, roleDetail: r.role_detail, person: persons.get(r.person_id)! })),
     })),
   };
 }

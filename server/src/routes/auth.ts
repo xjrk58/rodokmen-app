@@ -45,7 +45,7 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
 
   const signIn = async (reply: FastifyReply, account: Account, session: { token: string }) => {
     reply.setCookie(SESSION_COOKIE, session.token, sessionCookieOptions(deps, deps.session.idleDays * 86_400));
-    return { ok: true as const, member: await meView(deps.db, account) };
+    return { ok: true as const, member: await meView(deps, account) };
   };
 
   app.post('/api/auth/invitation/check', {

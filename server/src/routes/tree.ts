@@ -7,6 +7,8 @@ import {
   HouseDetail,
   HouseLookupQuery,
   HouseSummary,
+  Hourglass,
+  HourglassQuery,
   IdParams,
   ImageLinkQuery,
   MapEventsQuery,
@@ -18,6 +20,8 @@ import {
   PersonSearchQuery,
   PersonSearchResult,
   PlaceDetail,
+  PlaceEvents,
+  PlaceEventsQuery,
   PlaceSearchQuery,
   PlaceSearchResult,
   SourceDetail,
@@ -29,8 +33,8 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import { ApiProblem } from '../auth/problem.js';
 import { imageLink } from '../storage/images.js';
-import { getEvent, getFamily, mapEvents } from '../tree/events.js';
-import { ancestors, descendants } from '../tree/pedigree.js';
+import { getEvent, getFamily, mapEvents, placeEvents } from '../tree/events.js';
+import { ancestors, descendants, hourglass } from '../tree/pedigree.js';
 import { getPerson, searchPersons, type TreeDeps } from '../tree/persons.js';
 import { findHousesByNumber, getEstate, getHouse, getParish, getPlace, searchPlaces } from '../tree/places.js';
 import { getCitation, getSource, searchSources } from '../tree/sources.js';
@@ -104,6 +108,18 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
     handler: async (req) => found(await descendants(deps, req.params.id, req.query.generations), 'Person'),
   });
 
+  app.get('/api/persons/:id/hourglass', {
+    preHandler: followMerge,
+    schema: {
+      tags: ['Persons'],
+      summary: 'The tree around a Person: ancestors above, descendants below, and partners beside, 1 to 6 generations each way',
+      params: IdParams,
+      querystring: HourglassQuery,
+      response: { 200: Hourglass, 400: ApiError, ...mergedRedirect, ...detail },
+    },
+    handler: async (req) => found(await hourglass(deps, req.params.id, req.query.up, req.query.down), 'Person'),
+  });
+
   app.get('/api/families/:id', {
     schema: {
       tags: ['Families'],
@@ -147,6 +163,17 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
       response: { 200: PlaceDetail, ...detail },
     },
     handler: async (req) => found(await getPlace(deps.db, req.params.id), 'Place'),
+  });
+
+  app.get('/api/places/:id/events', {
+    schema: {
+      tags: ['Places'],
+      summary: 'Events at a Place and its Houses, with the Persons who took part and their Roles',
+      params: IdParams,
+      querystring: PlaceEventsQuery,
+      response: { 200: PlaceEvents, 400: ApiError, ...detail },
+    },
+    handler: async (req) => found(await placeEvents(deps, req.params.id, req.query.limit), 'Place'),
   });
 
   app.get('/api/places/:id/houses', {
