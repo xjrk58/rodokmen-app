@@ -30,6 +30,100 @@ export function mayDecide(role: string): boolean {
   return role === 'editor' || role === 'owner';
 }
 
+// ---------------------------------------------------------------- what a role may do
+
+/**
+ * What a role may do (agent-access spec, "Read and propose only"). Every API route names its
+ * action (server/src/auth/plugin.ts asks this function for each request; that wiring is
+ * tested, not proved):
+ *
+ * - `read`: read the Tree, your own Proposals, history and images;
+ * - `propose`: submit Proposals and upload their images;
+ * - `review`: see the review queue; `accept`, `reject`, `merge`, `undo`; `directEdit`: change the Tree at once;
+ * - `ownAccount`: your own sessions, passkeys and email settings;
+ * - `manageAccounts`: Members, invitations, roles, Agents and their tokens.
+ *
+ * Agents read and propose, and nothing else. Members of every role read, propose and manage
+ * their own account; Editors and the Owner also decide on Proposals and edit directly; only the
+ * Owner manages accounts. An unknown role or action is refused.
+ */
+export function mayDo(role: string, action: string): boolean {
+  //@ verify
+  //@ contract agent-access: Read and propose only
+  // An Agent token allows reading the Tree and submitting Proposals ...
+  //@ ensures role === 'agent' && action === 'read' ==> \result
+  //@ ensures role === 'agent' && action === 'propose' ==> \result
+  // ... and nothing else.
+  //@ ensures role === 'agent' && \result ==> action === 'read' || action === 'propose'
+  // Scenario "Agent tries to accept its own Proposal": refused, as are rejecting, merging, undoing, direct edits and account management.
+  //@ ensures role === 'agent' && action === 'accept' ==> !\result
+  //@ ensures role === 'agent' && action === 'reject' ==> !\result
+  //@ ensures role === 'agent' && action === 'merge' ==> !\result
+  //@ ensures role === 'agent' && action === 'undo' ==> !\result
+  //@ ensures role === 'agent' && action === 'directEdit' ==> !\result
+  //@ ensures role === 'agent' && action === 'review' ==> !\result
+  //@ ensures role === 'agent' && action === 'ownAccount' ==> !\result
+  //@ ensures role === 'agent' && action === 'manageAccounts' ==> !\result
+  // An Agent is never allowed what a Contributor is refused.
+  //@ ensures role === 'agent' && \result ==> mayDo('contributor', action)
+  // Deciding on Proposals is exactly the review rule (review spec, "Contributors never accept or merge").
+  //@ ensures action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' ==> \result === mayDecide(role)
+  // Only the Owner manages accounts; a role or action not listed is refused.
+  //@ ensures action === 'manageAccounts' ==> \result === (role === 'owner')
+  //@ ensures \result ==> role === 'agent' || role === 'contributor' || role === 'editor' || role === 'owner'
+  if (role === 'agent') return action === 'read' || action === 'propose';
+  const member = role === 'contributor' || role === 'editor' || role === 'owner';
+  if (action === 'read' || action === 'propose' || action === 'ownAccount') return member;
+  if (action === 'review' || action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' || action === 'directEdit') {
+    return mayDecide(role);
+  }
+  if (action === 'manageAccounts') return role === 'owner';
+  return false;
+}
+
+// ---------------------------------------------------------------- rate limits
+
+/** The outcome of one request against a fixed window: the window after it, and when to retry if refused. */
+export interface WindowDecision {
+  allowed: boolean;
+  /** Start of the window, as milliseconds since the epoch. */
+  windowStart: number;
+  /** Requests allowed in the window, this one included when allowed. */
+  count: number;
+  /** When refused: the end of the window, after which the request may be made again. */
+  retryAt: number;
+}
+
+/**
+ * The fixed-window limit (agent-access spec, "Rate limits"): a window opens with the first
+ * request after the previous one ended and lasts `windowMs`; within it at most `limit` requests
+ * are allowed. Each allowed request counts once and a refused one changes nothing, so the count
+ * kept between requests (in PostgreSQL, the trust boundary together with the clock) is the
+ * number allowed in the window, and one window never allows more than the limit. A refused
+ * request learns the end of the window, which is later than now.
+ */
+export function fixedWindow(windowStart: number, count: number, limit: number, windowMs: number, now: number): WindowDecision {
+  //@ verify
+  //@ contract agent-access: Rate limits
+  //@ requires limit > 0
+  // One window never allows more than the limit.
+  //@ ensures \result.allowed ==> \result.count <= limit
+  // Scenario "Runaway agent": within the window, the request after the limit (the 61st Proposal within one hour) is refused ...
+  //@ ensures now < windowStart + windowMs && count >= limit ==> !\result.allowed
+  // ... with the time after which it may be made again: the end of the window, later than now.
+  //@ ensures !\result.allowed ==> \result.retryAt === windowStart + windowMs && \result.retryAt > now
+  // A refused request leaves the window as it was; an allowed one counts once.
+  //@ ensures !\result.allowed ==> \result.windowStart === windowStart && \result.count === count
+  //@ ensures \result.allowed && now < windowStart + windowMs ==> \result.windowStart === windowStart && \result.count === count + 1
+  // Below the limit, a request within the window is allowed.
+  //@ ensures now < windowStart + windowMs && count < limit ==> \result.allowed
+  // Once the window is over, the next request opens a new one and is its first.
+  //@ ensures now >= windowStart + windowMs ==> \result.allowed && \result.windowStart === now && \result.count === 1
+  if (now >= windowStart + windowMs) return { allowed: true, windowStart: now, count: 1, retryAt: now };
+  if (count < limit) return { allowed: true, windowStart, count: count + 1, retryAt: now };
+  return { allowed: false, windowStart, count, retryAt: windowStart + windowMs };
+}
+
 // ---------------------------------------------------------------- evidence
 
 /** Operations that bring a Citation into a Proposal. */

@@ -137,7 +137,7 @@ describe('Proposal screens in the app (Chromium, phone viewport)', () => {
           { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 },
           (_req, body, done) => done(null, body),
         );
-        scope.put('/test-storage/*', { schema: { hide: true } }, async (req, reply) => {
+        scope.put('/test-storage/*', { config: { action: 'propose' }, schema: { hide: true } }, async (req, reply) => {
           const key = new URL(req.url, origin).pathname.replace('/test-storage/', '');
           await storage.put(key, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.headers['content-type'] ?? 'application/octet-stream');
           return reply.code(200).send();

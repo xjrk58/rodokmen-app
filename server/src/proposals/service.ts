@@ -1,6 +1,7 @@
 import {
   baseTargetOf,
   checkOperations,
+  mayDo,
   EVIDENCE_MESSAGE,
   Operation,
   OPERATIONS_VERSION,
@@ -122,7 +123,8 @@ async function insertProposal(
  */
 export async function submitProposal(deps: ProposalDeps, author: Account, body: SubmitProposalBody): Promise<{ view: ProposalView; created: boolean }> {
   const editor = canReview(author);
-  if (body.direct && !editor) throw new ApiProblem(403, 'forbidden', 'Only Editors change the Tree directly. Submit a Proposal for review instead.');
+  if (body.direct && !mayDo(author.role, 'directEdit'))
+    throw new ApiProblem(403, 'forbidden', 'Only Editors change the Tree directly. Submit a Proposal for review instead.');
   const { operations, issues } = checkOperations(body.operations, { editor });
   if (issues.length) throw issuesProblem(issues, author.language);
   const now = deps.clock.now();
@@ -393,7 +395,7 @@ async function sendOutcome(deps: ProposalDeps, p: Proposal, view: ProposalView):
   if (p.kind !== 'contribution' || p.decided_by === p.author_id) return;
   try {
     const author = await deps.db.selectFrom('account').selectAll().where('id', '=', p.author_id).executeTakeFirstOrThrow();
-    if (!author.outcome_emails || author.disabled_at || isAgent(author)) return;
+    if (!author.outcome_emails || author.disabled_at || isAgent(author) || author.email === null) return;
     await deps.mailer.send(
       outcomeEmail({
         to: author.email,

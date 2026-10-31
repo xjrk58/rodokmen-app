@@ -1,10 +1,10 @@
 import type {
+  AccountRole,
   ChildLinkType,
   Confidence,
   EventType,
   ImageContentType,
   ImageKind,
-  MemberRole,
   NameLanguage,
   NameType,
   PlaceType,
@@ -185,10 +185,11 @@ export interface ImagePersonTable extends RecordColumns {
 export interface AccountTable {
   id: Generated<string>;
   version: Generated<number>;
-  email: string;
+  /** Null exactly for Agents. */
+  email: string | null;
   display_name: string;
   language: UiLanguage;
-  role: Generated<MemberRole>;
+  role: Generated<AccountRole>;
   disabled_at: Timestamp | null;
   invited_by: string | null;
   last_seen_at: Timestamp | null;
@@ -252,6 +253,25 @@ export interface SignInLinkTable {
   created_at: CreatedAt;
   expires_at: Timestamp;
   used_at: Timestamp | null;
+}
+
+export interface AgentTokenTable {
+  id: Generated<string>;
+  account_id: string;
+  token_hash: Buffer;
+  prefix: string;
+  label: string | null;
+  created_by: string;
+  created_at: CreatedAt;
+  last_used_at: Timestamp | null;
+  revoked_at: Timestamp | null;
+}
+
+export interface AgentRateWindowTable {
+  account_id: string;
+  kind: 'proposal' | 'read';
+  window_start: Timestamp;
+  count: number;
 }
 
 type Json = ColumnType<Record<string, unknown>, string, string>;
@@ -381,6 +401,8 @@ export interface Database {
   webauthn_challenge: WebauthnChallengeTable;
   invitation: InvitationTable;
   sign_in_link: SignInLinkTable;
+  agent_token: AgentTokenTable;
+  agent_rate_window: AgentRateWindowTable;
   proposal: ProposalTable;
   proposal_operation: ProposalOperationTable;
   log_entry: LogEntryTable;
