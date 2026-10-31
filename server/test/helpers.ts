@@ -1,5 +1,5 @@
 import { ApiError, type MemberRole, type UiLanguage } from '@rodokmen/shared';
-import type { AddressInfo } from 'node:net';
+import { createServer, type AddressInfo } from 'node:net';
 import { z } from 'zod';
 import { buildApp, type RodokmenApp } from '../src/app.js';
 import { createAgent } from '../src/auth/agents.js';
@@ -142,4 +142,18 @@ export function idOf(res: { json(): unknown }): string {
 export function portOf(address: AddressInfo | string | null): number {
   if (address === null || typeof address === 'string') throw new Error('the server is not listening on a TCP port');
   return address.port;
+}
+
+/** A TCP port nothing listens on right now. */
+export async function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createServer();
+    srv.unref();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const address = srv.address();
+      if (address === null || typeof address === 'string') return reject(new Error('no TCP port'));
+      srv.close(() => resolve(address.port));
+    });
+  });
 }

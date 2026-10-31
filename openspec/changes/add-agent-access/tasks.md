@@ -7,7 +7,8 @@
 - [x] 1.2 Enforce read-and-propose-only for Agent tokens on every route; verify the accept-own-Proposal scenario and a direct edit attempt both return 403
   Note: every route names its action and the auth plugin asks `mayDo` for each request; a test calls every registered route with an Agent token and expects 403 exactly where the action is neither `read` nor `propose`.
 - [x] 1.2a Prove the role-and-action rule with `lsc check` in `shared/src/rules.ts`, with `//@ contract agent-access: Read and propose only` and ensures for each refused action and for the accept-own-Proposal scenario; verify with `pnpm verify` and `pnpm verify:trace`, and that allowing `accept` for Agents makes `lsc check` fail
-- [ ] 1.3 Show the Agent badge in the review queue and record history; verify with a Playwright screenshot of an Agent Proposal
+- [x] 1.3 Show the Agent badge in the review queue and record history; verify with a Playwright screenshot of an Agent Proposal
+  Note: `server/test/app-agent.e2e.test.ts` runs against the real server at phone and desktop size; it writes the screenshots when `AGENT_SCREENSHOT_DIR` is set.
 
 ## 2. Limits
 
