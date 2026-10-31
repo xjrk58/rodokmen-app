@@ -13,12 +13,13 @@ import { withName } from './text.js';
 /** @typedef {import('./types.js').ViewerLink} ViewerLink */
 
 /**
- * A point on the map the sheet is about: tapped, or a Municipality chosen in
- * search. (Not a Place of the Tree: the sheet knows only Municipalities.)
+ * A point on the map the sheet is about: tapped, a Municipality chosen in search, or a family
+ * pin, which is a Place (or House) of the Tree and gets "Family here" (add-family-view).
  * @typedef {object} MapPoint
  * @property {number} lat
  * @property {number} lon
  * @property {Municipality} [municipality] set when the point came from search
+ * @property {{ placeId: string, name: string }} [family] set when the point is a family pin
  */
 
 /** Below this distance the tapped point counts as the Municipality itself. */
@@ -37,7 +38,7 @@ function formatCoordinates(lat, lon) {
 export class PlaceSheet {
   /**
    * @param {HTMLElement} el
-   * @param {{ index: ArchiveIndex, gazetteer: Gazetteer, viewers: ViewerLink[], onClose: () => void }} deps
+   * @param {{ index: ArchiveIndex, gazetteer: Gazetteer, viewers: ViewerLink[], onClose: () => void, familyHere?: (family: { placeId: string }) => HTMLElement }} deps
    */
   constructor(el, deps) {
     this.el = el;
@@ -69,6 +70,32 @@ export class PlaceSheet {
     return this.point !== null;
   }
 
+  /**
+   * The sheet's title: the family pin's Place, or the nearest Municipality, with its district.
+   * @param {MapPoint} point
+   * @param {{ municipality: Municipality, km: number } | null} nearest
+   */
+  title(point, nearest) {
+    const municipality = nearest?.municipality;
+    const showDistance = nearest && nearest.km >= SAME_PLACE_KM;
+    return h(
+      'div',
+      {},
+      point.family ? h('h2', { 'data-testid': 'place-name' }, point.family.name) : null,
+      showDistance ? h('p', { class: 'eyebrow' }, t('sheet.nearest', { distance: formatKm(nearest.km) })) : null,
+      point.family
+        ? h('p', { 'data-testid': 'municipality' }, municipality?.name ?? '')
+        : h('h2', { 'data-testid': 'municipality' }, municipality?.name ?? formatCoordinates(point.lat, point.lon)),
+      h(
+        'p',
+        { class: 'meta' },
+        municipality ? h('span', { 'data-testid': 'district' }, t('sheet.district', { district: municipality.district })) : null,
+        municipality ? ' · ' : null,
+        formatCoordinates(point.lat, point.lon),
+      ),
+    );
+  }
+
   render() {
     const point = this.point;
     if (!point) return;
@@ -79,34 +106,22 @@ export class PlaceSheet {
     const close = h('button', { type: 'button', class: 'icon-button', 'aria-label': t('sheet.close'), title: t('sheet.close') }, closeIcon());
     close.addEventListener('click', () => this.hide());
 
+    const family = point.family && this.deps.familyHere ? this.deps.familyHere(point.family) : null;
     if (!answer) {
       this.el.replaceChildren(
-        h('div', { class: 'sheet-head' }, h('div', {}, h('h2', {}, formatCoordinates(point.lat, point.lon))), close),
-        h('p', { class: 'outside', 'data-testid': 'outside' }, t('sheet.outside')),
+        h(
+          'div',
+          { class: 'sheet-head' },
+          h('div', {}, h('h2', { 'data-testid': 'place-name' }, point.family?.name ?? formatCoordinates(point.lat, point.lon))),
+          close,
+        ),
+        ...(family ? [family] : []),
+        h('p', { class: 'outside', 'data-testid': 'outside' }, family ? t('sheet.outsideFamily') : t('sheet.outside')),
       );
       return;
     }
 
-    const showDistance = nearest && nearest.km >= SAME_PLACE_KM;
-
-    const head = h(
-      'div',
-      { class: 'sheet-head' },
-      h(
-        'div',
-        {},
-        showDistance ? h('p', { class: 'eyebrow' }, t('sheet.nearest', { distance: formatKm(nearest.km) })) : null,
-        h('h2', { 'data-testid': 'municipality' }, municipality?.name ?? formatCoordinates(point.lat, point.lon)),
-        h(
-          'p',
-          { class: 'meta' },
-          municipality ? h('span', { 'data-testid': 'district' }, t('sheet.district', { district: municipality.district })) : null,
-          municipality ? ' · ' : null,
-          formatCoordinates(point.lat, point.lon),
-        ),
-      ),
-      close,
-    );
+    const head = h('div', { class: 'sheet-head' }, this.title(point, nearest), close);
 
     const { archive } = answer;
     const registers = h(
@@ -171,6 +186,6 @@ export class PlaceSheet {
       ),
     );
 
-    this.el.replaceChildren(head, registers, jewishSection, historical);
+    this.el.replaceChildren(head, ...(family ? [family] : []), registers, jewishSection, historical);
   }
 }

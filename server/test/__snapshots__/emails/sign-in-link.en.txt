@@ -4,7 +4,7 @@ Hello Jana,
 
 Someone (most likely you) asked to sign in to Rodokmen. Sign in with this link. It is valid for 15 minutes and works only once.
 
-https://rodokmen.example/auth/link#token=EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+https://rodokmen.example/#invite/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
 
 Once you are signed in, you can save a passkey on this device, so next time you sign in without email.
 

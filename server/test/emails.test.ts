@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { alertEmail, digestEmail, invitationEmail, outcomeEmail, signInLinkEmail } from '../src/mail/templates.js';
 
-const link = 'https://rodokmen.example/auth/invite#token=EXAMPLE_TOKEN_0123456789abcdefghijklmnopq';
+const link = 'https://rodokmen.example/#invite/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq';
 
 /** Snapshot of every email in each language; review the files in test/__snapshots__/emails/ when wording changes. */
 describe('invitation and sign-in emails in Czech and English', () => {

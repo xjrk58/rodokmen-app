@@ -194,6 +194,8 @@ export interface AccountTable {
   invited_by: string | null;
   last_seen_at: Timestamp | null;
   outcome_emails: Generated<boolean>;
+  /** The Person who is this Member in the Tree (set by the Owner). */
+  person_id: string | null;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }

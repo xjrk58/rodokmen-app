@@ -10,6 +10,7 @@ export const LOCAL = /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\//;
 /**
  * @typedef {object} Fixtures
  * @property {string[]} external URLs of requests answered by the mock, in order
+ * @property {'cs' | 'en' | null} language the language chosen on the device before the app opens; null for none (the app's default, Czech)
  */
 
 /**
@@ -40,9 +41,22 @@ export const test = base.extend(
       await mockExternal(context, log);
       await use(log);
     },
-    // Every test gets the mock, whether or not it reads the log.
-    page: async ({ page, external }, use) => {
+    // The tests check English labels, so they choose English on the device first, as a
+    // reader would in Settings; tests of the default language (Czech) set it to null.
+    // A choice the test makes itself (the language switch) is kept across reloads.
+    language: ['en', { option: true }],
+    // Every test gets the mock, whether or not it reads the log, and the language choice.
+    page: async ({ page, context, external, language }, use) => {
       void external;
+      if (language) {
+        await context.addInitScript((lang) => {
+          try {
+            if (!localStorage.getItem('rodokmen.language')) localStorage.setItem('rodokmen.language', lang);
+          } catch {
+            // about:blank has no storage
+          }
+        }, language);
+      }
       await use(page);
     },
   }),

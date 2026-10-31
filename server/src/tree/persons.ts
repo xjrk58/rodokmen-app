@@ -172,14 +172,9 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
     .where('r.person_id', '=', id)
     .execute();
   roles.sort((a, b) => compareEarliestDays(a.date_earliest, b.date_earliest) || a.event_id.localeCompare(b.event_id));
-  const events = new Map(
-    (
-      await eventSummaries(
-        db,
-        roles.map((r) => r.event_id),
-      )
-    ).map((e) => [e.id, e]),
-  );
+  const eventIds = roles.map((r) => r.event_id);
+  const events = new Map((await eventSummaries(db, eventIds)).map((e) => [e.id, e]));
+  const eventCitations = await citationSummariesFor(db, 'event', eventIds);
 
   const asPartner = await db
     .selectFrom('family')
@@ -239,7 +234,13 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
       primary: n.is_primary,
       citations: nameCitations.get(n.id) ?? [],
     })),
-    events: roles.map((r) => ({ roleId: r.id, role: r.role, roleDetail: r.role_detail, event: events.get(r.event_id)! })),
+    events: roles.map((r) => ({
+      roleId: r.id,
+      role: r.role,
+      roleDetail: r.role_detail,
+      event: events.get(r.event_id)!,
+      citations: eventCitations.get(r.event_id) ?? [],
+    })),
     familiesAsPartner: asPartner.map((f) => {
       const other = f.partner1_id === id ? f.partner2_id : f.partner1_id;
       return {

@@ -20,6 +20,7 @@ const PLACE_ZOOM = 12;
  * @property {() => void} clearMarker
  * @property {(lat: number, lon: number) => void} centreOn
  * @property {(handler: (lat: number, lon: number) => void) => void} onTap
+ * @property {() => void} resize after the map's container changed size (the tabs came or went)
  */
 
 /**
@@ -37,9 +38,10 @@ function viewFromHash() {
 /**
  * @param {HTMLElement} container
  * @param {AppData} data
+ * @param {() => boolean} [shown] whether the map is the screen shown (it owns the address only then)
  * @returns {MapView}
  */
-export function createMap(container, data) {
+export function createMap(container, data, shown = () => true) {
   const map = L.map(container, { zoomControl: false, minZoom: 5, maxZoom: 18, zoomSnap: 0.25 });
   map.attributionControl.setPrefix('<a href="https://leafletjs.com">Leaflet</a>');
   L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -110,8 +112,8 @@ export function createMap(container, data) {
   else map.fitBounds(country.getBounds(), { paddingTopLeft: [8, 62], paddingBottomRight: [8, 8] });
 
   const writeHash = () => {
-    // The work panel owns the address while it is open (#work/…).
-    if (location.hash.startsWith('#work')) return;
+    // Other screens own the address while they are shown (#work/…, #person-…, #life/…).
+    if (!shown() || location.hash.startsWith('#work') || location.hash.startsWith('#life/')) return;
     const c = map.getCenter();
     history.replaceState(null, '', `#map=${Number(map.getZoom().toFixed(2))}/${c.lat.toFixed(5)}/${c.lng.toFixed(5)}`);
   };
@@ -161,6 +163,9 @@ export function createMap(container, data) {
     },
     centreOn(lat, lon) {
       map.setView([lat, lon], Math.max(map.getZoom(), PLACE_ZOOM));
+    },
+    resize() {
+      map.invalidateSize();
     },
     onTap(handler) {
       map.on('click', (event) => handler(event.latlng.lat, event.latlng.lng));

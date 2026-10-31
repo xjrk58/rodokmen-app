@@ -11,7 +11,7 @@ import { PRECACHE } from './src/precache.js';
 import { TILE_CACHE_LIMIT, TileLru } from './src/tile-lru.js';
 
 /** Written by scripts/stamp-version.mjs; changes whenever a precached file changes. */
-const VERSION = '0.1.0+7720810b51';
+const VERSION = '0.1.0+cfbbe4fce0';
 
 const SHELL_PREFIX = 'rodokmen-shell-';
 const SHELL_CACHE = `${SHELL_PREFIX}${VERSION}`;
@@ -55,8 +55,8 @@ sw.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  // The API and the sign-in pages always go to the network (same origin, ADR 0007).
-  if (url.href.startsWith(new URL('api/', scope).href) || url.href.startsWith(new URL('auth/', scope).href)) return;
+  // The API always goes to the network (same origin, ADR 0007); the app keeps what it read in IndexedDB.
+  if (url.href.startsWith(new URL('api/', scope).href)) return;
   if (url.href.startsWith(scope)) {
     event.respondWith(request.mode === 'navigate' ? shellPage(request) : shellFile(request));
   } else if (url.origin !== sw.location.origin && TILE_PATH.test(url.pathname)) {

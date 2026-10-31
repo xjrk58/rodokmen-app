@@ -5,6 +5,7 @@ import {
   IdParams,
   InvitationList,
   InvitationView,
+  LinkPersonBody,
   Me,
   MemberList,
   MemberView,
@@ -12,6 +13,8 @@ import {
   permissionsFor,
   RateLimited,
   SessionList,
+  UpdateMeBody,
+  type PersonSummary,
 } from '@rodokmen/shared';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
@@ -21,22 +24,44 @@ import {
   createInvitation,
   disableMember,
   enableMember,
+  keptPerson,
+  linkPerson,
   listInvitations,
   listMembers,
   revokeInvitation,
+  updateOwnAccount,
   type AccountDeps,
 } from '../auth/accounts.js';
 import { ApiProblem } from '../auth/problem.js';
 import { endSession } from '../auth/sessions.js';
+import type { Clock } from '../clock.js';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
+import { personSummaries } from '../tree/summaries.js';
 
-export async function meView(db: Db, a: Account): Promise<Me> {
-  const { n } = await db
+/** The linked Persons of these accounts, keyed by account id; a merged Person counts as the one it was merged into. */
+async function linkedPersons(deps: { db: Db; clock: Clock }, accounts: readonly Account[]): Promise<Map<string, PersonSummary>> {
+  const kept = new Map<string, string>();
+  for (const a of accounts) {
+    const id = a.person_id ? await keptPerson(deps.db, a.person_id) : null;
+    if (id) kept.set(a.id, id);
+  }
+  const summaries = await personSummaries(deps.db, [...kept.values()], deps.clock);
+  const out = new Map<string, PersonSummary>();
+  for (const [accountId, personId] of kept) {
+    const summary = summaries.get(personId);
+    if (summary) out.set(accountId, summary);
+  }
+  return out;
+}
+
+export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promise<Me> {
+  const { n } = await deps.db
     .selectFrom('passkey')
     .select((eb) => eb.fn.countAll<number>().as('n'))
     .where('account_id', '=', a.id)
     .executeTakeFirstOrThrow();
+  const persons = await linkedPersons(deps, [a]);
   return {
     id: a.id,
     version: a.version,
@@ -46,7 +71,33 @@ export async function meView(db: Db, a: Account): Promise<Me> {
     role: a.role,
     permissions: permissionsFor(a.role),
     passkeyCount: n,
+    person: persons.get(a.id) ?? null,
   };
+}
+
+/** Members as the Owner sees them, each with their linked Person. Agents are listed with their tokens instead (auth/agents.ts). */
+async function memberViews(deps: { db: Db; clock: Clock }, accounts: readonly Account[]): Promise<MemberView[]> {
+  const persons = await linkedPersons(deps, accounts);
+  return accounts.map((a) => {
+    if (a.role === 'agent' || a.email === null) throw new Error(`account ${a.id} is an Agent, not a Member`);
+    return {
+      id: a.id,
+      version: a.version,
+      email: a.email,
+      displayName: a.display_name,
+      language: a.language,
+      role: a.role,
+      disabled: a.disabled_at !== null,
+      createdAt: new Date(a.created_at).toISOString(),
+      lastSeenAt: a.last_seen_at ? new Date(a.last_seen_at).toISOString() : null,
+      person: persons.get(a.id) ?? null,
+    };
+  });
+}
+
+async function memberView(deps: { db: Db; clock: Clock }, a: Account): Promise<MemberView> {
+  const [view] = await memberViews(deps, [a]);
+  return view!;
 }
 
 const signedIn = { 401: ApiError, 429: RateLimited };
@@ -61,8 +112,23 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   const own = { config: { action: 'ownAccount' as const } };
 
   app.get('/api/me', {
-    schema: { tags: ['Account'], summary: 'The signed-in Member or Agent, with role and permissions', response: { 200: Me, ...signedIn } },
-    handler: async (req) => meView(deps.db, req.member!),
+    schema: {
+      tags: ['Account'],
+      summary: 'The signed-in Member or Agent, with role, permissions and, for a Member, their own Person',
+      response: { 200: Me, ...signedIn },
+    },
+    handler: async (req) => meView(deps, req.member!),
+  });
+
+  app.patch('/api/me', {
+    ...own,
+    schema: {
+      tags: ['Account'],
+      summary: 'Change your own display name or language (the language of the app and of emails)',
+      body: UpdateMeBody,
+      response: { 200: Me, 400: ApiError, ...ownAccount },
+    },
+    handler: async (req) => meView(deps, await updateOwnAccount(deps, req.member!, req.body)),
   });
 
   app.get('/api/me/sessions', {
@@ -140,7 +206,7 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
   app.get('/api/members', {
     ...owner,
     schema: { tags: ['Members'], summary: 'All Members (Owner only)', response: { 200: MemberList, ...ownerOnly } },
-    handler: async () => ({ items: await listMembers(deps) }),
+    handler: async () => ({ items: await memberViews(deps, await listMembers(deps)) }),
   });
 
   app.put('/api/members/:id/role', {
@@ -152,7 +218,7 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
       body: ChangeRoleBody,
       response: { 200: MemberView, 404: ApiError, 409: ApiError, ...ownerOnly },
     },
-    handler: async (req) => changeRole(deps, req.member!, req.params.id, req.body.role),
+    handler: async (req) => memberView(deps, await changeRole(deps, req.member!, req.params.id, req.body.role)),
   });
 
   app.post('/api/members/:id/disable', {
@@ -163,7 +229,7 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
       params: IdParams,
       response: { 200: MemberView, 404: ApiError, 409: ApiError, ...ownerOnly },
     },
-    handler: async (req) => disableMember(deps, req.member!, req.params.id),
+    handler: async (req) => memberView(deps, await disableMember(deps, req.member!, req.params.id)),
   });
 
   app.post('/api/members/:id/enable', {
@@ -174,7 +240,19 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
       params: IdParams,
       response: { 200: MemberView, 404: ApiError, ...ownerOnly },
     },
-    handler: async (req) => enableMember(deps, req.params.id),
+    handler: async (req) => memberView(deps, await enableMember(deps, req.params.id)),
+  });
+
+  app.put('/api/members/:id/person', {
+    ...owner,
+    schema: {
+      tags: ['Members'],
+      summary: 'Link a Member to the Person who is them in the Tree, or remove the link (Owner only). Their tree opens there',
+      params: IdParams,
+      body: LinkPersonBody,
+      response: { 200: MemberView, 404: ApiError, ...ownerOnly },
+    },
+    handler: async (req) => memberView(deps, await linkPerson(deps, req.params.id, req.body.personId)),
   });
 
   app.get('/api/invitations', {

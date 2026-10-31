@@ -1082,3 +1082,513 @@ img.thumb {
 .undo-box:not(:empty) {
   margin-top: 8px;
 }
+
+/* The family screens (add-family-view): the tree as the signed-in home, People, person pages,
+   Settings and signing in, over the map; tabs at the bottom for a signed-in Member. */
+:root {
+  --tabbar-h: 58px;
+  --living: #2f6b45;
+  --possible: #8a6d1f;
+}
+body.signed-in #map {
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+}
+body.signed-in .sheet,
+body.signed-in .toast,
+body.signed-in .year-filter,
+body.signed-in .life-chip {
+  margin-bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+}
+body.signed-in .work {
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+}
+body:not([data-screen='map']) .topbar,
+body:not([data-screen='map']) .panel,
+body:not([data-screen='map']) .year-filter,
+body:not([data-screen='map']) .life-chip,
+body:not([data-screen='map']) .sheet {
+  visibility: hidden;
+}
+body[data-screen='map'] .screen,
+body[data-screen='work'] .screen {
+  display: none;
+}
+.toast,
+.drafts-toast {
+  z-index: 1400;
+}
+
+.screen {
+  position: fixed;
+  inset: 0 0 0 0;
+  z-index: 1150;
+  overflow-y: auto;
+  background: var(--paper);
+  padding-top: var(--safe-top);
+  -webkit-overflow-scrolling: touch;
+}
+body.signed-in .screen {
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom));
+}
+.screen h1 {
+  margin: 0 0 8px;
+  font: 600 24px/1.2 var(--serif);
+}
+.screen h2 {
+  margin: 18px 0 6px;
+  font: 600 18px/1.25 var(--serif);
+}
+.screen-body {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 16px 14px 28px;
+}
+.offline-note,
+.as-of {
+  margin: 8px 14px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--note);
+  border: 1px solid var(--note-line);
+  font-size: 13px;
+}
+.screen-body .as-of {
+  margin: 8px 0;
+}
+
+/* Tabs */
+.tabbar {
+  position: fixed;
+  z-index: 1300;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  height: calc(var(--tabbar-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: var(--card);
+  border-top: 1px solid var(--line);
+}
+.tabbar-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  text-decoration: none;
+}
+.tabbar-item svg {
+  width: 22px;
+  height: 22px;
+}
+.tabbar-item[aria-current='page'] {
+  color: var(--accent);
+  font-weight: 600;
+}
+.tabbar-item[aria-current='page'] svg {
+  stroke-width: 2.5;
+}
+
+/* The tree */
+.tree-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.screen-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+.tree-head .icon-link {
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--ink);
+}
+.tree-head .icon-link svg {
+  width: 22px;
+  height: 22px;
+}
+.button.small {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.stepper output {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--ink);
+}
+.icon-button.small {
+  width: 32px;
+  height: 32px;
+  font: 600 18px/1 var(--sans);
+  background: #efe9dc;
+}
+.icon-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tree-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.tree-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.tree-canvas.ready .tree-view,
+.tree-canvas.ready .tree-node {
+  transition: transform 0.35s ease;
+}
+.tree-lines {
+  animation: fade-in 0.3s 0.2s both;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.tree-node {
+  cursor: pointer;
+  animation: fade-in 0.25s both;
+}
+.tree-node .box {
+  fill: var(--card);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.tree-node.male .box {
+  fill: #f3f6f8;
+}
+.tree-node.female .box {
+  fill: #faf3f1;
+}
+.tree-node.is-focus .box {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+.tree-node.living .box {
+  stroke: var(--living);
+  stroke-dasharray: none;
+}
+.tree-node.living .years {
+  fill: var(--living);
+}
+.tree-node.possible .box {
+  stroke: var(--possible);
+  stroke-dasharray: 5 3;
+}
+.tree-node:focus-visible {
+  outline: none;
+}
+.tree-node:focus-visible .box {
+  stroke: var(--focus);
+  stroke-width: 3;
+}
+.tree-node text {
+  fill: var(--ink);
+  stroke: none;
+  font: 12px/1 var(--sans);
+}
+.tree-node .given {
+  font-weight: 600;
+}
+.tree-node .years {
+  font-size: 11px;
+  fill: var(--ink-2);
+}
+.tree-node .more {
+  stroke: var(--ink-3);
+  stroke-width: 2;
+}
+.tree-lines .line {
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+}
+.tree-lines .line.dashed {
+  stroke-dasharray: 5 4;
+}
+.zoom-buttons {
+  position: absolute;
+  right: 10px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.zoom-buttons .round-button {
+  width: 38px;
+  height: 38px;
+  font: 600 18px/1 var(--sans);
+  opacity: 0.92;
+}
+.other-parents {
+  position: absolute;
+  left: 10px;
+  bottom: 12px;
+  max-width: calc(100% - 80px);
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.unrelated-switch {
+  position: absolute;
+  left: 10px;
+  top: 8px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tree-canvas.ready .tree-view,
+  .tree-canvas.ready .tree-node {
+    transition: none;
+  }
+  .tree-lines,
+  .tree-node {
+    animation: none;
+  }
+}
+
+/* People */
+.people-box {
+  margin: 4px 0 10px;
+}
+.people-box input {
+  padding-right: 16px;
+}
+.person-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.person-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.person-result .matched {
+  display: block;
+}
+.person-name {
+  font-weight: 600;
+}
+.years {
+  color: var(--ink-2);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.mark {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-radius: 9px;
+  background: #e3efe6;
+  color: var(--living);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Person page */
+.person-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.portrait {
+  width: 72px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.person-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.names,
+.families,
+.events,
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.names > li,
+.families > li,
+.plain-list > li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+.children {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+.citations {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.citation-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  text-align: left;
+}
+.chip.confidence.low,
+.chip.confidence.very_low {
+  background: #fbe9d0;
+}
+.chip.confidence.high,
+.chip.confidence.very_high {
+  background: #e3efe6;
+}
+.citation-detail {
+  padding: 6px 0 4px 10px;
+  border-left: 3px solid var(--line);
+}
+.citation-detail blockquote {
+  margin: 0 0 6px;
+  font-family: var(--serif);
+}
+
+/* Settings and signing in */
+.settings-screen .card h2 {
+  margin-top: 0;
+}
+.member-head,
+.member-controls,
+.member-person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.member-controls select {
+  margin-left: 6px;
+  min-height: 36px;
+}
+.invite-form {
+  display: grid;
+  gap: 8px;
+}
+.sign-in-form {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.sign-in-choices > .button {
+  width: 100%;
+  margin: 8px 0;
+}
+.status-pending {
+  background: #fbf0d9;
+}
+
+/* The family on the map */
+.family-pin,
+.family-cluster {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font: 600 13px/1 var(--sans);
+  box-shadow: 0 1px 4px rgb(29 42 34 / 0.35);
+}
+.family-pin {
+  background: var(--accent);
+  border: 2px solid var(--card);
+}
+.family-cluster {
+  background: rgb(36 57 45 / 0.85);
+  border: 3px solid rgb(255 253 248 / 0.9);
+  font-size: 14px;
+}
+.year-filter {
+  position: fixed;
+  z-index: 900;
+  left: 8px;
+  bottom: calc(10px + var(--safe-bottom));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(330px, calc(100vw - 70px));
+  padding: 8px 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.year-sliders {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+.year-sliders input {
+  width: 100%;
+}
+.year-sliders output {
+  font-weight: 600;
+  font-size: 14px;
+}
+.year-filter .play {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+.life-chip {
+  position: fixed;
+  z-index: 900;
+  left: 50%;
+  top: calc(64px + var(--safe-top));
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+.life-label {
+  font: 600 12px/1.2 var(--sans);
+}
+.family-here {
+  margin-top: 10px;
+}
+.here-persons li {
+  padding: 4px 0;
+}

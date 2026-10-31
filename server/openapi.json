@@ -1477,13 +1477,21 @@
           },
           "event": {
             "$ref": "#/components/schemas/EventSummaryInput"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationSummaryInput"
+            },
+            "description": "The Event's Citations"
           }
         },
         "required": [
           "roleId",
           "role",
           "roleDetail",
-          "event"
+          "event",
+          "citations"
         ]
       },
       "PartnerFamilyViewInput": {
@@ -1746,6 +1754,140 @@
           "rootId",
           "direction",
           "generations",
+          "persons",
+          "families",
+          "childLinks"
+        ]
+      },
+      "HourglassInput": {
+        "type": "object",
+        "properties": {
+          "focusId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "up": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "down": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "generation": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "0 for the focus Person and their partners; 1 their parents, 2 grandparents …; -1 their children, -2 grandchildren …"
+                },
+                "relation": {
+                  "type": "string",
+                  "enum": [
+                    "focus",
+                    "ancestor",
+                    "descendant",
+                    "partner"
+                  ],
+                  "description": "\"partner\": a partner of the focus Person or of a descendant"
+                },
+                "moreAbove": {
+                  "type": "boolean",
+                  "description": "An ancestor in the top row whose own parents are known but not included"
+                },
+                "moreBelow": {
+                  "type": "boolean",
+                  "description": "A descendant in the bottom row whose own children are known but not included"
+                },
+                "person": {
+                  "$ref": "#/components/schemas/PersonSummaryInput"
+                }
+              },
+              "required": [
+                "generation",
+                "relation",
+                "moreAbove",
+                "moreBelow",
+                "person"
+              ]
+            }
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "version": {
+                  "$ref": "#/components/schemas/VersionInput"
+                },
+                "partner1Id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/IdInput"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "partner2Id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/IdInput"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "version",
+                "partner1Id",
+                "partner2Id"
+              ]
+            }
+          },
+          "childLinks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "familyId": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "childId": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "linkType": {
+                  "$ref": "#/components/schemas/ChildLinkTypeInput"
+                }
+              },
+              "required": [
+                "id",
+                "familyId",
+                "childId",
+                "linkType"
+              ]
+            }
+          }
+        },
+        "required": [
+          "focusId",
+          "up",
+          "down",
           "persons",
           "families",
           "childLinks"
@@ -2092,6 +2234,145 @@
           }
         },
         "required": [
+          "events",
+          "truncated"
+        ]
+      },
+      "PlaceEventInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventTypeInput"
+          },
+          "typeDetail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "earliest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "place": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRefInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Event Place, or the Place of its House"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HouseRefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "$ref": "#/components/schemas/RoleTypeInput"
+                },
+                "roleDetail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "person": {
+                  "$ref": "#/components/schemas/PersonSummaryInput"
+                }
+              },
+              "required": [
+                "role",
+                "roleDetail",
+                "person"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "typeDetail",
+          "date",
+          "earliest",
+          "latest",
+          "place",
+          "house",
+          "description",
+          "persons"
+        ]
+      },
+      "PlaceEventsInput": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/PlaceRefInput"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceEventInput"
+            },
+            "description": "Events at the Place and at its Houses, ordered by the earliest date each could be; undated last"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when more Events matched than the limit"
+          }
+        },
+        "required": [
+          "place",
           "events",
           "truncated"
         ]
@@ -2943,6 +3224,17 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonSummaryInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)"
           }
         },
         "required": [
@@ -2953,8 +3245,23 @@
           "language",
           "role",
           "permissions",
-          "passkeyCount"
+          "passkeyCount",
+          "person"
         ]
+      },
+      "UpdateMeBodyInput": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "language": {
+            "$ref": "#/components/schemas/UiLanguageInput"
+          }
+        },
+        "description": "Change your own display name or language (the language of the app and of emails)"
       },
       "MemberViewInput": {
         "type": "object",
@@ -2996,6 +3303,17 @@
                 "type": "null"
               }
             ]
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonSummaryInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person who is this Member in the Tree, when the Owner has linked one"
           }
         },
         "required": [
@@ -3007,7 +3325,8 @@
           "role",
           "disabled",
           "createdAt",
-          "lastSeenAt"
+          "lastSeenAt",
+          "person"
         ]
       },
       "MemberListInput": {
@@ -3022,6 +3341,25 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "LinkPersonBodyInput": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person who is this Member in the Tree; null removes the link"
+          }
+        },
+        "required": [
+          "personId"
         ]
       },
       "ChangeRoleBodyInput": {
@@ -6940,13 +7278,21 @@
           },
           "event": {
             "$ref": "#/components/schemas/EventSummary"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationSummary"
+            },
+            "description": "The Event's Citations"
           }
         },
         "required": [
           "roleId",
           "role",
           "roleDetail",
-          "event"
+          "event",
+          "citations"
         ],
         "additionalProperties": false
       },
@@ -7217,6 +7563,144 @@
           "rootId",
           "direction",
           "generations",
+          "persons",
+          "families",
+          "childLinks"
+        ],
+        "additionalProperties": false
+      },
+      "Hourglass": {
+        "type": "object",
+        "properties": {
+          "focusId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "up": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "down": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "generation": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991,
+                  "description": "0 for the focus Person and their partners; 1 their parents, 2 grandparents …; -1 their children, -2 grandchildren …"
+                },
+                "relation": {
+                  "type": "string",
+                  "enum": [
+                    "focus",
+                    "ancestor",
+                    "descendant",
+                    "partner"
+                  ],
+                  "description": "\"partner\": a partner of the focus Person or of a descendant"
+                },
+                "moreAbove": {
+                  "type": "boolean",
+                  "description": "An ancestor in the top row whose own parents are known but not included"
+                },
+                "moreBelow": {
+                  "type": "boolean",
+                  "description": "A descendant in the bottom row whose own children are known but not included"
+                },
+                "person": {
+                  "$ref": "#/components/schemas/PersonSummary"
+                }
+              },
+              "required": [
+                "generation",
+                "relation",
+                "moreAbove",
+                "moreBelow",
+                "person"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "version": {
+                  "$ref": "#/components/schemas/Version"
+                },
+                "partner1Id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "partner2Id": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "version",
+                "partner1Id",
+                "partner2Id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "childLinks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "familyId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "childId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "linkType": {
+                  "$ref": "#/components/schemas/ChildLinkType"
+                }
+              },
+              "required": [
+                "id",
+                "familyId",
+                "childId",
+                "linkType"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "focusId",
+          "up",
+          "down",
           "persons",
           "families",
           "childLinks"
@@ -7571,6 +8055,148 @@
           }
         },
         "required": [
+          "events",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "PlaceEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "typeDetail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "earliest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "place": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Event Place, or the Place of its House"
+          },
+          "house": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HouseRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": {
+                  "$ref": "#/components/schemas/RoleType"
+                },
+                "roleDetail": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "person": {
+                  "$ref": "#/components/schemas/PersonSummary"
+                }
+              },
+              "required": [
+                "role",
+                "roleDetail",
+                "person"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "typeDetail",
+          "date",
+          "earliest",
+          "latest",
+          "place",
+          "house",
+          "description",
+          "persons"
+        ],
+        "additionalProperties": false
+      },
+      "PlaceEvents": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "$ref": "#/components/schemas/PlaceRef"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceEvent"
+            },
+            "description": "Events at the Place and at its Houses, ordered by the earliest date each could be; undated last"
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when more Events matched than the limit"
+          }
+        },
+        "required": [
+          "place",
           "events",
           "truncated"
         ],
@@ -8442,6 +9068,17 @@
             "type": "integer",
             "minimum": -9007199254740991,
             "maximum": 9007199254740991
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)"
           }
         },
         "required": [
@@ -8452,9 +9089,25 @@
           "language",
           "role",
           "permissions",
-          "passkeyCount"
+          "passkeyCount",
+          "person"
         ],
         "additionalProperties": false
+      },
+      "UpdateMeBody": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "language": {
+            "$ref": "#/components/schemas/UiLanguage"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Change your own display name or language (the language of the app and of emails)"
       },
       "MemberView": {
         "type": "object",
@@ -8496,6 +9149,17 @@
                 "type": "null"
               }
             ]
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person who is this Member in the Tree, when the Owner has linked one"
           }
         },
         "required": [
@@ -8507,7 +9171,8 @@
           "role",
           "disabled",
           "createdAt",
-          "lastSeenAt"
+          "lastSeenAt",
+          "person"
         ],
         "additionalProperties": false
       },
@@ -8523,6 +9188,26 @@
         },
         "required": [
           "items"
+        ],
+        "additionalProperties": false
+      },
+      "LinkPersonBody": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person who is this Member in the Tree; null removes the link"
+          }
+        },
+        "required": [
+          "personId"
         ],
         "additionalProperties": false
       },
@@ -11435,6 +12120,103 @@
         }
       }
     },
+    "/api/persons/{id}/hourglass": {
+      "get": {
+        "summary": "The tree around a Person: ancestors above, descendants below, and partners beside, 1 to 6 generations each way",
+        "tags": [
+          "Persons"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 3,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "in": "query",
+            "name": "up",
+            "required": false,
+            "description": "Generations of ancestors above the focus Person"
+          },
+          {
+            "schema": {
+              "default": 2,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 6
+            },
+            "in": "query",
+            "name": "down",
+            "required": false,
+            "description": "Generations of descendants below the focus Person"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Hourglass"
+                }
+              }
+            }
+          },
+          "308": {
+            "description": "Location: the same route for the Person this one was merged into"
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/families/{id}": {
       "get": {
         "summary": "A Family with its partners, children (with link types) and Events",
@@ -11748,6 +12530,87 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlaceDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/places/{id}/events": {
+      "get": {
+        "summary": "Events at a Place and its Houses, with the Persons who took part and their Roles",
+        "tags": [
+          "Places"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "default": 1000,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 2000
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaceEvents"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -13471,7 +14334,7 @@
     },
     "/api/me": {
       "get": {
-        "summary": "The signed-in Member or Agent, with role and permissions",
+        "summary": "The signed-in Member or Agent, with role, permissions and, for a Member, their own Person",
         "tags": [
           "Account"
         ],
@@ -13502,6 +14365,64 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change your own display name or language (the language of the app and of emails)",
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -13891,6 +14812,76 @@
         "tags": [
           "Members"
         ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{id}/person": {
+      "put": {
+        "summary": "Link a Member to the Person who is them in the Tree, or remove the link (Owner only). Their tree opens there",
+        "tags": [
+          "Members"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LinkPersonBodyInput"
+              }
+            }
+          }
+        },
         "parameters": [
           {
             "schema": {

@@ -95,6 +95,7 @@ export function me(role) {
     role,
     permissions: { propose: true, review: editor, inviteMembers: editor, changeRoles: false, disableMembers: false },
     passkeyCount: 1,
+    person: null,
   };
 }
 

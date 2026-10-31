@@ -38,7 +38,7 @@ describe('emailed sign-in links', () => {
     expect(email.subject).toBe('Přihlášení do Rodokmenu');
     expect(email.text).toContain('Platí 15 minut a dá se použít jen jednou.');
     const token = tokenFromEmail(email.text);
-    expect(email.text).toContain(`${a.config.publicOrigin}/auth/link#token=${token}`);
+    expect(email.text).toContain(`${a.config.publicOrigin}/#link/${token}`);
 
     a.clock.advance(14 * MINUTE);
     const res = await verify(token);
