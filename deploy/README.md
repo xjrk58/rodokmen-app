@@ -59,8 +59,55 @@ images and fetches also from the host image links point at (`https://files.<doma
 images. A new map host needs only an entry in `layers.json`. Caddy adds `Referrer-Policy:
 same-origin` only to answers that have none.
 
-**Memory:** Garage is limited to 128 MB in `docker-compose.yml`. Measured locally, it used about
-10 MB, and at most 39 MB with page cache while a 19 MB image went in and during a Backup.
+## Memory
+
+The VPS has 4 GB of RAM and 2 vCores (#38). Every service has a memory limit in
+`docker-compose.yml`, so a spike in one cannot starve the others, and together they fit even when
+a deploy (both API slots) runs during the nightly Backup (#39).
+
+| Service                      | `mem_limit` | with swap (`memswap_limit`) | kept in RAM (`mem_reservation`) | Measured peak                                            |
+| ---------------------------- | ----------- | --------------------------- | ------------------------------- | -------------------------------------------------------- |
+| `db`                         | 1.5 GB      | 2 GB                        | 1 GB                            | 194 MB (loading the fixture Tree), 90 MB during a Backup |
+| `api-blue`, `api-green` each | 512 MB      | 768 MB                      | 128 MB                          | 266 MB (291 MB with eight large images at once, idle 61) |
+| `mcp`                        | 128 MB      | 192 MB                      |                                 | 38 MB                                                    |
+| `garage`                     | 128 MB      | 192 MB                      |                                 | 79 MB                                                    |
+| `caddy`                      | 128 MB      | 192 MB                      |                                 | 28 MB                                                    |
+| `watchdog`                   | 128 MB      | 192 MB                      |                                 | 60 MB                                                    |
+| `backup` (nightly job)       | 512 MB      | 768 MB                      |                                 | 120 MB                                                   |
+
+- **The limits add up** to 2.5 GB normally (one API slot, no Backup), 3 GB during a deploy or a
+  Backup, and 3.5 GB in the rare case of both at once. That leaves at least 0.5 GB for Ubuntu,
+  Docker and the kernel's file cache. The swap they may use adds up to 1.5 GB, within the 2 GB
+  swap file (to-do list, step 2). What they really used is far less: under 1 GB together at the
+  worst moment measured.
+- **When a container reaches its limit**, the kernel first drops its file cache (the Backup and
+  Garage fill their limits with it, which is harmless), then moves some of its memory to swap, up
+  to `memswap_limit`, and only then stops a process in that container. Docker restarts it
+  (`restart: unless-stopped`) and the other services carry on (see When an alert arrives).
+- **PostgreSQL** (`command` of `db`, each value explained there): `shared_buffers=1GB`,
+  `effective_cache_size=1536MB` (a planner hint; the container's limit also caps the file cache,
+  hence 1.5 GB rather than 2), `work_mem=8MB`, `maintenance_work_mem=128MB`, and
+  `max_connections=40`: two API slots with a pool of 10 each during a deploy, a CLI command, the
+  Backup's two, psql by hand and the three reserved for superusers. The MCP server and the
+  watchdog never connect. A change to these recreates `db` on the next deploy, a few seconds
+  without service.
+- **Images** (`server/src/storage/process.ts`): sharp works with one thread and a small cache, and
+  uploads are checked one at a time, from loading the original to making its display copy, so
+  uploads arriving together wait their turn instead of adding up. An image may have at most 200
+  million pixels (8 per byte of the 25 MB limit); a file claiming more is refused from its header.
+  The API slots run with `MALLOC_ARENA_MAX=2`, which keeps their peaks with several large images
+  15 to 20 % lower.
+  Measured in one API slot: a 25 MB JPEG of 48 megapixels takes about 75 MB above idle, a
+  196-megapixel PNG about 130 MB. Before uploads took turns from loading on, four large images at
+  once took up to 461 MB.
+- **How it was measured** (#39): this Compose file locally, every service on 2 CPUs, the invented
+  fixture Tree and 2.8 GB of images. While a full first-night Backup ran, four large images went
+  through upload, check and accept at once (two 25 MB JPEGs, a 196-megapixel PNG and a
+  200-megapixel JPEG), then a 25 MB JPEG after another, and a deploy switched the API slots. Each
+  container's memory came from its cgroup every half second: memory in use without file cache
+  that can be dropped, which is what `docker stats` shows. No container was stopped for memory
+  (`memory.events`, `docker inspect`, the kernel log). Garage, measured on its own earlier (#44):
+  about 10 MB in use. To check on the VPS: `docker stats --no-stream`.
 
 ## The Owner's to-do list for going live
 
@@ -96,7 +143,17 @@ netcup's web interface, it is described generally: the exact menus may differ.
      `dpkg-reconfigure -plow unattended-upgrades` (Ubuntu usually has them on; this makes sure).
      Optionally let them reboot at night (`Unattended-Upgrade::Automatic-Reboot "true";` and
      `Unattended-Upgrade::Automatic-Reboot-Time "04:30";` in
-     `/etc/apt/apt.conf.d/52unattended-upgrades-local`); the stack starts again by itself.
+     `/etc/apt/apt.conf.d/52unattended-upgrades-local`); the stack starts again by itself;
+   - a 2 GB swap file, the safety net under the memory limits (see Memory). If
+     `swapon --show` already lists one, keep it and run only the `vm.swappiness` line:
+     ```sh
+     sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile
+     sudo mkswap /swapfile && sudo swapon /swapfile
+     echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+     # Swap only when memory runs short; drop file cache first.
+     echo 'vm.swappiness = 10' | sudo tee /etc/sysctl.d/90-rodokmen-swap.conf && sudo sysctl --system
+     swapon --show && free -h   # 2.0Gi of swap, and still there after a reboot
+     ```
 3. **DNS** for `rodokmen.dev`, wherever its zone is hosted:
    - `A` records for `rodokmen.dev` and `files.rodokmen.dev` → the VPS's IPv4 address, and `AAAA`
      records → its IPv6 address if IPv6 works on the server;
@@ -349,7 +406,10 @@ The `mcp` service restarts with each deploy, so MCP connections drop for a momen
 ## When an alert arrives
 
 - **Health check failing:** `docker compose ps`, `docker compose logs --tail 200 api-$(cat state/active) caddy db garage`.
-  A full disk and an expired certificate are the usual suspects (`df -h`, Caddy's log).
+  A full disk and an expired certificate are the usual suspects (`df -h`, Caddy's log). A service
+  that ran out of memory was restarted by Docker: `docker stats --no-stream` shows use against the
+  limits, `docker inspect --format '{{.State.OOMKilled}}' <container>` and
+  `journalctl -k | grep -i 'out of memory'` show what was stopped (see Memory).
 - **Deploy failed:** nothing to do for the family, the old version serves. Read the failed run in
   GitHub Actions and the log printed by `deploy.sh` (the container log, or the error of
   `storage-init.sh`).

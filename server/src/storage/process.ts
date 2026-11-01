@@ -3,9 +3,30 @@ import { IMAGE_MAX_BYTES, type ImageContentType } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
+import { SerialQueue } from './serial-queue.js';
 
 /** Longest side of the display copy (evidence-media spec, "Originals are kept"). */
 export const DISPLAY_MAX_PIXELS = 2000;
+
+/**
+ * The most pixels an upload may have, matched to the 25 MB limit: 8 per byte. A photo or scan
+ * keeps at least one bit per pixel even at low JPEG quality, so real images within 25 MB fit
+ * (200-megapixel phone photos too). A file that claims more, typically a small one that would
+ * decode to a huge image, is refused from its header, before anything is decoded.
+ */
+export const MAX_INPUT_PIXELS = 200_000_000;
+
+// Memory on the 4 GB server (issue #39, deploy/README.md, "Memory"): libvips decodes with one
+// thread, and keeps only a small cache of operations, since each upload is decoded once.
+sharp.concurrency(1);
+sharp.cache({ memory: 16, items: 10, files: 0 });
+
+/**
+ * Images are checked one at a time, so uploads finished at the same moment cannot stack their
+ * decodes, each of which can take a few hundred MB. An upload's turn also covers loading its
+ * original (checkUpload), so the ones waiting hold nothing yet.
+ */
+const turns = new SerialQueue();
 
 export type ImageType = ImageContentType;
 
@@ -36,21 +57,55 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 }
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
+export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most ${MAX_INPUT_PIXELS / 1_000_000} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
 export const HEIC_MESSAGE =
   'This HEIC photo could not be converted. On an iPhone, set Settings → Camera → Formats → Most Compatible, or share the photo as JPEG, then add it again.';
 
 /**
  * Checks an uploaded original and makes its display copy: JPEG, PNG, WebP or HEIC up to
- * 25 MB. HEIC is converted here; when the image library cannot decode it, the upload is
- * refused with a message saying what to do.
+ * 25 MB and MAX_INPUT_PIXELS. HEIC is converted here; when the image library cannot decode it,
+ * the upload is refused with a message saying what to do. Size and type are checked at once;
+ * the decode waits for the images before it (one at a time).
  */
 export async function processImage(original: Buffer): Promise<ProcessedImage> {
+  const contentType = typeOf(original);
+  return turns.run(() => displayCopy(original, contentType));
+}
+
+/** An upload's original, loaded in its turn, with its display copy or why it was refused. */
+export type UploadCheck = { original: Buffer } & ({ processed: ProcessedImage } | { refused: ApiProblem });
+
+/**
+ * Loads an upload's original with `load`, then checks it as processImage does, in one turn: any
+ * number of uploads finished at once hold one original and one decode in memory, not one each.
+ * Null when `load` finds no file; an error of `load` itself is passed on.
+ */
+export function checkUpload(load: () => Promise<Buffer | null>): Promise<UploadCheck | null> {
+  return turns.run(async () => {
+    const original = await load();
+    if (!original) return null;
+    try {
+      return { original, processed: await displayCopy(original, typeOf(original)) };
+    } catch (error) {
+      if (error instanceof ApiProblem) return { original, refused: error };
+      throw error;
+    }
+  });
+}
+
+/** The image type of an original within the size limit, or the refusal. */
+function typeOf(original: Buffer): ImageType {
   if (original.length > IMAGE_MAX_BYTES) throw new ApiProblem(413, 'too_large', TOO_LARGE_MESSAGE);
   const contentType = sniffImageType(original);
   if (!contentType) throw new ApiProblem(415, 'unsupported_image', 'Only JPEG, PNG, WebP and HEIC images can be added.');
+  return contentType;
+}
+
+/** The display copy; every failure becomes an ApiProblem. */
+async function displayCopy(original: Buffer, contentType: ImageType): Promise<ProcessedImage> {
   const heic = contentType === 'image/heic' || contentType === 'image/heif';
   try {
-    const image = sharp(original, { failOn: 'error' });
+    const image = sharp(original, { failOn: 'error', limitInputPixels: MAX_INPUT_PIXELS });
     const meta = await image.metadata();
     if (!meta.width || !meta.height) throw new Error('no dimensions');
     const rotated = (meta.orientation ?? 1) >= 5;
@@ -68,6 +123,8 @@ export async function processImage(original: Buffer): Promise<ProcessedImage> {
       display,
     };
   } catch (error) {
+    // sharp reads the dimensions from the header and refuses before decoding.
+    if (/exceeds pixel limit/.test(messageOf(error))) throw new ApiProblem(413, 'too_large', TOO_MANY_PIXELS_MESSAGE);
     if (heic) throw new ApiProblem(415, 'heic_unsupported', HEIC_MESSAGE);
     throw new ApiProblem(415, 'image_unreadable', `This image could not be read (${messageOf(error)}). Try another copy of it.`);
   }

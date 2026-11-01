@@ -33,7 +33,7 @@ import { recordHistory, undoPreview, undoProposal } from '../proposals/history.j
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews, uploadView } from '../proposals/views.js';
 import { imageLink, uploadKeys } from '../storage/images.js';
-import { processImage, TOO_LARGE_MESSAGE } from '../storage/process.js';
+import { checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
 /** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
 const signedIn = { 401: ApiError, 429: RateLimited };
@@ -259,11 +259,14 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       const u = await db.selectFrom('upload').selectAll().where('id', '=', req.params.id).where('author_id', '=', req.member!.id).executeTakeFirst();
       if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
       if (u.status === 'ready') return uploadView(u);
-      const original = await deps.images.get(u.storage_key);
-      if (!original) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+      // Loaded and checked in its turn, one upload at a time (memory, issue #39).
+      const checked = await checkUpload(() => deps.images.get(u.storage_key));
+      if (!checked) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+      const { original } = checked;
       let processed;
       try {
-        processed = await processImage(original);
+        if ('refused' in checked) throw checked.refused;
+        processed = checked.processed;
         if (processed.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
       } catch (error) {
         await deps.images.delete(u.storage_key).catch(() => undefined);
