@@ -22,44 +22,43 @@ skinparam {
 !include ../../legend.puml
 
 AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
-AddElementTag("Component,In progress", $bgColor="#85bbf0", $borderColor="#c25e00", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
-AddElementTag("Person,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
-AddElementTag("Component,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 
 AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
 
 AddBoundaryTag("Container,Built", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
 
-Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles and keeps the Backups.", $tags="Person,Built", $link="")
-Person(Agent, "Agent", $descr="An AI assistant with its own Owner-issued account that contributes only through Proposals.", $tags="Person,Planned", $link="")
+Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles, marks Family roots, issues Agent tokens and keeps the Backups.", $tags="Person,Built", $link="")
+Person(Agent, "Agent", $descr="An AI assistant with its own Owner-issued account that contributes only through Proposals.", $tags="Person,Built", $link="")
 
 System(Vault, "Vault", $descr="The Owner's Markdown notes in the private rodokmen-data repo, about 4,100 people with scans; frozen after the import.", $tags="Software System,External,Planned", $link="")
 
 System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
   Container_Boundary("Rodokmen.APIserver_boundary", "API server", $tags="Container,Built") {
-    Component(Rodokmen.APIserver.Accountsandsignin, "Accounts and sign-in", $techn="@simplewebauthn/server", $descr="Invitations, passkeys, emailed links, sessions and roles; checks the session on every request.", $tags="Component,Built", $link="")
-    Component(Rodokmen.APIserver.TreereadAPI, "Tree read API", $techn="Recursive SQL, PostGIS", $descr="Person search across Names, records, ancestors and descendants, and Events for a map area and years.", $tags="Component,Built", $link="")
-    Component(Rodokmen.APIserver.Proposals, "Proposals", $techn="shared/src/schemas/proposals.ts", $descr="Takes Proposals as typed operations with base versions; requires a Citation; private until accepted.", $tags="Component,In progress", $link="")
-    Component(Rodokmen.APIserver.Review, "Review", $techn="shared/src/schemas/review.ts", $descr="Accepts or rejects a whole Proposal in one transaction, with corrections, conflicts and merges.", $tags="Component,In progress", $link="")
-    Component(Rodokmen.APIserver.Evidencemedia, "Evidence media", $techn="sharp, S3 presigner", $descr="Presigned upload and view links; checks each upload and makes a 2,000-pixel WebP copy.", $tags="Component,In progress", $link="")
-    Component(Rodokmen.APIserver.Agentaccess, "Agent access", $techn="Fixed window per token in PostgreSQL", $descr="Agent accounts, hashed revocable tokens, the read-and-propose-only rule, and rate limits.", $tags="Component,Planned", $link="")
+    Component(Rodokmen.APIserver.Accountsandsignin, "Accounts and sign-in", $techn="@simplewebauthn/server", $descr="Invitations, passkeys, emailed links, sessions and roles; the Member's own Person and language; checks the session or Agent token and the action on every request.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.TreereadAPI, "Tree read API", $techn="Recursive SQL, PostGIS", $descr="Person search across Names with the relation filter, records, ancestors, descendants and the hourglass, and Events for a map area, years or a Place.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Proposals, "Proposals", $techn="shared/src/schemas/proposals.ts", $descr="Takes Proposals as typed operations with base versions; requires a Citation; private until accepted.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Review, "Review", $techn="shared/src/schemas/review.ts", $descr="Accepts or rejects a whole Proposal in one transaction, with corrections, conflicts and merges.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Evidencemedia, "Evidence media", $techn="sharp, S3 presigner", $descr="Presigned upload and view links; checks uploads one at a time, keeps the checked bytes and makes a 2,000-pixel WebP copy.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Agentaccess, "Agent access", $techn="Fixed window per Agent in PostgreSQL", $descr="Agent accounts, hashed revocable tokens, the read-and-propose-only rule, and hourly limits.", $tags="Component,Built", $link="")
   }
 
-  Container(Rodokmen.MCPserver, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+  Container(Rodokmen.MCPserver, "MCP server", $techn="TypeScript, MCP SDK v2; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API with the Agent's token, without database access.", $tags="Container,Built", $link="")
   Container(Rodokmen.Vaultimporter, "Vault importer", $techn="Node 22 CLI in server/, Agent token", $descr="Reads the Vault once and submits one Proposal per Source note as an import batch; can be re-run.", $tags="Container,Planned", $link="")
 }
 
 Rel(Owner, Rodokmen.Vaultimporter, "Runs a dry run, then the import", $techn="CLI", $tags="Planned", $link="")
-Rel(Agent, Rodokmen.MCPserver, "Searches the Tree and submits Proposals", $techn="MCP: stdio, or streamable HTTP at /mcp", $tags="Planned", $link="")
+Rel(Agent, Rodokmen.MCPserver, "Searches the Tree and submits Proposals", $techn="MCP: stdio, or streamable HTTP at /mcp", $tags="Built", $link="")
 Rel(Rodokmen.Vaultimporter, Vault, "Reads notes, scans and PDFs", $techn="Git checkout", $tags="Planned", $link="")
-Rel(Rodokmen.APIserver.Accountsandsignin, Rodokmen.APIserver.Agentaccess, "Checks Agent tokens, permissions and limits", $techn="JS call", $tags="Planned", $link="")
-Rel(Owner, Rodokmen.APIserver.Agentaccess, "Creates Agents; issues and revokes tokens", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver.Accountsandsignin, Rodokmen.APIserver.Agentaccess, "Checks Agent tokens, permissions and limits", $techn="JS call", $tags="Built", $link="")
+Rel(Owner, Rodokmen.APIserver.Agentaccess, "Creates Agents; issues and revokes tokens", $techn="JSON/HTTPS from the browser console, no screen yet", $tags="Built", $link="")
 Rel(Owner, Rodokmen.APIserver.Review, "Accepts an import batch at once", $techn="Browser", $tags="Planned", $link="")
-Rel(Rodokmen.MCPserver, Rodokmen.APIserver.TreereadAPI, "Searches Persons and Places; reads records and pedigrees", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
-Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Proposals, "Submits Proposals labelled as Agent work", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
+Rel(Rodokmen.MCPserver, Rodokmen.APIserver.TreereadAPI, "Searches Persons, Places and Sources; reads records, ancestors and descendants", $techn="JSON/HTTP(S), Agent token", $tags="Built", $link="")
+Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Proposals, "Submits Proposals labelled as Agent work; lists its own", $techn="JSON/HTTP(S), Agent token", $tags="Built", $link="")
 Rel(Rodokmen.Vaultimporter, Rodokmen.APIserver.Proposals, "Submits one Proposal per Source note, in one import batch", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
 Rel(Rodokmen.Vaultimporter, Rodokmen.APIserver.Evidencemedia, "Uploads scans as Citation images, PDFs as Source documents", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
 Rel(Agent, Vault, "Opens pull requests until import day; afterwards uses MCP", $techn="Git", $tags="Planned", $link="")

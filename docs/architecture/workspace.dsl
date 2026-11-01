@@ -3,12 +3,12 @@
  *
  * The single source for every diagram under generated/ (run ./generate.sh after editing).
  * Derived from openspec/changes/*/ (proposal, design, specs), docs/adr/, GLOSSARY.md, deploy/ and
- * the code, and from decisions not yet written into openspec/ on main (ADR 0010, add-vault-import,
- * add-research-leads, add-scan-reading, the rewritten add-family-view). Words follow GLOSSARY.md. "Vault" means only the Owner's old notes repo, never the Tree.
+ * the code. Words follow GLOSSARY.md. "Vault" means only the Owner's old notes repo, never the Tree.
  *
  * Every element and relationship carries:
- *   - one status tag: "Built" (on main), "In progress" (branch feat/proposals-and-review),
- *     or "Planned" (a later OpenSpec change);
+ *   - one status tag: "Built" (on main), "In progress" (branch feat/research-leads,
+ *     add-research-leads), or "Planned" (a later OpenSpec change: add-vault-import beyond the
+ *     Family roots and the relation, add-scan-reading, add-exports-and-erasure, add-country-packs);
  *   - property "openspec": "<change> / <capability>[, <capability>]", several changes joined by "; ";
  *   - property "adr": the ADRs it follows, where any apply;
  *   - property "code": where it lives in the repo, where it exists.
@@ -25,7 +25,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         !impliedRelationships false
 
         properties {
-            "statuses" "Built = on main; In progress = feat/proposals-and-review; Planned = a later OpenSpec change"
+            "statuses" "Built = on main; In progress = feat/research-leads; Planned = a later OpenSpec change"
         }
 
         # ------------------------------------------------------------------ people
@@ -54,18 +54,18 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             }
         }
 
-        owner = person "Owner" "The one Member who invites Members, assigns roles and keeps the Backups." {
+        owner = person "Owner" "The one Member who invites Members, assigns roles, marks Family roots, issues Agent tokens and keeps the Backups." {
             tags "Built"
             properties {
-                "openspec" "add-tree-backend / member-accounts, operations; add-agent-access / agent-access; add-vault-import / vault-import; add-exports-and-erasure / exports, erasure"
+                "openspec" "add-tree-backend / member-accounts, operations; add-family-view / family-view; add-agent-access / agent-access; add-vault-import / tree-model, vault-import; add-exports-and-erasure / exports, erasure"
                 "adr" "0001, 0006, 0010"
             }
         }
 
         agent = person "Agent" "An AI assistant with its own Owner-issued account that contributes only through Proposals." {
-            tags "Planned"
+            tags "Built"
             properties {
-                "openspec" "add-agent-access / agent-access"
+                "openspec" "add-agent-access / agent-access; add-research-leads / agent-access"
                 "adr" "0001"
             }
         }
@@ -75,24 +75,24 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         rodokmen = softwareSystem "Rodokmen" "A private, shared family Tree for one extended family, shown on a map of the Czech lands; the map works for anyone." {
             tags "Built"
             properties {
-                "openspec" "add-map-core; add-tree-backend; add-proposals-and-review; add-agent-access; add-vault-import; add-family-view; add-exports-and-erasure"
-                "adr" "0001-0008, 0010"
+                "openspec" "add-map-core; add-tree-backend; add-proposals-and-review; add-agent-access; add-family-view; default-to-czech; add-research-leads; add-vault-import; add-scan-reading; add-exports-and-erasure; add-country-packs"
+                "adr" "0001-0011"
                 "code" "rodokmen-app repo: app/, server/, shared/, deploy/ (public; never family data)"
             }
 
             group "In the browser" {
-                pwa = container "App (PWA)" "The only interface: the map for anyone; for Members a Tree home, Proposals and review." "HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9" {
+                pwa = container "App (PWA)" "The only interface: the map for anyone; for Members sign-in, the Tree home, People, person pages, Proposals, review and Settings." "HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9, Preact and htm" {
                     tags "Built" "Browser"
                     properties {
-                        "openspec" "add-map-core / map-view, place-search, archive-lookup, historical-maps; add-proposals-and-review / proposals, review, tree-history; add-family-view / family-view, family-map; add-research-leads / research-leads; add-scan-reading / scan-reading"
+                        "openspec" "add-map-core / map-view, place-search, archive-lookup, historical-maps; add-proposals-and-review / proposals, review, tree-history; add-family-view / family-tree, family-view, family-map; default-to-czech / map-view; add-vault-import / tree-model (relation to the family); add-research-leads / research-leads; add-scan-reading / scan-reading; add-country-packs / country-packs"
                         "adr" "0003, 0007"
                         "code" "app/"
                     }
 
-                    mapView = component "Map and place sheet" "Map with archive regions and the place sheet; the home for visitors, a tab for Members." "app/src/map.js, place-sheet.js, i18n.js" {
+                    mapView = component "Map and place sheet" "Map with archive regions and the place sheet; the home for visitors, a tab for Members. Czech unless the reader chooses English." "app/src/map.js, place-sheet.js, i18n.js" {
                         tags "Built"
                         properties {
-                            "openspec" "add-map-core / map-view"
+                            "openspec" "add-map-core / map-view; default-to-czech / map-view; add-country-packs / map-view"
                             "adr" "0007"
                             "code" "app/src/map.js, app/src/place-sheet.js, app/src/i18n.js, app/src/settings.js"
                         }
@@ -100,79 +100,96 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                     placeSearch = component "Place search" "Finds Municipalities by name as the reader types, ignoring case and diacritics." "app/src/search-box.js, gazetteer.js" {
                         tags "Built"
                         properties {
-                            "openspec" "add-map-core / place-search"
+                            "openspec" "add-map-core / place-search; add-country-packs / place-search"
                             "code" "app/src/search-box.js, app/src/gazetteer.js, app/src/text.js"
                         }
                     }
                     archiveLookup = component "Archive lookup" "Finds the archive for a point by its district, with near-border and Jewish-register hints." "app/src/archive-lookup.js, geo.js" {
                         tags "Built"
                         properties {
-                            "openspec" "add-map-core / archive-lookup"
+                            "openspec" "add-map-core / archive-lookup; add-country-packs / archive-lookup"
                             "code" "app/src/archive-lookup.js, app/src/geo.js"
                         }
                     }
                     historicalLayers = component "Historical layers" "Military survey overlays with opacity, links to historical map viewers, and the layer check." "app/src/layers-panel.js, layer-check.js" {
                         tags "Built"
                         properties {
-                            "openspec" "add-map-core / historical-maps"
+                            "openspec" "add-map-core / historical-maps; add-country-packs / historical-maps"
                             "code" "app/src/layers-panel.js, app/src/layer-check.js"
                         }
                     }
-                    signIn = component "Sign-in pages" "Accept an invitation, register a passkey, or use an emailed link; served at /auth/." "server/public/auth" {
+                    packLoader = component "Pack loader" "Loads the Country pack for where the reader pans, taps or searches, and keeps it offline; the Czech pack stays precached." "app/ (planned)" {
+                        tags "Planned"
+                        properties {
+                            "openspec" "add-country-packs / country-packs, offline-app"
+                        }
+                    }
+                    signIn = component "Sign-in screens" "Accepts an invitation and registers a passkey; signs in with a passkey or an emailed link. Emails link here." "app/src/sign-in-screen.js, webauthn.js" {
                         tags "Built"
                         properties {
-                            "openspec" "add-tree-backend / member-accounts"
+                            "openspec" "add-tree-backend / member-accounts; add-family-view / family-view"
                             "adr" "0007"
-                            "code" "server/public/auth/ (minimal pages until add-family-view moves sign-in into the app)"
+                            "code" "app/src/sign-in-screen.js, app/src/webauthn.js (#sign-in, #invite/<token>, #link/<token>)"
                         }
                     }
                     proposeForms = component "Proposal forms" "Phone-first forms that turn one finding into typed operations with a Citation and photos." "app/src/propose-form.js, pickers.js" {
-                        tags "In progress"
+                        tags "Built"
                         properties {
                             "openspec" "add-proposals-and-review / proposals, evidence-media"
                             "adr" "0001, 0002"
-                            "code" "app/src/propose-form.js, app/src/proposal-build.js, app/src/pickers.js (branch)"
+                            "code" "app/src/propose-form.js, app/src/proposal-build.js, app/src/pickers.js"
                         }
                     }
                     drafts = component "Drafts" "Keeps Drafts and their photos on the device until the Member submits them." "app/src/drafts.js" {
-                        tags "In progress"
+                        tags "Built"
                         properties {
                             "openspec" "add-proposals-and-review / proposals"
                             "adr" "0003"
-                            "code" "app/src/drafts.js (branch)"
+                            "code" "app/src/drafts.js"
                         }
                     }
                     myWork = component "Drafts list and my Proposals" "Submits Drafts once online and shows each Proposal's status and the Editor's note." "app/src/work.js, api.js" {
-                        tags "In progress"
+                        tags "Built"
                         properties {
                             "openspec" "add-proposals-and-review / proposals, notifications, evidence-media"
                             "adr" "0003"
-                            "code" "app/src/work.js, app/src/api.js (branch)"
+                            "code" "app/src/work.js, app/src/api.js"
                         }
                     }
-                    reviewScreens = component "Review and history screens" "Review queue with conflicts and corrections, merging, record history and undo." "app/src/review.js" {
-                        tags "In progress"
+                    reviewScreens = component "Review and history screens" "Review queue with conflicts and corrections, merging, record history and undo; Agent work is labelled." "app/src/review.js" {
+                        tags "Built"
                         properties {
-                            "openspec" "add-proposals-and-review / review, tree-history"
+                            "openspec" "add-proposals-and-review / review, tree-history; add-agent-access / agent-access"
                             "adr" "0001, 0006"
-                            "code" "app/src/review.js (branch)"
+                            "code" "app/src/review.js"
                         }
                     }
-                    familyScreens = component "Tree home and family screens" "Members' home: an hourglass around a focus Person they can change; search, person pages, sign-in." "Preact with htm, vendored" {
-                        tags "Planned"
+                    familyScreens = component "Tree home and family screens" "Members' home: an hourglass around a focus Person they can change; People search and person pages; Possible relatives marked, Unrelated people hidden." "Preact with htm, vendored" {
+                        tags "Built"
                         properties {
-                            "openspec" "add-family-view / family-view (rewritten: the Tree, not the map, is the signed-in home)"
+                            "openspec" "add-family-view / family-tree, family-view; add-vault-import / tree-model (relation to the family)"
                             "adr" "0007"
+                            "code" "app/src/shell.js, app/src/tree-screen.js, app/src/hourglass-layout.js, app/src/focus.js, app/src/people-screen.js, app/src/person-screen.js, app/src/relation.js, app/src/cache.js"
                         }
                     }
-                    familyMap = component "Family map layers" "Event pins, the year slider, a Person's life path, and Family here on the place sheet." "Leaflet layers, marker clustering" {
-                        tags "Planned"
+                    settingsScreen = component "Settings" "Each Member's language, passkeys and sessions; for the Owner invitations, roles, Member–Person links and Family roots." "Preact with htm, vendored" {
+                        tags "Built"
+                        properties {
+                            "openspec" "add-family-view / family-view; add-vault-import / tree-model (Family roots)"
+                            "adr" "0007"
+                            "code" "app/src/settings-screen.js"
+                            "note" "No screen for Agents and tokens yet: the Owner uses the API (deploy/README.md); issue #45 adds it here"
+                        }
+                    }
+                    familyMap = component "Family map layers" "Family pins grouped at low zoom, the year range with decade play, a Person's life path, and Family here on the place sheet." "Leaflet layers, app/src/pins.js" {
+                        tags "Built"
                         properties {
                             "openspec" "add-family-view / family-map"
+                            "code" "app/src/family-map.js, app/src/pins.js"
                         }
                     }
-                    researchLeadScreens = component "Research lead screens" "Lists open Research leads; Members add one or record what they searched." "app/ (planned)" {
-                        tags "Planned"
+                    researchLeadScreens = component "Research lead screens" "Lists open Research leads; Members add one, record what they searched, or start a Proposal from it." "app/ (branch feat/research-leads)" {
+                        tags "In progress"
                         properties {
                             "openspec" "add-research-leads / research-leads"
                         }
@@ -181,7 +198,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                         tags "Planned"
                         properties {
                             "openspec" "add-scan-reading / scan-reading"
-                            "adr" "0002, 0003"
+                            "adr" "0002, 0003, 0011"
                         }
                     }
                 }
@@ -189,18 +206,18 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 sw = container "Service worker" "Precaches the app and reference data per release and keeps up to 2,000 viewed tiles, so the map works offline." "Service Worker, Cache Storage" {
                     tags "Built"
                     properties {
-                        "openspec" "add-map-core / offline-app"
+                        "openspec" "add-map-core / offline-app; add-country-packs / offline-app"
                         "adr" "0003"
                         "code" "app/sw.js, app/src/precache.js, app/src/tile-lru.js, app/src/sw-client.js"
                     }
                 }
 
-                deviceStore = container "On-device store" "Drafts with their photos until submitted; later also the last-loaded Tree records." "IndexedDB" {
-                    tags "In progress" "Data store"
+                deviceStore = container "On-device store" "Drafts with their photos until submitted, and up to 400 last-loaded Tree records; emptied on sign-out." "IndexedDB" {
+                    tags "Built" "Data store"
                     properties {
                         "openspec" "add-proposals-and-review / proposals; add-family-view / family-view"
                         "adr" "0003"
-                        "code" "app/src/drafts.js (branch)"
+                        "code" "app/src/drafts.js, app/src/cache.js"
                     }
                 }
             }
@@ -208,51 +225,62 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             refData = container "Reference data" "Districts, Municipalities, archives with portal links, and map layers, built from public sources." "JSON and GeoJSON in app/data/" {
                 tags "Built" "Data store"
                 properties {
-                    "openspec" "add-map-core / archive-lookup, place-search, map-view, historical-maps"
+                    "openspec" "add-map-core / archive-lookup, place-search, map-view, historical-maps; add-country-packs / country-packs"
                     "adr" "0007"
                     "code" "app/data/*.json, app/data/*.geojson, built by app/scripts/build-data.mjs"
+                    "note" "add-country-packs makes the Czech data the first Country pack, in app/data/packs/<id>/"
                 }
             }
 
-            caddy = container "Reverse proxy" "Serves the one domain over HTTPS with automatic certificates and forwards to the active API slot; passes presigned image requests at files.<domain> to the image bucket unchanged." "Caddy 2" {
+            caddy = container "Reverse proxy" "Serves the one domain over HTTPS with automatic certificates; forwards /mcp to the MCP server and the rest to the active API slot; passes presigned image requests at files.<domain> to the image bucket unchanged." "Caddy 2" {
                 tags "Built"
                 properties {
-                    "openspec" "add-tree-backend / operations"
+                    "openspec" "add-tree-backend / operations; add-agent-access / agent-access"
                     "adr" "0007"
                     "code" "deploy/caddy/Caddyfile"
                 }
             }
 
-            api = container "API server" "Serves the app, the sign-in pages and the JSON API; runs the daily jobs." "TypeScript on Node 22, Fastify, Zod, Kysely" {
+            api = container "API server" "Serves the app with its Content-Security-Policy, and the JSON API; runs the daily jobs." "TypeScript on Node 22, Fastify, Zod, Kysely" {
                 tags "Built"
                 properties {
-                    "openspec" "add-tree-backend / tree-read-api, member-accounts, operations; add-proposals-and-review / proposals, review, tree-history, notifications, evidence-media; add-agent-access / agent-access; add-exports-and-erasure / exports, erasure"
-                    "adr" "0001, 0004, 0005, 0006, 0007"
-                    "code" "server/src (shared schemas in shared/src)"
+                    "openspec" "add-tree-backend / tree-read-api, member-accounts, operations; add-proposals-and-review / proposals, review, tree-history, notifications, evidence-media; add-agent-access / agent-access; add-family-view / family-tree, family-view, family-map; add-vault-import / tree-model, tree-read-api; add-research-leads / research-leads; add-scan-reading / scan-reading; add-exports-and-erasure / exports, erasure"
+                    "adr" "0001, 0004, 0005, 0006, 0007, 0009"
+                    "code" "server/src (shared schemas and proved rules in shared/src)"
                 }
 
-                pages = component "Pages" "Serves app/ at / and the sign-in pages at /auth/ from the API's own origin." "@fastify/static" {
+                pages = component "Pages" "Serves app/ at / from the API's own origin, every file with the app's Content-Security-Policy and no-referrer." "@fastify/static" {
                     tags "Built"
                     properties {
-                        "openspec" "add-tree-backend / operations, member-accounts"
+                        "openspec" "add-tree-backend / operations; add-family-view / family-view (sign-in moved into the app)"
                         "adr" "0007"
-                        "code" "server/src/routes/pages.ts"
+                        "code" "server/src/routes/pages.ts, server/src/csp.ts"
+                        "note" "The policy (issue #52) allows images and fetches only from the files host and the map hosts in app/data/layers.json"
                     }
                 }
-                accounts = component "Accounts and sign-in" "Invitations, passkeys, emailed links, sessions and roles; checks the session on every request." "@simplewebauthn/server" {
+                accounts = component "Accounts and sign-in" "Invitations, passkeys, emailed links, sessions and roles; the Member's own Person and language; checks the session or Agent token and the action on every request." "@simplewebauthn/server" {
                     tags "Built"
                     properties {
-                        "openspec" "add-tree-backend / member-accounts"
-                        "adr" "0007"
-                        "code" "server/src/auth/, server/src/routes/auth.ts, server/src/routes/accounts.ts"
+                        "openspec" "add-tree-backend / member-accounts; add-family-view / family-tree, family-view; add-agent-access / agent-access"
+                        "adr" "0007, 0009"
+                        "code" "server/src/auth/, server/src/routes/auth.ts, server/src/routes/accounts.ts, shared/src/rules.ts"
                     }
                 }
-                treeRead = component "Tree read API" "Person search across Names, records, ancestors and descendants, and Events for a map area and years." "Recursive SQL, PostGIS" {
+                treeRead = component "Tree read API" "Person search across Names with the relation filter, records, ancestors, descendants and the hourglass, and Events for a map area, years or a Place." "Recursive SQL, PostGIS" {
                     tags "Built"
                     properties {
-                        "openspec" "add-tree-backend / tree-read-api, tree-model"
+                        "openspec" "add-tree-backend / tree-read-api, tree-model; add-family-view / family-tree, family-map; add-vault-import / tree-read-api (relation filter)"
                         "adr" "0004, 0005"
                         "code" "server/src/routes/tree.ts, server/src/tree/, shared/src/schemas/tree.ts"
+                    }
+                }
+                familyRelation = component "Family roots and relation" "Family roots the Owner marks, and each Person's relation to the family, recomputed in every accepted change." "Proved rule in shared/, advisory lock" {
+                    tags "Built"
+                    properties {
+                        "openspec" "add-vault-import / tree-model, tree-read-api (tasks 1.3-1.5, built with add-family-view)"
+                        "adr" "0006, 0009"
+                        "code" "server/src/tree/relation.ts, server/src/proposals/family-roots.ts, shared/src/relation.ts"
+                        "note" "Marking or removing a Family root is logged as the Owner's direct change, so only the Owner can undo it"
                     }
                 }
                 openapi = component "OpenAPI" "Publishes /api/openapi.json, generated from the same shared schemas that check requests." "@fastify/swagger, Zod" {
@@ -278,50 +306,52 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                     }
                 }
                 proposals = component "Proposals" "Takes Proposals as typed operations with base versions; requires a Citation; private until accepted." "shared/src/schemas/proposals.ts" {
-                    tags "In progress"
+                    tags "Built"
                     properties {
                         "openspec" "add-proposals-and-review / proposals; add-vault-import / vault-import (import batches)"
                         "adr" "0001, 0003"
-                        "code" "server/src/proposals/service.ts, server/src/routes/proposals.ts, shared/src/schemas/proposals.ts (branch)"
+                        "code" "server/src/proposals/service.ts, server/src/routes/proposals.ts, shared/src/schemas/proposals.ts"
                     }
                 }
                 review = component "Review" "Accepts or rejects a whole Proposal in one transaction, with corrections, conflicts and merges." "shared/src/schemas/review.ts" {
-                    tags "In progress"
+                    tags "Built"
                     properties {
                         "openspec" "add-proposals-and-review / review; add-vault-import / vault-import (accepting a batch at once)"
                         "adr" "0001, 0006"
-                        "code" "server/src/proposals/apply.ts, server/src/proposals/service.ts, shared/src/schemas/review.ts (branch)"
+                        "code" "server/src/proposals/apply.ts, server/src/proposals/service.ts, shared/src/schemas/review.ts"
                     }
                 }
                 history = component "History and undo" "Append-only log of every change before and after, record history, and undo of a whole Proposal." "Kysely" {
-                    tags "In progress"
+                    tags "Built"
                     properties {
                         "openspec" "add-proposals-and-review / tree-history"
                         "adr" "0006"
-                        "code" "server/src/proposals/history.ts, server/src/proposals/records.ts (branch)"
+                        "code" "server/src/proposals/history.ts, server/src/proposals/records.ts"
                     }
                 }
-                media = component "Evidence media" "Presigned upload and view links; checks each upload and makes a 2,000-pixel WebP copy." "sharp, S3 presigner" {
-                    tags "In progress"
+                media = component "Evidence media" "Presigned upload and view links; checks uploads one at a time, keeps the checked bytes and makes a 2,000-pixel WebP copy." "sharp, S3 presigner" {
+                    tags "Built"
                     properties {
                         "openspec" "add-tree-backend / tree-model; add-proposals-and-review / evidence-media; add-vault-import / vault-import (PDF Source documents)"
                         "adr" "0002"
-                        "code" "server/src/storage/images.ts (view links on main), server/src/storage/process.ts (branch)"
+                        "code" "server/src/storage/images.ts, server/src/storage/process.ts, server/src/storage/serial-queue.ts"
+                        "note" "The upload link is closed at /complete (issue #52); one check at a time fits the 4 GB VPS (issue #39). HEIC is not converted yet (add-proposals-and-review task 5.2)"
                     }
                 }
                 notifications = component "Notifications and daily jobs" "Editors' digest at 18:00, outcome emails, and deleting images of rejected Proposals after 30 days." "In-process scheduler, Prague time" {
-                    tags "In progress"
+                    tags "Built"
                     properties {
                         "openspec" "add-proposals-and-review / notifications, evidence-media"
                         "adr" "0001"
-                        "code" "server/src/jobs/daily.ts, server/src/mail/templates.ts (branch)"
+                        "code" "server/src/jobs/daily.ts, server/src/mail/templates.ts"
                     }
                 }
-                agentAccess = component "Agent access" "Agent accounts, hashed revocable tokens, the read-and-propose-only rule, and rate limits." "Fixed window per token in PostgreSQL" {
-                    tags "Planned"
+                agentAccess = component "Agent access" "Agent accounts, hashed revocable tokens, the read-and-propose-only rule, and hourly limits." "Fixed window per Agent in PostgreSQL" {
+                    tags "Built"
                     properties {
                         "openspec" "add-agent-access / agent-access"
-                        "adr" "0001"
+                        "adr" "0001, 0009"
+                        "code" "server/src/auth/agents.ts, server/src/auth/limits.ts, server/src/routes/agents.ts, shared/src/rules.ts"
                     }
                 }
                 exports = component "Exports" "Markdown and GEDCOM 5.5.1 writers sharing one Living-people reduction; the Owner's GEDCOM download." "Reduction in shared/" {
@@ -338,10 +368,11 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                         "adr" "0006"
                     }
                 }
-                researchLeads = component "Research leads" "Suggested next research steps: question, where to look, status, what was searched; no review." "Rule-based gap finder" {
-                    tags "Planned"
+                researchLeads = component "Research leads" "Suggested next research steps: question, where to look, status, what was searched; no review." "Rule-based gap finder (branch feat/research-leads)" {
+                    tags "In progress"
                     properties {
-                        "openspec" "add-research-leads / research-leads"
+                        "openspec" "add-research-leads / research-leads, agent-access"
+                        "adr" "0009"
                         "note" "Created by Members, Agents and the gap finder without review; they are not Tree records"
                     }
                 }
@@ -349,18 +380,18 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                     tags "Planned"
                     properties {
                         "openspec" "add-scan-reading / scan-reading"
-                        "adr" "0002, 0003"
+                        "adr" "0002, 0003, 0011"
                         "note" "Reads only scans a Member uploaded; Rodokmen never downloads from archive portals itself"
                     }
                 }
             }
 
-            mcp = container "MCP server" "Lets AI assistants search the Tree and submit Proposals; a thin client of the API." "TypeScript, MCP SDK; stdio or streamable HTTP" {
-                tags "Planned"
+            mcp = container "MCP server" "Lets AI assistants search the Tree and submit Proposals; a thin client of the API with the Agent's token, without database access." "TypeScript, MCP SDK v2; stdio or streamable HTTP" {
+                tags "Built"
                 properties {
-                    "openspec" "add-agent-access / agent-access"
+                    "openspec" "add-agent-access / agent-access; add-research-leads / agent-access (lead tools)"
                     "adr" "0001"
-                    "code" "server/mcp (planned)"
+                    "code" "server/mcp/"
                 }
             }
 
@@ -374,10 +405,10 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 }
             }
 
-            db = container "Database" "The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth." "PostgreSQL 16 with PostGIS 3.4" {
+            db = container "Database" "The Tree, accounts and sessions, Agent tokens, Proposals and the log of accepted changes; the source of truth." "PostgreSQL 16 with PostGIS 3.4" {
                 tags "Built" "Data store"
                 properties {
-                    "openspec" "add-tree-backend / tree-model; add-proposals-and-review / tree-history; add-exports-and-erasure / erasure"
+                    "openspec" "add-tree-backend / tree-model; add-proposals-and-review / tree-history; add-agent-access / agent-access; add-family-view / family-tree; add-vault-import / tree-model; add-research-leads / research-leads; add-exports-and-erasure / erasure"
                     "adr" "0005, 0006, 0010"
                     "code" "server/src/db/migrations/"
                 }
@@ -483,6 +514,14 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             }
         }
 
+        archivesAbroad = softwareSystem "Archive portals abroad" "Register viewers outside the Czech lands, named by each Country pack's archive rules; some charge for access." {
+            tags "External" "Planned"
+            properties {
+                "openspec" "add-country-packs / country-packs, archive-lookup"
+                "note" "Which countries, and which portals, follow the revision of add-country-packs (issue #67)"
+            }
+        }
+
         histMaps = softwareSystem "Historical map services" "Public services for 19th-century maps of the Czech lands, run by several providers." {
             tags "External" "Built"
             properties {
@@ -552,6 +591,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             tags "External" "Planned"
             properties {
                 "openspec" "add-scan-reading / scan-reading"
+                "adr" "0011"
                 "note" "Used only when the Owner switches scan reading on"
             }
         }
@@ -610,25 +650,25 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-map-core / map-view, place-search, archive-lookup, historical-maps"
             }
         }
-        contributor -> rodokmen "Reads the Tree; writes Drafts and submits Proposals with evidence" "Browser" "In progress" {
+        contributor -> rodokmen "Reads the Tree; writes Drafts and submits Proposals with evidence" "Browser" "Built" {
             properties {
-                "openspec" "add-proposals-and-review / proposals; add-family-view / family-view"
+                "openspec" "add-proposals-and-review / proposals; add-family-view / family-tree, family-view"
                 "adr" "0001, 0003"
             }
         }
-        editor -> rodokmen "Reviews and accepts Proposals, merges Persons and undoes changes" "Browser" "In progress" {
+        editor -> rodokmen "Reviews and accepts Proposals, merges Persons and undoes changes" "Browser" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / review, tree-history"
                 "adr" "0001, 0006"
             }
         }
-        owner -> rodokmen "Invites Members and assigns roles; later imports the Vault, manages Agents and erases Living people" "HTTPS API" "Built" {
+        owner -> rodokmen "Invites Members, assigns roles, marks Family roots and manages Agents; later imports the Vault and erases Living people" "Browser, HTTPS API" "Built" {
             properties {
-                "openspec" "add-tree-backend / member-accounts; add-agent-access / agent-access; add-vault-import / vault-import; add-exports-and-erasure / erasure"
+                "openspec" "add-tree-backend / member-accounts; add-family-view / family-view; add-vault-import / tree-model, vault-import; add-agent-access / agent-access; add-exports-and-erasure / erasure"
                 "adr" "0006"
             }
         }
-        agent -> rodokmen "Reads the Tree and submits Proposals" "MCP or HTTPS API, Agent token" "Planned" {
+        agent -> rodokmen "Reads the Tree and submits Proposals" "MCP or HTTPS API, Agent token" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
                 "adr" "0001"
@@ -653,9 +693,15 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "note" "Links only; Rodokmen never downloads from archive portals (add-scan-reading)"
             }
         }
+        rodokmen -> archivesAbroad "Links places outside the Czech lands to their register viewers" "HTTPS link" "Planned" {
+            properties {
+                "openspec" "add-country-packs / archive-lookup"
+            }
+        }
         rodokmen -> claude "Sends uploaded scans for reading, once the Owner switches it on" "HTTPS" "Planned" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
+                "adr" "0011"
             }
         }
         rodokmen -> histMaps "Overlays military survey maps and links to historical map viewers" "WMS, HTTPS links" "Built" {
@@ -699,7 +745,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-tree-backend / member-accounts; add-proposals-and-review / notifications"
             }
         }
-        email -> editor "Delivers the daily digest of pending Proposals" "Email" "In progress" {
+        email -> editor "Delivers the daily digest of pending Proposals" "Email" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / notifications"
             }
@@ -790,22 +836,23 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-map-core / map-view, place-search, archive-lookup, historical-maps"
             }
         }
-        contributor -> pwa "Signs in, writes Drafts offline and submits Proposals" "Browser" "In progress" {
+        contributor -> pwa "Signs in, reads the Tree, writes Drafts offline and submits Proposals" "Browser" "Built" {
             properties {
-                "openspec" "add-tree-backend / member-accounts; add-proposals-and-review / proposals; add-family-view / family-view"
+                "openspec" "add-tree-backend / member-accounts; add-proposals-and-review / proposals; add-family-view / family-tree, family-view, family-map"
                 "adr" "0001, 0003"
             }
         }
-        editor -> pwa "Reviews Proposals, resolves conflicts, merges and undoes" "Browser" "In progress" {
+        editor -> pwa "Reviews Proposals, resolves conflicts, merges and undoes" "Browser" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / review, tree-history"
                 "adr" "0001, 0006"
             }
         }
-        owner -> api "Invites Members, assigns roles and disables accounts" "JSON/HTTPS API, no app screens yet" "Built" {
+        owner -> pwa "Invites Members, assigns roles, links Members to their Person, marks Family roots; creates Agents and issues their tokens" "Browser" "Built" {
             properties {
-                "openspec" "add-tree-backend / member-accounts"
-                "note" "ADR 0007 makes the PWA the only interface, but no change schedules the Owner's screens"
+                "openspec" "add-family-view / family-view; add-vault-import / tree-model (Family roots); add-agent-access / agent-access"
+                "adr" "0007"
+                "note" "No screen for Agents yet: the Owner calls the API from the browser console (deploy/README.md); issue #45 adds them to Settings"
             }
         }
         owner -> vaultImporter "Runs a dry run, then the import" "CLI" "Planned" {
@@ -813,7 +860,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-vault-import / vault-import"
             }
         }
-        agent -> mcp "Searches the Tree and submits Proposals" "MCP: stdio, or streamable HTTP at /mcp" "Planned" {
+        agent -> mcp "Searches the Tree and submits Proposals" "MCP: stdio, or streamable HTTP at /mcp" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
             }
@@ -829,7 +876,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-map-core / map-view, place-search, archive-lookup"
             }
         }
-        pwa -> deviceStore "Keeps Drafts and photos; later caches Tree records" "IndexedDB" "In progress" {
+        pwa -> deviceStore "Keeps Drafts and photos, and the last-loaded Tree records" "IndexedDB" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals; add-family-view / family-view"
                 "adr" "0003"
@@ -841,14 +888,14 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0007"
             }
         }
-        pwaApi = pwa -> api "Submits Proposals and decides on them, through the reverse proxy" "JSON/HTTPS, session cookie" "In progress" {
+        pwaApi = pwa -> api "Submits Proposals and decides on them, through the reverse proxy" "JSON/HTTPS, session cookie" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals, review"
                 "adr" "0001, 0007"
                 "note" "Used by the dynamic view; static views show the hop through the reverse proxy"
             }
         }
-        pwa -> bucket "Uploads photos and shows images" "HTTPS PUT and GET at files.<domain>, presigned links" "In progress" {
+        pwa -> bucket "Uploads photos and shows images" "HTTPS PUT and GET at files.<domain>, presigned links" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
                 "adr" "0002"
@@ -857,6 +904,11 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         pwa -> archives "Opens the archive's register viewer" "HTTPS link, new browser context" "Built" {
             properties {
                 "openspec" "add-map-core / archive-lookup"
+            }
+        }
+        pwa -> archivesAbroad "Opens register viewers outside the Czech lands" "HTTPS link, new browser context" "Planned" {
+            properties {
+                "openspec" "add-country-packs / archive-lookup"
             }
         }
         pwa -> histMaps "Shows survey overlays; links to map viewers" "WMS 1.3.0, HTTPS links" "Built" {
@@ -886,15 +938,17 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "code" "deploy/caddy/Caddyfile"
             }
         }
-        caddy -> mcp "Forwards /mcp" "Streamable HTTP" "Planned" {
+        caddy -> mcp "Forwards /mcp" "Streamable HTTP, port 3001" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
+                "code" "deploy/caddy/Caddyfile"
             }
         }
-        mcp -> api "Calls the API with the Agent's token" "JSON/HTTPS" "Planned" {
+        mcp -> api "Calls the API with the Agent's token" "JSON/HTTP(S)" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
                 "adr" "0001"
+                "note" "http://api:3000 inside Docker; the public https://<domain> when run over stdio"
             }
         }
         vaultImporter -> vault "Reads notes, scans and PDFs" "Git checkout" "Planned" {
@@ -921,7 +975,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0005"
             }
         }
-        apiDbProposals = api -> db "Stores Proposals; applies accepted ones with the log in one transaction" "SQL" "In progress" {
+        apiDbProposals = api -> db "Stores Proposals; applies accepted ones with the log in one transaction" "SQL" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals, review, tree-history"
                 "adr" "0005, 0006"
@@ -933,7 +987,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0002"
             }
         }
-        api -> bucket "Checks uploads, writes display copies, moves and deletes images" "S3 API" "In progress" {
+        api -> bucket "Checks uploads, writes display copies, moves and deletes images" "S3 API" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
                 "adr" "0002"
@@ -949,7 +1003,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-scan-reading / scan-reading"
             }
         }
-        apiEmailNotify = api -> email "Sends the Editors' digest and outcome emails" "SMTP, STARTTLS" "In progress" {
+        apiEmailNotify = api -> email "Sends the Editors' digest and outcome emails" "SMTP, STARTTLS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / notifications"
             }
@@ -1099,102 +1153,138 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-map-core / historical-maps"
             }
         }
-
-        signIn -> accounts "Accepts invitations, registers passkeys, verifies emailed links" "JSON/HTTPS" "Built" {
+        mapView -> packLoader "Asks for the pack where the reader pans or taps" "JS call" "Planned" {
             properties {
-                "openspec" "add-tree-backend / member-accounts"
+                "openspec" "add-country-packs / country-packs"
+            }
+        }
+        packLoader -> refData "Loads Country packs on demand" "packs.json, app/data/packs/<id>/" "Planned" {
+            properties {
+                "openspec" "add-country-packs / country-packs, offline-app"
+            }
+        }
+        archiveLookup -> archivesAbroad "Links to register viewers outside the Czech lands, one per kind of register" "HTTPS link" "Planned" {
+            properties {
+                "openspec" "add-country-packs / archive-lookup"
+            }
+        }
+
+        signIn -> accounts "Accepts invitations, registers passkeys, signs in with a passkey or an emailed link" "JSON/HTTPS" "Built" {
+            properties {
+                "openspec" "add-tree-backend / member-accounts; add-family-view / family-view"
                 "adr" "0007"
             }
         }
-        proposeForms -> treeRead "Looks up Persons, Places and Sources to link" "JSON/HTTPS" "In progress" {
+        proposeForms -> treeRead "Looks up Persons, Places and Sources to link" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals; add-tree-backend / tree-read-api"
             }
         }
-        proposeForms -> drafts "Saves each finding as a Draft" "JS call" "In progress" {
+        proposeForms -> drafts "Saves each finding as a Draft" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals"
                 "adr" "0003"
             }
         }
-        drafts -> deviceStore "Keeps Drafts and photos as blobs" "IndexedDB" "In progress" {
+        drafts -> deviceStore "Keeps Drafts and photos as blobs" "IndexedDB" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals"
                 "adr" "0003"
             }
         }
-        myWork -> drafts "Lists Drafts; warns about old ones" "JS call" "In progress" {
+        myWork -> drafts "Lists Drafts; warns about old ones" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals"
                 "adr" "0003"
             }
         }
-        myWork -> media "Gets an upload link per photo, then completes it" "JSON/HTTPS" "In progress" {
+        myWork -> media "Gets an upload link per photo, then completes it" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
             }
         }
-        myWork -> bucket "Uploads each photo to pending/" "HTTPS PUT, presigned link" "In progress" {
+        myWork -> bucket "Uploads each photo to pending/" "HTTPS PUT, presigned link" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
                 "adr" "0002"
             }
         }
-        myWork -> proposals "Submits with an idempotency key; lists my Proposals" "JSON/HTTPS" "In progress" {
+        myWork -> proposals "Submits with an idempotency key; lists my Proposals" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals"
                 "adr" "0001, 0003"
             }
         }
-        myWork -> notifications "Turns outcome emails on or off" "JSON/HTTPS" "In progress" {
+        myWork -> notifications "Turns outcome emails on or off" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / notifications"
             }
         }
-        reviewScreens -> review "Loads the queue; accepts, rejects or merges" "JSON/HTTPS" "In progress" {
+        reviewScreens -> review "Loads the queue; accepts, rejects or merges" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / review"
                 "adr" "0001"
             }
         }
-        reviewScreens -> history "Shows record history; undoes a Proposal" "JSON/HTTPS" "In progress" {
+        reviewScreens -> history "Shows record history; undoes a Proposal" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / tree-history"
                 "adr" "0006"
             }
         }
-        reviewScreens -> bucket "Shows Citation images" "HTTPS GET, presigned link" "In progress" {
+        reviewScreens -> bucket "Shows Citation images" "HTTPS GET, presigned link" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media, review"
                 "adr" "0002"
             }
         }
-        familyScreens -> accounts "Signs in with a passkey or an emailed link" "JSON/HTTPS" "Planned" {
+        familyScreens -> accounts "Reads who is signed in, their own Person and the Family roots" "JSON/HTTPS" "Built" {
+            properties {
+                "openspec" "add-family-view / family-tree; add-vault-import / tree-model (Family roots)"
+            }
+        }
+        familyScreens -> treeRead "Searches Persons; reads person pages, Citations and the hourglass" "JSON/HTTPS" "Built" {
+            properties {
+                "openspec" "add-family-view / family-tree, family-view; add-vault-import / tree-read-api (relation filter)"
+            }
+        }
+        familyScreens -> deviceStore "Caches loaded records with their time; empties them on sign-out" "IndexedDB" "Built" {
+            properties {
+                "openspec" "add-family-view / family-view"
+                "adr" "0003"
+            }
+        }
+        familyScreens -> proposeForms "Opens Propose a change on a Person" "JS call" "Built" {
             properties {
                 "openspec" "add-family-view / family-view"
             }
         }
-        familyScreens -> treeRead "Reads Persons, Families, pedigrees and descendants" "JSON/HTTPS" "Planned" {
+        familyScreens -> reviewScreens "Opens a Person's history" "JS call" "Built" {
             properties {
-                "openspec" "add-family-view / family-view"
+                "openspec" "add-family-view / family-view; add-proposals-and-review / tree-history"
             }
         }
-        familyScreens -> deviceStore "Caches loaded records with their time" "IndexedDB" "Planned" {
+        settingsScreen -> accounts "Invites, assigns roles, links Members to Persons; own language, passkeys and sessions" "JSON/HTTPS" "Built" {
             properties {
-                "openspec" "add-family-view / family-view"
+                "openspec" "add-family-view / family-view, family-tree"
             }
         }
-        familyScreens -> proposeForms "Opens Propose a change" "JS call" "Planned" {
+        settingsScreen -> familyRelation "Lists, marks and removes Family roots" "JSON/HTTPS" "Built" {
             properties {
-                "openspec" "add-family-view / family-view"
+                "openspec" "add-family-view / family-view; add-vault-import / tree-model (Family roots)"
             }
         }
-        familyMap -> treeRead "Reads Events in the map area and year range" "JSON/HTTPS" "Planned" {
+        owner -> settingsScreen "Invites Members, assigns roles, links Members to Persons, marks Family roots" "Browser" "Built" {
             properties {
-                "openspec" "add-family-view / family-map"
+                "openspec" "add-family-view / family-view; add-vault-import / tree-model (Family roots)"
             }
         }
-        familyMap -> mapView "Adds family layers for signed-in Members" "Leaflet layers" "Planned" {
+        familyMap -> treeRead "Reads Events in the map area and years, and Events of a Place" "JSON/HTTPS" "Built" {
+            properties {
+                "openspec" "add-family-view / family-map; add-vault-import / tree-read-api (relation filter)"
+            }
+        }
+        familyMap -> mapView "Adds family layers for signed-in Members" "Leaflet layers" "Built" {
             properties {
                 "openspec" "add-family-view / family-map"
             }
@@ -1240,79 +1330,91 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-tree-backend / operations"
             }
         }
-        proposals -> db "Stores pending Proposals and their operations" "SQL" "In progress" {
+        proposals -> db "Stores pending Proposals and their operations" "SQL" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / proposals"
             }
         }
-        proposals -> media "Checks that the Proposal's uploads are ready" "JS call" "In progress" {
+        proposals -> media "Checks that the Proposal's uploads are ready" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
             }
         }
-        review -> db "Applies all operations in one transaction" "SQL" "In progress" {
+        review -> db "Applies all operations in one transaction" "SQL" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / review"
                 "adr" "0005, 0006"
             }
         }
-        review -> history "Logs each changed record" "JS call" "In progress" {
+        review -> history "Logs each changed record" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / tree-history"
                 "adr" "0006"
             }
         }
-        review -> media "Moves accepted images out of pending/" "JS call" "In progress" {
+        review -> media "Moves accepted images out of pending/" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
             }
         }
-        review -> notifications "Sends the author the outcome" "JS call" "In progress" {
+        review -> notifications "Sends the author the outcome" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / notifications"
             }
         }
-        history -> db "Appends to the log; reads it for history and undo" "SQL" "In progress" {
+        history -> db "Appends to the log; reads it for history and undo" "SQL" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / tree-history"
                 "adr" "0006"
             }
         }
-        media -> db "Records uploads and their checks" "SQL" "In progress" {
+        media -> db "Records uploads and their checks" "SQL" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
             }
         }
-        media -> bucket "Presigns links; writes, moves and deletes images" "S3 API" "In progress" {
+        media -> bucket "Presigns links; stores the checked bytes and display copies; moves and deletes images" "S3 API" "Built" {
             properties {
                 "openspec" "add-tree-backend / tree-model; add-proposals-and-review / evidence-media"
                 "adr" "0002"
             }
         }
-        notifications -> db "Reads pending Proposals; claims each daily job once" "SQL" "In progress" {
+        notifications -> db "Reads pending Proposals; claims each daily job once" "SQL" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / notifications"
             }
         }
-        notifications -> mailer "Sends the digest and outcome emails" "JS call" "In progress" {
+        notifications -> mailer "Sends the digest and outcome emails" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / notifications"
             }
         }
-        notifications -> media "Deletes images of Proposals rejected 30 days ago" "JS call" "In progress" {
+        notifications -> media "Deletes images of Proposals rejected 30 days ago" "JS call" "Built" {
             properties {
                 "openspec" "add-proposals-and-review / evidence-media"
             }
         }
-        accounts -> agentAccess "Checks Agent tokens, permissions and limits" "JS call" "Planned" {
+        accounts -> agentAccess "Checks Agent tokens, permissions and limits" "JS call" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
-                "adr" "0001"
+                "adr" "0001, 0009"
             }
         }
-        agentAccess -> db "Stores token hashes and rate-limit windows" "SQL" "Planned" {
+        agentAccess -> db "Stores token hashes and rate-limit windows" "SQL" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
+            }
+        }
+        review -> familyRelation "Recomputes every relation in the same transaction" "JS call" "Built" {
+            properties {
+                "openspec" "add-vault-import / tree-model"
+                "adr" "0006"
+            }
+        }
+        familyRelation -> db "Stores Family roots and each Person's relation" "SQL" "Built" {
+            properties {
+                "openspec" "add-vault-import / tree-model"
+                "adr" "0005"
             }
         }
         exports -> db "Reads the Tree and the slug table" "SQL" "Planned" {
@@ -1326,15 +1428,10 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0006"
             }
         }
-        owner -> accounts "Invites Members, assigns roles, disables accounts" "JSON/HTTPS" "Built" {
-            properties {
-                "openspec" "add-tree-backend / member-accounts"
-                "note" "No app screens scheduled for the Owner yet"
-            }
-        }
-        owner -> agentAccess "Creates Agents; issues and revokes tokens" "JSON/HTTPS" "Planned" {
+        owner -> agentAccess "Creates Agents; issues and revokes tokens" "JSON/HTTPS from the browser console, no screen yet" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
+                "note" "Issue #45 adds the Agents to the Owner's Settings"
             }
         }
         owner -> review "Accepts an import batch at once" "Browser" "Planned" {
@@ -1354,12 +1451,12 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0006"
             }
         }
-        mcp -> treeRead "Searches Persons and Places; reads records and pedigrees" "JSON/HTTPS, Agent token" "Planned" {
+        mcp -> treeRead "Searches Persons, Places and Sources; reads records, ancestors and descendants" "JSON/HTTP(S), Agent token" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
             }
         }
-        mcp -> proposals "Submits Proposals labelled as Agent work" "JSON/HTTPS, Agent token" "Planned" {
+        mcp -> proposals "Submits Proposals labelled as Agent work; lists its own" "JSON/HTTP(S), Agent token" "Built" {
             properties {
                 "openspec" "add-agent-access / agent-access"
                 "adr" "0001"
@@ -1382,7 +1479,17 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-exports-and-erasure / exports"
             }
         }
-        researchLeadScreens -> researchLeads "Lists, adds and updates Research leads" "JSON/HTTPS" "Planned" {
+        researchLeadScreens -> researchLeads "Lists, adds, updates and closes Research leads" "JSON/HTTPS" "In progress" {
+            properties {
+                "openspec" "add-research-leads / research-leads"
+            }
+        }
+        researchLeadScreens -> proposeForms "Starts a Proposal from a lead" "JS call" "In progress" {
+            properties {
+                "openspec" "add-research-leads / research-leads"
+            }
+        }
+        review -> researchLeads "Marks the leads a Proposal answers as found; reopens them on undo" "JS call" "In progress" {
             properties {
                 "openspec" "add-research-leads / research-leads"
             }
@@ -1412,6 +1519,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         scanReader -> claude "Sends the scan; gets a transcription and extracted facts" "HTTPS, Anthropic API" "Planned" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
+                "adr" "0011"
             }
         }
         scanReader -> researchLeads "Suggests Research leads from the scan" "JS call" "Planned" {
@@ -1419,15 +1527,15 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-scan-reading / scan-reading; add-research-leads / research-leads"
             }
         }
-        researchLeads -> db "Stores leads; the gap finder queries the Tree for gaps" "SQL" "Planned" {
+        researchLeads -> db "Stores leads and search records; the gap finder queries the Tree for gaps" "SQL" "In progress" {
             properties {
                 "openspec" "add-research-leads / research-leads"
             }
         }
-        mcp -> researchLeads "Creates and reads Research leads" "JSON/HTTPS, Agent token" "Planned" {
+        mcp -> researchLeads "Lists, creates, updates and closes Research leads" "JSON/HTTP(S), Agent token" "In progress" {
             properties {
-                "openspec" "add-research-leads / research-leads; add-agent-access / agent-access"
-                "note" "Goes beyond the read-and-propose-only rule of the agent-access spec"
+                "openspec" "add-research-leads / research-leads, agent-access"
+                "note" "add-research-leads changes the agent-access spec so that Agents may write leads and search records"
             }
         }
         owner -> scanReader "Switches scan reading on or off" "JSON/HTTPS" "Planned" {
@@ -1466,17 +1574,17 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                     tags "Built"
                 }
                 containerInstance deviceStore {
-                    tags "In progress"
+                    tags "Built"
                 }
             }
 
-            assistantNode = deploymentNode "Assistant's machine" "Where an AI assistant runs; the server never schedules Agents." "Any OS" {
-                tags "Planned"
+            assistantNode = deploymentNode "Assistant's machine" "Where an AI assistant runs; it uses the MCP server over stdio, or the one at /mcp. The server never schedules Agents." "Any OS" {
+                tags "Built"
                 properties {
                     "openspec" "add-agent-access / agent-access"
                 }
                 mcpLocalInstance = containerInstance mcp {
-                    tags "Planned"
+                    tags "Built"
                 }
             }
 
@@ -1496,7 +1604,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                     "openspec" "add-tree-backend / operations"
                     "adr" "0007"
                 }
-                deploymentNode "VPS" "One server for one family at rodokmen.dev; firewall allows 22, 80 and 443." "VPS 500 G12, Ubuntu 24.04, 4 GB" {
+                deploymentNode "VPS" "One server for one family at rodokmen.dev; firewall allows 22, 80 and 443." "VPS 500 G12, Ubuntu 24.04, 4 GB RAM, 2 GB swap" {
                     tags "Built"
                     properties {
                         "openspec" "add-tree-backend / operations"
@@ -1508,19 +1616,26 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                             "code" "deploy/systemd/"
                         }
                     }
-                    deploymentNode "Docker Compose" "The stack in /opt/rodokmen, copied by each deploy." "docker-compose.yml" {
+                    deploymentNode "Docker Compose" "In /opt/rodokmen, copied by each deploy." "docker-compose.yml, a memory limit per service" {
                         tags "Built"
                         properties {
                             "openspec" "add-tree-backend / operations"
                             "code" "deploy/docker-compose.yml"
+                            "note" "Memory limits and PostgreSQL settings: deploy/README.md, Memory (issue #39)"
                         }
-                        deploymentNode "caddy" "Ports 80 and 443, for <domain> and files.<domain>." "caddy:2-alpine" {
+                        deploymentNode "caddy" "Ports 80 and 443, for <domain> and files.<domain>. 128 MB." "caddy:2-alpine" {
                             tags "Built"
                             caddyInstance = containerInstance caddy {
                                 tags "Built"
                             }
                         }
-                        deploymentNode "api-blue" "One slot serves; the other takes the next release." "ghcr.io/<owner>/rodokmen-app:<commit>" {
+                        deploymentNode "mcp" "Behind Caddy at /mcp; no secrets. 128 MB." "ghcr.io/<owner>/rodokmen-app:<commit>" {
+                            tags "Built"
+                            containerInstance mcp {
+                                tags "Built"
+                            }
+                        }
+                        deploymentNode "api-blue" "One slot serves; the other takes the next release. 512 MB each." "ghcr.io/<owner>/rodokmen-app:<commit>" {
                             tags "Built"
                             apiBlueInstance = containerInstance api {
                                 tags "Built"
@@ -1532,31 +1647,25 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                                 tags "Built"
                             }
                         }
-                        deploymentNode "mcp" "Behind Caddy at /mcp." "Not in the compose file yet" {
-                            tags "Planned"
-                            containerInstance mcp {
-                                tags "Planned"
-                            }
-                        }
-                        deploymentNode "db" "Volume pgdata; never exposed outside Docker." "postgis/postgis:16-3.4" {
+                        deploymentNode "db" "Volume pgdata; never exposed outside Docker. 1.5 GB, shared_buffers 1 GB, at most 40 connections." "postgis/postgis:16-3.4" {
                             tags "Built"
                             containerInstance db {
                                 tags "Built"
                             }
                         }
-                        deploymentNode "garage" "Volume images; one node, reached from outside only through Caddy." "dxflrs/garage:v2.5.0" {
+                        deploymentNode "garage" "Volume images; one node, reached from outside only through Caddy. 128 MB." "dxflrs/garage:v2.5.0" {
                             tags "Built"
                             bucketInstance = containerInstance bucket {
                                 tags "Built"
                             }
                         }
-                        deploymentNode "watchdog" "Runs all the time." "rodokmen-app image" {
+                        deploymentNode "watchdog" "Runs all the time. 128 MB." "rodokmen-app image" {
                             tags "Built"
                             containerInstance watchdog {
                                 tags "Built"
                             }
                         }
-                        deploymentNode "backup" "Profile jobs; runs once a night." "rodokmen-backup:local" {
+                        deploymentNode "backup" "Profile jobs; runs once a night. 512 MB." "rodokmen-backup:local" {
                             tags "Built"
                             backupInstance = containerInstance backupJob {
                                 tags "Built"
@@ -1654,15 +1763,14 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             include watchdog backupJob exportJob api caddy db bucket
             include backupStorage email github
             exclude apiDbProposals apiEmailNotify
-            exclude "owner -> api"
             autolayout tb 120 120
         }
 
         component pwa "04-app-map" "The public map: what works for anyone, online or offline." {
             title "App (PWA): the map"
             include visitor
-            include mapView placeSearch archiveLookup historicalLayers
-            include sw refData osm archives histMaps
+            include mapView placeSearch archiveLookup historicalLayers packLoader
+            include sw refData osm archives archivesAbroad histMaps
             autolayout lr 100 100
         }
 
@@ -1695,11 +1803,12 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             autolayout tb 100 100
         }
 
-        component pwa "08-app-family" "Sign-in, the Tree home and the family screens for Members (add-tree-backend, add-family-view)." {
-            title "App (PWA): sign-in, Tree home and family screens"
-            include signIn familyScreens familyMap mapView proposeForms
+        component pwa "08-app-family" "Sign-in, the Tree home, the family screens and Settings for Members (add-family-view, with Family roots from add-vault-import)." {
+            title "App (PWA): sign-in, Tree home, family screens and Settings"
+            include owner
+            include signIn familyScreens settingsScreen familyMap mapView proposeForms reviewScreens
             include deviceStore
-            include accounts treeRead
+            include accounts treeRead familyRelation
             exclude "proposeForms -> treeRead"
             autolayout tb 100 100
         }
@@ -1707,18 +1816,17 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         component api "09-api-core" "Accounts, the read API and operations (add-tree-backend)." {
             title "API server: accounts, Tree read API and operations"
             include pages accounts treeRead openapi health mailer media
-            include owner sw signIn mcp watchdog github
+            include sw signIn mcp watchdog github
             include db bucket email
             exclude "media -> db"
             exclude "watchdog -> email"
-            exclude "email -> owner"
             autolayout lr 100 100
         }
 
-        component api "10-api-write-path" "The only write path into the Tree (add-proposals-and-review)." {
+        component api "10-api-write-path" "The only write path into the Tree (add-proposals-and-review), and the relation to the family it keeps up to date." {
             title "API server: Proposals, review and history"
-            include proposals review history media notifications mailer
-            include myWork reviewScreens
+            include proposals review history media notifications mailer familyRelation
+            include myWork reviewScreens settingsScreen
             include db bucket email
             exclude "myWork -> bucket"
             exclude "reviewScreens -> bucket"
@@ -1732,17 +1840,19 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             exclude "review -> media"
             exclude "proposals -> media"
             exclude "treeRead -> media"
-            exclude "owner -> accounts"
             autolayout lr 100 100
         }
 
         component api "12-api-research" "Research leads and scan reading (add-research-leads, add-scan-reading)." {
             title "API server: Research leads and scan reading"
-            include researchLeads scanReader media
-            include researchLeadScreens scanReading drafts deviceStore
+            include researchLeads scanReader media review
+            include researchLeadScreens scanReading proposeForms drafts deviceStore
             include owner mcp claude db
             exclude "media -> db"
-            autolayout lr 100 100
+            exclude "review -> db"
+            exclude "review -> media"
+            exclude "owner -> review"
+            autolayout tb 100 100
         }
 
         component api "13-api-exports-erasure" "The nightly Export, the GEDCOM download and erasure (add-exports-and-erasure)." {
