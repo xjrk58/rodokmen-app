@@ -4,14 +4,14 @@ graph TB
   subgraph diagram ["Rodokmen: Containers (jobs and operations)"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles, marks<br />Family roots, issues Agent<br />tokens and keeps the Backups.</div>"]
     style 4 fill:#08427b,stroke:#052e56,color:#ffffff
-    66["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
-    style 66 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    67["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
-    style 67 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    70["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
+    70["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
     style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    71["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
+    style 71 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    74["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
+    style 74 fill:#8c8c8c,stroke:#616161,color:#ffffff
 
     subgraph 6 ["Rodokmen"]
       style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
@@ -19,40 +19,40 @@ graph TB
       subgraph group1 ["Scheduled jobs"]
         style group1 fill:#ffffff,stroke:#555555,color:#555555,stroke-dasharray:5
 
-        46["<div style='font-weight: bold'>Watchdog</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, API image, cli.js watchdog]</div><div style='font-size: 80%; margin-top:10px'>Emails the Owner when the<br />health check fails for over 5<br />minutes or a Backup fails or<br />is missing.</div>"]
-        style 46 fill:#438dd5,stroke:#2e6295,color:#ffffff
-        47["<div style='font-weight: bold'>Backup job</div><div style='font-size: 70%; margin-top: 0px'>[Container: pg_dump, rclone, restic]</div><div style='font-size: 80%; margin-top:10px'>Every night stores the<br />database and all images,<br />encrypted, keeping 30 daily<br />and 12 monthly Backups.</div>"]
-        style 47 fill:#438dd5,stroke:#2e6295,color:#ffffff
-        48["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
-        style 48 fill:#ffffff,stroke:#777777,color:#555555
+        49["<div style='font-weight: bold'>Watchdog</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, API image, cli.js watchdog]</div><div style='font-size: 80%; margin-top:10px'>Emails the Owner when the<br />health check fails for over 5<br />minutes or a Backup fails or<br />is missing.</div>"]
+        style 49 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        50["<div style='font-weight: bold'>Backup job</div><div style='font-size: 70%; margin-top: 0px'>[Container: pg_dump, rclone, restic]</div><div style='font-size: 80%; margin-top:10px'>Every night stores the<br />database and all images,<br />encrypted, keeping 30 daily<br />and 12 monthly Backups.</div>"]
+        style 50 fill:#438dd5,stroke:#2e6295,color:#ffffff
+        51["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
+        style 51 fill:#ffffff,stroke:#777777,color:#555555
       end
 
-      24["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates and forwards to<br />the active API slot; passes<br />presigned image requests at<br />files.<domain> to the image<br />bucket unchanged.</div>"]
-      style 24 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      25["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app, the sign-in<br />pages and the JSON API; runs<br />the daily jobs.</div>"]
-      style 25 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
-      style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
-      style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      26["<div style='font-weight: bold'>Reverse proxy</div><div style='font-size: 70%; margin-top: 0px'>[Container: Caddy 2]</div><div style='font-size: 80%; margin-top:10px'>Serves the one domain over<br />HTTPS with automatic<br />certificates; forwards /mcp<br />to the MCP server and the<br />rest to the active API slot;<br />passes presigned image<br />requests at files.<domain> to<br />the image bucket unchanged.</div>"]
+      style 26 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      27["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app with its<br />Content-Security-Policy, and<br />the JSON API; runs the daily<br />jobs.</div>"]
+      style 27 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      47[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Agent tokens,<br />Proposals and the log of<br />accepted changes; the source<br />of truth.</div>")]
+      style 47 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      48[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
+      style 48 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 
-    24-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->25
-    24-- "<div>Passes presigned image<br />requests at files.<domain><br />through unchanged</div><div style='font-size: 70%'>[HTTP, port 3900]</div>" -->45
-    25-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->44
-    25-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->45
-    25-. "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->45
-    25-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->66
-    46-- "<div>Checks the public health<br />check every minute</div><div style='font-size: 70%'>[HTTPS]</div>" -->24
-    46-- "<div>Reads the status of the last<br />Backup</div><div style='font-size: 70%'>[backup.json on a shared volume]</div>" -->47
-    46-- "<div>Sends alerts to the Owner</div><div style='font-size: 70%'>[SMTP]</div>" -->66
-    47-- "<div>Dumps the database and counts<br />its records</div><div style='font-size: 70%'>[pg_dump]</div>" -->44
-    47-- "<div>Copies every image</div><div style='font-size: 70%'>[rclone over the S3 API, read-only key]</div>" -->45
-    47-- "<div>Stores encrypted,<br />deduplicated Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->67
-    48-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->44
-    48-. "<div>Commits the Export to<br />rodokmen-export</div><div style='font-size: 70%'>[Git over SSH, deploy key]</div>" .->70
-    70-- "<div>Deploys to the idle slot,<br />switches when healthy</div><div style='font-size: 70%'>[SSH, deploy.sh]</div>" -->25
-    70-- "<div>Restores the latest Backup<br />monthly to test it</div><div style='font-size: 70%'>[restic]</div>" -->67
-    66-- "<div>Delivers alerts about health,<br />Backups and deploys</div><div style='font-size: 70%'>[Email]</div>" -->4
+    26-- "<div>Forwards every request to the<br />active API slot</div><div style='font-size: 70%'>[HTTP, port 3000]</div>" -->27
+    26-- "<div>Passes presigned image<br />requests at files.<domain><br />through unchanged</div><div style='font-size: 70%'>[HTTP, port 3900]</div>" -->48
+    27-- "<div>Reads and writes the Tree,<br />accounts and sessions</div><div style='font-size: 70%'>[SQL]</div>" -->47
+    27-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->48
+    27-- "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" -->48
+    27-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->70
+    49-- "<div>Checks the public health<br />check every minute</div><div style='font-size: 70%'>[HTTPS]</div>" -->26
+    49-- "<div>Reads the status of the last<br />Backup</div><div style='font-size: 70%'>[backup.json on a shared volume]</div>" -->50
+    49-- "<div>Sends alerts to the Owner</div><div style='font-size: 70%'>[SMTP]</div>" -->70
+    50-- "<div>Dumps the database and counts<br />its records</div><div style='font-size: 70%'>[pg_dump]</div>" -->47
+    50-- "<div>Copies every image</div><div style='font-size: 70%'>[rclone over the S3 API, read-only key]</div>" -->48
+    50-- "<div>Stores encrypted,<br />deduplicated Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->71
+    51-. "<div>Reads the Tree and the slug<br />table</div><div style='font-size: 70%'>[SQL]</div>" .->47
+    51-. "<div>Commits the Export to<br />rodokmen-export</div><div style='font-size: 70%'>[Git over SSH, deploy key]</div>" .->74
+    74-- "<div>Deploys to the idle slot,<br />switches when healthy</div><div style='font-size: 70%'>[SSH, deploy.sh]</div>" -->27
+    74-- "<div>Restores the latest Backup<br />monthly to test it</div><div style='font-size: 70%'>[restic]</div>" -->71
+    70-- "<div>Delivers alerts about health,<br />Backups and deploys</div><div style='font-size: 70%'>[Email]</div>" -->4
 
   end

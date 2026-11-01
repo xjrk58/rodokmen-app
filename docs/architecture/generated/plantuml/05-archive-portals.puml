@@ -41,15 +41,15 @@ System_Boundary("Archiveportals_boundary", "Archive portals", $tags="Software Sy
   Container(Archiveportals.NárodníarchivVademecum, "Národní archiv: Vademecum", $techn="Web register viewer", $descr="Jewish registers for the whole of the Czech lands.", $tags="Container,External,Built", $link="")
 }
 
-Rel(Rodokmen, Archiveportals.MZABrnoActaPublica, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
-Rel(Rodokmen, Archiveportals.ZAOpavaDigitálníarchiv, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
-Rel(Rodokmen, Archiveportals.NárodníarchivVademecum, "Jewish registers, on every place sheet", $techn="HTTPS link", $tags="Built", $link="")
-Rel(Rodokmen, Archiveportals.SOAPrahaeBadatelna, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
 Rel(Rodokmen, Archiveportals.AHMPPragaPublica, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
 Rel(Rodokmen, Archiveportals.SOATřeboňDigitálníarchiv, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
 Rel(Rodokmen, Archiveportals.SOAPlzeňPortafontium, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
 Rel(Rodokmen, Archiveportals.SOALitoměřiceVademecum, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
 Rel(Rodokmen, Archiveportals.SOAZámrskARON, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.MZABrnoActaPublica, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.ZAOpavaDigitálníarchiv, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.NárodníarchivVademecum, "Jewish registers, on every place sheet", $techn="HTTPS link", $tags="Built", $link="")
+Rel(Rodokmen, Archiveportals.SOAPrahaeBadatelna, "Open scans", $techn="HTTPS link", $tags="Built", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

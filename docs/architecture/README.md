@@ -1,6 +1,6 @@
 # Architecture (C4)
 
-[`workspace.dsl`](workspace.dsl) is a Structurizr model of Rodokmen and the single source of every diagram here. It is derived from the OpenSpec changes in [`openspec/changes/`](../../openspec/changes/): each capability (spec folder) becomes a container or component, and its requirements become the relationships. It also draws on the ADRs in [`docs/adr/`](../adr/), [`deploy/`](../../deploy/) and the code. Decisions not yet written into `openspec/` on main are modelled as Planned: ADR 0010 (the Vault and `rodokmen-export`), `add-vault-import`, `add-research-leads`, `add-scan-reading`, and the rewritten `add-family-view` (the Tree is the signed-in home). Every element and relationship has a status tag: **Built** (on main), **In progress** (branch `feat/proposals-and-review`) or **Planned** (a later change). Each also carries properties: `openspec` (change / capability), `adr`, and `code` where the code exists. The words follow [`GLOSSARY.md`](../../GLOSSARY.md).
+[`workspace.dsl`](workspace.dsl) is a Structurizr model of Rodokmen and the single source of every diagram here. It is derived from the OpenSpec changes in [`openspec/changes/`](../../openspec/changes/): each capability (spec folder) becomes a container or component, and its requirements become the relationships. It also draws on the ADRs in [`docs/adr/`](../adr/), [`deploy/`](../../deploy/) and the code. Every element and relationship has a status tag: **Built** (on main), **In progress** (branch `feat/research-leads`, `add-research-leads`) or **Planned** (a later change: `add-vault-import` beyond the Family roots and the relation to the family, `add-scan-reading`, `add-exports-and-erasure` and `add-country-packs`). Each also carries properties: `openspec` (change / capability), `adr`, and `code` where the code exists. The words follow [`GLOSSARY.md`](../../GLOSSARY.md).
 
 In the SVGs, Built elements have solid borders, In progress elements orange dotted ones, and Planned elements are white boxes with grey dashed borders; lines follow the same scheme. Every SVG has the legend. Mermaid copies of all views are in [`generated/mermaid.md`](generated/mermaid.md); Mermaid shows status by colour only.
 
@@ -19,7 +19,7 @@ All views are in [`generated/svg/`](generated/svg/):
 3. `03-containers-operations`: jobs, Backups, deploys and the Export
 4. `04-app-map`: the public map
 5. `05-archive-portals` and `06-historical-map-services`: what the place sheet links to
-6. `07-app-proposals` and `08-app-family`: app components
+6. `07-app-proposals` and `08-app-family`: app components (Proposals and review; sign-in, the Tree home, the family screens and Settings)
 7. `09-api-core`, `10-api-write-path`, `11-api-agents-import`, `12-api-research` and `13-api-exports-erasure`: API server components, one view per group of changes
 8. `14-proposal-flow`: dynamic view, from a Draft to the nightly Export
 9. `15-deployment` and `16-deployment-delivery`: production

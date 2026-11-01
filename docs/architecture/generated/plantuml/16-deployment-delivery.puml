@@ -24,17 +24,17 @@ skinparam {
 AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
-AddElementTag("Deployment Node,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Deployment Node,Built", $bgColor="#ffffff", $borderColor="#888888", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Deployment Node,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Container,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 
-AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
 AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
+AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
 
-Deployment_Node(Production.Assistantsmachine, "Assistant's machine", $type="Any OS", $descr="Where an AI assistant runs; the server never schedules Agents.", $tags="Deployment Node,Planned", $link="") {
-  Container(Production.Assistantsmachine.MCPserver_1, "MCP server", $techn="TypeScript, MCP SDK; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API.", $tags="Container,Planned", $link="")
+Deployment_Node(Production.Assistantsmachine, "Assistant's machine", $type="Any OS", $descr="Where an AI assistant runs; it uses the MCP server over stdio, or the one at /mcp. The server never schedules Agents.", $tags="Deployment Node,Built", $link="") {
+  Container(Production.Assistantsmachine.MCPserver_1, "MCP server", $techn="TypeScript, MCP SDK v2; stdio or streamable HTTP", $descr="Lets AI assistants search the Tree and submit Proposals; a thin client of the API with the Agent's token, without database access.", $tags="Container,Built", $link="")
 }
 
 Deployment_Node(Production.Ownerscomputer, "Owner's computer", $type="Node 22", $descr="Runs the Vault importer against a checkout of the Vault.", $tags="Deployment Node,Planned", $link="") {
@@ -42,14 +42,14 @@ Deployment_Node(Production.Ownerscomputer, "Owner's computer", $type="Node 22", 
 }
 
 Deployment_Node(Production.netcup, "netcup", $type="netcup", $descr="Nürnberg, Germany, EU.", $tags="Deployment Node,Built", $link="") {
-  Deployment_Node(Production.netcup.VPS, "VPS", $type="VPS 500 G12, Ubuntu 24.04, 4 GB", $descr="One server for one family at rodokmen.dev; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
-    Deployment_Node(Production.netcup.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml", $descr="The stack in /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
-      Deployment_Node(Production.netcup.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+  Deployment_Node(Production.netcup.VPS, "VPS", $type="VPS 500 G12, Ubuntu 24.04, 4 GB RAM, 2 GB swap", $descr="One server for one family at rodokmen.dev; firewall allows 22, 80 and 443.", $tags="Deployment Node,Built", $link="") {
+    Deployment_Node(Production.netcup.VPS.DockerCompose, "Docker Compose", $type="docker-compose.yml, a memory limit per service", $descr="In /opt/rodokmen, copied by each deploy.", $tags="Deployment Node,Built", $link="") {
+      Deployment_Node(Production.netcup.VPS.DockerCompose.apiblue, "api-blue", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="One slot serves; the other takes the next release. 512 MB each.", $tags="Deployment Node,Built", $link="") {
+        Container(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app with its Content-Security-Policy, and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
       }
 
       Deployment_Node(Production.netcup.VPS.DockerCompose.apigreen, "api-green", $type="ghcr.io/<owner>/rodokmen-app:<commit>", $descr="Both slots answer to api for Caddy.", $tags="Deployment Node,Built", $link="") {
-        Container(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+        Container(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app with its Content-Security-Policy, and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
       }
 
       Deployment_Node(Production.netcup.VPS.DockerCompose.export, "export", $type="Not in the compose file yet", $descr="Runs once a night.", $tags="Deployment Node,Planned", $link="") {
@@ -74,9 +74,9 @@ Deployment_Node(Production.GitHub, "GitHub", $type="SaaS", $descr="github.com", 
   System(Production.GitHub.Vault_1, "Vault", $descr="The Owner's Markdown notes in the private rodokmen-data repo, about 4,100 people with scans; frozen after the import.", $tags="Software System,External,Planned", $link="")
 }
 
-Rel(Production.Assistantsmachine.MCPserver_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.Assistantsmachine.MCPserver_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTP(S)", $tags="Built", $link="")
 Rel(Production.Ownerscomputer.Vaultimporter_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
-Rel(Production.Assistantsmachine.MCPserver_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Production.Assistantsmachine.MCPserver_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Calls the API with the Agent's token", $techn="JSON/HTTP(S)", $tags="Built", $link="")
 Rel(Production.Ownerscomputer.Vaultimporter_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Submits an import batch of Proposals", $techn="JSON/HTTPS, Agent token", $tags="Planned", $link="")
 Rel(Production.GitHub.GitHubActions_1, Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")
 Rel(Production.GitHub.GitHubActions_1, Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, "Deploys to the idle slot, switches when healthy", $techn="SSH, deploy.sh", $tags="Built", $link="")

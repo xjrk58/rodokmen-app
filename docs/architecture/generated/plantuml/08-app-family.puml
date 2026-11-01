@@ -1,5 +1,5 @@
 @startuml
-title <size:24>App (PWA): sign-in, Tree home and family screens</size>\n<size:24>Sign-in, the Tree home and the family screens for Members (add-tree-backend, add-family-view).</size>
+title <size:24>App (PWA): sign-in, Tree home, family screens and Settings</size>\n<size:24>Sign-in, the Tree home, the family screens and Settings for Members (add-family-view, with Family roots from add-vault-import).</size>
 
 set separator none
 top to bottom direction
@@ -21,41 +21,48 @@ skinparam {
 
 !include ../../legend.puml
 
-AddElementTag("Component,In progress", $bgColor="#85bbf0", $borderColor="#c25e00", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
-AddElementTag("Container,In progress,Data store", $bgColor="#438dd5", $borderColor="#c25e00", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
-AddElementTag("Component,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
+AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 
 AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
-AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
 
 AddBoundaryTag("Container,Built,Browser", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddBoundaryTag("Container,Built", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
 
+Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles, marks Family roots, issues Agent tokens and keeps the Backups.", $tags="Person,Built", $link="")
+
 System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
   Container_Boundary("Rodokmen.APIserver_boundary", "API server", $tags="Container,Built") {
-    Component(Rodokmen.APIserver.Accountsandsignin, "Accounts and sign-in", $techn="@simplewebauthn/server", $descr="Invitations, passkeys, emailed links, sessions and roles; checks the session on every request.", $tags="Component,Built", $link="")
-    Component(Rodokmen.APIserver.TreereadAPI, "Tree read API", $techn="Recursive SQL, PostGIS", $descr="Person search across Names, records, ancestors and descendants, and Events for a map area and years.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Accountsandsignin, "Accounts and sign-in", $techn="@simplewebauthn/server", $descr="Invitations, passkeys, emailed links, sessions and roles; the Member's own Person and language; checks the session or Agent token and the action on every request.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.TreereadAPI, "Tree read API", $techn="Recursive SQL, PostGIS", $descr="Person search across Names with the relation filter, records, ancestors, descendants and the hourglass, and Events for a map area, years or a Place.", $tags="Component,Built", $link="")
+    Component(Rodokmen.APIserver.Familyrootsandrelation, "Family roots and relation", $techn="Proved rule in shared/, advisory lock", $descr="Family roots the Owner marks, and each Person's relation to the family, recomputed in every accepted change.", $tags="Component,Built", $link="")
   }
 
   Container_Boundary("Rodokmen.AppPWA_boundary", "App (PWA)", $tags="Container,Built,Browser") {
-    Component(Rodokmen.AppPWA.Signinpages, "Sign-in pages", $techn="server/public/auth", $descr="Accept an invitation, register a passkey, or use an emailed link; served at /auth/.", $tags="Component,Built", $link="")
-    Component(Rodokmen.AppPWA.Proposalforms, "Proposal forms", $techn="app/src/propose-form.js, pickers.js", $descr="Phone-first forms that turn one finding into typed operations with a Citation and photos.", $tags="Component,In progress", $link="")
-    Component(Rodokmen.AppPWA.Treehomeandfamilyscreens, "Tree home and family screens", $techn="Preact with htm, vendored", $descr="Members' home: an hourglass around a focus Person they can change; search, person pages, sign-in.", $tags="Component,Planned", $link="")
-    Component(Rodokmen.AppPWA.Familymaplayers, "Family map layers", $techn="Leaflet layers, marker clustering", $descr="Event pins, the year slider, a Person's life path, and Family here on the place sheet.", $tags="Component,Planned", $link="")
-    Component(Rodokmen.AppPWA.Mapandplacesheet, "Map and place sheet", $techn="app/src/map.js, place-sheet.js, i18n.js", $descr="Map with archive regions and the place sheet; the home for visitors, a tab for Members.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Signinscreens, "Sign-in screens", $techn="app/src/sign-in-screen.js, webauthn.js", $descr="Accepts an invitation and registers a passkey; signs in with a passkey or an emailed link. Emails link here.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Proposalforms, "Proposal forms", $techn="app/src/propose-form.js, pickers.js", $descr="Phone-first forms that turn one finding into typed operations with a Citation and photos.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Reviewandhistoryscreens, "Review and history screens", $techn="app/src/review.js", $descr="Review queue with conflicts and corrections, merging, record history and undo; Agent work is labelled.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Treehomeandfamilyscreens, "Tree home and family screens", $techn="Preact with htm, vendored", $descr="Members' home: an hourglass around a focus Person they can change; People search and person pages; Possible relatives marked, Unrelated people hidden.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Settings, "Settings", $techn="Preact with htm, vendored", $descr="Each Member's language, passkeys and sessions; for the Owner invitations, roles, Member–Person links and Family roots.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Familymaplayers, "Family map layers", $techn="Leaflet layers, app/src/pins.js", $descr="Family pins grouped at low zoom, the year range with decade play, a Person's life path, and Family here on the place sheet.", $tags="Component,Built", $link="")
+    Component(Rodokmen.AppPWA.Mapandplacesheet, "Map and place sheet", $techn="app/src/map.js, place-sheet.js, i18n.js", $descr="Map with archive regions and the place sheet; the home for visitors, a tab for Members. Czech unless the reader chooses English.", $tags="Component,Built", $link="")
   }
 
-  ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
+  ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted, and up to 400 last-loaded Tree records; emptied on sign-out.", $tags="Container,Built,Data store", $link="")
 }
 
-Rel(Rodokmen.AppPWA.Signinpages, Rodokmen.APIserver.Accountsandsignin, "Accepts invitations, registers passkeys, verifies emailed links", $techn="JSON/HTTPS", $tags="Built", $link="")
-Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.APIserver.Accountsandsignin, "Signs in with a passkey or an emailed link", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.APIserver.TreereadAPI, "Reads Persons, Families, pedigrees and descendants", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.Ondevicestore, "Caches loaded records with their time", $techn="IndexedDB", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.AppPWA.Proposalforms, "Opens Propose a change", $techn="JS call", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Familymaplayers, Rodokmen.APIserver.TreereadAPI, "Reads Events in the map area and year range", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Familymaplayers, Rodokmen.AppPWA.Mapandplacesheet, "Adds family layers for signed-in Members", $techn="Leaflet layers", $tags="Planned", $link="")
+Rel(Rodokmen.AppPWA.Signinscreens, Rodokmen.APIserver.Accountsandsignin, "Accepts invitations, registers passkeys, signs in with a passkey or an emailed link", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.APIserver.Accountsandsignin, "Reads who is signed in, their own Person and the Family roots", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.APIserver.TreereadAPI, "Searches Persons; reads person pages, Citations and the hourglass", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.Ondevicestore, "Caches loaded records with their time; empties them on sign-out", $techn="IndexedDB", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.AppPWA.Proposalforms, "Opens Propose a change on a Person", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Treehomeandfamilyscreens, Rodokmen.AppPWA.Reviewandhistoryscreens, "Opens a Person's history", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Settings, Rodokmen.APIserver.Accountsandsignin, "Invites, assigns roles, links Members to Persons; own language, passkeys and sessions", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Settings, Rodokmen.APIserver.Familyrootsandrelation, "Lists, marks and removes Family roots", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Owner, Rodokmen.AppPWA.Settings, "Invites Members, assigns roles, links Members to Persons, marks Family roots", $techn="Browser", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Familymaplayers, Rodokmen.APIserver.TreereadAPI, "Reads Events in the map area and years, and Events of a Place", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Familymaplayers, Rodokmen.AppPWA.Mapandplacesheet, "Adds family layers for signed-in Members", $techn="Leaflet layers", $tags="Built", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes
