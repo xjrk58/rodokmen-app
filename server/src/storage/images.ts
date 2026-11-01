@@ -117,7 +117,9 @@ export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Cli
     async get(storageKey) {
       try {
         const out = await client.send(new GetObjectCommand({ Bucket, Key: storageKey }));
-        return Buffer.from(await out.Body!.transformToByteArray());
+        const bytes = await out.Body!.transformToByteArray();
+        // The same memory as a Buffer, not a second copy of an original of up to 25 MB.
+        return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       } catch (error) {
         if (error instanceof NoSuchKey) return null;
         throw error;

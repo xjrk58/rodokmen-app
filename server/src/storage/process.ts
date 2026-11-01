@@ -22,10 +22,11 @@ sharp.concurrency(1);
 sharp.cache({ memory: 16, items: 10, files: 0 });
 
 /**
- * Decodes run one at a time, so uploads checked at the same moment cannot stack their decodes,
- * each of which can take a few hundred MB. A waiting check holds only its original (at most 25 MB).
+ * Images are checked one at a time, so uploads finished at the same moment cannot stack their
+ * decodes, each of which can take a few hundred MB. An upload's turn also covers loading its
+ * original (checkUpload), so the ones waiting hold nothing yet.
  */
-const decodes = new SerialQueue();
+const turns = new SerialQueue();
 
 export type ImageType = ImageContentType;
 
@@ -64,15 +65,43 @@ export const HEIC_MESSAGE =
  * Checks an uploaded original and makes its display copy: JPEG, PNG, WebP or HEIC up to
  * 25 MB and MAX_INPUT_PIXELS. HEIC is converted here; when the image library cannot decode it,
  * the upload is refused with a message saying what to do. Size and type are checked at once;
- * the decode waits for the ones before it (one at a time).
+ * the decode waits for the images before it (one at a time).
  */
 export async function processImage(original: Buffer): Promise<ProcessedImage> {
+  const contentType = typeOf(original);
+  return turns.run(() => displayCopy(original, contentType));
+}
+
+/** An upload's original, loaded in its turn, with its display copy or why it was refused. */
+export type UploadCheck = { original: Buffer } & ({ processed: ProcessedImage } | { refused: ApiProblem });
+
+/**
+ * Loads an upload's original with `load`, then checks it as processImage does, in one turn: any
+ * number of uploads finished at once hold one original and one decode in memory, not one each.
+ * Null when `load` finds no file; an error of `load` itself is passed on.
+ */
+export function checkUpload(load: () => Promise<Buffer | null>): Promise<UploadCheck | null> {
+  return turns.run(async () => {
+    const original = await load();
+    if (!original) return null;
+    try {
+      return { original, processed: await displayCopy(original, typeOf(original)) };
+    } catch (error) {
+      if (error instanceof ApiProblem) return { original, refused: error };
+      throw error;
+    }
+  });
+}
+
+/** The image type of an original within the size limit, or the refusal. */
+function typeOf(original: Buffer): ImageType {
   if (original.length > IMAGE_MAX_BYTES) throw new ApiProblem(413, 'too_large', TOO_LARGE_MESSAGE);
   const contentType = sniffImageType(original);
   if (!contentType) throw new ApiProblem(415, 'unsupported_image', 'Only JPEG, PNG, WebP and HEIC images can be added.');
-  return decodes.run(() => displayCopy(original, contentType));
+  return contentType;
 }
 
+/** The display copy; every failure becomes an ApiProblem. */
 async function displayCopy(original: Buffer, contentType: ImageType): Promise<ProcessedImage> {
   const heic = contentType === 'image/heic' || contentType === 'image/heif';
   try {

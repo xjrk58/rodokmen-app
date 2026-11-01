@@ -102,6 +102,23 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     }
   });
 
+  it('uploads finished at the same moment are all checked, one at a time (issue #39)', async () => {
+    const bodies = await Promise.all([0, 1, 2, 3].map((i) => picture('jpeg', 2400 + i, 1600)));
+    let most = 0;
+    let sampling = true;
+    const sample = () => {
+      most = Math.max(most, sharp.counters().process);
+      if (sampling) setImmediate(sample);
+    };
+    sample();
+    const answers = await Promise.all(bodies.map((b) => upload(author, b))).finally(() => {
+      sampling = false;
+    });
+    expect(answers.map((r) => r.statusCode)).toEqual([200, 200, 200, 200]);
+    expect(answers.map((r) => UploadView.parse(r.json()).width)).toEqual([2400, 2401, 2402, 2403]);
+    expect(most).toBe(1);
+  });
+
   it('refuses a HEIC photo it cannot convert, with a message that says what to do', async () => {
     const heic = heicContainer();
     expect(sniffImageType(heic)).toBe('image/heic');

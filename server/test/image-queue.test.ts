@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { DISPLAY_MAX_PIXELS, processImage } from '../src/storage/process.js';
+import { checkUpload, DISPLAY_MAX_PIXELS, processImage } from '../src/storage/process.js';
 import { SerialQueue } from '../src/storage/serial-queue.js';
 
 /** A promise with its resolve and reject at hand. */
@@ -16,6 +16,12 @@ function deferred<T = void>() {
 
 /** Lets every pending promise callback run. */
 const settle = () => new Promise((r) => setImmediate(r));
+
+/** A generated test picture (no real photo is ever committed). */
+const picture = (width: number, height = 2000) =>
+  sharp({ create: { width, height, channels: 3, background: { r: 90, g: 120, b: 150 } } })
+    .jpeg()
+    .toBuffer();
 
 describe('SerialQueue', () => {
   it('runs tasks one at a time, in the order they were queued', async () => {
@@ -65,13 +71,7 @@ describe('image processing on a small server (issue #39)', () => {
   });
 
   it('decodes one image at a time, however many uploads are checked at once', async () => {
-    const pictures = await Promise.all(
-      [0, 1, 2, 3].map((i) =>
-        sharp({ create: { width: 3000 + i, height: 2000, channels: 3, background: { r: 90, g: 120, b: 150 } } })
-          .jpeg()
-          .toBuffer(),
-      ),
-    );
+    const pictures = await Promise.all([0, 1, 2, 3].map((i) => picture(3000 + i)));
     // sharp counts the images it is decoding and resizing right now (`process`; its `queue`
     // counter is updated from another thread, so the two cannot be added up). Sampled on every
     // turn of the event loop while the four checks run; without the queue it reaches 4.
@@ -99,5 +99,41 @@ describe('image processing on a small server (issue #39)', () => {
     const [refused, accepted] = await Promise.allSettled([processImage(broken), processImage(good)]);
     expect(refused).toMatchObject({ status: 'rejected', reason: { statusCode: 415, code: 'image_unreadable' } });
     expect(accepted).toMatchObject({ status: 'fulfilled', value: { contentType: 'image/png', width: 800, height: 600 } });
+  });
+
+  it('loads an upload only in its turn, so the ones waiting hold no original yet', async () => {
+    const image = await picture(1200, 900);
+    const gate = deferred<Buffer>();
+    const loads: string[] = [];
+    let decodingWhenSecondLoads = -1;
+    const first = checkUpload(() => {
+      loads.push('first');
+      return gate.promise;
+    });
+    const second = checkUpload(() => {
+      loads.push('second');
+      decodingWhenSecondLoads = sharp.counters().process;
+      return Promise.resolve(image);
+    });
+    await settle();
+    expect(loads).toEqual(['first']); // the second waits while the first is still loading
+    gate.resolve(image);
+    const [a, b] = await Promise.all([first, second]);
+    expect(loads).toEqual(['first', 'second']);
+    expect(decodingWhenSecondLoads).toBe(0); // and until the first one's display copy is made
+    expect(a).toMatchObject({ original: image, processed: { width: 1200, height: 900 } });
+    expect(b).toMatchObject({ original: image, processed: { width: 1200, height: 900 } });
+  });
+
+  it('a missing file is null, a refused image is returned, an error of loading is passed on', async () => {
+    await expect(checkUpload(() => Promise.resolve(null))).resolves.toBeNull();
+    const notAnImage = Buffer.from('not an image at all');
+    await expect(checkUpload(() => Promise.resolve(notAnImage))).resolves.toMatchObject({
+      original: notAnImage,
+      refused: { statusCode: 415, code: 'unsupported_image' },
+    });
+    await expect(checkUpload(() => Promise.reject(new Error('storage unavailable')))).rejects.toThrow('storage unavailable');
+    // The next upload gets its turn as usual.
+    await expect(checkUpload(() => picture(640, 480))).resolves.toMatchObject({ processed: { width: 640, height: 480 } });
   });
 });
