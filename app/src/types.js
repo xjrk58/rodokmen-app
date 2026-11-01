@@ -102,6 +102,11 @@
 /** @typedef {{ items: { id: string, name: string, createdAt: string, lastUsedAt: string | null, backedUp: boolean }[] }} PasskeyList */
 /** @typedef {{ status: import('../../shared/src/schemas/accounts.js').InvitationStatus, language: 'cs' | 'en', message: string }} InvitationCheck */
 /** @typedef {{ ok: true, member: Me }} SignedIn */
+/** @typedef {import('../../shared/src/schemas/accounts.js').AgentView} AgentView */
+/** @typedef {import('../../shared/src/schemas/accounts.js').AgentTokenView} AgentTokenView */
+/** @typedef {import('../../shared/src/schemas/accounts.js').IssuedAgentToken} IssuedAgentToken */
+/** @typedef {{ items: AgentView[] }} AgentList */
+/** @typedef {{ agent: AgentView, token: IssuedAgentToken }} CreatedAgent */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonSummary} PersonSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').EventSummary} EventSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').CitationSummary} CitationSummary */

@@ -371,23 +371,18 @@ reapplied before the API accepts requests.)
 ## Agents and the MCP server
 
 Agents (AI assistants with their own account, add-agent-access) read the Tree and submit
-Proposals, and nothing else. Only the Owner creates them, through the API; there is no screen for
-it yet. Signed in as the Owner, in the browser's developer console on the Rodokmen page:
+Proposals, and nothing else. Only the Owner manages them, in the app under **Settings → Agents**
+(the same through the API, `/api/agents`):
 
-```js
-// Create an Agent; the answer holds its first token, shown only this once.
-await (
-  await fetch('/api/agents', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Register reader' }) })
-).json();
-// List Agents with their tokens (by prefix) and this hour's use of their limits.
-await (await fetch('/api/agents')).json();
-// Another token for an Agent, or revoke one at once:
-await (await fetch('/api/agents/<agent id>/tokens', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json();
-await fetch('/api/agents/<agent id>/tokens/<token id>', { method: 'DELETE' });
-// Stop an Agent (all its tokens) and let it go on again:
-await fetch('/api/agents/<agent id>/disable', { method: 'POST' });
-await fetch('/api/agents/<agent id>/enable', { method: 'POST' });
-```
+- **Add an Agent** with its name and, optionally, what its first token is for. The token is shown
+  once, with a copy button; it is not kept on the device and cannot be shown again. Lost? Issue
+  another and revoke the lost one.
+- Each Agent lists its tokens by prefix and label, when each was added and last used, and which
+  are revoked, with this hour's use of its limits.
+- **Issue another token** for an Agent, for example for a second machine; **Revoke** a token
+  (the page asks first), and the next request with it is refused.
+- **Disable** an Agent to stop all its tokens at once, and **Enable again** to let its tokens
+  that are not revoked work again.
 
 Keep a token like a password: whoever has it can read the whole Tree. Each Agent may submit 60
 Proposals and make 1,000 other requests an hour.

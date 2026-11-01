@@ -1532,6 +1532,90 @@ body.signed-in .screen {
   display: grid;
   gap: 8px;
 }
+/* The Owner's Agents: each with its tokens; a new token shown once; revoking asked in the page */
+.agent h4,
+.token-once h4 {
+  margin: 10px 0 2px;
+  font-size: 14px;
+}
+.agent-usage > span {
+  display: block;
+}
+.agent-tokens > li {
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.agent-tokens > li:last-child {
+  border-bottom: 0;
+}
+.agent-tokens > li.revoked .token-head {
+  color: var(--ink-2);
+}
+.token-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  font-size: 14px;
+}
+.token-prefix,
+.token-value {
+  font:
+    14px/1.4 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    'Liberation Mono',
+    monospace;
+}
+.agent-tokens p {
+  margin: 2px 0;
+}
+.token-once,
+.confirm {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--note);
+  border: 1px solid var(--note-line);
+}
+.token-once h4 {
+  margin-top: 0;
+}
+.token-value {
+  display: block;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.token-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.confirm {
+  background: #fbefed;
+  border-color: #e2b3ad;
+}
+.confirm p {
+  margin: 0 0 8px;
+}
+.button.danger {
+  background: #8f2a20;
+  border-color: #8f2a20;
+  color: #fff;
+}
+.agent-form {
+  display: grid;
+  gap: 4px;
+}
+.agent-form .button {
+  justify-self: start;
+}
 .sign-in-form {
   display: grid;
   gap: 10px;
