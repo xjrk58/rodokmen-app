@@ -3,6 +3,9 @@
 # api-green, let a deploy start the new version next to the old one and switch only when it is
 # healthy (scripts/deploy.sh).
 #
+# Memory: every service has a limit, and together they fit the 4 GB VPS with both API slots and
+# the nightly Backup running at once (README.md, "Memory").
+#
 # Configuration: .env (API, watchdog) and backup.env (Backup job) next to this file; see the
 # *.example files and README.md. Image tags of the two API slots and the watchdog come from
 # state/images.env, written by scripts/deploy.sh.
@@ -39,6 +42,9 @@ x-api: &api
     TRUST_PROXY: 'true'
     PUBLIC_ORIGIN: https://${DOMAIN:?set DOMAIN in .env}
     DATABASE_URL: postgres://rodokmen:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/rodokmen
+    # glibc gives each thread its own heap and returns little of it. With two, the memory one
+    # large image needed is reused for the next (measured: 15 to 20 % lower peaks with several).
+    MALLOC_ARENA_MAX: '2'
   depends_on:
     db:
       condition: service_healthy
@@ -50,6 +56,11 @@ x-api: &api
     timeout: 6s
     retries: 3
     start_period: 40s
+  # Each slot: Node (its heap stops at half the limit) and the display copies, made one upload at
+  # a time by sharp outside that heap. During a deploy both slots run.
+  mem_limit: 512m
+  memswap_limit: 768m
+  mem_reservation: 128m
   stop_grace_period: 20s
   networks:
     rodokmen:
@@ -59,6 +70,26 @@ services:
   db:
     image: postgis/postgis:16-3.4
     restart: unless-stopped
+    # Sized for the 4 GB VPS (README.md, "Memory"). PostgreSQL reads these when it starts: Compose
+    # recreates the container when they change (deploy.sh runs `up -d db`).
+    command:
+      - postgres
+      # Its own cache of table and index pages: a quarter of the RAM, the usual share. The Tree is
+      # far smaller (206 invented Persons take about 11 MB), so this rarely fills.
+      - --shared_buffers=1GB
+      # Only a hint to the planner: what shared_buffers and the kernel's file cache together may
+      # hold. mem_limit below also caps that file cache, so 1.5 GB rather than half the RAM.
+      - --effective_cache_size=1536MB
+      # Per sort or hash step of a query before it spills to disk; the Tree's queries sort
+      # hundreds of rows, so they seldom use more than a fraction of it.
+      - --work_mem=8MB
+      # VACUUM, CREATE INDEX in migrations, and each autovacuum worker (which takes only what its
+      # table needs).
+      - --maintenance_work_mem=128MB
+      # Two API slots with a pool of 10 each (server/src/db/db.ts) during a deploy, a CLI command's
+      # pool (create-owner, migrate), the Backup's 2 (pg_dump and its snapshot), psql by hand, and
+      # the 3 reserved for superusers. The MCP server and the watchdog never connect.
+      - --max_connections=40
     environment:
       POSTGRES_DB: rodokmen
       POSTGRES_USER: rodokmen
@@ -71,6 +102,11 @@ services:
       timeout: 5s
       retries: 20
     shm_size: 256mb
+    # shared_buffers, about 20 connections and their work_mem; the reservation keeps the cache in
+    # RAM when the server is short of memory.
+    mem_limit: 1536m
+    memswap_limit: 2g
+    mem_reservation: 1g
     networks: [rodokmen]
 
   # Page images (originals, display copies, pending uploads): Garage, a small S3-compatible
@@ -104,6 +140,7 @@ services:
     # Measured locally: about 10 MB in use, at most 39 MB (page cache included) while a 19 MB
     # image went in and during a Backup. 128 MB leaves room for several uploads at once.
     mem_limit: 128m
+    memswap_limit: 192m
     stop_grace_period: 20s
     networks: [rodokmen]
 
@@ -131,6 +168,9 @@ services:
       - ./caddy:/etc/caddy:ro
       - caddy_data:/data
       - caddy_config:/config
+    # Uploads stream through to Garage; nothing is buffered here.
+    mem_limit: 128m
+    memswap_limit: 192m
     networks: [rodokmen]
 
   # The MCP server (add-agent-access) at https://$DOMAIN/mcp, behind Caddy. A client of the API
@@ -151,6 +191,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    mem_limit: 128m
+    memswap_limit: 192m
     networks: [rodokmen]
 
   # Alerts the Owner when the public health check fails for over 5 minutes or a Backup fails.
@@ -171,6 +213,8 @@ services:
       - backup_status:/status:ro
     healthcheck:
       disable: true
+    mem_limit: 128m
+    memswap_limit: 192m
     networks: [rodokmen]
 
   # Nightly Backup, started by systemd (systemd/rodokmen-backup.timer):
@@ -203,6 +247,10 @@ services:
     volumes:
       - backup_status:/status
       - backup_work:/work
+    # pg_dump, then rclone, then restic, one after the other; restic's index grows with the
+    # repository. Files it writes count here too, but the kernel drops them from memory first.
+    mem_limit: 512m
+    memswap_limit: 768m
     depends_on:
       db:
         condition: service_healthy
