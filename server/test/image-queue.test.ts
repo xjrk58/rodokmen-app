@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
-import { describe, expect, it } from 'vitest';
-import { CHECKSUM_MESSAGE, checkUpload, DISPLAY_MAX_PIXELS, processImage, type PendingUpload } from '../src/storage/process.js';
+import { describe, expect, it, vi } from 'vitest';
+import { STORE_TIMEOUT_MS } from '../src/storage/images.js';
+import { CHECKSUM_MESSAGE, checkUpload, cropForReading, DISPLAY_MAX_PIXELS, processImage, type PendingUpload } from '../src/storage/process.js';
 import { SerialQueue } from '../src/storage/serial-queue.js';
 import { GatedStorage } from './gated-storage.js';
 
@@ -181,5 +182,37 @@ describe('image processing on a small server (issue #39)', () => {
     // Not even its type or size is looked at: not an image, it is still told it differs.
     await expect(checkUpload(storage, pending(storage, 'words', Buffer.from('words'), sha(image)))).resolves.toMatchObject({ refused: { code: 'checksum' } });
     expect(storage.log.filter((l) => l.startsWith('put'))).toEqual([]);
+  });
+  it('a stalled read of the store is given up after STORE_TIMEOUT_MS, and the uploads behind it go ahead (#97)', async () => {
+    const storage = new GatedStorage();
+    const image = await picture(800, 600);
+    const stalled = pending(storage, 'stalled', image);
+    const crop = pending(storage, 'scan', image);
+    storage.hold(stalled.link); // and never let go: a store that ignores the abort too
+    storage.hold(crop.link);
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const first = expect(checkUpload(storage, stalled)).rejects.toMatchObject({
+        statusCode: 503,
+        code: 'store_timeout',
+        headers: { 'retry-after': '60' },
+      });
+      // A reading's crop takes its turn in the same queue, and is given up the same way.
+      const reading = expect(cropForReading(storage, crop.link, { left: 0, top: 0, width: 0.5, height: 0.5 })).rejects.toMatchObject({
+        code: 'store_timeout',
+      });
+      const next = checkUpload(storage, pending(storage, 'next', image));
+      await vi.advanceTimersByTimeAsync(STORE_TIMEOUT_MS - 1);
+      expect(storage.log).toEqual(['get pending/stalled/original']);
+      await vi.advanceTimersByTimeAsync(1);
+      await first;
+      expect(storage.signals.get(stalled.link)?.aborted).toBe(true); // the request to the store is aborted
+      await vi.advanceTimersByTimeAsync(STORE_TIMEOUT_MS);
+      await reading;
+      vi.useRealTimers();
+      await expect(next).resolves.toMatchObject({ checked: { width: 800, height: 600 } });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

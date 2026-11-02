@@ -20,6 +20,15 @@ export const IMAGE_LINK_SECONDS = 5 * 60;
 export const UPLOAD_LINK_SECONDS = 15 * 60;
 
 /**
+ * How long the server waits for the image store (issue #97). The SDK sets no limit, so a store
+ * that stalls (Garage swapping under its memory limit, say) would hold a request, and every
+ * upload queued behind it, until the container restarts. Each request may take 5 s to connect,
+ * this long until the store answers, and this long without data while the answer arrives; in an
+ * upload's turn a read or write is given up after this long in all (process.ts).
+ */
+export const STORE_TIMEOUT_MS = 30_000;
+
+/**
  * Where one upload's files live while it is pending. The phone writes `link` with its presigned
  * PUT, and that link stays valid for UPLOAD_LINK_SECONDS whatever the server does, so the
  * uploader could still replace the file after it was checked. Once its SHA-256 matches, the
@@ -46,9 +55,9 @@ export interface ImageStorage {
   link(storageKey: string, contentType: string): Promise<ImageLink>;
   /** A presigned PUT link for exactly this content type and size. */
   uploadLink(storageKey: string, contentType: string, byteSize: number): Promise<UploadLink>;
-  /** The object's bytes, or null when it does not exist. */
-  get(storageKey: string): Promise<Buffer | null>;
-  put(storageKey: string, body: Buffer, contentType: string): Promise<void>;
+  /** The object's bytes, or null when it does not exist. `signal` aborts the request. */
+  get(storageKey: string, signal?: AbortSignal): Promise<Buffer | null>;
+  put(storageKey: string, body: Buffer, contentType: string, signal?: AbortSignal): Promise<void>;
   copy(from: string, to: string): Promise<void>;
   delete(storageKey: string): Promise<void>;
 }
@@ -65,13 +74,15 @@ export function imageLink(
   return full || !image.display_key ? storage.link(image.storage_key, image.content_type) : storage.link(image.display_key, 'image/webp');
 }
 
-/** The client for the server's own requests, at the internal endpoint. */
+/** The client for the server's own requests, at the internal endpoint, within STORE_TIMEOUT_MS. */
 export function createS3Client(s3: Config['s3']): S3Client {
   return new S3Client({
     endpoint: s3.endpoint,
     region: s3.region,
     forcePathStyle: s3.forcePathStyle,
     credentials: { accessKeyId: s3.accessKeyId, secretAccessKey: s3.secretAccessKey },
+    // requestTimeout only warns unless told to throw.
+    requestHandler: { connectionTimeout: 5_000, requestTimeout: STORE_TIMEOUT_MS, throwOnRequestTimeout: true, socketTimeout: STORE_TIMEOUT_MS },
   });
 }
 
@@ -114,9 +125,9 @@ export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Cli
       });
       return { url, headers: { 'content-type': contentType }, expiresAt: new Date(signingDate.getTime() + UPLOAD_LINK_SECONDS * 1000) };
     },
-    async get(storageKey) {
+    async get(storageKey, signal) {
       try {
-        const out = await client.send(new GetObjectCommand({ Bucket, Key: storageKey }));
+        const out = await client.send(new GetObjectCommand({ Bucket, Key: storageKey }), { abortSignal: signal });
         const bytes = await out.Body!.transformToByteArray();
         // The same memory as a Buffer, not a second copy of an original of up to 25 MB.
         return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -125,8 +136,8 @@ export function createImageStorage(s3: Config['s3'], clock: Clock, client: S3Cli
         throw error;
       }
     },
-    async put(storageKey, body, contentType) {
-      await client.send(new PutObjectCommand({ Bucket, Key: storageKey, Body: body, ContentType: contentType }));
+    async put(storageKey, body, contentType, signal) {
+      await client.send(new PutObjectCommand({ Bucket, Key: storageKey, Body: body, ContentType: contentType }), { abortSignal: signal });
     },
     async copy(from, to) {
       await client.send(new CopyObjectCommand({ Bucket, Key: to, CopySource: `${Bucket}/${from.split('/').map(encodeURIComponent).join('/')}` }));

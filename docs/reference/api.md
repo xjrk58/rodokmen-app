@@ -65,6 +65,7 @@ Errors are JSON:
 | 404    | no such record or route; every scan reading route while scan reading is off                                                                                                                              |
 | 409    | the request conflicts with the Tree as it is, such as marking a Person merged into another; a Research lead changed since it was read (`conflict`); a suggested lead already decided (`already_decided`) |
 | 429    | an Agent reached its hourly limit (`code` `rate_limited`), or a Member or Agent their scan readings of the day (`daily_limit`); `retryAt` and the `Retry-After` header say when to try again             |
+| 503    | finishing an upload: the image store did not answer within 30 seconds (`store_timeout`); the `Retry-After` header says when to try again, and the upload can be finished then                            |
 
 ## Agent limits
 

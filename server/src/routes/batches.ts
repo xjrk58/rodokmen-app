@@ -171,7 +171,7 @@ export async function batchRoutes(fastify: FastifyInstance, deps: ProposalDeps) 
       tags: ['Import batches'],
       summary: 'Finish an upload for a Proposal of your Import batch, as POST /api/uploads/{id}/complete',
       params: UploadParams,
-      response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, ...signedIn },
+      response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, 503: ApiError, ...signedIn },
     },
     handler: async (req) => {
       await ownBatch(req.member!, req.params.id);

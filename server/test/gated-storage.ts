@@ -8,6 +8,8 @@ import { MemoryImageStorage } from '../src/storage/images.js';
 export class GatedStorage extends MemoryImageStorage {
   /** `get <key>` and `put <key>`, in order. */
   readonly log: string[] = [];
+  /** The signal each read of a key was given, the last one. */
+  readonly signals = new Map<string, AbortSignal | undefined>();
   private readonly holds = new Map<string, Promise<void>>();
 
   constructor(clock: Clock = systemClock) {
@@ -24,8 +26,9 @@ export class GatedStorage extends MemoryImageStorage {
     };
   }
 
-  override async get(storageKey: string): Promise<Buffer | null> {
+  override async get(storageKey: string, signal?: AbortSignal): Promise<Buffer | null> {
     this.log.push(`get ${storageKey}`);
+    this.signals.set(storageKey, signal);
     await this.holds.get(storageKey);
     return super.get(storageKey);
   }

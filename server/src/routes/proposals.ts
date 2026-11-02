@@ -237,7 +237,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       summary:
         'Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message)',
       params: IdParams,
-      response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, ...signedIn },
+      response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, 503: ApiError, ...signedIn },
     },
     handler: async (req) => completeUpload(deps, req.member!, req.params.id),
   });

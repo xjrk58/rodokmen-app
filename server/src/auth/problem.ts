@@ -1,10 +1,14 @@
-/** An error with an HTTP status and a stable code, turned into an ApiError response (with `extra` fields, such as a 429's retryAt). */
+/**
+ * An error with an HTTP status and a stable code, turned into an ApiError response (with `extra`
+ * fields, such as a 429's retryAt, and response `headers`, such as a 503's Retry-After).
+ */
 export class ApiProblem extends Error {
   constructor(
     readonly statusCode: number,
     readonly code: string,
     message: string,
     readonly extra: Record<string, string> = {},
+    readonly headers: Record<string, string> = {},
   ) {
     super(message);
     this.name = 'ApiProblem';

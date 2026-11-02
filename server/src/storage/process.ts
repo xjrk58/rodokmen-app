@@ -3,7 +3,7 @@ import { IMAGE_MAX_BYTES, type ImageContentType } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
-import type { ImageStorage } from './images.js';
+import { STORE_TIMEOUT_MS, type ImageStorage } from './images.js';
 import { SerialQueue } from './serial-queue.js';
 
 /** Longest side of the display copy (evidence-media spec, "Originals are kept"). */
@@ -67,6 +67,7 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
 export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
+export const STORE_TIMEOUT_MESSAGE = 'The image store did not answer in time. Try again in a minute.';
 export const CHECKSUM_MESSAGE = 'The uploaded file differs from the one announced. Upload it again.';
 export const HEIC_MESSAGE =
   'This HEIC photo could not be converted. On an iPhone, set Settings → Camera → Formats → Most Compatible, or share the photo as JPEG, then add it again.';
@@ -106,7 +107,7 @@ export type UploadCheck = { checked: CheckedImage } | { refused: ApiProblem };
  */
 export function checkUpload(images: ImageStorage, upload: PendingUpload): Promise<UploadCheck | null> {
   return turns.run(async () => {
-    const original = await images.get(upload.link);
+    const original = await inTime((signal) => images.get(upload.link, signal));
     if (!original) return null;
     let processed: ProcessedImage;
     try {
@@ -118,10 +119,31 @@ export function checkUpload(images: ImageStorage, upload: PendingUpload): Promis
       throw error;
     }
     const { display, ...checked } = processed;
-    await images.put(upload.verified, original, checked.contentType);
-    await images.put(upload.display, display, 'image/webp');
+    await inTime((signal) => images.put(upload.verified, original, checked.contentType, signal));
+    await inTime((signal) => images.put(upload.display, display, 'image/webp', signal));
     return { checked };
   });
+}
+
+/**
+ * A read or write of the image store in a turn, given up after STORE_TIMEOUT_MS (#97): its request
+ * is aborted, and the turn stops waiting for it even when the store ignores that, so the uploads
+ * behind it go ahead. A decode is never cut short: two would then run at once.
+ */
+async function inTime<T>(io: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const deadline = new AbortController();
+  let timer: NodeJS.Timeout | undefined;
+  const timedOut = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new ApiProblem(503, 'store_timeout', STORE_TIMEOUT_MESSAGE, {}, { 'retry-after': '60' }));
+      deadline.abort();
+    }, STORE_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([io(deadline.signal), timedOut]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 const sha256Of = (original: Buffer) => createHash('sha256').update(original).digest('hex');
@@ -174,13 +196,13 @@ export interface Crop {
 
 /**
  * A crop for scan reading (evidence-media spec, "Images sent for reading"): only the marked part
- * of the checked original, at most DISPLAY_MAX_PIXELS on its longest side, as WebP. The original
- * file itself never leaves the server. Loaded and decoded in its turn, like every upload. Null
- * when `load` finds no file.
+ * of the checked original at `key`, at most DISPLAY_MAX_PIXELS on its longest side, as WebP. The
+ * original file itself never leaves the server. Loaded and decoded in its turn, like every
+ * upload. Null when there is no file at `key`.
  */
-export function cropForReading(load: () => Promise<Buffer | null>, crop: Crop): Promise<Buffer | null> {
+export function cropForReading(images: ImageStorage, key: string, crop: Crop): Promise<Buffer | null> {
   return turns.run(async () => {
-    const original = await load();
+    const original = await inTime((signal) => images.get(key, signal));
     if (!original) return null;
     const meta = await sharp(original).metadata();
     if (!meta.width || !meta.height) throw new Error('an image without dimensions');

@@ -95,9 +95,12 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   uploads are checked one at a time, from loading the original to writing its checked copy and
   display copy, so uploads arriving together wait their turn instead of adding up. Those waiting
   hold nothing yet, and an upload holds nothing once its turn is over (#97): an API slot holds one
-  original (at most 25 MB), its decode and its display copy at a time. An image may have at most
-  sharp's own limit of 268,402,689 pixels (16,383 × 16,383, #98); a file claiming more is refused
-  from its header with a clear message.
+  original (at most 25 MB), its decode and its display copy at a time. A read or write of the image
+  store in a turn is given up after 30 seconds, so a stalled Garage holds up the uploads behind it
+  for that long at most: that upload answers 503 (`store_timeout`), and the next one goes ahead.
+  Every other request to Garage may take 5 seconds to connect, 30 seconds until it answers and 30
+  seconds without data. An image may have at most sharp's own limit of 268,402,689 pixels
+  (16,383 × 16,383, #98); a file claiming more is refused from its header with a clear message.
   The API slots run with `MALLOC_ARENA_MAX=2`, which keeps their peaks with several large images
   15 to 20 % lower.
   Measured in one API slot: a 25 MB JPEG of 48 megapixels takes about 75 MB above idle, a
