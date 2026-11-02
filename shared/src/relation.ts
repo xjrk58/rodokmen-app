@@ -57,7 +57,10 @@ export function mayFollow(link: FamilyLink, strongOnly: boolean): boolean {
   return !strongOnly || isStrongLink(link);
 }
 
-/** Whether a reached Person came through a link the search may follow, from someone it reached earlier. */
+/**
+ * Whether a reached Person came through a link the search may follow, from someone it reached earlier.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function isSupported(r: Reach, links: readonly FamilyLink[], strongOnly: boolean, v: number): boolean {
   //@ verify
   //@ requires 0 <= v && v < r.reached.length && r.reached.length === r.via.length && r.reached.length === r.order.length

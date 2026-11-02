@@ -17,6 +17,7 @@
     "lint:sh": "node scripts/shellcheck.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "knip": "knip",
     "vault-guard": "node scripts/vault-guard.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },

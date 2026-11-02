@@ -18,7 +18,7 @@ import type {
   UiLanguage,
   UploadStatus,
 } from '@rodokmen/shared';
-import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
+import type { ColumnType, Generated, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
@@ -427,4 +427,3 @@ export type Proposal = Selectable<ProposalTable>;
 export type Upload = Selectable<UploadTable>;
 
 export type Account = Selectable<AccountTable>;
-export type NewEvent = Insertable<EventTable>;

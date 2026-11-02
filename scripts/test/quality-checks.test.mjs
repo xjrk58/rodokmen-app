@@ -2,13 +2,38 @@
 // caused a real finding in #21, so a later change to their configuration cannot quietly turn them
 // off. Each fixture reproduces the original bug; the code names the finding.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const WORKSPACES = ['.', 'app', 'server', 'server/mcp', 'shared'];
+
+/**
+ * A copy of the working tree (tracked files and new ones git does not ignore) in a temporary folder,
+ * sharing node_modules, for tools that read files from disk. Removed after the test.
+ */
+function copyOfRepo(t) {
+  const dir = mkdtempSync(join(tmpdir(), 'quality-checks-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const files = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' })
+    .split('\0')
+    .filter(Boolean);
+  for (const file of files) if (existsSync(join(ROOT, file))) cpSync(join(ROOT, file), join(dir, file));
+  for (const ws of WORKSPACES) symlinkSync(join(ROOT, ws, 'node_modules'), join(dir, ws, 'node_modules'));
+  return dir;
+}
+
+/** Replaces `old`, which must occur once, in a file of the copy. */
+function change(dir, file, old, replacement) {
+  const text = readFileSync(join(dir, file), 'utf8');
+  assert.equal(text.split(old).length, 2, `${old} not found once in ${file}`);
+  writeFileSync(join(dir, file), text.replace(old, replacement));
+}
 
 // ---------------------------------------------------------------- ESLint (eslint.config.mjs)
 
@@ -86,5 +111,37 @@ export function guard(app: FastifyInstance) {
     assert.equal((await findings(app, 'app/tests/e2e/', '.spec.js', 'playwright/no-wait-for-timeout')).length, 1);
     const server = `import { chromium } from 'playwright';\nimport { it } from 'vitest';\nit('shows', async () => {\n  const page = await (await chromium.launch()).newPage();\n  await page.waitForTimeout(700);\n});\n`;
     assert.equal((await findings(server, 'server/test/', '.e2e.test.ts', 'playwright/no-wait-for-timeout')).length, 1);
+  });
+});
+
+// ---------------------------------------------------------------- knip (knip.jsonc)
+
+describe('knip', () => {
+  test('finds an export nobody uses (M11) and an unused class member (#22: TileLru.has)', (t) => {
+    const dir = copyOfRepo(t);
+    // M11: ImageQuery was exported from shared's schemas and used nowhere.
+    change(
+      dir,
+      'shared/src/schemas/api.ts',
+      '\nexport const ImageView',
+      '\nexport const ImageQuery = z.object({ full: z.boolean().optional() });\n\nexport const ImageView',
+    );
+    // The app's dead members: TileLru.has was never called.
+    change(dir, 'app/src/tile-lru.js', '  get size() {', '  /** @param {string} key */\n  has(key) {\n    return this.order.has(key);\n  }\n\n  get size() {');
+    const run = spawnSync(process.execPath, [join(ROOT, 'node_modules/knip/bin/knip.js'), '--no-progress', '--reporter', 'json'], {
+      cwd: dir,
+      encoding: 'utf8',
+    });
+    assert.equal(run.status, 1, run.stderr);
+    const { issues } = JSON.parse(run.stdout);
+    const of = (file) => issues.find((i) => i.file === file) ?? {};
+    assert.deepEqual(
+      of('shared/src/schemas/api.ts').exports?.map((e) => e.name),
+      ['ImageQuery'],
+    );
+    assert.deepEqual(
+      Object.values(of('app/src/tile-lru.js').classMembers ?? {}).flatMap((members) => members.map((m) => m.name)),
+      ['has'],
+    );
   });
 });
