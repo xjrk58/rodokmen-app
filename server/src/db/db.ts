@@ -15,7 +15,7 @@ import * as m0011 from './migrations/0011_notes_and_labels.js';
 import * as m0012 from './migrations/0012_source_documents.js';
 import * as m0013 from './migrations/0013_import_batches.js';
 import * as m0014 from './migrations/0014_scan_reading.js';
-import { messageOf } from '../errors.js';
+import { messageOf, stringField } from '../errors.js';
 import type { Database } from './types.js';
 
 // Return `date` columns as written ('1801-03-12', 'infinity', '-infinity') instead of JS Dates,
@@ -25,18 +25,48 @@ pg.types.setTypeParser(pg.types.builtins.INT8, (value) => Number(value));
 
 export type Db = Kysely<Database>;
 
+/** An error on an idle connection of the pool: its code and message, nothing else of it. */
+export interface IdleError {
+  code?: string;
+  message: string;
+}
+
+export const CONNECTION_CLOSED = 'the database closed an idle connection; the pool opens a new one for the next query';
+
+/** The default report of an IdleError, on stderr: a CLI command's pool, or the API's until its logger exists. */
+export function reportOnStderr(error: IdleError): void {
+  console.error(`${CONNECTION_CLOSED}: ${error.message}${error.code === undefined ? '' : ` (${error.code})`}`);
+}
+
 export interface DbOptions {
   max?: number;
   connectionTimeoutMillis?: number;
+  /** Told of each IdleError (default: reportOnStderr). */
+  onIdleError?: (error: IdleError) => void;
 }
 
+/**
+ * PostgreSQL closes the pool's idle connections when it restarts (a deploy recreates `db` when
+ * its settings change), when it is stopped for memory, or when they are terminated by hand.
+ * pg-pool then drops the connection and emits 'error', which would end the process with no
+ * listener (#96). The listener reports only the code and the message, without URLs: pg-pool
+ * hands over the client too, and sets it on the error, and the client holds the connection
+ * parameters.
+ */
 export function createPool(connectionString: string, options: DbOptions = {}): pg.Pool {
-  return new pg.Pool({
+  const pool = new pg.Pool({
     connectionString,
     max: options.max ?? 10,
     connectionTimeoutMillis: options.connectionTimeoutMillis ?? 10_000,
     idleTimeoutMillis: 30_000,
   });
+  const report = options.onIdleError ?? reportOnStderr;
+  pool.on('error', (error) => {
+    const message = error.message.replace(/[a-z][a-z\d+.-]*:\/\/\S+/gi, '[URL]');
+    const code = stringField(error, 'code');
+    report(code === undefined ? { message } : { code, message });
+  });
+  return pool;
 }
 
 export function createDb(connectionString: string, options: DbOptions = {}): Db {
