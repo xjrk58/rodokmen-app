@@ -25,6 +25,9 @@
     },
     "server": {
       "project": ["src/**/*.ts", "test/**/*.ts", "*.ts"],
+      // ReadingJobs.resume and .idle are called through app.readingJobs (main.ts, tests), a member
+      // Object.assign adds to the Fastify instance, which knip's reference search does not link.
+      "ignoreMembers": ["resume", "idle"],
       // The server and the MCP server import shared from source (the @rodokmen/source condition).
       "paths": { "@rodokmen/shared": ["../shared/src/index.ts"] },
     },

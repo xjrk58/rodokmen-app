@@ -6,7 +6,16 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import './shared-loader.mjs';
 import { readJson } from './helpers.mjs';
-import { buildReading, fillFromReading, newReadingForm, READING_CONFIDENCES, readingProblems, readingTitle, stillReadByAi } from '../../src/reading-draft.js';
+import {
+  buildReading,
+  fillFromReading,
+  leadBodyOf,
+  newReadingForm,
+  READING_CONFIDENCES,
+  readingProblems,
+  readingTitle,
+  stillReadByAi,
+} from '../../src/reading-draft.js';
 import { isLink } from '../../src/reading-start.js';
 
 // After shared-loader.mjs: these are TypeScript.
@@ -14,6 +23,8 @@ const { checkOperations } = await import('../../../shared/src/schemas/check-oper
 const shared = await import('../../../shared/src/reading.js');
 const { ReaderInfo, ReadingResult, isPortalLink } = await import('../../../shared/src/schemas/reading.js');
 const { Confidence } = await import('../../../shared/src/schemas/tree.js');
+const { CreateLeadBody } = await import('../../../shared/src/schemas/leads.js');
+const { leadSuggestions } = await import('../../../shared/src/reading-leads.js');
 
 /** @typedef {import('../../src/reading-draft.js').ReadingForm} ReadingForm */
 /** @typedef {import('../../src/types.js').ReadingView} ReadingView */
@@ -225,4 +236,25 @@ test('a pasted archive viewer address is recognised as a link, as the server doe
   for (const text of ['https://portal.example-archive.test/view?frame=41', 'www.example-archive.test/scan/12', ID(1), 'Matrika N 1801']) {
     assert.equal(isLink(text), isPortalLink(text), text);
   }
+});
+
+test('keeps a suggested lead as a Research lead the server accepts: the register, the years, the Place, and only Persons already in the Tree (scenario "Parents’ marriage")', () => {
+  const f = chooseAll(form());
+  const register = { sourceId: ID(70), title: 'Invented register of marriages 1784–1830', kinds: ['marriage'], from: 1784, to: 1830 };
+  f.leads = leadSuggestions(result, { parish: 'Dolní Kamenec', archive: 'Invented Regional Archive', place: 'Kamenná Lhota', registers: [register] });
+  const marriage = f.leads.find((l) => l.kind === 'parents_marriage' && l.entry === 0);
+  assert.ok(marriage);
+  const body = leadBodyOf(marriage, f, 'en');
+  assert.ok(CreateLeadBody.safeParse(body).success);
+  // The father is Jan Novák of the Tree; the mother was chosen as new, so she is only named in the question.
+  assert.deepEqual(body.personIds, [JAN]);
+  assert.deepEqual(body.placeIds, [ID(500)]);
+  assert.deepEqual([body.sourceId, body.archive, body.years], [ID(70), null, { from: 1805, to: 1830 }]);
+  assert.match(body.question, /^Find the marriage of Joannis Nowak and Catharinae uxoris eius before 1830/);
+  // Without a register of the Tree, the lead names the archive.
+  const unregistered = leadSuggestions(result, { parish: null, archive: 'Invented Regional Archive', place: null, registers: [] }).find(
+    (l) => l.kind === 'parents_marriage',
+  );
+  assert.ok(unregistered);
+  assert.deepEqual([leadBodyOf(unregistered, f, 'cs').sourceId, leadBodyOf(unregistered, f, 'cs').archive], [null, 'Invented Regional Archive']);
 });

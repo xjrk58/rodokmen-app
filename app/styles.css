@@ -1831,6 +1831,8 @@ body.signed-in .screen {
   align-items: center;
   gap: 8px;
   padding: 4px 0;
+}
+
 /* ---------------------------------------------------------------- scan reading */
 
 .chip.ai {

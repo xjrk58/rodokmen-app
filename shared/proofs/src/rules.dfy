@@ -38,6 +38,11 @@ lemma mayDecide_ensures(role: string)
 {
 }
 
+function isOwnerAction(action: string): bool
+{
+  ((((action == "manageAccounts") || (action == "markFamilyRoots")) || (action == "acceptBatch")) || (action == "manageSettings"))
+}
+
 function mayDo(role: string, action: string): bool
 {
   if (role == "agent") then
@@ -50,7 +55,7 @@ function mayDo(role: string, action: string): bool
       if ((((((action == "review") || (action == "accept")) || (action == "reject")) || (action == "merge")) || (action == "undo")) || (action == "directEdit")) then
         mayDecide(role)
       else
-        (((((action == "manageAccounts") || (action == "markFamilyRoots")) || (action == "acceptBatch")) || (action == "manageSettings")) && (role == "owner"))
+        (isOwnerAction(action) && (role == "owner"))
 }
 
 lemma mayDo_ensures(role: string, action: string)

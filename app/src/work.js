@@ -37,10 +37,9 @@ import { onLanguageChange, t } from './i18n.js';
 import { leadStart } from './lead-parts.js';
 import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
-import { buildOperations, draftTitle, emptyForm, formProblems, HAND_KINDS, OPERATIONS_VERSION, today } from './proposal-build.js';
+import { buildOperations, draftTitle, emptyForm, formProblems, HAND_KINDS, OPERATIONS_VERSION } from './proposal-build.js';
 import { batchEntries, renderBatch } from './batch-review.js';
-import { buildReading } from './reading-draft.js';
-import { readingFamilies, renderRead, showReading } from './reading-flow.js';
+import { readingProposal, renderRead, showReading } from './reading-flow.js';
 import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -100,16 +99,17 @@ async function proposalBody(draft) {
     if (document) documents.push({ uploadId: photo.uploadId, title: photo.name.replace(/\.pdf$/i, '') || photo.name });
     else uploadIds.push(photo.uploadId);
   }
-  const note = draft.form.note?.trim() || null;
   /** @type {Omit<SubmitProposalBody, 'operations' | 'reader'>} */
-  const base = { formatVersion: OPERATIONS_VERSION, idempotencyKey: draft.idempotencyKey, note, direct: false, answersLeads: draft.lead ? [draft.lead.id] : [] };
-  if (draft.kind === 'reading') {
-    // Drafted from a reading: the values still marked "read by AI" go with it.
-    const { operations, marks } = buildReading(draft.form, { uploadIds, families: await readingFamilies(draft.form, familyOf), readOn: today() });
-    return { ...base, operations, reader: { readingIds: [draft.form.readingId], marks } };
-  }
-  const family = await draftFamily(draft);
-  return { ...base, operations: buildOperations(draft, { uploadIds, documents, family }), reader: null };
+  const base = {
+    formatVersion: OPERATIONS_VERSION,
+    idempotencyKey: draft.idempotencyKey,
+    note: draft.form.note?.trim() || null,
+    direct: false,
+    answersLeads: draft.lead ? [draft.lead.id] : [],
+  };
+  // Drafted from a reading: the values still marked "read by AI" go with it.
+  if (draft.kind === 'reading') return { ...base, ...(await readingProposal(draft.form, uploadIds, familyOf)) };
+  return { ...base, operations: buildOperations(draft, { uploadIds, documents, family: await draftFamily(draft) }), reader: null };
 }
 
 /**
@@ -401,10 +401,7 @@ export class WorkPanel {
    * @param {boolean} stored
    */
   showForm(draft, stored) {
-    if (draft.kind === 'reading') {
-      showReading(this, draft);
-      return;
-    }
+    if (draft.kind === 'reading') return showReading(this, draft);
     const address = location.hash;
     let saved = stored;
     const save = async () => {

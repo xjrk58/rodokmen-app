@@ -5,7 +5,9 @@
 import { readingStatus } from './api.js';
 import { deleteDraft, saveDraft } from './drafts.js';
 import { t } from './i18n.js';
+import { today } from './proposal-build.js';
 import { readingCheck } from './reading-check.js';
+import { buildReading } from './reading-draft.js';
 import { readStart } from './reading-start.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -13,11 +15,22 @@ import { readStart } from './reading-start.js';
 /** @typedef {import('./work.js').WorkPanel} WorkPanel */
 
 /**
+ * The operations of a reading Draft's Proposal and its "read by AI" marks.
+ * @param {import('./reading-draft.js').ReadingForm} form
+ * @param {string[]} uploadIds the Draft's pages, uploaded
+ * @param {(a: PersonInput, b: PersonInput) => Promise<{ id: string, version: number } | null>} familyOf
+ */
+export async function readingProposal(form, uploadIds, familyOf) {
+  const { operations, marks } = buildReading(form, { uploadIds, families: await readingFamilies(form, familyOf), readOn: today() });
+  return { operations, reader: { readingIds: [form.readingId], marks } };
+}
+
+/**
  * For each entry of a reading whose parents are both in the Tree, their Family (by entry, from 1).
  * @param {import('./reading-draft.js').ReadingForm} form
  * @param {(a: PersonInput, b: PersonInput) => Promise<{ id: string, version: number } | null>} familyOf
  */
-export async function readingFamilies(form, familyOf) {
+async function readingFamilies(form, familyOf) {
   /** @type {Map<number, { id: string, version: number } | null>} */
   const families = new Map();
   for (const [i, e] of form.entries.entries()) {

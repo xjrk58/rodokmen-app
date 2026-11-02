@@ -10,6 +10,7 @@ import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
 import { documentFields } from './document-fields.js';
 import { notesFields } from './notes-form.js';
+import { readKindCard } from './reading-start.js';
 import { CONFIDENCES, formProblems, HAND_KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -25,14 +26,7 @@ import { CONFIDENCES, formProblems, HAND_KINDS, NAME_LANGUAGES, NAME_TYPES, name
  * @param {import('./types.js').ReadingStatusView | null} [reading]
  */
 export function kindChooser(reading = null) {
-  const read = reading
-    ? h(
-        'a',
-        { class: 'kind-card read', href: '#work/read', 'data-testid': 'kind-read' },
-        h('strong', {}, t('reading.kind')),
-        h('span', { class: 'muted small' }, t('reading.kindHint', { remaining: reading.remaining, limit: reading.dailyLimit })),
-      )
-    : null;
+  const read = reading ? readKindCard(reading) : null;
   return h(
     'div',
     { class: 'kind-grid' },

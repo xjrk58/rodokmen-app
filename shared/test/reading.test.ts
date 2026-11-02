@@ -305,7 +305,9 @@ describe('a Proposal from a reading, for an Agent', () => {
     expect(operations.find((o) => o.op === 'createCitation')).toMatchObject({ confidence: 'normal', page: '41' });
     expect(operations.find((o) => o.op === 'addImage')).toMatchObject({ uploadId: ID(900), kind: 'page' });
     // Names keep their spelling and language: the child's Latin form.
-    expect(operations.find((o) => o.op === 'createPerson')).toMatchObject({ name: { given: 'Wenceslaus', type: 'birth', language: 'la', asFound: 'Wenceslaus' } });
+    expect(operations.find((o) => o.op === 'createPerson')).toMatchObject({
+      name: { given: 'Wenceslaus', type: 'birth', language: 'la', asFound: 'Wenceslaus' },
+    });
     // The event is at the Place, with the unresolved house number in its description.
     expect(operations.find((o) => o.op === 'createEvent')).toMatchObject({ placeId: ID(500), houseId: null, description: 'čp. 12', date: '1801-03-12' });
     expect(ReaderInfo.safeParse({ readingIds: [ID(1)], marks }).success).toBe(true);

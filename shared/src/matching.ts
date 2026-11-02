@@ -98,7 +98,10 @@ export function scoreOf(r: MatchFlags): number {
   return (r.name ? 16 : 0) + (r.house ? 8 : 0) + (r.years ? 4 : 0) + (r.place ? 1 : 0) + (r.family ? 1 : 0);
 }
 
-/** A candidate with the read name, the read House and a birth in the window. */
+/**
+ * A candidate with the read name, the read House and a birth in the window.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function fullMatch(read: ReadFacts, c: CandidateFacts): boolean {
   //@ verify
   return nameMatches(read, c) && houseMatches(read, c) && yearsMatch(read, c);

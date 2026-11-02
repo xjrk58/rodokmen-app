@@ -32,6 +32,12 @@ export function mayDecide(role: string): boolean {
 
 // ---------------------------------------------------------------- what a role may do
 
+/** The actions only the Owner takes: accounts, Family roots, accepting a whole Import batch, and the settings. */
+function isOwnerAction(action: string): boolean {
+  //@ verify
+  return action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch' || action === 'manageSettings';
+}
+
 /**
  * What a role may do (agent-access spec, "Read and propose only" and "Agents write Research
  * leads"). Every API route names its action (server/src/auth/plugin.ts asks this function for
@@ -111,7 +117,7 @@ export function mayDo(role: string, action: string): boolean {
   if (action === 'review' || action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' || action === 'directEdit') {
     return mayDecide(role);
   }
-  if (action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch' || action === 'manageSettings') return role === 'owner';
+  if (isOwnerAction(action)) return role === 'owner';
   return false;
 }
 

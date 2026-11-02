@@ -1,4 +1,4 @@
-import { ApiError, PORTAL_LINK_MESSAGE, RateLimited, ReadingStatusView, ReadingView, ScanReadingSettings, UploadTicket } from '@rodokmen/shared';
+import { ApiError, LeadDetail, PORTAL_LINK_MESSAGE, RateLimited, ReadingStatusView, ReadingView, ScanReadingSettings, UploadTicket } from '@rodokmen/shared';
 import { createHash, randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -192,6 +192,31 @@ describe('scan reading (scan-reading and evidence-media specs)', () => {
       expect(mother.candidates[0]!.reasons.family).toBe(true);
       // Nobody is suggested for a name the Tree does not have.
       expect(reading.matches.find((m) => m.key === 'p12')!.candidates).toEqual([]);
+    });
+
+    it('suggests finding the parents’ marriage before 1830 in the Parish’s marriage register of the Tree, and keeps it as a Research lead (scenario "Parents’ marriage")', async () => {
+      const reading = await read(contributor, { uploadIds: [await upload(contributor, await page())], context: { placeId: L.kamennaLhota } });
+      const marriage = reading.leads.find((l) => l.kind === 'parents_marriage' && l.entry === 0)!;
+      expect(marriage.question.en).toBe('Find the marriage of Joannis Nowak and Catharinae uxoris eius before 1830 (Parish: Farnost Dolní Kamenec)');
+      expect(marriage.years).toEqual({ from: 1805, to: 1830 });
+      // A real Source: the fixture's marriage register of the Parish for 1784–1830.
+      const register = await t.db.selectFrom('source').selectAll().where('id', '=', marriage.sourceId!).executeTakeFirstOrThrow();
+      expect([register.register_kinds, register.register_from, register.register_to]).toEqual([['marriage'], 1784, 1830]);
+      expect(marriage.sourceTitle).toBe(register.title);
+      // Kept as a lead through the leads API, with the matched father and the reading's Place.
+      const res = await as(contributor, 'POST', '/api/leads', {
+        question: marriage.question.en,
+        reason: marriage.reason.en,
+        sourceId: marriage.sourceId,
+        years: marriage.years,
+        personIds: [L.janNovak],
+        placeIds: [L.kamennaLhota],
+      });
+      expect(res.statusCode, res.body).toBe(201);
+      const lead = LeadDetail.parse(res.json());
+      expect(lead).toMatchObject({ status: 'open', source: { id: marriage.sourceId }, years: { from: 1805, to: 1830 } });
+      expect(lead.persons.map((p) => p.id)).toEqual([L.janNovak]);
+      expect(lead.places.map((p) => p.id)).toEqual([L.kamennaLhota]);
     });
 
     it('leaves an illegible house number empty with a note (scenario "Faded house number")', async () => {

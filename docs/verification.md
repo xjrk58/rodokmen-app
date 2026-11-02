@@ -85,7 +85,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 - shared/src/matching.ts: `sharesOne`, `nameMatches`, `houseMatches`, `yearsMatch`, `placeMatches`, `matchReasons`, `scoreOf`, `fullMatch`, `isSuggested`
 - shared/src/reading.ts: `copyToSend`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
-- shared/src/rules.ts: `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
+- shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
 ## Proof additions
 

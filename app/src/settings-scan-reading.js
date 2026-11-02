@@ -4,6 +4,7 @@
 
 import * as API from './api.js';
 import { t } from './i18n.js';
+import { today as localDay } from './proposal-build.js';
 import { Status, useAction, useLoad } from './settings-parts.js';
 import { html, useState } from './ui.js';
 
@@ -24,7 +25,7 @@ export function ScanReadingSection() {
       await API.setScanReadingSettings({ enabled, dailyLimit });
       settings.reload();
     }, t('settings.saved'));
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDay();
   const usedToday = s.usage.filter((u) => u.day === today).reduce((n, u) => n + u.readings, 0);
   return html`<section class="card" data-testid="settings-scan-reading">
     <h2>${t('settings.scanReading')}</h2>

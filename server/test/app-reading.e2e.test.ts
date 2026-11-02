@@ -1,4 +1,4 @@
-import { Operation, ProposalView } from '@rodokmen/shared';
+import { LeadDetail, Operation, ProposalView } from '@rodokmen/shared';
 import { mkdir } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { buffer } from 'node:stream/consumers';
@@ -160,9 +160,18 @@ describe('scan reading in the app (Chromium, phone and desktop, under the CSP)',
     await page.getByTestId('kind-read').click();
     await page.getByTestId('read-start').waitFor();
     await page.getByTestId('scan-input').setInputFiles({ name: 'register-1830.jpg', mimeType: 'image/jpeg', buffer: await registerPage() });
-    await page.getByTestId('crop-frame').locator('img').waitFor();
+    // The page is loaded and laid out before it is marked.
+    await expect
+      .poll(() =>
+        page
+          .getByTestId('crop-frame')
+          .locator('img')
+          .evaluate((img: HTMLImageElement) => img.naturalWidth),
+      )
+      .toBeGreaterThan(0);
     if (options.crop) {
       // Mark the upper half of the page: only that part is sent.
+      await page.getByTestId('crop-frame').evaluate((el) => el.scrollIntoView({ block: 'start' }));
       const box = (await page.getByTestId('crop-frame').boundingBox())!;
       await page.mouse.move(box.x + 4, box.y + 4);
       await page.mouse.down();
@@ -246,6 +255,19 @@ describe('scan reading in the app (Chromium, phone and desktop, under the CSP)',
       await second.getByTestId('confirm-entry').click();
       expect(await second.locator('[data-testid="ai-mark"]:visible').count()).toBe(0);
       expect(await second.getByTestId('entry-transcription').textContent()).toContain('Wenceslai Dworzak');
+
+      // The parents' marriage is kept as a Research lead, naming the Parish's marriage register (scenario "Parents' marriage").
+      const lead = page.locator('[data-testid="lead"][data-kind="parents_marriage"]').first();
+      expect(await lead.textContent()).toMatch(
+        /Find the marriage of Joannis Nowak and Catharinae uxoris eius before 1830.*Register in the Tree: Matrika oddaných/,
+      );
+      await lead.getByTestId('lead-keep').click();
+      await lead.getByTestId('lead-kept').waitFor();
+      const leadId = (await lead.getByTestId('lead-kept').getAttribute('href'))!.replace('#leads/', '');
+      const kept = LeadDetail.parse((await inject(member, 'GET', `/api/leads/${leadId}`)).json());
+      expect(kept).toMatchObject({ status: 'open', years: { from: 1805, to: 1830 }, author: { id: member.id } });
+      expect(kept.persons.map((p) => p.id)).toEqual([L.janNovak]);
+      expect(kept.places.map((p) => p.id)).toEqual([L.kamennaLhota]);
 
       await page.getByTestId('submit').click();
       await page.waitForURL(/#work\/mine\//, { timeout: 15_000 });

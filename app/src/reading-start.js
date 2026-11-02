@@ -140,6 +140,19 @@ function scanFields(scans, report) {
   return [h('div', { class: 'photo-row' }, h('label', { class: 'button', for: 'scan-input' }, t('reading.addScan')), file), list];
 }
 
+/**
+ * "Read a scan" among the kinds of Proposal, with the readings left today.
+ * @param {ReadingStatusView} reading
+ */
+export function readKindCard(reading) {
+  return h(
+    'a',
+    { class: 'kind-card read', href: '#work/read', 'data-testid': 'kind-read' },
+    h('strong', {}, t('reading.kind')),
+    h('span', { class: 'muted small' }, t('reading.kindHint', { remaining: reading.remaining, limit: reading.dailyLimit })),
+  );
+}
+
 /** @param {string} labelText @param {HTMLElement} control */
 const field = (labelText, control) => h('label', { class: 'field' }, h('span', {}, labelText), control);
 
