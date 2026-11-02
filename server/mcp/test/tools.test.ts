@@ -1,6 +1,8 @@
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import {
   CitationDetail,
+  LeadDetail,
+  LeadList,
   EstateDetail,
   EventDetail,
   FamilyDetail,
@@ -51,21 +53,28 @@ describe('MCP tools on the fixture Tree', () => {
     await client?.close();
   });
 
-  it('offers reading and proposing only: no tool accepts, rejects, merges, undoes or edits directly', async () => {
+  it('offers reading, proposing and writing Research leads only: no tool accepts, rejects, merges, undoes, edits the Tree directly or decides on a suggested lead', async () => {
     const { tools } = await client.listTools();
+    const WRITES = ['add_search_record', 'close_lead', 'create_lead', 'submit_proposal', 'update_lead'];
     expect(tools.map((t) => t.name).sort()).toEqual([
+      'add_search_record',
+      'close_lead',
+      'create_lead',
       'get_ancestors',
       'get_descendants',
       'get_record',
+      'list_leads',
       'list_my_proposals',
       'search_persons',
       'search_places',
       'search_sources',
       'submit_proposal',
+      'update_lead',
     ]);
     const submit = tools.find((t) => t.name === 'submit_proposal')!;
     expect(JSON.stringify(submit.inputSchema)).not.toContain('direct');
-    for (const t of tools.filter((x) => x.name !== 'submit_proposal')) expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+    for (const t of tools.filter((x) => !WRITES.includes(x.name))) expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+    for (const t of tools.filter((x) => WRITES.includes(x.name))) expect(t.annotations?.destructiveHint, t.name).toBe(false);
   });
 
   it('search_persons finds Jan Novák by a Name as found, without diacritics, and narrows by Place and years', async () => {
@@ -190,5 +199,76 @@ describe('MCP tools on the fixture Tree', () => {
   it('arguments outside the tool’s schema are refused before any API call', async () => {
     const r = await tool('get_record', { kind: 'proposal', id: 'x' });
     expect(r.error).toMatch(/Input validation error/);
+  });
+
+  describe('Research leads', () => {
+    let register: string;
+    beforeAll(async () => {
+      register = SourceSearchResult.parse(await json('search_sources', { q: 'narozených', type: 'parish_register' })).items[0]!.id;
+    });
+
+    it('agent records a negative search: it closes the lead as not found with a search record, and the lead shows the Agent as author', async () => {
+      const w = world();
+      const lead = LeadDetail.parse(
+        await json('create_lead', {
+          question: 'Find the baptism of Kristina',
+          reason: 'Godmother in 1846; her age is not given.',
+          sourceId: register,
+          personIds: [L.janNovak],
+        }),
+      );
+      expect(lead).toMatchObject({ status: 'open', author: { id: w.agent.id, displayName: 'Register reader', isAgent: true } });
+      // Not found without a search record is refused, with the reason.
+      const refused = await tool('close_lead', { leadId: lead.id, baseVersion: lead.version, status: 'not_found' });
+      expect(refused.error).toMatch(/^The API refused the request \(400 search_needed\): A lead closes as not found only with a search record/);
+      const closed = LeadDetail.parse(
+        await json('close_lead', {
+          leadId: lead.id,
+          baseVersion: lead.version,
+          status: 'not_found',
+          outcome: 'No Kristina in those years.',
+          search: { sourceId: register, years: { from: 1820, to: 1830 }, pages: '1–60', found: false },
+        }),
+      );
+      expect(closed).toMatchObject({ status: 'not_found', author: { isAgent: true } });
+      expect(closed.searches).toMatchObject([
+        { source: { id: register }, years: { from: 1820, to: 1830 }, pages: '1–60', found: false, searchedBy: 'Register reader' },
+      ]);
+      // A Member sees the search too.
+      const seen = LeadDetail.parse((await w.as('editor', 'GET', `/api/leads/${lead.id}`)).json());
+      expect(seen.searches[0]!.author).toEqual({ id: w.agent.id, displayName: 'Register reader', isAgent: true });
+    });
+
+    it('lists, reads, updates leads and records searches', async () => {
+      const lead = LeadDetail.parse(
+        await json('create_lead', { question: 'Find the marriage of Jan', reason: 'Children from 1826.', placeIds: [L.kamennaLhota] }),
+      );
+      const listed = LeadList.parse(await json('list_leads', { placeId: L.kamennaLhota, status: ['open', 'in_progress'] }));
+      expect(listed.items.map((l) => l.id)).toContain(lead.id);
+      const updated = LeadDetail.parse(await json('update_lead', { leadId: lead.id, baseVersion: lead.version, status: 'in_progress', pages: '10–40' }));
+      expect(updated).toMatchObject({ status: 'in_progress', pages: '10–40' });
+      const stale = await tool('update_lead', { leadId: lead.id, baseVersion: lead.version, pages: '1–5' });
+      expect(stale.error).toMatch(/409 conflict/);
+      const searched = LeadDetail.parse(
+        await json('add_search_record', { leadId: lead.id, search: { archive: 'Invented archive', years: { from: 1824, to: 1826 }, found: false } }),
+      );
+      expect(searched.searches).toHaveLength(1);
+      expect(LeadDetail.parse(await json('get_record', { kind: 'lead', id: lead.id })).history.map((h) => h.kind)).toEqual(['searched', 'edited', 'created']);
+    });
+
+    it('a Proposal names the lead it answers', async () => {
+      const lead = LeadDetail.parse(await json('create_lead', { question: 'Find the godparent', reason: 'Named in a later entry.' }));
+      const p = ProposalView.parse(
+        await json('submit_proposal', {
+          note: 'Godparent found',
+          answersLeads: [lead.id],
+          operations: [
+            { op: 'createSource', tempId: 'tmp:s', type: 'parish_register', title: 'Invented register G', repository: 'Invented archive' },
+            { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:s', page: '9', transcription: 'Patrinus', readOn: '2026-10-30', confidence: 'normal' },
+          ],
+        }),
+      );
+      expect(p.answersLeads).toEqual([{ id: lead.id, question: 'Find the godparent', status: 'open' }]);
+    });
   });
 });

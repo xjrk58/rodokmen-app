@@ -1,21 +1,33 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/server';
-import { Operation, OPERATIONS_VERSION, ProposalStatus, RELATIONS } from '@rodokmen/shared';
+import {
+  CloseLeadBody,
+  CreateLeadBody,
+  LeadStatus,
+  Operation,
+  OPERATIONS_VERSION,
+  ProposalStatus,
+  RELATIONS,
+  SearchRecordBody,
+  UpdateLeadBody,
+} from '@rodokmen/shared';
 import { z } from 'zod';
 import { ApiCallError, type Api } from './api.js';
 
 /**
- * The Rodokmen MCP server (agent-access spec, "MCP server"): an assistant with an Agent token
- * searches Persons, Places and Sources, reads records and family trees, submits Proposals and
- * follows its own Proposals. Every tool is one call to the public API with the Agent's token,
- * so the server offers nothing the token may not do there: no accepting, rejecting, merging,
- * undoing or direct edits.
+ * The Rodokmen MCP server (agent-access spec, "MCP server" and "Agents write Research leads"): an
+ * assistant with an Agent token searches Persons, Places and Sources, reads records and family
+ * trees, submits Proposals and follows its own Proposals, and lists, writes, updates and closes
+ * Research leads with their search records. Every tool is one call to the public API with the
+ * Agent's token, so the server offers nothing the token may not do there: no accepting,
+ * rejecting, merging, undoing, direct edits or deciding on suggested leads.
  */
 export const SERVER_INFO = { name: 'rodokmen', version: '0.1.0' };
 
 const INSTRUCTIONS = `Rodokmen is a private family tree of the Czech lands. You act as an Agent: you may read the Tree and submit Proposals, nothing else.
 A Proposal bundles everything one finding changes (for example a baptism entry: the child, the Event, the Roles, and the Citation of the register page), and needs at least one Citation as evidence. Editors review every Proposal; it changes the Tree only when accepted.
 Search before you propose, and refer to existing Persons, Places and Sources by id instead of creating duplicates. Dates are EDTF (1801-03-12, 1801~, 1801/1803).
+Research leads are the family's plans: a question, where to look and what came of it. They state no fact, so you write them directly, without review. Before searching a register, list the leads of the Person or Place: a search record shows what was already looked at. Record every search you make, including one that found nothing; a lead closes as not found only with a search record. A Proposal may name the leads it answers (answersLeads): accepting it marks them found.
 Your Agent is limited to 60 Proposals and 1,000 other requests per hour; a refused request says when to try again.`;
 
 const Id = z.uuid();
@@ -25,7 +37,7 @@ const Paging = {
 };
 
 /** Records that can be read by id, and the API route of each. */
-const RECORD_KINDS = ['person', 'family', 'event', 'place', 'house', 'parish', 'estate', 'source', 'citation'] as const;
+const RECORD_KINDS = ['person', 'family', 'event', 'place', 'house', 'parish', 'estate', 'source', 'citation', 'lead'] as const;
 const RECORDS: Record<(typeof RECORD_KINDS)[number], string> = {
   person: 'persons',
   family: 'families',
@@ -36,6 +48,7 @@ const RECORDS: Record<(typeof RECORD_KINDS)[number], string> = {
   estate: 'estates',
   source: 'sources',
   citation: 'citations',
+  lead: 'leads',
 };
 
 function describeError(e: ApiCallError): string {
@@ -115,7 +128,7 @@ export function createRodokmenServer(api: Api): McpServer {
     {
       title: 'Read a record',
       description:
-        'Read one record of the Tree by id: a Person (Names, Events, Families), Family, Event (Roles, Citations), Place, House, Parish, Estate, Source or Citation (transcription). A Person merged into another is answered with the kept one.',
+        'Read one record by id: a Person (Names, Events, Families), Family, Event (Roles, Citations), Place, House, Parish, Estate, Source (with the Parish, kinds and years of a register) or Citation (transcription) of the Tree, or a Research lead with its search records and history. A Person merged into another is answered with the kept one.',
       inputSchema: z.object({ kind: z.enum(RECORD_KINDS).describe('What kind of record the id is'), id: Id }),
       annotations: readOnly,
     },
@@ -158,6 +171,7 @@ export function createRodokmenServer(api: Api): McpServer {
       inputSchema: z.object({
         note: z.string().min(1).max(4000).describe('What the finding is and where it was found, for the reviewing Editor'),
         operations: z.array(Operation).min(1).max(300).describe('The changes, in order'),
+        answersLeads: z.array(Id).max(20).optional().describe('The Research leads this finding answers: accepting the Proposal marks them found'),
         idempotencyKey: z
           .string()
           .regex(/^[A-Za-z0-9_-]{8,100}$/)
@@ -166,8 +180,16 @@ export function createRodokmenServer(api: Api): McpServer {
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
-    async ({ note, operations, idempotencyKey }) =>
-      call(() => api.post('/api/proposals', { formatVersion: OPERATIONS_VERSION, idempotencyKey: idempotencyKey ?? `mcp-${randomUUID()}`, note, operations })),
+    async ({ note, operations, answersLeads, idempotencyKey }) =>
+      call(() =>
+        api.post('/api/proposals', {
+          formatVersion: OPERATIONS_VERSION,
+          idempotencyKey: idempotencyKey ?? `mcp-${randomUUID()}`,
+          note,
+          operations,
+          answersLeads,
+        }),
+      ),
   );
 
   server.registerTool(
@@ -184,5 +206,78 @@ export function createRodokmenServer(api: Api): McpServer {
     async (args) => call(() => api.get('/api/proposals', { mine: true, ...args })),
   );
 
+  registerLeadTools(server, api);
   return server;
+}
+
+const writes = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+
+/** Research leads (research-leads spec): the Agent lists, writes, updates and closes them, and records its searches. */
+function registerLeadTools(server: McpServer, api: Api): void {
+  server.registerTool(
+    'list_leads',
+    {
+      title: 'List Research leads',
+      description:
+        'Research leads: written next steps of the research, with their search records. Filter by status, Person, Place, archive or who is working on them. Look here before searching a register: a search record says what was already looked at, by whom and with what result.',
+      inputSchema: z.object({
+        status: z.array(LeadStatus).min(1).optional().describe('Only leads with these statuses, such as ["open", "in_progress"]'),
+        personId: Id.optional().describe('Only leads about this Person'),
+        placeId: Id.optional().describe('Only leads about this Place'),
+        archive: z.string().min(1).max(400).optional().describe('Only leads to look in this archive'),
+        assigneeId: Id.optional().describe('Only leads this Member or Agent is working on'),
+        ...Paging,
+      }),
+      annotations: readOnly,
+    },
+    async ({ status, ...args }) => call(() => api.get('/api/leads', { ...args, ...(status ? { status: [...new Set(status)].join(',') } : {}) })),
+  );
+
+  server.registerTool(
+    'create_lead',
+    {
+      title: 'Write a Research lead',
+      description:
+        'Write a Research lead: a question and its reason, where to look (archive, register Source, years, pages) and the Persons and Places it concerns. It is written at once, without review, under your name. Searches already made may come with it; a lead may start closed as not found only with the search that found nothing.',
+      inputSchema: CreateLeadBody,
+      annotations: writes,
+    },
+    async (body) => call(() => api.post('/api/leads', body)),
+  );
+
+  server.registerTool(
+    'update_lead',
+    {
+      title: 'Change a Research lead',
+      description:
+        'Change fields of a Research lead (its question, where to look, the Persons and Places, who works on it, its status), naming the version you read; a lead changed since is refused, so read it again. Not found needs a search record (close_lead does both at once).',
+      inputSchema: z.object({ leadId: Id, ...UpdateLeadBody.shape }),
+      annotations: writes,
+    },
+    async ({ leadId, ...body }) => call(() => api.patch(`/api/leads/${leadId}`, body)),
+  );
+
+  server.registerTool(
+    'add_search_record',
+    {
+      title: 'Record a search',
+      description:
+        'Record one search made on a lead: the register Source or the archive, the years and pages looked at, when (EDTF, today when left out), who looked (you when left out) and what was found, including nothing.',
+      inputSchema: z.object({ leadId: Id, search: SearchRecordBody }),
+      annotations: writes,
+    },
+    async ({ leadId, search }) => call(() => api.post(`/api/leads/${leadId}/searches`, search)),
+  );
+
+  server.registerTool(
+    'close_lead',
+    {
+      title: 'Close a Research lead',
+      description:
+        'Close a lead as found or not found, with the outcome and the search that closes it, naming the version you read. Not found needs at least one search record: give the search here, or record it first. A fact you found still goes in a Proposal that names the lead (submit_proposal, answersLeads).',
+      inputSchema: z.object({ leadId: Id, ...CloseLeadBody.shape }),
+      annotations: writes,
+    },
+    async ({ leadId, ...body }) => call(() => api.post(`/api/leads/${leadId}/close`, body)),
+  );
 }
