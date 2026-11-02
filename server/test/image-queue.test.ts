@@ -166,12 +166,15 @@ describe('image processing on a small server (issue #39)', () => {
       }
     })();
     const [a, b] = [pending(storage, 'a', image), pending(storage, 'b', image)];
-    const release = storage.hold(a.link);
+    storage.hold(a.link);
     const first = checkUpload(storage, a);
     const second = checkUpload(storage, b);
-    await settle();
-    expect(storage.log).toEqual(['get pending/a/original']); // the second waits while the first is still loading
-    release();
+    try {
+      await settle();
+      expect(storage.log).toEqual(['get pending/a/original']); // the second waits while the first is still loading
+    } finally {
+      storage.releaseAll();
+    }
     const results = await Promise.all([first, second]);
     // Its checked copy and display copy are written in its turn, so it holds nothing once the next one starts.
     expect(storage.log).toEqual([
@@ -227,6 +230,7 @@ describe('image processing on a small server (issue #39)', () => {
     await expect(checkUpload(storage, pending(storage, 'words', Buffer.from('words'), sha(image)))).resolves.toMatchObject({ refused: { code: 'checksum' } });
     expect(storage.log.filter((l) => l.startsWith('put'))).toEqual([]);
   });
+
   it('a stalled read of the store is given up after STORE_TIMEOUT_MS, and the uploads behind it go ahead (#97)', async () => {
     const storage = new GatedStorage();
     const image = await picture(800, 600);
@@ -257,6 +261,7 @@ describe('image processing on a small server (issue #39)', () => {
       await expect(next).resolves.toMatchObject({ checked: { width: 800, height: 600 } });
     } finally {
       vi.useRealTimers();
+      storage.releaseAll();
     }
   });
 });

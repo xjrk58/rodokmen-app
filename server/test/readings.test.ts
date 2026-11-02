@@ -247,10 +247,11 @@ describe('scan reading (scan-reading and evidence-media specs)', () => {
       // Uploads fill the image queue, the first one held in its turn.
       const held = new GatedStorage();
       const files = { link: 'pending/held/original', verified: 'pending/held/verified', display: 'pending/held/display.webp', sha256: 'a'.repeat(64) };
-      const release = held.hold(files.link);
+      held.hold(files.link);
       const uploads = Array.from({ length: QUEUE_LIMIT }, () => checkUpload(held, files));
-      const failed = await read(contributor, { uploadIds: [scan], crops: [{ uploadId: scan, left: 0, top: 0, width: 0.5, height: 0.5 }] });
-      release();
+      const failed = await read(contributor, { uploadIds: [scan], crops: [{ uploadId: scan, left: 0, top: 0, width: 0.5, height: 0.5 }] }).finally(() =>
+        held.releaseAll(),
+      );
       await Promise.all(uploads);
       expect(failed).toMatchObject({ status: 'failed', error: { code: 'busy', message: BUSY_MESSAGE } });
       expect(api.requests).toHaveLength(0);

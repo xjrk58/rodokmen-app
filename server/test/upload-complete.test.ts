@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { UploadTicket, UploadView } from '@rodokmen/shared';
 import sharp from 'sharp';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { BUSY_MESSAGE, QUEUE_LIMIT, queuedImages } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
@@ -50,6 +50,11 @@ describe('finishing uploads', () => {
     await ensureOwner(t.db);
     author = await createMember(t.db, 'contributor');
     cookie = await signIn(t.db, a.clock, author);
+  });
+  // A test that failed while holding a read must not leave its uploads in the queue for the next (#99).
+  afterEach(async () => {
+    storage.releaseAll();
+    await vi.waitFor(() => expect(queuedImages()).toBe(0), { timeout: 10_000 });
   });
   afterAll(async () => {
     await a?.app.close();

@@ -10,26 +10,36 @@ export class GatedStorage extends MemoryImageStorage {
   readonly log: string[] = [];
   /** The signal each read of a key was given, the last one. */
   readonly signals = new Map<string, AbortSignal | undefined>();
-  private readonly holds = new Map<string, Promise<void>>();
+  private readonly holds = new Map<string, { held: Promise<void>; release: () => void }>();
 
   constructor(clock: Clock = systemClock) {
     super(clock);
   }
 
-  /** Reads of `key` wait from now until the returned function is called. */
+  /** Reads of `key` wait from now until the returned function (or releaseAll) is called. */
   hold(key: string): () => void {
-    let release!: () => void;
-    this.holds.set(key, new Promise<void>((resolve) => (release = resolve)));
-    return () => {
-      this.holds.delete(key);
-      release();
+    let resolve!: () => void;
+    const held = new Promise<void>((r) => (resolve = r));
+    const release = () => {
+      if (this.holds.get(key)?.held === held) this.holds.delete(key);
+      resolve();
     };
+    this.holds.set(key, { held, release });
+    return release;
+  }
+
+  /**
+   * Lets every held read go. The image queue is the module's, shared by a test file's tests: a
+   * test that failed while holding a read must not leave the ones after it waiting (#99).
+   */
+  releaseAll(): void {
+    for (const { release } of [...this.holds.values()]) release();
   }
 
   override async get(storageKey: string, signal?: AbortSignal): Promise<Buffer | null> {
     this.log.push(`get ${storageKey}`);
     this.signals.set(storageKey, signal);
-    await this.holds.get(storageKey);
+    await this.holds.get(storageKey)?.held;
     return super.get(storageKey);
   }
 
