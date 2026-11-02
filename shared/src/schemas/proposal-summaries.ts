@@ -3,7 +3,7 @@
  * history ("adds godparent Anna Králová to the baptism (1801-03-12)").
  */
 import type { UiLanguage } from './common.js';
-import type { Operation, SettableRecord } from './proposals.js';
+import type { Operation, RestorableTable, SettableRecord } from './proposals.js';
 import type { ChildLinkType, Confidence, EventType, ImageKind, NameType, RoleType } from './tree.js';
 
 export type SummaryLanguage = UiLanguage;
@@ -83,9 +83,47 @@ const RECORD_LABELS: Record<SummaryLanguage, Record<SettableRecord, string>> = {
   cs: { person: 'osoba', name: 'jméno', event: 'událost', role: 'role', childLink: 'vazba dítěte', source: 'pramen', citation: 'citace' },
 };
 
-const KIND_LABELS: Record<SummaryLanguage, Record<ImageKind, string>> = {
+export const IMAGE_KIND_LABELS: Record<SummaryLanguage, Record<ImageKind, string>> = {
   en: { page: 'page image', photo: 'photo', portrait: 'portrait' },
   cs: { page: 'snímek stránky', photo: 'fotografie', portrait: 'portrét' },
+};
+
+/**
+ * What a record an undo removes or restores is, ahead of its label: in English "the Name “…”",
+ * left out where the label says it already ("the baptism of 1803-05-02"); in Czech the object
+ * before the colon, "jméno: „…“".
+ */
+const TABLE_LABELS: Record<SummaryLanguage, Record<RestorableTable, string>> = {
+  en: {
+    person: 'the Person ',
+    name: 'the Name ',
+    family: '',
+    family_child: 'the child link of ',
+    event: '',
+    event_role: 'the Role ',
+    source: 'the Source ',
+    citation: 'the Citation ',
+    event_citation: 'the Citation ',
+    name_citation: 'the Citation ',
+    image: '',
+    image_person: '',
+    family_root: '',
+  },
+  cs: {
+    person: 'osobu',
+    name: 'jméno',
+    family: 'rodinu',
+    family_child: 'vazbu dítěte',
+    event: 'událost',
+    event_role: 'roli',
+    source: 'pramen',
+    citation: 'citaci',
+    event_citation: 'citaci',
+    name_citation: 'citaci',
+    image: 'obrázek',
+    image_person: 'osobu na obrázku',
+    family_root: 'označení',
+  },
 };
 
 /** Readable names of the settable fields. */
@@ -217,7 +255,7 @@ function createCitation(op: Op<'createCitation'>, { L, cs }: Say): string {
 
 function addImage(op: Op<'addImage'>, { L, cs }: Say): string {
   const of = op.kind === 'portrait' ? op.personIds.map(L).join(', ') : op.citationId ? L(op.citationId) : '';
-  return cs ? `přidává ${KIND_LABELS.cs[op.kind]}: ${of}` : `adds a ${KIND_LABELS.en[op.kind]} to ${of}`;
+  return cs ? `přidává ${IMAGE_KIND_LABELS.cs[op.kind]}: ${of}` : `adds a ${IMAGE_KIND_LABELS.en[op.kind]} to ${of}`;
 }
 
 function setField(op: Op<'setField'>, { L, cs, language, ctx }: Say): string {
@@ -229,10 +267,10 @@ function setField(op: Op<'setField'>, { L, cs, language, ctx }: Say): string {
     : `changes ${L(op.id)} (${RECORD_LABELS.en[op.record]}): ${changes.join(', ')}`;
 }
 
-function restoreRecord(op: Op<'restoreRecord'>, { L, cs }: Say): string {
-  const what = op.table.replace(/_/g, ' ');
-  if (op.values === null) return cs ? `odebírá záznam (${what}) ${L(op.id)}` : `removes the ${what} record ${L(op.id)}`;
-  return cs ? `vrací záznam (${what}) ${L(op.id)} do dřívější podoby` : `restores the ${what} record ${L(op.id)} to its earlier state`;
+function restoreRecord(op: Op<'restoreRecord'>, { L, cs, language }: Say): string {
+  const what = TABLE_LABELS[language][op.table];
+  if (cs) return op.values === null ? `odebírá ${what}: ${L(op.id)}` : `vrací do dřívější podoby ${what}: ${L(op.id)}`;
+  return op.values === null ? `removes ${what}${L(op.id)}` : `restores ${what}${L(op.id)} to its earlier state`;
 }
 
 function setFamilyRoot(op: Op<'setFamilyRoot'>, { L, cs }: Say): string {

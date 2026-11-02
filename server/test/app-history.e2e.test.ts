@@ -16,8 +16,10 @@ import { citation } from './proposal-testbed.js';
  * invented fixture Tree, in Chromium at phone (390 × 844) and desktop (1280 × 800) size: the
  * tree-history scenarios "Person history", "Undo a wrong merge" and "Undo after later edits",
  * an undo from the screen, an undo refused while later Proposals depend on it
- * (`undo_blocked_by_dependents`), and no undo control for a Contributor (add-proposals-and-review
- * tasks 3.1 and 3.2, #31). Each test makes its own Persons, so the tests run in any order.
+ * (`undo_blocked_by_dependents`, naming them, #73) or records outside the log do, the records an
+ * undo removed still named in the history (#74), and no undo control for a Contributor
+ * (add-proposals-and-review tasks 3.1 and 3.2, #31). Each test makes its own Persons, so the tests
+ * run in any order.
  */
 const L = generateFixture().landmarks;
 const PNG_1PX = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=', 'base64');
@@ -310,8 +312,7 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       expect((await inject(reader, 'GET', `/api/persons/${prokop.id}`)).statusCode).toBe(404);
     });
 
-    // fixme(#73): the screen gives only the number of the later Proposals, not which they are.
-    it.skip(`undo refused by dependents (${size}): the screen names the later Proposals to undo first (fixme #73)`, async () => {
+    it(`undo refused by dependents (${size}): the screen names the later Proposals to undo first, and each can be undone from there (#73)`, async () => {
       const prokop = await baptised('Prokop', `Prokopius ${size}`);
       const latin = await latinName(prokop.id, 'Prokopius');
 
@@ -325,10 +326,45 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       const text = await blockers.first().textContent();
       expect(text).toContain('Jana Contributor');
       expect(text).toContain('adds the Name “Prokopius Inventus” (Latin form) to Prokop Invented');
+      // Who wrote it, who accepted it and when, as in the history itself.
+      const blocker = blockers.first();
+      expect(await blocker.getByTestId('undo-blocker-by').textContent()).toBe('By Jana Contributor · accepted by Eva Editor');
+      expect([await blocker.locator('.card-head .muted').textContent()]).toEqual(await shownDates(page, [latin.at]));
+      expect(await blocker.locator('.card-head .chip').textContent()).toBe('Proposal');
+      expect(await page.locator('#work-body').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+
+      // The later Proposal is undone from the list, then the first one.
+      await blocker.getByTestId('undo-blocker-undo').click();
+      await blocker.getByTestId('confirm-undo').waitFor();
+      expect(await blocker.locator('.undo-box').textContent()).toContain('The changes are taken back at once and the undo is logged.');
+      await blocker.getByTestId('confirm-undo').click();
+      await historyShows(page, 3);
+      expect(await kindOf(entries(page)).allTextContents()).toEqual(['undo', 'Proposal', 'Proposal']);
+      expect(await entries(page).nth(1).locator('.status-rejected').textContent()).toBe('undone');
+      await undoPlain(page, entries(page).nth(2));
+      expect((await inject(reader, 'GET', `/api/persons/${prokop.id}`)).statusCode).toBe(404);
     });
 
-    // fixme(#74): once an undo removes records, the history names them by id ("removes the name record record 1a2b3c").
-    it.skip(`after an undo (${size}): the history still names the records the undo removed (fixme #74)`, async () => {
+    it(`undo refused by records outside the log (${size}): the screen says so in a sentence`, async () => {
+      const bohumil = await baptised('Bohumil', `Theophilus ${size}`);
+      // A Name written straight into the Tree, as no Proposal would.
+      await t.db
+        .insertInto('name')
+        .values({ person_id: bohumil.id, given: 'Gottlieb', surname: 'Invented', type: 'german', as_found: 'Gottlieb', is_primary: false })
+        .execute();
+
+      const page = await open(editor, size, `#work/history/person/${bohumil.id}`);
+      await historyShows(page, 1);
+      await entries(page).first().getByTestId('undo').click();
+      await entries(page).first().getByTestId('undo-blocked').waitFor();
+      expect(await entries(page).first().getByTestId('undo-blocked').textContent()).toBe(
+        'This cannot be undone: records that are not in the history (added outside any Proposal) build on its records.',
+      );
+      expect(await entries(page).first().getByTestId('undo-blocker').count()).toBe(0);
+      expect(await entries(page).first().getByTestId('confirm-undo').count()).toBe(0);
+    });
+
+    it(`after an undo (${size}): the history still names the records the undo removed (#74)`, async () => {
       const kristyna = await baptised('Kristýna', `Kristýna Invented ${size}`);
       await latinName(kristyna.id, 'Christina');
       const page = await open(editor, size, `#work/history/person/${kristyna.id}`);
@@ -338,7 +374,10 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       // Newest first: the undo of the Person's baptism, the undo of the Latin Name, the Latin Name, the baptism.
       const said = await entries(page).locator('.changes').allTextContents();
       expect(said[0]).toContain(`Kristýna Invented ${size}`);
+      expect(said[0]).toContain('removes the Person Kristýna Invented');
       expect(said[1]).toContain('“Christina Inventus”');
+      // The Person is gone too, and the earlier entries still name her.
+      expect(said[2]).toContain('adds the Name “Christina Inventus” (Latin form) to Kristýna Invented');
       expect(said.join('\n')).not.toMatch(/record [0-9a-f]{6}/);
     });
 

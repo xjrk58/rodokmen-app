@@ -249,6 +249,9 @@ export const myProposals = (signal) => api('proposals?mine=true&limit=100', { si
 /** @param {AbortSignal} [signal] @returns {Promise<ProposalList>} */
 export const reviewQueue = (signal) => api('review?limit=50', { signal });
 
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<ProposalView>} */
+export const getProposal = (id, signal) => api(`proposals/${encodeURIComponent(id)}`, { signal });
+
 /** @param {string} id @param {AcceptBody} body @returns {Promise<ProposalView>} */
 export const acceptProposal = (id, body) => api(`proposals/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
 
