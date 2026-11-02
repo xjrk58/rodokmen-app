@@ -11,18 +11,8 @@
  */
 import { z } from 'zod';
 import { PersonSummary } from './api.js';
-import { EdtfDate, Id, WebUrl } from './common.js';
+import { EdtfDate, Id, LanguageTag, WebUrl } from './common.js';
 import { EventType, RoleType, Sex, type NameType } from './tree.js';
-
-/**
- * A BCP 47 language tag, simplified: the language subtag and optional script, region or variant
- * subtags (`la`, `de`, `cs`, `de-Latf`). Names carry the language they are written in (decision
- * #64); until Names have a language of their own (#17), {@link nameTypeForLanguage} maps it.
- */
-export const LanguageTag = z
-  .string()
-  .regex(/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/, 'a BCP 47 language tag such as la, de or cs')
-  .meta({ id: 'LanguageTag', description: 'BCP 47 language tag: la (Latin), de (German), cs (Czech), …' });
 
 /** A house number (čp.) as the Tree keeps them: digits, optionally one letter. */
 export const HOUSE_NUMBER = /^\d{1,5}[a-z]?$/;
@@ -152,7 +142,6 @@ export const ReadingResult = z
   })
   .meta({ id: 'ReadingResult' });
 
-export type LanguageTag = z.infer<typeof LanguageTag>;
 export type ReadName = z.infer<typeof ReadName>;
 export type ReadPerson = z.infer<typeof ReadPerson>;
 export type Illegible = z.infer<typeof Illegible>;
@@ -163,15 +152,13 @@ export type ReadPage = z.infer<typeof ReadPage>;
 export type ReadingResult = z.infer<typeof ReadingResult>;
 
 /**
- * Today's Name type for a name written in a language (decision #64): Latin and German forms have
- * types of their own, any other language is "other". Once Names carry a language tag (#17), the
- * tag is kept as it is and this mapping goes away.
+ * The Name a read name becomes (tree-model spec, "Names carry a language tag"; decision #64): its
+ * language as written, and its type: the birth name of the child of a baptism or birth entry,
+ * another form for everyone else (a Latin "Joannes" is type other with language la).
  */
-export function nameTypeForLanguage(tag: string): NameType {
-  const language = tag.toLowerCase().split('-')[0];
-  if (language === 'la') return 'latin';
-  if (language === 'de') return 'german';
-  return 'other';
+export function readNameKind(role: string, entryType: string, language: string): { type: NameType; language: string } {
+  const birth = role === 'child' && (entryType === 'baptism' || entryType === 'birth');
+  return { type: birth ? 'birth' : 'other', language };
 }
 
 // ---------------------------------------------------------------- requests
@@ -272,7 +259,7 @@ export const PersonMatches = z
   .object({ key: z.string().describe('The read person'), candidates: z.array(MatchCandidate).describe('Best first; empty when nobody fits') })
   .meta({ id: 'PersonMatches' });
 
-export const LeadSuggestion = z
+export const ReadingLeadSuggestion = z
   .object({
     key: z.string().describe('Stable key of the suggestion within the reading'),
     kind: LeadHintKind,
@@ -286,7 +273,7 @@ export const LeadSuggestion = z
     sourceId: Id.nullable().describe('A register of the Tree to check, when one covers the Parish and years'),
     sourceTitle: z.string().nullable(),
   })
-  .meta({ id: 'LeadSuggestion', description: 'A Research lead the reading suggests, for the Member to accept or dismiss' });
+  .meta({ id: 'ReadingLeadSuggestion', description: 'A Research lead the reading suggests, for the Member to accept or dismiss' });
 
 export const ReadingError = z.object({ code: z.string(), message: z.string() }).meta({ id: 'ReadingError' });
 
@@ -305,7 +292,7 @@ export const ReadingView = z
     error: ReadingError.nullable().describe('Why the reading failed'),
     matches: z.array(PersonMatches).describe('For each read person, the existing Persons it may be'),
     houses: z.array(Id.nullable()).describe('For each entry, the House of the Place that carried its house number then, when the Tree has it'),
-    leads: z.array(LeadSuggestion),
+    leads: z.array(ReadingLeadSuggestion),
   })
   .meta({ id: 'ReadingView' });
 
@@ -348,7 +335,7 @@ export const UpdateScanReadingBody = z
 export type MatchReasons = z.infer<typeof MatchReasons>;
 export type MatchCandidate = z.infer<typeof MatchCandidate>;
 export type PersonMatches = z.infer<typeof PersonMatches>;
-export type LeadSuggestion = z.infer<typeof LeadSuggestion>;
+export type ReadingLeadSuggestion = z.infer<typeof ReadingLeadSuggestion>;
 export type ReadingView = z.infer<typeof ReadingView>;
 export type ReadingStatusView = z.infer<typeof ReadingStatusView>;
 export type ReadingUsage = z.infer<typeof ReadingUsage>;

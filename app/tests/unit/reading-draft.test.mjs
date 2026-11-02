@@ -10,7 +10,7 @@ import { buildReading, fillFromReading, newReadingForm, READING_CONFIDENCES, rea
 import { isLink } from '../../src/reading-start.js';
 
 // After shared-loader.mjs: these are TypeScript.
-const { checkOperations } = await import('../../../shared/src/schemas/proposals.js');
+const { checkOperations } = await import('../../../shared/src/schemas/check-operations.js');
 const shared = await import('../../../shared/src/reading.js');
 const { ReaderInfo, ReadingResult, isPortalLink } = await import('../../../shared/src/schemas/reading.js');
 const { Confidence } = await import('../../../shared/src/schemas/tree.js');
@@ -186,7 +186,7 @@ test('a corrected surname and a confirmed entry are no longer marked "read by AI
   const before = buildReading(f, ctx);
   const position = before.operations.findIndex((o) => o.op === 'createPerson' && o.tempId === 'tmp:p7');
   // Changed: the surname is the Member's now; the given name is still as read.
-  assert.deepEqual(before.marks.find((m) => m.position === position)?.fields, ['name.given', 'sex', 'name.asFound']);
+  assert.deepEqual(before.marks.find((m) => m.position === position)?.fields, ['name.given', 'sex', 'name.language', 'name.asFound']);
   assert.equal(/** @type {{ name: { surname: string, asFound: string } }} */ (before.operations[position]).name.surname, 'Dvořák');
   // The spelling as found stays as the page has it.
   assert.equal(/** @type {{ name: { asFound: string } }} */ (before.operations[position]).name.asFound, 'Wenceslai Dworzak');

@@ -1,14 +1,14 @@
 import type { ReadingStatus } from '@rodokmen/shared';
 import type { ColumnType, Generated } from 'kysely';
 
-/** The tables of scan reading (migration 0009), apart from types.ts so that it stays readable. */
+/** The tables of scan reading (migration 0014), apart from types.ts so that it stays readable. */
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 type CreatedAt = ColumnType<Date, Date | string | undefined, never>;
 type Json = ColumnType<Record<string, unknown>, string, string>;
 type NullableJson = ColumnType<Record<string, unknown> | null, string | null, string | null>;
 type JsonArray = ColumnType<unknown[], string, string>;
 
-/** The Owner's switch and daily limit of scan reading: one row (migration 0009). */
+/** The Owner's switch and daily limit of scan reading: one row (migration 0014). */
 export interface ScanReadingSettingTable {
   id: Generated<boolean>;
   enabled: Generated<boolean>;

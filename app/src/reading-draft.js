@@ -14,7 +14,7 @@
 /** @typedef {import('./types.js').ReadName} ReadName */
 /** @typedef {import('./types.js').Illegible} Illegible */
 /** @typedef {import('./types.js').MatchCandidate} MatchCandidate */
-/** @typedef {import('./types.js').LeadSuggestion} LeadSuggestion */
+/** @typedef {import('./types.js').ReadingLeadSuggestion} ReadingLeadSuggestion */
 /** @typedef {import('./types.js').ReaderMark} ReaderMark */
 /** @typedef {import('./types.js').OperationInput} OperationInput */
 /** @typedef {import('./types.js').EventType} EventType */
@@ -71,7 +71,7 @@
  * @property {string | null} model
  * @property {Array<{ page: number, transcription: string }>} pages
  * @property {EntryCheck[]} entries
- * @property {LeadSuggestion[]} leads
+ * @property {ReadingLeadSuggestion[]} leads
  * @property {string[]} dismissed keys of dismissed lead suggestions
  * @property {{ id: string, label: string } | null} place
  * @property {import('./proposal-build.js').CitationForm} citation
@@ -195,10 +195,18 @@ export function readingProblems(form) {
   return problems;
 }
 
-/** @param {string} tag @returns {NameType} */
-export function nameTypeForLanguage(tag) {
-  const language = tag.toLowerCase().split('-')[0];
-  return language === 'la' ? 'latin' : language === 'de' ? 'german' : 'other';
+/**
+ * The Name a read name becomes (tree-model spec, "Names carry a language tag"): its language as
+ * written, and its type: the birth name of the child of a baptism or birth entry, another form for
+ * everyone else. The mirror of readNameKind in shared/src/schemas/reading.ts.
+ * @param {string} role
+ * @param {string} entryType
+ * @param {string} language
+ * @returns {{ type: NameType, language: string }}
+ */
+export function readNameKind(role, entryType, language) {
+  const birth = role === 'child' && (entryType === 'baptism' || entryType === 'birth');
+  return { type: birth ? 'birth' : 'other', language };
 }
 
 /** @param {string} s */
@@ -242,10 +250,11 @@ const markedOf = (fields, confirmed) =>
 /**
  * @param {ReadingBuilder} b
  * @param {PersonCheck} p
+ * @param {string} entryType
  * @param {string} tempId
  * @param {boolean} confirmed
  */
-function newPerson(b, p, tempId, confirmed) {
+function newPerson(b, p, entryType, tempId, confirmed) {
   const given = clean(p.given.value);
   const surname = clean(p.surname.value);
   const asWritten = clean(p.asWritten) || `${given} ${surname}`.trim();
@@ -254,9 +263,9 @@ function newPerson(b, p, tempId, confirmed) {
       op: 'createPerson',
       tempId,
       sex: p.sex,
-      name: { given: given || surname ? given : asWritten, surname, type: nameTypeForLanguage(p.language), asFound: asWritten },
+      name: { given: given || surname ? given : asWritten, surname, ...readNameKind(p.role, entryType, p.language), asFound: asWritten },
     },
-    [...markedOf({ 'name.given': p.given, 'name.surname': p.surname }, confirmed), ...(confirmed ? [] : ['sex', 'name.asFound'])],
+    [...markedOf({ 'name.given': p.given, 'name.surname': p.surname }, confirmed), ...(confirmed ? [] : ['sex', 'name.language', 'name.asFound'])],
   );
   p.otherNames.forEach((n, j) => {
     if (!n.given.trim() && !n.surname.trim()) return;
@@ -267,10 +276,11 @@ function newPerson(b, p, tempId, confirmed) {
         personId: tempId,
         given: n.given.trim(),
         surname: n.surname.trim(),
-        type: nameTypeForLanguage(n.language),
+        type: 'other',
+        language: n.language,
         asFound: n.asWritten,
       },
-      confirmed ? [] : ['given', 'surname', 'asFound'],
+      confirmed ? [] : ['given', 'surname', 'language', 'asFound'],
     );
   });
 }
@@ -341,7 +351,7 @@ function entry(b, e, n, form, citationId, ctx) {
     const choice = p.choice;
     if (!choice) throw new Error(`Choose who ${p.asWritten} is`);
     const personId = choice.mode === 'existing' ? choice.id : `tmp:${p.key}`;
-    if (choice.mode === 'new') newPerson(b, p, personId, e.confirmed);
+    if (choice.mode === 'new') newPerson(b, p, e.type, personId, e.confirmed);
     ids.set(p.key, personId);
     b.push({ op: 'addRole', eventId, personId, role: p.role, roleDetail: p.roleDetail }, e.confirmed ? [] : ['role']);
   }

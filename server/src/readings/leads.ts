@@ -1,4 +1,4 @@
-import { leadSuggestions, type LeadSuggestion, type ReadingResult, type RegisterOption } from '@rodokmen/shared';
+import { leadSuggestions, type ReadingLeadSuggestion, type ReadingResult, type RegisterOption } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import { placeAndParishes, type ParishPeriod } from './context.js';
@@ -51,7 +51,7 @@ export function parishIn(parishes: readonly ParishPeriod[], year: number | null)
   return parishes.find(inPeriod) ?? parishes[0] ?? null;
 }
 
-export async function leadsFor(db: Db, result: ReadingResult, placeId: string | null): Promise<LeadSuggestion[]> {
+export async function leadsFor(db: Db, result: ReadingResult, placeId: string | null): Promise<ReadingLeadSuggestion[]> {
   const where = placeId ? await placeAndParishes(db, placeId) : { place: null, parishes: [] };
   const firstYear = result.entries.map((e) => (e.date ? Number.parseInt(e.date.replace(/^\.\.\//, ''), 10) : NaN)).find((y) => Number.isFinite(y)) ?? null;
   const parish = parishIn(where.parishes, firstYear);

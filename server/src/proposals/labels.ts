@@ -1,8 +1,11 @@
 import {
   EVENT_TYPE_LABELS,
   IMAGE_KIND_LABELS,
+  isBatchRef,
+  parseBatchRef,
   RESTORABLE_TABLES,
   ROLE_LABELS,
+  tempLabels,
   type RestorableTable,
   type SummaryContext,
   type SummaryLanguage,
@@ -10,14 +13,15 @@ import {
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import { displayName } from '../tree/summaries.js';
+import { loadOperationsOf } from './stored-operations.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** Every record id mentioned anywhere in some JSON values. */
+/** Every record id, and every batch reference (batch:<proposal>/tmp:x), mentioned anywhere in some JSON values. */
 export function idsIn(...values: unknown[]): string[] {
   const out = new Set<string>();
   const walk = (v: unknown) => {
-    if (typeof v === 'string' && UUID.test(v)) out.add(v);
+    if (typeof v === 'string' && (UUID.test(v) || parseBatchRef(v) !== null)) out.add(v);
     else if (Array.isArray(v)) v.forEach(walk);
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };
@@ -49,6 +53,8 @@ const PARTS: Partial<Record<RestorableTable, readonly string[]>> = {
   image: ['citation_id'],
   image_person: ['image_id', 'person_id'],
   family_root: ['person_id'],
+  place_parish: ['place_id', 'parish_id'],
+  place_estate: ['place_id', 'estate_id'],
 };
 /** The longest chain of parts: a Person in an image, its image, the image's Citation, its Source. */
 const DEPTH = 4;
@@ -77,19 +83,16 @@ async function loggedRows(db: Db, ids: readonly string[]): Promise<Map<string, R
 
 /**
  * The records the ids name, and the records their labels are made of, now or as last logged.
- * Places and Houses, which are not changed through Proposals, are labelled on the way.
+ * Places and Houses, whose labels come from their Names and numbers, are labelled on the way.
  */
 async function rowsFor(db: Db, ids: readonly string[], out: Labels): Promise<Map<string, Row>> {
   const rows = new Map<string, Row>();
   let wanted = [...ids];
   for (let depth = 0; wanted.length > 0 && depth < DEPTH; depth++) {
+    await placeLabels(db, wanted, out);
+    await houseLabels(db, wanted, out);
     for (const [id, row] of await treeRows(db, wanted)) rows.set(id, row);
-    let gone = wanted.filter((id) => !rows.has(id));
-    if (depth === 0 && gone.length > 0) {
-      await placeLabels(db, gone, out);
-      await houseLabels(db, gone, out);
-      gone = gone.filter((id) => !out.has(id));
-    }
+    const gone = wanted.filter((id) => !rows.has(id) && !out.has(id));
     if (gone.length > 0) for (const [id, row] of await loggedRows(db, gone)) rows.set(id, row);
     const parts = wanted.flatMap((id) => {
       const row = rows.get(id);
@@ -186,10 +189,12 @@ interface Parts {
 }
 
 const linked = (a: Label, b: Label): Label => ({ cs: `${a.cs} – ${b.cs}`, en: `${a.en} for ${b.en}` });
+const within = (a: Label, b: Label): Label => ({ cs: `${a.cs} – ${b.cs}`, en: `${a.en} in ${b.en}` });
 
 /**
  * The label of a record from its row, by table: Persons by primary Name, Names by their spelling
- * as found, Events by type and date, Sources by title, and links by what they link.
+ * as found, Events by type and date, Sources by title, and links by what they link. Places and
+ * Houses are labelled beforehand (rowsFor); one no longer in the Tree has no label of its own.
  */
 const LABELLERS: Record<RestorableTable, (p: Parts) => Label | undefined> = {
   person: ({ v, names }) => {
@@ -232,16 +237,59 @@ const LABELLERS: Record<RestorableTable, (p: Parts) => Label | undefined> = {
     const [who, image] = [part('person_id'), part('image_id')];
     return { cs: `${who.cs} – ${image.cs}`, en: `${who.en} in ${image.en}` };
   },
+  place: () => undefined,
+  place_name: ({ v }) => both(text(v.name)),
+  house: () => undefined,
+  house_number: ({ v }) => ({ cs: `čp. ${text(v.number)}`, en: `No. ${text(v.number)}` }),
+  parish: ({ v }) => ({ cs: `farnost ${text(v.name)}`, en: `the Parish of ${text(v.name)}` }),
+  place_parish: ({ part }) => within(part('place_id'), part('parish_id')),
+  estate: ({ v }) => ({ cs: `panství ${text(v.name)}`, en: `the Estate of ${text(v.name)}` }),
+  place_estate: ({ part }) => within(part('place_id'), part('estate_id')),
+  person_label: ({ v }) => both(`“${text(v.label)}”`),
+  source_document: ({ v }) => ({ cs: `dokument „${text(v.title)}“`, en: `the document “${text(v.title)}”` }),
 };
+
+/**
+ * Labels of batch references (review spec, "Proposals in an Import batch build on each other"):
+ * the record's own label once the earlier Proposal is accepted, else what that Proposal says of it.
+ */
+async function batchRefLabels(db: Db, refs: string[], out: Labels): Promise<void> {
+  const parsed = refs.flatMap((ref) => {
+    const p = parseBatchRef(ref);
+    return p ? [{ ref, ...p }] : [];
+  });
+  if (parsed.length === 0) return;
+  const proposalIds = [...new Set(parsed.map((p) => p.proposalId))];
+  const temps = await db.selectFrom('proposal_temp').selectAll().where('proposal_id', 'in', proposalIds).execute();
+  const records = await labelsFor(
+    db,
+    temps.map((t) => t.record_id),
+  );
+  const stored = await loadOperationsOf(db, proposalIds);
+  for (const p of parsed) {
+    const record = temps.find((t) => t.proposal_id === p.proposalId && t.temp_id === p.tempId);
+    if (record && records.labels.has(record.record_id)) {
+      out.set(p.ref, records.labels.get(record.record_id)!);
+      continue;
+    }
+    const ops = (stored.get(p.proposalId) ?? []).map((s) => s.effective);
+    const said = (language: SummaryLanguage) => tempLabels(ops, language, records).get(p.tempId);
+    const cs = said('cs');
+    const en = said('en');
+    if (cs !== undefined && en !== undefined) out.set(p.ref, { cs, en });
+  }
+}
 
 /**
  * Readable labels of records (Persons by primary Name, Events by type and date, Places by
  * name, Sources by title …) for the sentences shown in review and history. A record no longer
  * in the Tree, such as one an undo removed, is labelled from the log's snapshot of it, so the
- * history still says what was changed (tree-history spec, "History of a record").
+ * history still says what was changed (tree-history spec, "History of a record"). Records that
+ * earlier Proposals of an Import batch create are labelled through their batch references.
  */
 export async function labelsFor(db: Db, ids: readonly string[]): Promise<SummaryContext & { labels: Labels }> {
   const labels: Labels = new Map();
+  await batchRefLabels(db, ids.filter(isBatchRef), labels);
   const list = [...new Set(ids)].filter((id) => UUID.test(id));
   if (list.length > 0) {
     const rows = await rowsFor(db, list, labels);

@@ -10,7 +10,7 @@ import {
   isSuggested,
   leadSuggestions,
   mayRead,
-  nameTypeForLanguage,
+  readNameKind,
   nameVariants,
   PORTAL_LINK_MESSAGE,
   ranksAbove,
@@ -141,13 +141,10 @@ describe('the reading result schema (task 1.1)', () => {
     expect(entry?.required?.sort()).toEqual(Object.keys(entry!.properties!).sort());
   });
 
-  it('maps a Name’s language to today’s Name types until Names carry a language (#17)', () => {
-    expect([nameTypeForLanguage('la'), nameTypeForLanguage('de-Latf'), nameTypeForLanguage('cs'), nameTypeForLanguage('pl')]).toEqual([
-      'latin',
-      'german',
-      'other',
-      'other',
-    ]);
+  it('gives a read name its language as written, and the birth type only to the child of a baptism or birth (decision #64)', () => {
+    expect(readNameKind('child', 'baptism', 'la')).toEqual({ type: 'birth', language: 'la' });
+    expect(readNameKind('father', 'baptism', 'la')).toEqual({ type: 'other', language: 'la' });
+    expect(readNameKind('deceased', 'burial', 'de')).toEqual({ type: 'other', language: 'de' });
   });
 });
 
@@ -308,7 +305,7 @@ describe('a Proposal from a reading, for an Agent', () => {
     expect(operations.find((o) => o.op === 'createCitation')).toMatchObject({ confidence: 'normal', page: '41' });
     expect(operations.find((o) => o.op === 'addImage')).toMatchObject({ uploadId: ID(900), kind: 'page' });
     // Names keep their spelling and language: the child's Latin form.
-    expect(operations.find((o) => o.op === 'createPerson')).toMatchObject({ name: { given: 'Wenceslaus', type: 'latin', asFound: 'Wenceslaus' } });
+    expect(operations.find((o) => o.op === 'createPerson')).toMatchObject({ name: { given: 'Wenceslaus', type: 'birth', language: 'la', asFound: 'Wenceslaus' } });
     // The event is at the Place, with the unresolved house number in its description.
     expect(operations.find((o) => o.op === 'createEvent')).toMatchObject({ placeId: ID(500), houseId: null, description: 'čp. 12', date: '1801-03-12' });
     expect(ReaderInfo.safeParse({ readingIds: [ID(1)], marks }).success).toBe(true);

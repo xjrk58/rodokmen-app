@@ -52,27 +52,32 @@ const name = (over: Record<string, unknown> = {}) => ({
   given: 'Jan',
   surname: 'Novák',
   type: 'birth',
+  language: 'cs',
   asFound: 'Jan Novák',
   primary: true,
   ...over,
 });
 
 describe('Person and Name', () => {
-  it('accepts a Person with a primary Name and its Latin and German forms', () => {
+  it('accepts a Person with a primary Name and its Latin and German forms, each tagged with its language', () => {
     ok(PersonRecord, { id: personId, version: 1, sex: 'male' });
     ok(PersonWithNames, {
       person: { id: personId, version: 3, sex: 'male' },
       names: [
         name(),
-        name({ type: 'latin', given: 'Joannes', surname: 'Nowak', asFound: 'Joannes Nowak', primary: false }),
-        name({ type: 'german', given: 'Johann', surname: 'Nowak', asFound: 'Johann Nowak', primary: false }),
+        name({ type: 'other', language: 'la', given: 'Joannes', surname: 'Nowak', asFound: 'Joannes Nowak', primary: false }),
+        name({ type: 'other', language: 'de', given: 'Johann', surname: 'Nowak', asFound: 'Johann Nowak', primary: false }),
       ],
     });
   });
 
   it('refuses a Person without Names, with two primary Names, or with unknown sex', () => {
     bad(PersonWithNames, { person: { id: personId, version: 1, sex: 'male' }, names: [] }, /at least one Name/);
-    bad(PersonWithNames, { person: { id: personId, version: 1, sex: 'male' }, names: [name(), name({ type: 'german' })] }, /exactly one primary Name, found 2/);
+    bad(
+      PersonWithNames,
+      { person: { id: personId, version: 1, sex: 'male' }, names: [name(), name({ type: 'other', language: 'de' })] },
+      /exactly one primary Name, found 2/,
+    );
     bad(PersonWithNames, { person: { id: personId, version: 1, sex: 'male' }, names: [name({ primary: false })] }, /found 0/);
     bad(PersonRecord, { id: personId, version: 1, sex: 'm' });
   });
@@ -81,6 +86,11 @@ describe('Person and Name', () => {
     bad(NameRecord, name({ asFound: '' }));
     bad(NameRecord, name({ given: '', surname: ' ' }), /given name or a surname/);
     bad(NameRecord, name({ type: 'alias' }));
+    // The language is a tag of its own, not a type (tree-model spec, "Names carry a language tag").
+    bad(NameRecord, name({ type: 'latin' }));
+    bad(NameRecord, name({ language: 'Latin' }), /BCP 47/);
+    ok(NameRecord, name({ type: 'other', language: 'la', asFound: 'Joannes Nowak' }));
+    ok(NameRecord, name({ language: null }));
     ok(NameRecord, name({ given: '', surname: 'Novák', type: 'nickname', asFound: 'Novákova' }));
   });
 

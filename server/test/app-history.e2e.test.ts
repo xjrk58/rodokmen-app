@@ -119,7 +119,7 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
     const p = await person(personId);
     return accepted(jana, [
       ...citation('N'),
-      { op: 'addName', personId, baseVersion: p.version, given, surname: 'Inventus', type: 'latin', asFound: `${given} Inventus` },
+      { op: 'addName', personId, baseVersion: p.version, given, surname: 'Inventus', type: 'other', language: 'la', asFound: `${given} Inventus` },
     ]);
   }
 
@@ -207,7 +207,9 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       // Each with the date it was accepted.
       expect(await dateOf(entries(page)).allTextContents()).toEqual(await shownDates(page, [sex.at, latin.at, hedvika.created.at]));
       expect(await entries(page).nth(0).locator('.changes').textContent()).toContain('changes Hedvika Invented (Person): sex → “female”');
-      expect(await entries(page).nth(1).locator('.changes').textContent()).toContain('adds the Name “Hedwigis Inventus” (Latin form) to Hedvika Invented');
+      expect(await entries(page).nth(1).locator('.changes').textContent()).toContain(
+        'adds the Name “Hedwigis Inventus” (other form, Latin) to Hedvika Invented',
+      );
       expect(await entries(page).nth(2).locator('.changes').textContent()).toContain('adds the Person Hedvika Invented');
       expect(await entries(page).nth(2).textContent()).toContain('Evidence: Invented register B, 17');
       // Nothing runs off the side of the screen.
@@ -325,7 +327,7 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       expect(await blockers.evaluateAll((els) => els.map((e) => e.getAttribute('data-id')))).toEqual([latin.id]);
       const text = await blockers.first().textContent();
       expect(text).toContain('Jana Contributor');
-      expect(text).toContain('adds the Name “Prokopius Inventus” (Latin form) to Prokop Invented');
+      expect(text).toContain('adds the Name “Prokopius Inventus” (other form, Latin) to Prokop Invented');
       // Who wrote it, who accepted it and when, as in the history itself.
       const blocker = blockers.first();
       expect(await blocker.getByTestId('undo-blocker-by').textContent()).toBe('By Jana Contributor · accepted by Eva Editor');
@@ -350,7 +352,7 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       // A Name written straight into the Tree, as no Proposal would.
       await t.db
         .insertInto('name')
-        .values({ person_id: bohumil.id, given: 'Gottlieb', surname: 'Invented', type: 'german', as_found: 'Gottlieb', is_primary: false })
+        .values({ person_id: bohumil.id, given: 'Gottlieb', surname: 'Invented', type: 'other', language: 'de', as_found: 'Gottlieb', is_primary: false })
         .execute();
 
       const page = await open(editor, size, `#work/history/person/${bohumil.id}`);
@@ -377,7 +379,7 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       expect(said[0]).toContain('removes the Person Kristýna Invented');
       expect(said[1]).toContain('“Christina Inventus”');
       // The Person is gone too, and the earlier entries still name her.
-      expect(said[2]).toContain('adds the Name “Christina Inventus” (Latin form) to Kristýna Invented');
+      expect(said[2]).toContain('adds the Name “Christina Inventus” (other form, Latin) to Kristýna Invented');
       expect(said.join('\n')).not.toMatch(/record [0-9a-f]{6}/);
     });
 

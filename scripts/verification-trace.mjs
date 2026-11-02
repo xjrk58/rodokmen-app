@@ -25,8 +25,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-// The hand-written parts of the page: known LemmaScript issues, the swapped-comparison check and the scopes.
-import { KNOWN_ISSUES, SCOPES, SWAP_CHECK } from './verification-notes.mjs';
+import { KNOWN_ISSUES, SCOPES, SWAP_CHECK } from './verification-trace/texts.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUTPUT = 'docs/verification.md';
@@ -35,6 +34,9 @@ const CONTRACT_LINE = /^\s*\/\/@ contract\s+(.*?)\s*$/;
 const CONTRACT_TEXT = /^([a-z0-9][a-z0-9-]*): (\S.*)$/;
 const PROOF_LINE = /^\s*\/\/@ (verify|requires|ensures|invariant|decreases)\b/;
 const TRUST_MARKER = /^\s*\/\/@ (assume|havoc|extern|autohavoc|impure)\b\s*(.*?)\s*$/;
+
+// The hand-written parts of docs/verification.md (known issues, the swapped-comparison check and
+// the scope of each proof) live in verification-trace/texts.mjs: update them with the proofs.
 
 const problems = [];
 const problem = (msg) => problems.push(msg);

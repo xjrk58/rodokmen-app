@@ -13,7 +13,7 @@ export const MemberRole = z.enum(['contributor', 'editor', 'owner']).meta({ id: 
 /** The role of any account: a Member's, or `agent` for an Agent the Owner created (agent-access spec). */
 export const AccountRole = z
   .enum(['contributor', 'editor', 'owner', 'agent'])
-  .meta({ id: 'AccountRole', description: 'A Member role, or agent for an Agent account (read and propose only)' });
+  .meta({ id: 'AccountRole', description: 'A Member role, or agent for an Agent account (read, propose and write Research leads only)' });
 
 /**
  * What an API route does, as the role-and-action rule `mayDo` (shared/src/rules.ts) sees it.
@@ -22,6 +22,8 @@ export const AccountRole = z
 export const ACTIONS = [
   'read',
   'propose',
+  'writeLeads',
+  'decideSuggestions',
   'review',
   'accept',
   'reject',
@@ -31,6 +33,7 @@ export const ACTIONS = [
   'ownAccount',
   'manageAccounts',
   'markFamilyRoots',
+  'acceptBatch',
   'manageSettings',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
@@ -39,11 +42,14 @@ export type Action = (typeof ACTIONS)[number];
 export function permissionsFor(role: z.infer<typeof AccountRole>) {
   return {
     propose: mayDo(role, 'propose'),
+    writeLeads: mayDo(role, 'writeLeads'),
+    decideSuggestions: mayDo(role, 'decideSuggestions'),
     review: mayDecide(role),
     inviteMembers: mayDo(role, 'manageAccounts'),
     changeRoles: mayDo(role, 'manageAccounts'),
     disableMembers: mayDo(role, 'manageAccounts'),
     markFamilyRoots: mayDo(role, 'markFamilyRoots'),
+    acceptBatch: mayDo(role, 'acceptBatch'),
     manageSettings: mayDo(role, 'manageSettings'),
   };
 }
@@ -51,11 +57,14 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
 export const Permissions = z
   .object({
     propose: z.boolean(),
+    writeLeads: z.boolean().describe('Write Research leads and search records (Members and Agents)'),
+    decideSuggestions: z.boolean().describe('Accept or dismiss a suggested lead (Members)'),
     review: z.boolean(),
     inviteMembers: z.boolean(),
     changeRoles: z.boolean(),
     disableMembers: z.boolean(),
     markFamilyRoots: z.boolean().describe('Mark and unmark Family roots (the Owner)'),
+    acceptBatch: z.boolean().describe('Accept a whole Import batch at once (the Owner)'),
     manageSettings: z.boolean().describe('Change the Tree’s settings, such as scan reading (the Owner)'),
   })
   .meta({ id: 'Permissions' });
@@ -198,6 +207,8 @@ export const AGENT_TOKEN_PATTERN = /^rdk_ag_[0-9a-f]{64}$/;
 /** Requests an Agent may make per hour (agent-access spec, "Rate limits"). */
 export const AGENT_PROPOSALS_PER_HOUR = 60;
 export const AGENT_READS_PER_HOUR = 1000;
+/** Requests an Agent may make to its Import batches per hour (agent-access spec, "Import batches have their own limit"). */
+export const AGENT_BATCH_REQUESTS_PER_HOUR = 10_000;
 
 export const AgentName = z.string().trim().min(1).max(100);
 

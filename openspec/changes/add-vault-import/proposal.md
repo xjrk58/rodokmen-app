@@ -28,10 +28,11 @@ Out of scope: syncing in both directions; importing from other genealogy program
 - `vault-import`: reading the Vault, the dry run, mapping, submitting Import batches and re-runs.
 
 ### Modified Capabilities
-- `tree-model`: research notes on records, Labels, Family roots, and the computed relation to the family.
+- `tree-model`: language-tagged Names, research notes on records, Labels, Family roots, and the computed relation to the family.
 - `tree-read-api`: filtering search and map Events by relation to the family.
 - `review`: accepting a whole Import batch, and the order of Proposals within a batch.
 - `evidence-media`: PDF documents on Sources.
+- `agent-access`: an Agent's requests to its Import batches count against a limit of their own, so one import run fits.
 
 These capabilities come from `add-tree-backend` and `add-proposals-and-review`, which are not archived yet. Their requirements here are added ones.
 

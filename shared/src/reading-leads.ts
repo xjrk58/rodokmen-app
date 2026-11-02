@@ -8,7 +8,7 @@
  * Some hints follow from the entry itself and are added here whatever the model said: both
  * parents of a child give the lead to find their marriage.
  */
-import type { LeadHint, LeadSuggestion, ReadEntry, ReadingResult, ReadPerson } from './schemas/reading.js';
+import type { LeadHint, ReadingLeadSuggestion, ReadEntry, ReadingResult, ReadPerson } from './schemas/reading.js';
 
 /** A register of the Tree, as the server finds it: a Source, the kinds of Events cited from it, and the years they span. */
 export interface RegisterOption {
@@ -151,8 +151,8 @@ function texts(hint: LeadHint, entry: ReadEntry, ctx: LeadContext): Texts {
  * The lead suggestions of a reading, entry by entry. Each has a stable key (entry, kind and
  * persons), so a dismissed suggestion can be recognised again.
  */
-export function leadSuggestions(result: ReadingResult, ctx: LeadContext): LeadSuggestion[] {
-  const out: LeadSuggestion[] = [];
+export function leadSuggestions(result: ReadingResult, ctx: LeadContext): ReadingLeadSuggestion[] {
+  const out: ReadingLeadSuggestion[] = [];
   const keys = new Set<string>();
   result.entries.forEach((entry, index) => {
     for (const hint of hintsOf(entry)) {

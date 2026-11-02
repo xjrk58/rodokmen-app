@@ -7,6 +7,8 @@ import { ApiError, getMe, signOut as apiSignOut, updateMe } from './api.js';
 import { clearCache, readCached, writeCached } from './cache.js';
 import { forgetFocus } from './focus.js';
 import { language, onLanguageChange, setLanguage, storedLanguage, t } from './i18n.js';
+import { LeadScreen, NewLeadScreen } from './lead-screen.js';
+import { LeadsScreen } from './leads-screen.js';
 import { PeopleScreen } from './people-screen.js';
 import { PersonScreen } from './person-screen.js';
 import { setFamilyRoots } from './relation.js';
@@ -25,6 +27,7 @@ const ICONS = {
   map: ['M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2Z', 'M9 4v14', 'M15 6v14'],
   people: ['M8 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z', 'M2 20c.5-3.5 3-5.5 6-5.5s5.5 2 6 5.5', 'M16 4.5a3 3 0 0 1 0 6', 'M17.5 14.6c2.2.6 3.8 2.5 4.2 5.4'],
   review: ['M9 12l2 2 4-4', 'M5 4h14v16H5z'],
+  leads: ['M10.5 17a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13Z', 'm15.5 15.5 5 5', 'M10.5 8v3.5', 'M10.5 13.5v.5'],
   settings: [
     'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
     'M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8',
@@ -48,12 +51,20 @@ export function screenFor(route, me) {
 /** @param {{ route: Route, me: Me }} props */
 function TabBar({ route, me }) {
   const current = screenFor(route, me);
-  const active = current === 'person' ? 'people' : current === 'work' && route.screen === 'work' && route.view === 'review' ? 'review' : current;
+  const active =
+    current === 'person'
+      ? 'people'
+      : current === 'lead' || current === 'lead-new'
+        ? 'leads'
+        : current === 'work' && route.screen === 'work' && route.view === 'review'
+          ? 'review'
+          : current;
   /** @type {[keyof typeof ICONS, string, string][]} */
   const tabs = [
     ['tree', '#tree', 'tabs.tree'],
     ['map', '#map', 'tabs.map'],
     ['people', '#people', 'tabs.people'],
+    ['leads', '#leads', 'tabs.leads'],
     ...(me.permissions.review ? /** @type {[keyof typeof ICONS, string, string][]} */ ([['review', '#work/review', 'tabs.review']]) : []),
     ['settings', '#settings', 'tabs.settings'],
   ];
@@ -65,6 +76,21 @@ function TabBar({ route, me }) {
         </a>`,
     )}
   </nav>`;
+}
+
+/**
+ * The Research lead screens (research-leads spec): the Leads list, one lead, writing one.
+ * @param {Route} route
+ * @param {Me | null} me
+ * @param {boolean} cache
+ */
+function leadScreen(route, me, cache) {
+  if (!me) return null;
+  if (route.screen === 'leads') return html`<${LeadsScreen} key=${route.place ?? 'all'} me=${me} place=${route.place} cache=${cache} />`;
+  if (route.screen === 'lead') return html`<${LeadScreen} key=${route.id} id=${route.id} me=${me} />`;
+  if (route.screen === 'lead-new')
+    return html`<${NewLeadScreen} key=${`${route.person}:${route.place}`} me=${me} person=${route.person} place=${route.place} />`;
+  return null;
 }
 
 export class Shell {
@@ -185,6 +211,7 @@ export class Shell {
     else if (screen === 'people') content = html`<${PeopleScreen} cache=${cache} />`;
     else if (screen === 'person' && route.screen === 'person')
       content = html`<${PersonScreen} key=${route.id} id=${route.id} cache=${cache} me=${me} refreshMe=${() => this.refreshMe()} />`;
+    else if (screen.startsWith('lead')) content = leadScreen(route, me, cache);
     else if (screen === 'settings' && me)
       content = html`<${SettingsScreen}
         me=${me}

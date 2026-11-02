@@ -258,7 +258,7 @@ describe('scan reading in the app (Chromium, phone and desktop, under the CSP)',
       expect(ops.find((o) => o.op === 'createCitation')).toMatchObject({ confidence: 'normal', page: '41' });
       expect(ops.find((o) => o.op === 'createEvent')).toMatchObject({ houseId: L.houseA, date: '1830-03-14' });
       const corrected = ops.find((o) => o.op === 'createPerson' && o.tempId === 'tmp:p7')!;
-      expect(corrected).toMatchObject({ name: { given: 'Wenceslaus', surname: 'Dvořák', asFound: 'Wenceslai Dworzak', type: 'latin' } });
+      expect(corrected).toMatchObject({ name: { given: 'Wenceslaus', surname: 'Dvořák', asFound: 'Wenceslai Dworzak', type: 'other', language: 'la' } });
       const marked = new Map(p.reader!.marks.map((m) => [m.position, m.fields]));
       const position = (match: (o: Operation) => boolean) => ops.findIndex(match);
       expect(marked.get(position((o) => o.op === 'createPerson' && o.tempId === 'tmp:p7'))).toBeUndefined();

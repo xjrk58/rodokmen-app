@@ -55,6 +55,17 @@ function table(name: string): RestorableTable {
 export const DERIVED_COLUMNS: Partial<Record<RestorableTable, readonly string[]>> = { person: ['relation'] };
 const derived = (name: RestorableTable) => sql`${[...(DERIVED_COLUMNS[name] ?? [])]}::text[]`;
 
+/**
+ * A Name snapshot logged before Names carried a language tag (migration 0010_name_languages), in
+ * the form the Tree has now: the type `latin` becomes `other` with the tag `la`, `german` becomes
+ * `other` with `de`. The log keeps what it logged; an undo writes back the new form.
+ */
+export function legacyName(values: Record<string, unknown>): Record<string, unknown> {
+  if (values.type === 'latin') return { ...values, type: 'other', language: 'la' };
+  if (values.type === 'german') return { ...values, type: 'other', language: 'de' };
+  return values;
+}
+
 export async function snapshot(db: Db, name: RestorableTable, id: string, lock = true): Promise<Snapshot | null> {
   const t = sql.table(table(name));
   const query = lock

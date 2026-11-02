@@ -19,8 +19,10 @@ import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import { idsIn, labelsFor } from './labels.js';
 import { dependentsOf, restorableColumns, snapshot, type Snapshot } from './records.js';
+import { markAnsweredLeads, reopenAnsweredLeads } from '../leads/service.js';
 import { acceptInTransaction, finishMoves, insertProposal, transaction, type ProposalDeps } from './service.js';
-import { authorRef, loadOperationsOf, proposalViews } from './views.js';
+import { loadOperationsOf } from './stored-operations.js';
+import { authorRef, proposalViews } from './views.js';
 
 // ---------------------------------------------------------------- record history
 
@@ -32,6 +34,10 @@ const REFERENCES: Record<HistoryKind, string[]> = {
   event: ['event_id'],
   source: ['source_id'],
   citation: ['citation_id'],
+  place: ['place_id'],
+  house: ['house_id'],
+  parish: ['parish_id'],
+  estate: ['estate_id'],
 };
 
 /**
@@ -323,9 +329,13 @@ export async function undoProposal(deps: ProposalDeps, editor: Account, proposal
       );
       const accepted = await acceptInTransaction(tx, deps, created.proposal, editor, { note: null, corrections: [], resolutions: [] });
       await tx.updateTable('proposal').set({ undone_by_proposal_id: accepted.proposal.id }).where('id', '=', proposalId).execute();
-      // Undoing an undo puts the Proposal it undid back in force, so that one can be undone again.
+      // Undoing an undo puts the Proposal it undid back in force, so that one can be undone again,
+      // and the leads it answers are found again; undoing a finding reopens the leads it marked found.
       if (original.kind === 'undo' && original.undoes_proposal_id) {
         await tx.updateTable('proposal').set({ undone_by_proposal_id: null }).where('id', '=', original.undoes_proposal_id).execute();
+        await markAnsweredLeads(tx, original.undoes_proposal_id, editor.id, now);
+      } else {
+        await reopenAnsweredLeads(tx, proposalId, editor.id, now);
       }
       return accepted;
     },

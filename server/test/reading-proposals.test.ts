@@ -40,7 +40,7 @@ describe('Proposals from readings', () => {
         confidence,
       },
       { op: 'createEvent', tempId: 'tmp:e', type: 'baptism', date: '1830-03-14', placeId: L.kamennaLhota },
-      { op: 'createPerson', tempId: 'tmp:p1', sex: 'female', name: { given: 'Anna', surname: 'Nováková', type: 'latin', asFound: 'Anna' } },
+      { op: 'createPerson', tempId: 'tmp:p1', sex: 'female', name: { given: 'Anna', surname: 'Nováková', type: 'birth', language: 'la', asFound: 'Anna' } },
       { op: 'addRole', eventId: 'tmp:e', personId: 'tmp:p1', role: 'child' },
       { op: 'attachCitation', citationId: 'tmp:c', eventId: 'tmp:e' },
       ...(uploadId ? [{ op: 'addImage', uploadId, kind: 'page', citationId: 'tmp:c' }] : []),

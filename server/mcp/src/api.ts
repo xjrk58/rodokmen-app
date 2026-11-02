@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto';
 export interface Api {
   get(path: string, query?: Record<string, string | number | boolean | undefined>): Promise<unknown>;
   post(path: string, body: unknown): Promise<unknown>;
+  patch(path: string, body: unknown): Promise<unknown>;
   /** Uploads an image as the API does it (a presigned PUT link, then the server's check) and returns its upload id. */
   upload(data: Buffer, contentType: string): Promise<string>;
 }
@@ -41,7 +42,11 @@ async function errorOf(res: Response): Promise<ApiCallError> {
 
 /** `baseUrl` is the origin the API is served from, such as https://rodokmen.example. */
 export function apiClient(baseUrl: string, token: string, fetchImpl: typeof fetch = fetch): Api {
-  const request = async (method: 'GET' | 'POST', path: string, init: { query?: Record<string, string | number | boolean | undefined>; body?: unknown }) => {
+  const request = async (
+    method: 'GET' | 'POST' | 'PATCH',
+    path: string,
+    init: { query?: Record<string, string | number | boolean | undefined>; body?: unknown },
+  ) => {
     const url = new URL(path, baseUrl);
     for (const [key, value] of Object.entries(init.query ?? {})) if (value !== undefined) url.searchParams.set(key, String(value));
     const res = await fetchImpl(url, {
@@ -58,6 +63,7 @@ export function apiClient(baseUrl: string, token: string, fetchImpl: typeof fetc
   return {
     get: (path, query) => request('GET', path, { query }),
     post: (path, body) => request('POST', path, { body }),
+    patch: (path, body) => request('PATCH', path, { body }),
     async upload(data, contentType) {
       const sha256 = createHash('sha256').update(data).digest('hex');
       const ticket = await request('POST', '/api/uploads', { body: { contentType, byteSize: data.length, sha256 } });

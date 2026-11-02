@@ -1,10 +1,11 @@
-// The review queue (Editors), Proposal cards (also for authors), the merge
-// tool, record history and undo. Phone-first: one card per Proposal, the
+// The review queue (Editors), Proposal cards (also for authors), record
+// history and undo. Phone-first: one card per Proposal, the
 // changes as sentences, conflicts with a choice per field, and one tap to accept.
 
-import { acceptProposal, getHistory, getProposal, mergePersons, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
+import { acceptProposal, getHistory, getProposal, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
 import { h } from './dom.js';
 import { language, t } from './i18n.js';
+import { mergeTool } from './merge-tool.js';
 import { personPicker } from './pickers.js';
 
 /** @typedef {import('./types.js').ProposalView} ProposalView */
@@ -15,7 +16,6 @@ import { personPicker } from './pickers.js';
 /** @typedef {import('./types.js').HistoryEntry} HistoryEntry */
 /** @typedef {import('./types.js').LaterEdit} LaterEdit */
 /** @typedef {import('./types.js').UndoBody} UndoBody */
-/** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
 /** @typedef {import('./i18n.js').Language} Language */
 
 /**
@@ -56,7 +56,7 @@ function show(v) {
 const isRecord = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /** @param {AuthorRef} author */
-function authorLine(author) {
+export function authorLine(author) {
   return h(
     'span',
     { class: 'author' },
@@ -278,7 +278,15 @@ export function proposalCard(p, options = {}) {
   const card = h(
     'article',
     { class: 'card proposal', 'data-testid': 'proposal', 'data-id': p.id },
-    h('header', { class: 'card-head' }, authorLine(p.author), h('span', { class: 'muted small' }, formatDate(p.submittedAt)), statusChip(p)),
+    h(
+      'header',
+      { class: 'card-head' },
+      authorLine(p.author),
+      h('span', { class: 'muted small' }, formatDate(p.submittedAt)),
+      p.batch ? h('span', { class: 'chip', 'data-testid': 'batch-position' }, t('batch.number', { number: p.batch.position + 1 })) : null,
+      statusChip(p),
+    ),
+    p.blockedBy ? h('p', { class: 'warning small', 'data-testid': 'blocked' }, t('batch.blockedBy', { id: p.blockedBy })) : null,
     p.note ? h('p', { class: 'proposal-note' }, p.note) : null,
     ops,
     ...p.citations.map(citationBlock),
@@ -297,64 +305,29 @@ export function proposalCard(p, options = {}) {
 }
 
 /**
- * The review queue: pending Proposals, oldest first.
+ * The review queue: Import batches, each as one entry, then the other pending Proposals, oldest first.
  * @param {HTMLElement} root
  * @param {string | undefined} focusId
  * @param {AbortSignal} signal aborted when the Member leaves the screen; nothing is drawn after that
+ * @param {(signal: AbortSignal) => HTMLElement} [batches] the Import batch entries (batch-review.js)
  */
-export async function renderReview(root, focusId, signal) {
+export async function renderReview(root, focusId, signal, batches) {
   root.replaceChildren(h('p', { class: 'muted' }, t('work.loading')));
   const { items, total } = await reviewQueue(signal);
   if (signal.aborted) return;
   const reload = () => {
-    renderReview(root, undefined, signal).catch((/** @type {unknown} */ e) => {
+    renderReview(root, undefined, signal, batches).catch((/** @type {unknown} */ e) => {
       if (!signal.aborted) root.replaceChildren(h('p', { class: 'form-status error' }, messageOf(e)));
     });
   };
   root.replaceChildren(
     h('h2', {}, t('review.title')),
+    batches ? batches(signal) : '',
     h('p', { class: 'muted small', 'data-testid': 'queue-count' }, t('review.count', { count: total ?? items.length })),
     ...(items.length ? items.map((p) => proposalCard(p, { review: { onDone: reload } })) : [h('p', { class: 'empty' }, t('review.none'))]),
     mergeTool(reload),
   );
   if (focusId) root.querySelector(`[data-id="${focusId}"]`)?.scrollIntoView({ block: 'start' });
-}
-
-/** Merge two Persons into one (Editors, at any time). @param {() => void} onDone */
-function mergeTool(onDone) {
-  /** @type {PersonInput | null} */
-  let keep = null;
-  /** @type {PersonInput | null} */
-  let gone = null;
-  const status = h('p', { class: 'form-status', role: 'status' });
-  const button = h('button', { type: 'button', class: 'button', 'data-testid': 'merge' }, t('merge.button'));
-  const merge = async () => {
-    if (keep?.mode !== 'existing' || gone?.mode !== 'existing' || keep.id === gone.id) {
-      status.textContent = t('merge.pickTwo');
-      return;
-    }
-    button.disabled = true;
-    try {
-      await mergePersons(keep.id, { mergeId: gone.id, keepBaseVersion: keep.version, mergeBaseVersion: gone.version, note: null });
-      status.textContent = t('merge.done');
-      onDone();
-    } catch (error) {
-      status.textContent = messageOf(error);
-    } finally {
-      button.disabled = false;
-    }
-  };
-  button.addEventListener('click', () => void merge());
-  return h(
-    'details',
-    { class: 'card merge-tool' },
-    h('summary', {}, t('merge.title')),
-    h('p', { class: 'muted small' }, t('merge.help')),
-    personPicker({ value: null, label: t('merge.keep'), testid: 'merge-keep', allowNew: false, onChange: (v) => (keep = v) }),
-    personPicker({ value: null, label: t('merge.gone'), testid: 'merge-gone', allowNew: false, onChange: (v) => (gone = v) }),
-    status,
-    button,
-  );
 }
 
 /**

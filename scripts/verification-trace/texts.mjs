@@ -1,5 +1,4 @@
-// The hand-written parts of docs/verification.md, kept apart from the script that writes it
-// (scripts/verification-trace.mjs): update them with the proofs they describe.
+// The hand-written texts of docs/verification.md, read by scripts/verification-trace.mjs.
 
 // Shapes that lemmascript 0.6.5 translates wrongly or not at all (listed in docs/verification.md).
 export const KNOWN_ISSUES = [
@@ -31,17 +30,39 @@ export const KNOWN_ISSUES = [
 
 // What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
 export const SWAP_CHECK = [
-  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts,',
-  'shared/src/relation.ts, shared/src/rules.ts, shared/src/reading.ts and shared/src/matching.ts, no narrowed optional is',
-  'an operand of `<`, `<=`, `>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where',
-  'order does not matter; the `!` index reads of relation.ts compare two plain integers, emitted in their order;',
-  'reading.ts and matching.ts have no optionals: an unknown house or Place is an empty text, an unknown birth year a',
-  '`hasBirth` flag), and the generated `.dfy.gen` was read for it.',
-  'Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
+  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/gaps.ts,',
+  'shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/reading.ts, shared/src/relation.ts and',
+  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
+  '(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of relation.ts and gaps.ts',
+  'compare two plain integers, emitted in their order; gaps.ts, leads.ts, matching.ts and reading.ts have no optionals at',
+  'all: unknown years, houses, Places and Sources are a flag and 0, or the empty string), and the generated `.dfy.gen`',
+  'was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
 ];
 
 // Exactly what a proof covers where that is less than its requirement, written by hand: update it with the proof.
 export const SCOPES = [
+  `**The gap finder** (\`suggestGaps\`, shared/src/gaps.ts; research-leads "Gap finder suggests leads"). Proved, for any
+  Persons, marriages, registers, decided keys and margin: every suggestion is a real gap of its kind (a Relative with no
+  birth or baptism Citation; a Relative with unknown parents and a known Parish and years; a Relative's marriage with
+  no Citation), with a register of the right kind, Parish and years that fits it, or with none when no register fits;
+  every key is the stable key of its kind, subject and Source; no dismissed or accepted key is suggested ("Dismissed
+  suggestion"); every gap with a fitting register and an undecided key is suggested with that register and the years
+  both cover ("Missing baptism": born about 1801, a register for 1784–1820, the years 1798–1804), and every gap with no
+  fitting register on its own. Not proved: the inputs the server gathers (server/src/leads/gaps.ts: who is a Relative,
+  which Events have Citations, the Parishes of the Place in the years, the years from EDTF dates, the registers' Parish,
+  kinds and years), the archive a suggestion names (its register's, else the archive lookup of the Place's
+  Municipality), that suggestions are recomputed nightly and after each accepted Proposal for the Persons it touched,
+  and that they are shown apart from the leads until a Member decides; server/test/gap-finder.test.ts tests those.`,
+  `**Leads answered by a Proposal** (\`leadsOnAccept\`, \`leadsOnUndo\`, shared/src/leads.ts; research-leads "Findings link
+  back to leads"). Proved: accepting marks exactly the leads the Proposal names as found, linked to it, and leaves the
+  others as they were; undoing reopens exactly the leads it marked found that nobody closed otherwise since, and leaves
+  every other lead, one found by hand or through another Proposal included. Not proved: that the server applies them in
+  the transaction of every accept and undo and never on a rejection; server/test/leads.test.ts tests that.`,
+  `**Leads in an Export** (\`exportedPersonLinks\`, shared/src/leads.ts; exports "Living people are reduced in every
+  Export"). Proved for one lead's links to Persons: no link to a Living person is kept, every other link is, and a lead
+  that concerned Living people only is left out. The Export itself is not built yet (add-exports-and-erasure); its entry
+  for leads is server/src/leads/export.ts, which marks who is Living with the proved Living rule and is tested in
+  server/test/leads.test.ts. Erasure is to use the same rule (\`living\` meaning the erased Person).`,
   `**The relation to the family** (\`relationLevels\`, shared/src/relation.ts; tree-model "Relation to the family is
   computed" and "Relation follows the evidence"). Proved, for any Persons, Family roots and links: both searches
   (\`reachFrom\`) stop (a round that reaches someone new leaves fewer unreached: a \`decreases\` added in relation.dfy);

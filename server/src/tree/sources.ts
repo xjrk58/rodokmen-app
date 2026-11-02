@@ -1,7 +1,8 @@
-import { foldForSearch, type CitationDetail, type CitationSummary, type SourceDetail, type SourceSummary } from '@rodokmen/shared';
-import { sql } from 'kysely';
+import { foldForSearch, type CitationDetail, type CitationSummary, type DocumentView, type SourceDetail, type SourceSummary } from '@rodokmen/shared';
+import { sql, type Selectable } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { SourceTable } from '../db/types.js';
+import { registerOf } from '../proposals/apply.js';
 import { IMAGE_COLUMNS, imageViews, type TreeDeps } from './persons.js';
 import { containsPattern, eventSummaries } from './summaries.js';
 
@@ -36,8 +37,22 @@ export async function citationSummariesFor(db: Db, of: 'event' | 'name', ids: re
   return out;
 }
 
-function sourceSummary(
-  s: Pick<SourceTable, 'type' | 'title' | 'repository' | 'reference' | 'url' | 'account_given_by' | 'account_given_by_person_id' | 'account_given_on'> & {
+export function sourceSummary(
+  s: Pick<
+    Selectable<SourceTable>,
+    | 'type'
+    | 'title'
+    | 'repository'
+    | 'reference'
+    | 'url'
+    | 'account_given_by'
+    | 'account_given_by_person_id'
+    | 'account_given_on'
+    | 'register_parish_id'
+    | 'register_kinds'
+    | 'register_from'
+    | 'register_to'
+  > & {
     id: string;
     version: number;
   },
@@ -54,6 +69,7 @@ function sourceSummary(
       s.type === 'family_account' && s.account_given_by && s.account_given_on
         ? { givenBy: s.account_given_by, givenByPersonId: s.account_given_by_person_id, givenOn: s.account_given_on }
         : null,
+    register: registerOf(s),
   };
 }
 
@@ -81,7 +97,26 @@ export async function getSource(db: Db, id: string): Promise<SourceDetail | null
   return {
     ...sourceSummary(s),
     citations: citations.map((c) => ({ id: c.id, version: c.version, sourceId: c.source_id, sourceTitle: s.title, page: c.page, confidence: c.confidence })),
+    documents: await documentViews(db, id),
+    notes: s.notes,
   };
+}
+
+/** The documents of a Source, oldest first, with the routes that redirect to their expiring links. */
+export async function documentViews(db: Db, sourceId: string): Promise<DocumentView[]> {
+  const rows = await db.selectFrom('source_document').selectAll().where('source_id', '=', sourceId).orderBy('created_at').orderBy('id').execute();
+  return rows.map((d) => ({
+    id: d.id,
+    version: d.version,
+    title: d.title,
+    contentType: d.content_type,
+    byteSize: d.byte_size,
+    url: `/api/documents/${d.id}`,
+    original:
+      d.original_content_type && d.original_byte_size
+        ? { contentType: d.original_content_type, byteSize: d.original_byte_size, url: `/api/documents/${d.id}?original=true` }
+        : null,
+  }));
 }
 
 export async function getCitation(deps: TreeDeps, id: string): Promise<CitationDetail | null> {
@@ -115,6 +150,7 @@ export async function getCitation(deps: TreeDeps, id: string): Promise<CitationD
     confidence: c.confidence,
     note: c.note,
     source: sourceSummary(source),
+    documents: await documentViews(db, source.id),
     events: await eventSummaries(db, eventIds),
     names: names.map((n) => ({ id: n.id, personId: n.person_id, asFound: n.as_found })),
     images: await imageViews(deps, images),

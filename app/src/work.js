@@ -3,9 +3,11 @@
 // "#work/…" addresses so links from emails land on the right screen:
 //   #work/propose[/kind[/<person id>]]  #work/draft/<id>  #work/drafts
 //   #work/mine[/<id>]     #work/review[/<id>]  #work/history[/person/<id>]
+//   #work/lead/<lead id>/<kind>   a Proposal that starts from a Research lead and answers it
 
 import {
   ApiError,
+  getLead,
   getMe,
   getPerson,
   messageOf,
@@ -14,6 +16,7 @@ import {
   readingStatus,
   setNotificationSettings,
   submitProposal,
+  uploadDocument,
   uploadImage,
 } from './api.js';
 import { guarded, h, showError } from './dom.js';
@@ -31,9 +34,11 @@ import {
   storageEstimate,
 } from './drafts.js';
 import { onLanguageChange, t } from './i18n.js';
+import { leadStart } from './lead-parts.js';
 import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
 import { buildOperations, draftTitle, emptyForm, formProblems, HAND_KINDS, OPERATIONS_VERSION, today } from './proposal-build.js';
+import { batchEntries, renderBatch } from './batch-review.js';
 import { buildReading } from './reading-draft.js';
 import { readingFamilies, renderRead, showReading } from './reading-flow.js';
 import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
@@ -85,23 +90,26 @@ function draftFamily(draft) {
  */
 async function proposalBody(draft) {
   const uploadIds = [];
+  const documents = [];
   for (const photo of await draftPhotos(draft.id)) {
+    const document = photo.kind === 'document';
     if (!photo.uploadId) {
-      photo.uploadId = await uploadImage(photo.blob);
+      photo.uploadId = document ? await uploadDocument(photo.blob) : await uploadImage(photo.blob);
       await savePhoto(photo);
     }
-    uploadIds.push(photo.uploadId);
+    if (document) documents.push({ uploadId: photo.uploadId, title: photo.name.replace(/\.pdf$/i, '') || photo.name });
+    else uploadIds.push(photo.uploadId);
   }
   const note = draft.form.note?.trim() || null;
   /** @type {Omit<SubmitProposalBody, 'operations' | 'reader'>} */
-  const base = { formatVersion: OPERATIONS_VERSION, idempotencyKey: draft.idempotencyKey, note, direct: false };
+  const base = { formatVersion: OPERATIONS_VERSION, idempotencyKey: draft.idempotencyKey, note, direct: false, answersLeads: draft.lead ? [draft.lead.id] : [] };
   if (draft.kind === 'reading') {
     // Drafted from a reading: the values still marked "read by AI" go with it.
     const { operations, marks } = buildReading(draft.form, { uploadIds, families: await readingFamilies(draft.form, familyOf), readOn: today() });
     return { ...base, operations, reader: { readingIds: [draft.form.readingId], marks } };
   }
   const family = await draftFamily(draft);
-  return { ...base, operations: buildOperations(draft, { uploadIds, family }), reader: null };
+  return { ...base, operations: buildOperations(draft, { uploadIds, documents, family }), reader: null };
 }
 
 /**
@@ -280,7 +288,9 @@ export class WorkPanel {
     else if (view === 'drafts') await this.renderDrafts(signal);
     else if (!this.me) body.replaceChildren(this.signInPrompt());
     else if (view === 'mine') await this.renderMine(a, signal);
-    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal);
+    else if (view === 'lead' && a) await this.renderFromLead(a, b, signal);
+    else if (view === 'review' && this.me.permissions.review && a === 'batch' && b) await renderBatch(body, b, this.me, signal);
+    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal, batchEntries);
     else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review }, signal);
     else await this.renderPropose(undefined);
   }
@@ -323,12 +333,51 @@ export class WorkPanel {
       return;
     }
     const draft = newDraft(emptyForm(kind));
-    if (personId && draft.kind === 'correction') {
+    if (personId && (draft.kind === 'correction' || draft.kind === 'notes')) {
       const person = await getPerson(personId, signal);
       if (signal?.aborted) return;
       const primary = person.names.find((n) => n.primary) ?? person.names[0];
       const birth = person.events.find((e) => e.role === 'child' && (e.event.type === 'birth' || e.event.type === 'baptism'))?.event.date ?? null;
       draft.form.person = { mode: 'existing', id: person.id, version: person.version, label: personText(primary?.given ?? '', primary?.surname ?? '', birth) };
+    }
+    this.showForm(draft, false);
+  }
+
+  /**
+   * "Start from this lead" (research-leads spec, "Findings link back to leads"): a Proposal of a
+   * kind that starts from the lead's Persons, Place and register, and names the lead it answers,
+   * so that accepting it marks the lead found.
+   * @param {string} leadId
+   * @param {string | undefined} kind
+   * @param {AbortSignal} signal
+   */
+  async renderFromLead(leadId, kind, signal) {
+    const lead = await getLead(leadId, signal);
+    if (signal.aborted) return;
+    if (!isKind(kind)) {
+      location.hash = `#leads/${leadId}`;
+      return;
+    }
+    const draft = newDraft(emptyForm(kind));
+    draft.lead = { id: lead.id, question: lead.question };
+    const { persons, place, source } = leadStart(lead);
+    const [first = null, second = null] = persons;
+    if (source) {
+      draft.form.citation.sourceMode = 'existing';
+      draft.form.citation.source = source;
+    }
+    if (draft.kind === 'baptism') {
+      if (first) draft.form.child = first;
+      draft.form.place = place;
+    } else if (draft.kind === 'marriage') {
+      draft.form.partner1 = first;
+      draft.form.partner2 = second;
+      draft.form.place = place;
+    } else if (draft.kind === 'death') {
+      draft.form.person = first;
+      draft.form.place = place;
+    } else if (draft.kind !== 'reading') {
+      draft.form.person = first;
     }
     this.showForm(draft, false);
   }

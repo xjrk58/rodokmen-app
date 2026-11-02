@@ -7,7 +7,6 @@ import {
   History,
   HistoryKind,
   IdParams,
-  IMAGE_MAX_BYTES,
   ImageLinkQuery,
   MergeBody,
   NotificationSettings,
@@ -25,15 +24,14 @@ import {
 } from '@rodokmen/shared';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { ApiProblem } from '../auth/problem.js';
 import { familyRootList, setFamilyRoot } from '../proposals/family-roots.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
-import { canReview, proposalViews, uploadView } from '../proposals/views.js';
-import { imageLink, uploadKeys } from '../storage/images.js';
-import { checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
+import { canReview, proposalViews } from '../proposals/views.js';
+import { imageLink } from '../storage/images.js';
+import { completeUpload, createUpload } from './uploads.js';
 
 /** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
 const signedIn = { 401: ApiError, 429: RateLimited };
@@ -89,12 +87,14 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     config: { action: 'review' },
     schema: {
       tags: ['Review'],
-      summary: 'The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)',
+      summary:
+        'The review queue: pending Proposals outside Import batches, oldest first, with their changes compared with the current Tree (Editors only). Import batches are listed by GET /api/batches',
       querystring: ReviewQuery,
       response: { 200: ProposalList, 400: ApiError, ...editorOnly },
     },
     handler: async (req) => {
-      const pending = db.selectFrom('proposal').where('status', '=', 'pending');
+      // A batch's Proposals are one entry of the queue, its batch (review spec, "Batch view in the review queue").
+      const pending = db.selectFrom('proposal').where('status', '=', 'pending').where('batch_id', 'is', null);
       const rows = await pending.selectAll().orderBy('submitted_at').orderBy('id').limit(req.query.limit).offset(req.query.offset).execute();
       const { total } = await pending.select((eb) => eb.fn.countAll<number>().as('total')).executeTakeFirstOrThrow();
       return { items: await proposalViews(db, rows), total };
@@ -219,30 +219,14 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     config: { action: 'propose' },
     schema: {
       tags: ['Images'],
-      summary: 'Start an image upload: returns a presigned PUT link into pending/. JPEG, PNG, WebP or HEIC, at most 25 MB',
+      summary:
+        'Start an upload: returns a presigned PUT link into pending/. An image (JPEG, PNG, WebP or HEIC, at most 25 MB) or a document (PDF, or the DOC a PDF was converted from, at most 50 MB)',
       body: CreateUploadBody,
       response: { 201: UploadTicket, 400: ApiError, 413: ApiError, ...signedIn },
     },
     handler: async (req, reply) => {
-      if (req.body.byteSize > IMAGE_MAX_BYTES) throw new ApiProblem(413, 'too_large', TOO_LARGE_MESSAGE);
-      const id = uuidv7();
-      const keys = uploadKeys(id);
-      const row = await db
-        .insertInto('upload')
-        .values({
-          id,
-          author_id: req.member!.id,
-          storage_key: keys.link,
-          display_key: keys.display,
-          declared_type: req.body.contentType,
-          declared_size: req.body.byteSize,
-          declared_sha256: req.body.sha256,
-        })
-        .returningAll()
-        .executeTakeFirstOrThrow();
-      const link = await deps.images.uploadLink(row.storage_key, req.body.contentType, req.body.byteSize);
       reply.code(201);
-      return { upload: uploadView(row), putUrl: link.url, putHeaders: link.headers, expiresAt: link.expiresAt.toISOString() };
+      return createUpload(deps, req.member!, req.body);
     },
   });
 
@@ -255,58 +239,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       params: IdParams,
       response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, ...signedIn },
     },
-    handler: async (req) => {
-      const u = await db.selectFrom('upload').selectAll().where('id', '=', req.params.id).where('author_id', '=', req.member!.id).executeTakeFirst();
-      if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
-      if (u.status === 'ready') return uploadView(u);
-      // Loaded and checked in its turn, one upload at a time (memory, issue #39).
-      const checked = await checkUpload(() => deps.images.get(u.storage_key));
-      if (!checked) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
-      const { original } = checked;
-      let processed;
-      try {
-        if ('refused' in checked) throw checked.refused;
-        processed = checked.processed;
-        if (processed.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
-      } catch (error) {
-        await deps.images.delete(u.storage_key).catch(() => undefined);
-        await db
-          .updateTable('upload')
-          .set({ status: 'deleted', deleted_at: deps.clock.now() })
-          .where('id', '=', u.id)
-          .where('status', '=', 'waiting')
-          .execute();
-        throw error;
-      }
-      // The upload link stays valid for its 15 minutes, so the file it points at could still be
-      // replaced. The bytes just checked go where no link reaches, and only they are used.
-      const verified = uploadKeys(u.id).verified;
-      await deps.images.put(verified, original, processed.contentType);
-      await deps.images.put(u.display_key, processed.display, 'image/webp');
-      const row = await db
-        .updateTable('upload')
-        .set({
-          status: 'ready',
-          storage_key: verified,
-          content_type: processed.contentType,
-          byte_size: processed.byteSize,
-          sha256: processed.sha256,
-          width: processed.width,
-          height: processed.height,
-        })
-        .where('id', '=', u.id)
-        .where('status', '=', 'waiting')
-        .returningAll()
-        .executeTakeFirst();
-      await deps.images.delete(u.storage_key).catch((e: unknown) => deps.log?.('could not delete an uploaded file after checking it', e));
-      if (row) return uploadView(row);
-      // Another request for the same upload got there first: it finished it (with the same
-      // checked bytes, so the files written here are its files too), or refused it.
-      const current = await db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
-      if (current.status === 'ready') return uploadView(current);
-      for (const key of [verified, u.display_key]) await deps.images.delete(key).catch(() => undefined);
-      throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
-    },
+    handler: async (req) => completeUpload(deps, req.member!, req.params.id),
   });
 
   app.get('/api/uploads/:id', {
@@ -323,6 +256,10 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       if (!u || (u.author_id !== member.id && !canReview(member) && u.image_id === null)) throw new ApiProblem(404, 'not_found', 'No image with this id.');
       if (u.status === 'deleted') throw new ApiProblem(410, 'deleted', 'This image was deleted.');
       if (u.status !== 'ready') throw new ApiProblem(409, 'not_ready', 'This image is still being uploaded.');
+      if (u.kind === 'document') {
+        const link = await deps.images.link(u.storage_key, u.content_type!);
+        return reply.header('cache-control', 'no-store').redirect(link.url, 302);
+      }
       // An accepted image is served from its image record; otherwise from the upload (pending/,
       // or images/ for one an undo removed, kept for 30 days).
       const image = u.image_id

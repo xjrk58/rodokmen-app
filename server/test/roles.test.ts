@@ -45,11 +45,14 @@ describe('roles, the single Owner, sessions and disabling', () => {
     expect(after.role).toBe('editor');
     expect(after.permissions).toEqual({
       propose: true,
+      writeLeads: true,
+      decideSuggestions: true,
       review: true,
       inviteMembers: false,
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      acceptBatch: false,
       manageSettings: false,
     });
   });

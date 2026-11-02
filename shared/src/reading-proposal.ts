@@ -12,7 +12,7 @@
  * an image of the page), attached to the Event of every entry read from that page.
  */
 import type { OperationInput } from './schemas/proposals.js';
-import { nameTypeForLanguage, type ReaderMark, type ReadEntry, type ReadingResult, type ReadPerson } from './schemas/reading.js';
+import { readNameKind, type ReaderMark, type ReadEntry, type ReadingResult, type ReadPerson } from './schemas/reading.js';
 
 export type ReadingSourceChoice = { sourceId: string } | { title: string; repository?: string | null; reference?: string | null; url?: string | null };
 
@@ -112,7 +112,7 @@ export function readingOperations(input: ReadingProposalInput): ReadingProposal 
 type Push = (op: OperationInput, marked?: string[]) => void;
 
 /** A new Person from a read person: the first name as primary, further forms as Names. */
-function newPerson(p: ReadPerson, personId: string, push: Push): void {
+function newPerson(p: ReadPerson, entryType: string, personId: string, push: Push): void {
   const [first, ...more] = p.names;
   if (!first) throw new Error(`${p.key} has no name`);
   const given = first.given.trim();
@@ -123,9 +123,9 @@ function newPerson(p: ReadPerson, personId: string, push: Push): void {
       tempId: personId,
       sex: p.sex,
       // A name read only as a whole keeps it as written, rather than a guessed split.
-      name: { given: given || surname ? given : first.asWritten, surname, type: nameTypeForLanguage(first.language), asFound: first.asWritten },
+      name: { given: given || surname ? given : first.asWritten, surname, ...readNameKind(p.role, entryType, first.language), asFound: first.asWritten },
     },
-    ['sex', 'name.given', 'name.surname', 'name.asFound'],
+    ['sex', 'name.given', 'name.surname', 'name.language', 'name.asFound'],
   );
   more.forEach((m, j) => {
     if (!m.given.trim() && !m.surname.trim()) return;
@@ -136,10 +136,11 @@ function newPerson(p: ReadPerson, personId: string, push: Push): void {
         personId,
         given: m.given.trim(),
         surname: m.surname.trim(),
-        type: nameTypeForLanguage(m.language),
+        type: 'other',
+        language: m.language,
         asFound: m.asWritten,
       },
-      ['given', 'surname', 'asFound'],
+      ['given', 'surname', 'language', 'asFound'],
     );
   });
 }
@@ -179,7 +180,7 @@ function entryOperations(e: ReadEntry, index: number, input: ReadingProposalInpu
   for (const p of e.persons) {
     const choice = input.persons[p.key] ?? 'new';
     const personId = choice === 'new' ? `tmp:${p.key}` : choice;
-    if (choice === 'new') newPerson(p, personId, push);
+    if (choice === 'new') newPerson(p, e.type, personId, push);
     ids.set(p.key, personId);
     push({ op: 'addRole', eventId, personId, role: p.role, roleDetail: p.roleDetail }, ['role', ...(p.roleDetail ? ['roleDetail'] : [])]);
   }

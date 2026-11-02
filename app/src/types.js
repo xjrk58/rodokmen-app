@@ -114,15 +114,15 @@
 /** @typedef {import('../../shared/src/schemas/api.js').Hourglass} Hourglass */
 /** @typedef {import('../../shared/src/schemas/api.js').MapEvent} MapEvent */
 /** @typedef {import('../../shared/src/schemas/api.js').MapEventsResult} MapEventsResult */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceEvents} PlaceEvents */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceEvent} PlaceEvent */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceEvents} PlaceEvents */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceEvent} PlaceEvent */
 /** @typedef {import('../../shared/src/schemas/tree.js').ChildLinkType} ChildLinkType */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonDetail} PersonDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').FamilyRootList} FamilyRootList */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonSearchResult} PersonSearchResult */
 /** @typedef {PersonSearchResult['items'][number]} PersonSearchHit */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceSearchResult} PlaceSearchResult */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceSummary} PlaceSummary */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceSearchResult} PlaceSearchResult */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceSummary} PlaceSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').SourceSearchResult} SourceSearchResult */
 /** @typedef {import('../../shared/src/schemas/api.js').SourceSummary} SourceSummary */
 /** @typedef {import('../../shared/src/schemas/tree.js').Sex} Sex */
@@ -137,6 +137,10 @@
 /** @typedef {import('../../shared/src/schemas/submit.js').SubmitProposalBody} SubmitProposalBody */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalView} ProposalView */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalList} ProposalList */
+/** @typedef {import('../../shared/src/schemas/batches.js').BatchView} BatchView */
+/** @typedef {{ items: BatchView[] }} BatchList */
+/** @typedef {import('../../shared/src/schemas/batches.js').AcceptBatchBody} AcceptBatchBody */
+/** @typedef {import('../../shared/src/schemas/batches.js').AcceptBatchResult} AcceptBatchResult */
 /** @typedef {import('../../shared/src/schemas/review.js').OperationView} OperationView */
 /** @typedef {import('../../shared/src/schemas/review.js').ConflictView} ConflictView */
 /** @typedef {import('../../shared/src/schemas/review.js').CitationPreview} CitationPreview */
@@ -152,6 +156,17 @@
 /** @typedef {import('../../shared/src/schemas/review.js').RejectBody} RejectBody */
 /** @typedef {import('../../shared/src/schemas/review.js').MergeBody} MergeBody */
 /** @typedef {import('../../shared/src/schemas/review.js').UndoBody} UndoBody */
+/** @typedef {import('../../shared/src/schemas/review.js').LeadStatus} LeadStatus */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadView} LeadView */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadDetail} LeadDetail */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadList} LeadList */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadSuggestion} LeadSuggestion */
+/** @typedef {import('../../shared/src/schemas/leads.js').SuggestionList} SuggestionList */
+/** @typedef {import('../../shared/src/schemas/leads.js').SearchRecordView} SearchRecordView */
+/** @typedef {import('../../shared/src/schemas/leads.js').CreateLeadInput} CreateLeadBody */
+/** @typedef {import('../../shared/src/schemas/leads.js').UpdateLeadInput} UpdateLeadBody */
+/** @typedef {import('../../shared/src/schemas/leads.js').SearchRecordInput} SearchRecordBody */
+/** @typedef {import('../../shared/src/schemas/leads.js').CloseLeadInput} CloseLeadBody */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalView['reader']} ProposalReader */
 /** @typedef {import('../../shared/src/schemas/reading.js').ReadingView} ReadingView */
 /** @typedef {import('../../shared/src/schemas/reading.js').ReadingResult} ReadingResult */
@@ -160,7 +175,7 @@
 /** @typedef {import('../../shared/src/schemas/reading.js').ReadName} ReadName */
 /** @typedef {import('../../shared/src/schemas/reading.js').Illegible} Illegible */
 /** @typedef {import('../../shared/src/schemas/reading.js').MatchCandidate} MatchCandidate */
-/** @typedef {import('../../shared/src/schemas/reading.js').LeadSuggestion} LeadSuggestion */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadingLeadSuggestion} ReadingLeadSuggestion */
 /** @typedef {import('../../shared/src/schemas/reading.js').ReadingStatusView} ReadingStatusView */
 /** @typedef {import('../../shared/src/schemas/reading.js').ReadingCrop} ReadingCrop */
 /** @typedef {import('../../shared/src/schemas/reading.js').CreateReadingBody} CreateReadingBody */
