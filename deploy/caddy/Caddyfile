@@ -4,6 +4,36 @@
 	email {$ACME_EMAIL}
 }
 
+# The API runs in two slots, api-blue and api-green: a deploy starts the new release in the idle
+# slot and switches to it once it is healthy (scripts/deploy.sh). New requests go to api-green
+# while the file /srv/api-slot/green exists (state/api-slot/green on the host), otherwise to
+# api-blue. Caddy looks for it on every request, so a switch needs no reload, and requests already
+# on their way to the old slot finish there before deploy.sh stops it.
+#
+# Retries: when no connection to the slot could be made, as while it restarts, a request is tried
+# again for up to 10 s, whatever its method: nothing was sent yet. When the request was sent and
+# then failed, only a GET is tried again (Caddy's default), since a POST may already have taken
+# effect.
+(api-slot) {
+	reverse_proxy api-{args[0]}:3000 {
+		lb_try_duration 10s
+		lb_try_interval 250ms
+	}
+}
+
+(api) {
+	@green file {
+		root /srv/api-slot
+		try_files green
+	}
+	handle @green {
+		import api-slot green
+	}
+	handle {
+		import api-slot blue
+	}
+}
+
 {$DOMAIN} {
 	header {
 		Strict-Transport-Security "max-age=31536000"
@@ -26,15 +56,14 @@
 
 	handle {
 		encode zstd gzip
-
-		# api-blue and api-green both answer to "api" on the internal network; during a deploy
-		# both may run, afterwards only the healthy one. Retry briefly while they switch.
-		reverse_proxy {$UPSTREAM:api:3000} {
-			lb_try_duration 10s
-			lb_try_interval 250ms
-			fail_duration 5s
-		}
+		import api
 	}
+}
+
+# The API inside the Docker network, for the MCP server: Caddy answers to "api" there
+# (docker-compose.yml), so these calls follow the same switch. No port is published for it.
+http://api:3000 {
+	import api
 }
 
 # Image links (README.md, "Image links"). The API signs every presigned link for this host, and
