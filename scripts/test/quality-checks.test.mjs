@@ -49,6 +49,9 @@ function fileIn(dir, suffix) {
   return file;
 }
 
+// The fixtures are not on disk. In CI (CI=true) typescript-eslint would assume a single run and
+// take each file's syntax tree from the program it built from disk, so the fixture never got linted.
+process.env.TSESTREE_SINGLE_RUN = 'false';
 const eslint = new ESLint({ cwd: ROOT });
 
 /** The findings of `rule` when `code` stands in for a file under `dir`. */
