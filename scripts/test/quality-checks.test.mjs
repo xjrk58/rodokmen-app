@@ -3,7 +3,8 @@
 // off. Each fixture reproduces the original bug; the code names the finding.
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, test } from 'node:test';
@@ -291,5 +292,41 @@ describe('pnpm audit', () => {
     assert.equal(run.status, 0, run.stderr);
     assert.deepEqual(run.calls, []);
     assert.match(run.stdout, /\*\*high\*\* minimatch .* development only/);
+  });
+});
+
+// ---------------------------------------------------------------- gitleaks (.gitleaks.toml)
+
+describe('gitleaks', () => {
+  const usable = (cmd, args) => spawnSync(cmd, args, { stdio: 'ignore' }).status === 0;
+
+  test('fails on a token in the scanned commits only, and allows only the listed test key where it is listed', (t) => {
+    if (!usable('docker', ['info']) && !usable('gitleaks', ['version'])) return t.skip('needs Docker or gitleaks');
+    const dir = mkdtempSync(join(tmpdir(), 'gitleaks-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const git = (...args) =>
+      execFileSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], { cwd: dir, encoding: 'utf8' }).trim();
+    const commit = (file, text) => {
+      mkdirSync(dirname(join(dir, file)), { recursive: true });
+      writeFileSync(join(dir, file), text);
+      git('add', file);
+      git('commit', '-q', '-m', `add ${file}`);
+      return git('rev-parse', 'HEAD');
+    };
+    const scan = (range) => spawnSync(process.execPath, [join(ROOT, 'scripts/gitleaks.mjs'), range], { cwd: dir, encoding: 'utf8' });
+    git('init', '-q');
+    const clean = commit('README.md', 'An invented repo.\n');
+    // An invented GitHub token, put together here so that this file holds none.
+    const token = ['ghp', randomBytes(27).toString('base64url').replace(/[-_]/g, 'q').slice(0, 36)].join('_');
+    const leaked = commit('src/client.js', `export const token = '${token}';\n`);
+    const later = commit('src/other.js', 'export const answer = 42;\n');
+    assert.equal(scan(`${clean}..${later}`).status, 1);
+    assert.equal(scan(`${leaked}..${later}`).status, 0);
+    // The deploy test's invented Garage key passes in that file and nowhere else.
+    const key = `${['backup', 'key'].join('_')}=GK${'0123456789abcdef01234567'}\n`;
+    const listed = commit('deploy/scripts/deploy.test.sh', key);
+    assert.equal(scan(`${later}..${listed}`).status, 0);
+    const elsewhere = commit('deploy/scripts/other.sh', key);
+    assert.equal(scan(`${listed}..${elsewhere}`).status, 1);
   });
 });

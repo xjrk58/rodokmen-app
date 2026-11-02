@@ -22,6 +22,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          # gitleaks reads the commits this push or pull request brings.
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
@@ -34,3 +37,19 @@ jobs:
         run: pnpm run lint:sh
       - name: Prettier
         run: pnpm run format:check
+      - name: gitleaks (secrets in the pushed commits)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          # A pull request's own commits; a push's new commits; else (a new branch, a force push)
+          # the commits not on main yet.
+          if [ -n "$BASE" ]; then
+            range="$BASE..HEAD"
+          elif [ -n "$BEFORE" ] && git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            range="$BEFORE..HEAD"
+          else
+            range="origin/main..HEAD"
+          fi
+          echo "Scanning $range"
+          node scripts/gitleaks.mjs "$range"
