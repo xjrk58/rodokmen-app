@@ -29,21 +29,27 @@ Exit codes: 0 success; 1 failure, with the error printed; 2 an unknown command o
 
 Run from the repo root with `pnpm <script>`.
 
-| Script         | What it does                                                                                                                            |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `build`        | builds every package that has a build (`server`, `server/mcp`, `shared`) into its `dist/`                                               |
-| `typecheck`    | type-checks every package                                                                                                               |
-| `test`         | runs every package's tests; the server's need PostgreSQL (`TEST_DATABASE_URL`), the app's need Playwright's Chromium                    |
-| `test:scripts` | tests the repo's own scripts in `scripts/test/`                                                                                         |
-| `lint`         | `lint:js`, `lint:sh` and `lint:docs`                                                                                                    |
-| `lint:js`      | ESLint with type information; no warnings allowed; known findings are in `eslint-suppressions.json`                                     |
-| `lint:sh`      | ShellCheck on every tracked shell script, in the pinned Docker image, else a `shellcheck` on `PATH`                                     |
-| `lint:docs`    | `scripts/docs-check.mjs`: fails on a broken relative link in a Markdown file, and on a page under `docs/` missing from `docs/README.md` |
-| `format`       | formats the workspace with Prettier                                                                                                     |
-| `format:check` | fails on files Prettier would change                                                                                                    |
-| `verify`       | proves the rules in `shared/` (`lsc check`; needs Dafny 4.11 on `PATH`)                                                                 |
-| `verify:trace` | writes `docs/verification.md` (`scripts/verification-trace.mjs`; `--check` only compares)                                               |
-| `vault-guard`  | `scripts/vault-guard.mjs` ([options](vault-denylist.md#the-guards-options))                                                             |
+| Script               | What it does                                                                                                                            |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `build`              | builds every package that has a build (`server`, `server/mcp`, `shared`) into its `dist/`                                               |
+| `check`              | runs every code check in a fixed order, as the lint workflow does, and prints a summary ([Code checks](checks.md))                      |
+| `typecheck`          | type-checks every package                                                                                                               |
+| `test`               | runs every package's tests; the server's need PostgreSQL (`TEST_DATABASE_URL`), the app's need Playwright's Chromium                    |
+| `test:scripts`       | tests the repo's own scripts in `scripts/test/`                                                                                         |
+| `lint`               | `lint:js`, `lint:sh` and `lint:docs`                                                                                                    |
+| `lint:js`            | ESLint with type information; no warnings allowed; known findings are in `eslint-suppressions.json`                                     |
+| `lint:sh`            | ShellCheck on every tracked shell script, in the pinned Docker image, else a `shellcheck` on `PATH`                                     |
+| `lint:docs`          | `scripts/docs-check.mjs`: fails on a broken relative link in a Markdown file, and on a page under `docs/` missing from `docs/README.md` |
+| `format`             | formats the workspace with Prettier                                                                                                     |
+| `format:check`       | fails on files Prettier would change                                                                                                    |
+| `knip`               | knip: unused files, exports, dependencies and class members (`knip.jsonc`); `--fix` removes some                                        |
+| `depcruise`          | dependency-cruiser: forbidden imports and cycles (`.dependency-cruiser.cjs`), ignoring the recorded ones                                |
+| `depcruise:baseline` | removes recorded dependency-cruiser findings that no longer occur; never adds one                                                       |
+| `jscpd`              | jscpd: copies of 30 lines or more (`.jscpd.json`)                                                                                       |
+| `gitleaks [range]`   | `scripts/gitleaks.mjs`: secrets in the commits of a `git log` range, default `origin/main..HEAD`                                        |
+| `verify`             | proves the rules in `shared/` (`lsc check`; needs Dafny 4.11 on `PATH`)                                                                 |
+| `verify:trace`       | writes `docs/verification.md` (`scripts/verification-trace.mjs`; `--check` only compares)                                               |
+| `vault-guard`        | `scripts/vault-guard.mjs` ([options](vault-denylist.md#the-guards-options))                                                             |
 
 Package scripts, with `pnpm --filter <package> <script>`:
 
@@ -64,6 +70,7 @@ Package scripts, with `pnpm --filter <package> <script>`:
 
 | Command                                                 | What it does                                                                                                                                                                                                       |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `node scripts/audit.mjs [--issue [--dry-run]]`          | fails on a high or critical advisory in a production dependency; `--issue` opens or updates the GitHub issue ([Code checks](checks.md#the-audit-and-gitleaks-scripts))                                             |
 | `node app/scripts/build-data.mjs [--refresh]`           | rebuilds districts, the border, Municipalities and `municipalityOverrides`; `--refresh` downloads the sources again                                                                                                |
 | `node app/scripts/check-links.mjs [--extra "Name=URL"]` | exits 1 on a definite failure; timeouts, certificate-chain errors, 401, 403, 408, 429 and lasting server errors are warnings                                                                                       |
 | `node app/scripts/stamp-version.mjs [--check]`          | writes the release version into `app/sw.js` and `app/src/version.js`; `--check` exits 1 if it is stale                                                                                                             |

@@ -30,7 +30,7 @@ For code quality, use a deterministic, reliable tool wherever one can do the job
 - When a review by an agent finds a problem a tool could have caught, the fix includes that tool or rule (as a backlog change if it is not really small), so the same problem cannot come back.
 - Agent reviews are for what tools cannot judge: logic, design, and whether the code does what the spec says.
 
-The checks, in the order `pnpm check` runs them, and how to fix what they find:
+The checks, in the order `pnpm check` runs them, and how to fix what they find (step by step: [Fix a failed check](docs/how-to/fix-a-failed-check.md); each tool and its configuration: [Code checks](docs/reference/checks.md)):
 
 - **typecheck**: type errors in server/, shared/ and the app's JSDoc. Fix the types; narrow with a check, not a cast.
 - **ESLint**: promises nobody awaits, `any` and unchecked casts, and the shapes of past bugs: `request.url` in the sign-in hooks, `z.url()` without a protocol, a day from `toISOString()` in the app, Leaflet content as HTML, words GLOSSARY.md rejects, fixed waits in browser tests. Run `pnpm exec eslint --fix .`, then do what the message says. After fixing a recorded finding, `pnpm exec eslint --prune-suppressions .`.
