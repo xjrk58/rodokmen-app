@@ -28,7 +28,7 @@ import { acceptBatch } from '../proposals/accept-batch.js';
 import { batchViews } from '../proposals/batches.js';
 import { submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews } from '../proposals/views.js';
-import { completeUpload, createUpload } from './uploads.js';
+import { completeUpload, createUpload, whenGone } from './uploads.js';
 
 const signedIn = { 401: ApiError, 429: RateLimited };
 const UploadParams = z.object({ id: IdParams.shape.id, uploadId: IdParams.shape.id });
@@ -173,9 +173,9 @@ export async function batchRoutes(fastify: FastifyInstance, deps: ProposalDeps) 
       params: UploadParams,
       response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, 503: ApiError, ...signedIn },
     },
-    handler: async (req) => {
+    handler: async (req, reply) => {
       await ownBatch(req.member!, req.params.id);
-      return completeUpload(deps, req.member!, req.params.uploadId);
+      return completeUpload(deps, req.member!, req.params.uploadId, whenGone(reply));
     },
   });
 

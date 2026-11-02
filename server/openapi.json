@@ -22039,7 +22039,7 @@
     },
     "/api/uploads/{id}/complete": {
       "post": {
-        "summary": "Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message)",
+        "summary": "Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message). Images are checked one at a time; 503 with Retry-After when too many are waiting or the image store did not answer in time",
         "tags": [
           "Images"
         ],

@@ -57,15 +57,19 @@ Errors are JSON:
 { "statusCode": 403, "error": "Forbidden", "message": "Only Editors can do this.", "code": "forbidden" }
 ```
 
-| Status | When                                                                                                                                                                                                     |
-| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 400    | the request does not match its schema (`code` `validation`), or breaks a rule the schema cannot check, such as a Research lead closed as not found without a search record (`search_needed`)             |
-| 401    | no valid session or token; it reveals nothing about whether a record exists                                                                                                                              |
-| 403    | the role may not do this, or a write with the session cookie came from another site                                                                                                                      |
-| 404    | no such record or route; every scan reading route while scan reading is off                                                                                                                              |
-| 409    | the request conflicts with the Tree as it is, such as marking a Person merged into another; a Research lead changed since it was read (`conflict`); a suggested lead already decided (`already_decided`) |
-| 429    | an Agent reached its hourly limit (`code` `rate_limited`), or a Member or Agent their scan readings of the day (`daily_limit`); `retryAt` and the `Retry-After` header say when to try again             |
-| 503    | finishing an upload: the image store did not answer within 30 seconds (`store_timeout`); the `Retry-After` header says when to try again, and the upload can be finished then                            |
+| Status | When                                                                                                                                                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | the request does not match its schema (`code` `validation`), or breaks a rule the schema cannot check, such as a Research lead closed as not found without a search record (`search_needed`)                                          |
+| 401    | no valid session or token; it reveals nothing about whether a record exists                                                                                                                                                           |
+| 403    | the role may not do this, or a write with the session cookie came from another site                                                                                                                                                   |
+| 404    | no such record or route; every scan reading route while scan reading is off                                                                                                                                                           |
+| 409    | the request conflicts with the Tree as it is, such as marking a Person merged into another; a Research lead changed since it was read (`conflict`); a suggested lead already decided (`already_decided`)                              |
+| 429    | an Agent reached its hourly limit (`code` `rate_limited`), or a Member or Agent their scan readings of the day (`daily_limit`); `retryAt` and the `Retry-After` header say when to try again                                          |
+| 503    | finishing an upload: 8 images are already waiting to be checked (`busy`), or the image store did not answer within 30 seconds (`store_timeout`); the `Retry-After` header says when to try again, and the upload can be finished then |
+
+## Finishing uploads
+
+`POST /api/uploads/{id}/complete` (and its Import batch twin) checks images one at a time in each API process, from loading the file to writing its checked copy and display copy. At most 8 may wait or be checked at once; one more is refused at once with 503 `busy` and `Retry-After: 10`, and goes through when sent again. An upload whose request is closed while it waits is skipped and stays as it was. Sending a `complete` again, or several at once, is safe: once the upload is finished, each answers with it. Documents do not take turns.
 
 ## Agent limits
 

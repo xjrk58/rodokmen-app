@@ -25,6 +25,8 @@ export const HTTP_ERROR_NAMES: Record<number, string> = {
   413: 'Content Too Large',
   415: 'Unsupported Media Type',
   429: 'Too Many Requests',
+  /** Only ever in the log: the client had gone before its answer (nginx's code). */
+  499: 'Client Closed Request',
   500: 'Internal Server Error',
   503: 'Service Unavailable',
 };

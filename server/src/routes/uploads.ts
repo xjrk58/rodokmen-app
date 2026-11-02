@@ -1,4 +1,5 @@
 import { DOCUMENT_MAX_BYTES, IMAGE_MAX_BYTES, isDocumentType, type CreateUploadBody, type UploadTicket, type UploadView } from '@rodokmen/shared';
+import type { FastifyReply } from 'fastify';
 import { v7 as uuidv7 } from 'uuid';
 import { ApiProblem } from '../auth/problem.js';
 import type { Account, Upload } from '../db/types.js';
@@ -92,8 +93,24 @@ async function completeDocument(deps: ProposalDeps, u: Upload) {
   throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
 }
 
-/** Finishes an upload: checks the file, keeps the checked copy where the link cannot reach, and makes an image's display copy. */
-export async function completeUpload(deps: ProposalDeps, member: Account, id: string): Promise<UploadView> {
+/**
+ * Aborts when the client goes away before its answer is sent, so that an upload still waiting
+ * for its turn is skipped (#97). (Fastify's request.signal cannot tell: it also aborts as soon as
+ * a request's body has been read.)
+ */
+export function whenGone(reply: FastifyReply): AbortSignal {
+  const gone = new AbortController();
+  reply.raw.once('close', () => {
+    if (!reply.raw.writableEnded) gone.abort(new ApiProblem(499, 'gone', 'The request was closed before its upload was checked.'));
+  });
+  return gone.signal;
+}
+
+/**
+ * Finishes an upload: checks the file, keeps the checked copy where the link cannot reach, and
+ * makes an image's display copy. An image waiting for its turn is skipped when `gone` aborts.
+ */
+export async function completeUpload(deps: ProposalDeps, member: Account, id: string, gone?: AbortSignal): Promise<UploadView> {
   const u = await deps.db.selectFrom('upload').selectAll().where('id', '=', id).where('author_id', '=', member.id).executeTakeFirst();
   if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
   if (u.status === 'ready') return uploadView(u);
@@ -102,7 +119,7 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
   // replaced. The bytes checked go where no link reaches, and only they are used. Loaded, checked
   // and written in its turn, one upload at a time (memory, issues #39 and #97).
   const { verified } = uploadKeys(u.id);
-  const result = await checkUpload(deps.images, { link: u.storage_key, verified, display: u.display_key, sha256: u.declared_sha256 });
+  const result = await checkUpload(deps.images, { link: u.storage_key, verified, display: u.display_key, sha256: u.declared_sha256 }, gone);
   if (!result) return finishedElsewhere(deps, u);
   if ('refused' in result) return refuse(deps, u, result.refused);
   const { checked } = result;

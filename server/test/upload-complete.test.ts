@@ -3,10 +3,10 @@ import { UploadTicket, UploadView } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../src/db/types.js';
-import { queuedImages } from '../src/storage/process.js';
+import { BUSY_MESSAGE, QUEUE_LIMIT, queuedImages } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { GatedStorage } from './gated-storage.js';
-import { createMember, ensureOwner, makeApp, signIn, type TestApp } from './helpers.js';
+import { createMember, ensureOwner, makeApp, portOf, signIn, type TestApp } from './helpers.js';
 
 /**
  * Finishing uploads while others are checked (issues #95 and #97): POST /api/uploads/{id}/complete
@@ -105,5 +105,48 @@ describe('finishing uploads', () => {
     release();
     expect((await first).statusCode).toBe(200);
     expect((await waiting).json()).toMatchObject({ statusCode: 404, code: 'not_found' });
+  });
+  it('a full queue refuses one more upload at once, with 503 and Retry-After; it can be finished later (#97)', async () => {
+    const image = await picture(640, 480);
+    const ids = [];
+    for (let i = 0; i <= QUEUE_LIMIT; i++) ids.push(await uploaded(image));
+    const [first, ...rest] = ids;
+    const refused = rest.pop()!;
+    const release = storage.hold(`pending/${first}/original`);
+    const waiting = [complete(first!), ...rest.map((id) => complete(id))];
+    await vi.waitFor(() => expect(queuedImages()).toBe(QUEUE_LIMIT));
+    const busy = await complete(refused);
+    expect(busy.statusCode).toBe(503);
+    expect(busy.headers['retry-after']).toBe('10');
+    expect(busy.json()).toEqual({ statusCode: 503, error: 'Service Unavailable', message: BUSY_MESSAGE, code: 'busy' });
+    release();
+    expect((await Promise.all(waiting)).map((r) => r.statusCode)).toEqual(Array.from({ length: QUEUE_LIMIT }, () => 200));
+    // The refused upload is untouched, and goes through when tried again.
+    expect(storage.log).not.toContain(`get pending/${refused}/original`);
+    expect(UploadView.parse((await complete(refused)).json())).toMatchObject({ id: refused, status: 'ready' });
+  });
+
+  it('skips an upload whose request was closed while it waited, and frees its place at once (#97)', async () => {
+    await a.app.listen({ host: '127.0.0.1', port: 0 });
+    const origin = `http://127.0.0.1:${portOf(a.app.server.address())}`;
+    const image = await picture(640, 480);
+    const first = await uploaded(image);
+    const left = await uploaded(image);
+    const release = storage.hold(`pending/${first}/original`);
+    const holding = complete(first);
+    await vi.waitFor(() => expect(queuedImages()).toBe(1));
+    // A real connection, closed by the client while its upload waits for the first one.
+    const closed = new AbortController();
+    const request = expect(fetch(`${origin}/api/uploads/${left}/complete`, { method: 'POST', headers: { cookie }, signal: closed.signal })).rejects.toThrow();
+    await vi.waitFor(() => expect(queuedImages()).toBe(2));
+    closed.abort();
+    await request;
+    await vi.waitFor(() => expect(queuedImages()).toBe(1));
+    release();
+    expect((await holding).statusCode).toBe(200);
+    expect(storage.log).not.toContain(`get pending/${left}/original`);
+    // Still waiting, so the next request finishes it.
+    expect(await t.db.selectFrom('upload').select('status').where('id', '=', left).executeTakeFirstOrThrow()).toEqual({ status: 'waiting' });
+    expect(UploadView.parse((await complete(left)).json())).toMatchObject({ id: left, status: 'ready' });
   });
 });

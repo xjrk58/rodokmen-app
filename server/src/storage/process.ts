@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
 import { STORE_TIMEOUT_MS, type ImageStorage } from './images.js';
-import { SerialQueue } from './serial-queue.js';
+import { QueueFull, SerialQueue } from './serial-queue.js';
 
 /** Longest side of the display copy (evidence-media spec, "Originals are kept"). */
 export const DISPLAY_MAX_PIXELS = 2000;
@@ -23,15 +23,38 @@ sharp.concurrency(1);
 sharp.cache({ memory: 16, items: 10, files: 0 });
 
 /**
+ * The most uploads and crops that may wait for their turn or be in it, in one API slot (#97). The
+ * app, the importer and the MCP server each send one upload at a time, so this many means several
+ * Members at once; one more is refused with 503 and Retry-After, rather than kept waiting behind
+ * one Member's pile of files. A turn takes from a fraction of a second to a few seconds.
+ */
+export const QUEUE_LIMIT = 8;
+/** How soon to try again when the queue was full: by then a turn or two have ended. */
+export const BUSY_RETRY_SECONDS = 10;
+
+/**
  * Images are checked one at a time, so uploads finished at the same moment cannot stack their
  * decodes, each of which can take a few hundred MB. An upload's turn covers loading its original
  * and writing its checked copy and display copy too (checkUpload), so the ones waiting hold
  * nothing yet, and the one done holds nothing any more.
  */
-const turns = new SerialQueue();
+const turns = new SerialQueue(QUEUE_LIMIT);
 
 /** Uploads and crops waiting for their turn or in it. */
 export const queuedImages = (): number => turns.size;
+
+/**
+ * A turn for `task`, in the order asked for. Refused with 503 while QUEUE_LIMIT are queued;
+ * skipped, without running, when `gone` aborts before its turn (its request was closed, #97).
+ */
+async function inTurn<T>(task: () => Promise<T>, gone?: AbortSignal): Promise<T> {
+  try {
+    return await turns.run(task, gone);
+  } catch (error) {
+    if (error instanceof QueueFull) throw new ApiProblem(503, 'busy', BUSY_MESSAGE, {}, { 'retry-after': String(BUSY_RETRY_SECONDS) });
+    throw error;
+  }
+}
 
 export type ImageType = ImageContentType;
 
@@ -67,6 +90,7 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
 export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
+export const BUSY_MESSAGE = 'The server is checking other images just now. Try again in a few seconds.';
 export const STORE_TIMEOUT_MESSAGE = 'The image store did not answer in time. Try again in a minute.';
 export const CHECKSUM_MESSAGE = 'The uploaded file differs from the one announced. Upload it again.';
 export const HEIC_MESSAGE =
@@ -80,7 +104,7 @@ export const HEIC_MESSAGE =
  */
 export async function processImage(original: Buffer): Promise<ProcessedImage> {
   const contentType = typeOf(original);
-  return turns.run(() => displayCopy(original, contentType));
+  return inTurn(() => displayCopy(original, contentType));
 }
 
 /** Where an upload's files are, and the SHA-256 it was announced with. */
@@ -103,10 +127,11 @@ export type UploadCheck = { checked: CheckedImage } | { refused: ApiProblem };
  * processImage does, and writes the checked original and its display copy. Any number of uploads
  * finished at once hold one original, one decode and one display copy in memory, not one each,
  * and nothing of an upload is held once its turn is over (#97). Null when there is no file at the
- * link; an error of the store is passed on.
+ * link; an error of the store is passed on. Refused with 503 while the queue is full, and skipped
+ * when `gone` aborts before its turn (inTurn).
  */
-export function checkUpload(images: ImageStorage, upload: PendingUpload): Promise<UploadCheck | null> {
-  return turns.run(async () => {
+export function checkUpload(images: ImageStorage, upload: PendingUpload, gone?: AbortSignal): Promise<UploadCheck | null> {
+  return inTurn(async () => {
     const original = await inTime((signal) => images.get(upload.link, signal));
     if (!original) return null;
     let processed: ProcessedImage;
@@ -122,7 +147,7 @@ export function checkUpload(images: ImageStorage, upload: PendingUpload): Promis
     await inTime((signal) => images.put(upload.verified, original, checked.contentType, signal));
     await inTime((signal) => images.put(upload.display, display, 'image/webp', signal));
     return { checked };
-  });
+  }, gone);
 }
 
 /**
@@ -201,7 +226,7 @@ export interface Crop {
  * upload. Null when there is no file at `key`.
  */
 export function cropForReading(images: ImageStorage, key: string, crop: Crop): Promise<Buffer | null> {
-  return turns.run(async () => {
+  return inTurn(async () => {
     const original = await inTime((signal) => images.get(key, signal));
     if (!original) return null;
     const meta = await sharp(original).metadata();

@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 import { STORE_TIMEOUT_MS } from '../src/storage/images.js';
 import { CHECKSUM_MESSAGE, checkUpload, cropForReading, DISPLAY_MAX_PIXELS, processImage, type PendingUpload } from '../src/storage/process.js';
-import { SerialQueue } from '../src/storage/serial-queue.js';
+import { QueueFull, SerialQueue } from '../src/storage/serial-queue.js';
 import { GatedStorage } from './gated-storage.js';
 
 /** A promise with its resolve and reject at hand. */
@@ -69,6 +69,50 @@ describe('SerialQueue', () => {
     await expect(failing).rejects.toThrow('cannot decode');
     await expect(thrown).rejects.toThrow('thrown at once');
     await expect(next).resolves.toBe('next');
+    expect(queue.size).toBe(0);
+  });
+  it('refuses a task beyond its limit at once, and takes one again when a place is free (#97)', async () => {
+    const queue = new SerialQueue(2);
+    const gate = deferred();
+    const first = queue.run(() => gate.promise);
+    const second = queue.run(() => Promise.resolve('second'));
+    await expect(queue.run(() => Promise.resolve('third'))).rejects.toBeInstanceOf(QueueFull);
+    expect(queue.size).toBe(2);
+    gate.resolve();
+    await Promise.all([first, second]);
+    await expect(queue.run(() => Promise.resolve('again'))).resolves.toBe('again');
+  });
+
+  it('skips a task whose signal aborts before its turn, and frees its place at once (#97)', async () => {
+    const queue = new SerialQueue(2);
+    const gate = deferred();
+    const ran: string[] = [];
+    const first = queue.run(() => {
+      ran.push('first');
+      return gate.promise;
+    });
+    const gone = new AbortController();
+    const skipped = expect(queue.run(async () => void ran.push('skipped'), gone.signal)).rejects.toThrow('the request was closed');
+    expect(queue.size).toBe(2);
+    gone.abort(new Error('the request was closed'));
+    expect(queue.size).toBe(1);
+    const next = queue.run(async () => void ran.push('next'));
+    // Aborted already: refused at once, without taking a place.
+    await expect(queue.run(async () => void ran.push('late'), gone.signal)).rejects.toThrow('the request was closed');
+    expect(queue.size).toBe(2);
+    gate.resolve();
+    await Promise.all([first, skipped, next]);
+    expect(ran).toEqual(['first', 'next']);
+
+    // Once a task runs, its signal no longer matters: it ends as usual.
+    const running = new AbortController();
+    const end = deferred<string>();
+    const task = queue.run(() => end.promise, running.signal);
+    await settle();
+    running.abort(new Error('gone while running'));
+    expect(queue.size).toBe(1);
+    end.resolve('done');
+    await expect(task).resolves.toBe('done');
     expect(queue.size).toBe(0);
   });
 });
