@@ -388,6 +388,7 @@ class Builder {
       given: given.cs,
       surname: sn,
       type: 'birth',
+      language: 'cs',
       asFound: opts.asFound ?? `${given.cs} ${sn}`,
       primary: true,
     });
@@ -399,7 +400,8 @@ class Builder {
         personId: id,
         given: given.la,
         surname: oldSurname,
-        type: 'latin',
+        type: 'other',
+        language: 'la',
         asFound: `${given.la} ${oldSurname}`,
         primary: false,
       });
@@ -410,7 +412,8 @@ class Builder {
         personId: id,
         given: given.de,
         surname: oldSurname,
-        type: 'german',
+        type: 'other',
+        language: 'de',
         asFound: `${given.de} ${oldSurname}`,
         primary: false,
       });
@@ -427,6 +430,7 @@ class Builder {
       given: wife.given.cs,
       surname: husband.surname.f,
       type: 'married',
+      language: 'cs',
       asFound: `${wife.given.cs} ${husband.surname.f}`,
       primary: false,
     });
@@ -923,7 +927,7 @@ export function generateFixture(seed = 267): FixtureModel {
   L.janNovak = jan.id;
   b.childLink(famNovak2.id, jan);
   L.janBaptism = b.baptise(jan, tomas, marieSvobodova, { houseId: houseA }, '1801-03-12', [matejHorak, rozalieSvobodova]);
-  const latinName = b.m.names.find((n) => n.personId === jan.id && n.type === 'latin')!;
+  const latinName = b.m.names.find((n) => n.personId === jan.id && n.language === 'la')!;
   b.m.nameCitations.push({ id: b.id(), nameId: latinName.id, citationId: b.m.eventCitations.find((c) => c.eventId === L.janBaptism)!.citationId });
 
   const katerina = child(famProchazka2, 'female', FEMALE[2]!, '1804-04-29');

@@ -56,7 +56,7 @@ function show(v) {
 const isRecord = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /** @param {AuthorRef} author */
-function authorLine(author) {
+export function authorLine(author) {
   return h(
     'span',
     { class: 'author' },
@@ -270,7 +270,15 @@ export function proposalCard(p, options = {}) {
   const card = h(
     'article',
     { class: 'card proposal', 'data-testid': 'proposal', 'data-id': p.id },
-    h('header', { class: 'card-head' }, authorLine(p.author), h('span', { class: 'muted small' }, formatDate(p.submittedAt)), statusChip(p)),
+    h(
+      'header',
+      { class: 'card-head' },
+      authorLine(p.author),
+      h('span', { class: 'muted small' }, formatDate(p.submittedAt)),
+      p.batch ? h('span', { class: 'chip', 'data-testid': 'batch-position' }, t('batch.number', { number: p.batch.position + 1 })) : null,
+      statusChip(p),
+    ),
+    p.blockedBy ? h('p', { class: 'warning small', 'data-testid': 'blocked' }, t('batch.blockedBy', { id: p.blockedBy })) : null,
     p.note ? h('p', { class: 'proposal-note' }, p.note) : null,
     ops,
     ...p.citations.map(citationBlock),
@@ -289,22 +297,24 @@ export function proposalCard(p, options = {}) {
 }
 
 /**
- * The review queue: pending Proposals, oldest first.
+ * The review queue: Import batches, each as one entry, then the other pending Proposals, oldest first.
  * @param {HTMLElement} root
  * @param {string | undefined} focusId
  * @param {AbortSignal} signal aborted when the Member leaves the screen; nothing is drawn after that
+ * @param {(signal: AbortSignal) => HTMLElement} [batches] the Import batch entries (batch-review.js)
  */
-export async function renderReview(root, focusId, signal) {
+export async function renderReview(root, focusId, signal, batches) {
   root.replaceChildren(h('p', { class: 'muted' }, t('work.loading')));
   const { items, total } = await reviewQueue(signal);
   if (signal.aborted) return;
   const reload = () => {
-    renderReview(root, undefined, signal).catch((/** @type {unknown} */ e) => {
+    renderReview(root, undefined, signal, batches).catch((/** @type {unknown} */ e) => {
       if (!signal.aborted) root.replaceChildren(h('p', { class: 'form-status error' }, messageOf(e)));
     });
   };
   root.replaceChildren(
     h('h2', {}, t('review.title')),
+    batches ? batches(signal) : '',
     h('p', { class: 'muted small', 'data-testid': 'queue-count' }, t('review.count', { count: total ?? items.length })),
     ...(items.length ? items.map((p) => proposalCard(p, { review: { onDone: reload } })) : [h('p', { class: 'empty' }, t('review.none'))]),
     mergeTool(reload),

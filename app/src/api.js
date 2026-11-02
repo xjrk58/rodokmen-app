@@ -22,6 +22,10 @@ import { hex } from './text.js';
 /** @typedef {import('./types.js').RejectBody} RejectBody */
 /** @typedef {import('./types.js').AcceptBody} AcceptBody */
 /** @typedef {import('./types.js').UndoBody} UndoBody */
+/** @typedef {import('./types.js').BatchView} BatchView */
+/** @typedef {import('./types.js').BatchList} BatchList */
+/** @typedef {import('./types.js').AcceptBatchBody} AcceptBatchBody */
+/** @typedef {import('./types.js').AcceptBatchResult} AcceptBatchResult */
 
 export const API = '/api/';
 
@@ -122,13 +126,15 @@ export const getHourglass = (id, depth, signal) => api(`persons/${encodeURICompo
 /**
  * People list and search: every Person by any Name, or all of them alphabetically without a query;
  * with `relation`, only Persons of those relations to the family (relative,possible).
- * @param {{ q: string, offset: number, limit: number, relation?: string | null }} o
+ * @param {{ q: string, offset: number, limit: number, relation?: string | null, labels?: string[] }} o labels: only Persons carrying all of them
  * @param {AbortSignal} [signal]
  * @returns {Promise<PersonSearchResult>}
  */
 export const listPersons = (o, signal) =>
   api(
-    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}limit=${o.limit}&offset=${o.offset}`,
+    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}${(o.labels ?? [])
+      .map((l) => `label=${encodeURIComponent(l)}&`)
+      .join('')}limit=${o.limit}&offset=${o.offset}`,
     { signal },
   );
 
@@ -249,6 +255,25 @@ export const myProposals = (signal) => api('proposals?mine=true&limit=100', { si
 /** @param {AbortSignal} [signal] @returns {Promise<ProposalList>} */
 export const reviewQueue = (signal) => api('review?limit=50', { signal });
 
+/** Import batches with their progress (review spec, "Batch view in the review queue"). @param {AbortSignal} [signal] @returns {Promise<BatchList>} */
+export const listBatches = (signal) => api('batches', { signal });
+
+/**
+ * A batch's Proposals in batch order, or a random sample of its pending ones.
+ * @param {string} id
+ * @param {{ sample: number } | { offset: number, limit: number }} q
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ProposalList>}
+ */
+export const batchProposals = (id, q, signal) =>
+  api(`batches/${encodeURIComponent(id)}/proposals?${'sample' in q ? `sample=${q.sample}` : `offset=${q.offset}&limit=${q.limit}`}`, { signal });
+
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<BatchView>} */
+export const getBatch = (id, signal) => api(`batches/${encodeURIComponent(id)}`, { signal });
+
+/** @param {string} id @param {AcceptBatchBody} body @returns {Promise<AcceptBatchResult>} */
+export const acceptBatch = (id, body) => api(`batches/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
+
 /** @param {string} id @param {AcceptBody} body @returns {Promise<ProposalView>} */
 export const acceptProposal = (id, body) => api(`proposals/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
 
@@ -329,9 +354,22 @@ export const uploadUrl = (uploadId) => `${API}uploads/${encodeURIComponent(uploa
  * @param {Blob} blob
  * @returns {Promise<string>}
  */
-export async function uploadImage(blob) {
+export const uploadImage = (blob) => uploadFile(blob, /** @type {UploadTicket['upload']['contentType']} */ (blob.type || 'image/jpeg'));
+
+/**
+ * Uploads one PDF document for a Source (evidence-media spec, "Documents on Sources"). Returns the upload id.
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+export const uploadDocument = (blob) => uploadFile(blob, 'application/pdf');
+
+/**
+ * @param {Blob} blob
+ * @param {UploadTicket['upload']['contentType']} contentType
+ * @returns {Promise<string>}
+ */
+async function uploadFile(blob, contentType) {
   const sha256 = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())));
-  const contentType = blob.type || 'image/jpeg';
   /** @type {UploadTicket} */
   const ticket = await api('uploads', { method: 'POST', body: { contentType, byteSize: blob.size, sha256 } });
   let put;

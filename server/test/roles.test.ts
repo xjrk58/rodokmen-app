@@ -52,6 +52,7 @@ describe('roles, the single Owner, sessions and disabling', () => {
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      acceptBatch: false,
     });
   });
 

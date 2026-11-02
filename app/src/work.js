@@ -15,6 +15,7 @@ import {
   notificationSettings,
   setNotificationSettings,
   submitProposal,
+  uploadDocument,
   uploadImage,
 } from './api.js';
 import { guarded, h, showError } from './dom.js';
@@ -36,6 +37,7 @@ import { leadStart } from './lead-parts.js';
 import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
 import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
+import { batchEntries, renderBatch } from './batch-review.js';
 import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -85,15 +87,18 @@ function draftFamily(draft) {
  */
 async function proposalBody(draft) {
   const uploadIds = [];
+  const documents = [];
   for (const photo of await draftPhotos(draft.id)) {
+    const document = photo.kind === 'document';
     if (!photo.uploadId) {
-      photo.uploadId = await uploadImage(photo.blob);
+      photo.uploadId = document ? await uploadDocument(photo.blob) : await uploadImage(photo.blob);
       await savePhoto(photo);
     }
-    uploadIds.push(photo.uploadId);
+    if (document) documents.push({ uploadId: photo.uploadId, title: photo.name.replace(/\.pdf$/i, '') || photo.name });
+    else uploadIds.push(photo.uploadId);
   }
   const family = await draftFamily(draft);
-  const operations = buildOperations(draft, { uploadIds, family });
+  const operations = buildOperations(draft, { uploadIds, documents, family });
   return {
     formatVersion: OPERATIONS_VERSION,
     idempotencyKey: draft.idempotencyKey,
@@ -280,7 +285,8 @@ export class WorkPanel {
     else if (!this.me) body.replaceChildren(this.signInPrompt());
     else if (view === 'mine') await this.renderMine(a, signal);
     else if (view === 'lead' && a) await this.renderFromLead(a, b, signal);
-    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal);
+    else if (view === 'review' && this.me.permissions.review && a === 'batch' && b) await renderBatch(body, b, this.me, signal);
+    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal, batchEntries);
     else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review }, signal);
     else await this.renderPropose(undefined);
   }
@@ -320,7 +326,7 @@ export class WorkPanel {
       return;
     }
     const draft = newDraft(emptyForm(kind));
-    if (personId && draft.kind === 'correction') {
+    if (personId && (draft.kind === 'correction' || draft.kind === 'notes')) {
       const person = await getPerson(personId, signal);
       if (signal?.aborted) return;
       const primary = person.names.find((n) => n.primary) ?? person.names[0];

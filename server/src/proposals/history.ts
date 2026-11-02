@@ -33,6 +33,10 @@ const REFERENCES: Record<HistoryKind, string[]> = {
   event: ['event_id'],
   source: ['source_id'],
   citation: ['citation_id'],
+  place: ['place_id'],
+  house: ['house_id'],
+  parish: ['parish_id'],
+  estate: ['estate_id'],
 };
 
 /**

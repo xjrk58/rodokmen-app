@@ -114,15 +114,15 @@
 /** @typedef {import('../../shared/src/schemas/api.js').Hourglass} Hourglass */
 /** @typedef {import('../../shared/src/schemas/api.js').MapEvent} MapEvent */
 /** @typedef {import('../../shared/src/schemas/api.js').MapEventsResult} MapEventsResult */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceEvents} PlaceEvents */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceEvent} PlaceEvent */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceEvents} PlaceEvents */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceEvent} PlaceEvent */
 /** @typedef {import('../../shared/src/schemas/tree.js').ChildLinkType} ChildLinkType */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonDetail} PersonDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').FamilyRootList} FamilyRootList */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonSearchResult} PersonSearchResult */
 /** @typedef {PersonSearchResult['items'][number]} PersonSearchHit */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceSearchResult} PlaceSearchResult */
-/** @typedef {import('../../shared/src/schemas/api.js').PlaceSummary} PlaceSummary */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceSearchResult} PlaceSearchResult */
+/** @typedef {import('../../shared/src/schemas/places-api.js').PlaceSummary} PlaceSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').SourceSearchResult} SourceSearchResult */
 /** @typedef {import('../../shared/src/schemas/api.js').SourceSummary} SourceSummary */
 /** @typedef {import('../../shared/src/schemas/tree.js').Sex} Sex */
@@ -137,6 +137,10 @@
 /** @typedef {import('../../shared/src/schemas/submit.js').SubmitProposalBody} SubmitProposalBody */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalView} ProposalView */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalList} ProposalList */
+/** @typedef {import('../../shared/src/schemas/batches.js').BatchView} BatchView */
+/** @typedef {{ items: BatchView[] }} BatchList */
+/** @typedef {import('../../shared/src/schemas/batches.js').AcceptBatchBody} AcceptBatchBody */
+/** @typedef {import('../../shared/src/schemas/batches.js').AcceptBatchResult} AcceptBatchResult */
 /** @typedef {import('../../shared/src/schemas/review.js').OperationView} OperationView */
 /** @typedef {import('../../shared/src/schemas/review.js').ConflictView} ConflictView */
 /** @typedef {import('../../shared/src/schemas/review.js').CitationPreview} CitationPreview */

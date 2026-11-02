@@ -102,6 +102,7 @@ export function me(role) {
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      acceptBatch: false,
     },
     passkeyCount: 1,
     person: null,
@@ -151,7 +152,22 @@ export function personDetail(n, given, surname) {
     living: false,
     relation: 'unrelated',
     familyRoot: false,
-    names: [{ id: ID(n + 1000), version: 1, personId: ID(n), given, surname, type: 'birth', asFound: `${given} ${surname}`, primary: true, citations: [] }],
+    labels: [],
+    notes: null,
+    names: [
+      {
+        id: ID(n + 1000),
+        version: 1,
+        personId: ID(n),
+        given,
+        surname,
+        type: 'birth',
+        language: 'cs',
+        asFound: `${given} ${surname}`,
+        primary: true,
+        citations: [],
+      },
+    ],
     events: [],
     familiesAsPartner: [],
     familiesAsChild: [],
@@ -219,6 +235,9 @@ export function conflictingProposal() {
     citations: [],
     conflicts: 1,
     answersLeads: [],
+    batch: null,
+    dependsOn: [],
+    blockedBy: null,
   };
 }
 

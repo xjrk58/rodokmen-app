@@ -61,7 +61,7 @@ export function actionOf(route: { method: string | string[]; config?: { action?:
 
 function refusal(member: Account, action: Action): string {
   if (member.role === 'agent') return 'An Agent may only read the Tree, submit Proposals and write Research leads.';
-  if (action === 'manageAccounts' || action === 'markFamilyRoots') return 'Only the Owner can do this.';
+  if (action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch') return 'Only the Owner can do this.';
   return 'Only Editors can do this.';
 }
 
@@ -159,7 +159,7 @@ async function authorize(request: FastifyRequest, reply: FastifyReply, options: 
 }
 
 function tooManyRequests(reply: FastifyReply, retryAt: Date, kind: LimitKind, now: Date) {
-  const what = kind === 'proposal' ? 'Proposals' : 'requests';
+  const what = kind === 'proposal' ? 'Proposals' : kind === 'batch' ? 'requests to its Import batches' : 'requests';
   return reply
     .code(429)
     .header('retry-after', String(Math.max(1, Math.ceil((retryAt.getTime() - now.getTime()) / 1000))))

@@ -140,6 +140,17 @@
           "en"
         ]
       },
+      "LanguageTagInput": {
+        "type": "string",
+        "maxLength": 35,
+        "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?(-([0-9a-z]{5,8}|[0-9][0-9a-z]{3}))*$",
+        "description": "BCP 47 language tag in canonical case, such as cs (Czech), la (Latin), de (German) or pl (Polish)",
+        "examples": [
+          "cs",
+          "la",
+          "de"
+        ]
+      },
       "NameLanguageInput": {
         "type": "string",
         "enum": [
@@ -186,12 +197,10 @@
         "enum": [
           "birth",
           "married",
-          "latin",
-          "german",
           "nickname",
           "other"
         ],
-        "description": "Birth name, married name, Latin form, German form, nickname or other"
+        "description": "Birth name, married name, nickname or another form; the language is a separate tag"
       },
       "NameRecordInput": {
         "type": "object",
@@ -218,6 +227,17 @@
           "type": {
             "$ref": "#/components/schemas/NameTypeInput"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTagInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -236,6 +256,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary"
         ]
@@ -1475,6 +1496,17 @@
           "type": {
             "$ref": "#/components/schemas/NameTypeInput"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTagInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -1499,6 +1531,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary",
           "citations"
@@ -1685,6 +1718,20 @@
             "type": "boolean",
             "description": "The Owner marked this Person as a Family root"
           },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The Labels of the Person, such as a family line, in the order they were added"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "names": {
             "type": "array",
             "items": {
@@ -1724,6 +1771,8 @@
           "living",
           "relation",
           "familyRoot",
+          "labels",
+          "notes",
           "names",
           "events",
           "familiesAsPartner",
@@ -2096,6 +2145,13 @@
               "$ref": "#/components/schemas/EventSummaryInput"
             },
             "description": "Events in which the partners take part as partners, such as the marriage"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2103,7 +2159,8 @@
           "version",
           "partners",
           "children",
-          "events"
+          "events",
+          "notes"
         ]
       },
       "EventDetailInput": {
@@ -2233,6 +2290,13 @@
               "$ref": "#/components/schemas/EstateRefInput"
             },
             "description": "Estates the Place was part of at the date of the Event"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2249,7 +2313,8 @@
           "roles",
           "citations",
           "parishes",
-          "estates"
+          "estates",
+          "notes"
         ]
       },
       "MapEventInput": {
@@ -2375,6 +2440,504 @@
         "required": [
           "events",
           "truncated"
+        ]
+      },
+      "SourceSummaryInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceTypeInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register"
+        ]
+      },
+      "SourceSearchResultInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceSummaryInput"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "limit",
+          "offset"
+        ]
+      },
+      "DocumentViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string",
+            "const": "application/pdf"
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "url": {
+            "type": "string",
+            "description": "The PDF; redirects to a link that expires within minutes"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "const": "application/msword"
+                  },
+                  "byteSize": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Redirects to a link that expires"
+                  }
+                },
+                "required": [
+                  "contentType",
+                  "byteSize",
+                  "url"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The DOC the PDF was converted from, when it was kept"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "title",
+          "contentType",
+          "byteSize",
+          "url",
+          "original"
+        ]
+      },
+      "SourceDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceTypeInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationSummaryInput"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentViewInput"
+            },
+            "description": "PDF documents of the Source, such as a family chronicle"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register",
+          "citations",
+          "documents",
+          "notes"
+        ]
+      },
+      "ImageViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKindInput"
+          },
+          "citationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "Persons shown, for portraits"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 26214400
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Presigned link to the image; expires within minutes"
+          },
+          "urlExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind",
+          "citationId",
+          "personIds",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "sha256",
+          "caption",
+          "url",
+          "urlExpiresAt"
+        ]
+      },
+      "CitationDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Page or frame; null for a Family account"
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "description": "Transcription in the original language"
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "When the entry was read"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/ConfidenceInput"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceSummaryInput"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentViewInput"
+            },
+            "description": "The Source's documents"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummaryInput"
+            }
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "personId": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "asFound": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "personId",
+                "asFound"
+              ]
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageViewInput"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "sourceId",
+          "page",
+          "transcription",
+          "readOn",
+          "confidence",
+          "note",
+          "source",
+          "documents",
+          "events",
+          "names",
+          "images"
+        ]
+      },
+      "HealthInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unreachable"
+            ]
+          },
+          "release": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "release"
         ]
       },
       "PlaceEventInput": {
@@ -2730,6 +3293,13 @@
             "items": {
               "$ref": "#/components/schemas/HouseSummaryInput"
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2742,7 +3312,8 @@
           "names",
           "parishes",
           "estates",
-          "houses"
+          "houses",
+          "notes"
         ]
       },
       "HouseDetailInput": {
@@ -2789,6 +3360,13 @@
               "$ref": "#/components/schemas/EventSummaryInput"
             },
             "description": "Events at this House, ordered by earliest date"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2799,7 +3377,8 @@
           "note",
           "numbers",
           "place",
-          "events"
+          "events",
+          "notes"
         ]
       },
       "ParishDetailInput": {
@@ -2848,6 +3427,13 @@
                 "place"
               ]
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2855,7 +3441,8 @@
           "version",
           "name",
           "seatPlaceId",
-          "places"
+          "places",
+          "notes"
         ]
       },
       "EstateDetailInput": {
@@ -2893,420 +3480,21 @@
                 "place"
               ]
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
           "version",
           "name",
-          "places"
-        ]
-      },
-      "SourceSummaryInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceTypeInput"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccountInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverageInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register"
-        ]
-      },
-      "SourceSearchResultInput": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SourceSummaryInput"
-            }
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "offset": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "items",
-          "limit",
-          "offset"
-        ]
-      },
-      "SourceDetailInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceTypeInput"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccountInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverageInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          },
-          "citations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CitationSummaryInput"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register",
-          "citations"
-        ]
-      },
-      "ImageViewInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ImageKindInput"
-          },
-          "citationId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IdInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "personIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IdInput"
-            },
-            "description": "Persons shown, for portraits"
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "image/jpeg",
-              "image/png",
-              "image/webp",
-              "image/heic",
-              "image/heif"
-            ]
-          },
-          "byteSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 26214400
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "caption": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Presigned link to the image; expires within minutes"
-          },
-          "urlExpiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "kind",
-          "citationId",
-          "personIds",
-          "contentType",
-          "byteSize",
-          "width",
-          "height",
-          "sha256",
-          "caption",
-          "url",
-          "urlExpiresAt"
-        ]
-      },
-      "CitationDetailInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "sourceId": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "page": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Page or frame; null for a Family account"
-          },
-          "transcription": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000,
-            "description": "Transcription in the original language"
-          },
-          "readOn": {
-            "type": "string",
-            "format": "date",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-            "description": "When the entry was read"
-          },
-          "confidence": {
-            "$ref": "#/components/schemas/ConfidenceInput"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "$ref": "#/components/schemas/SourceSummaryInput"
-          },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSummaryInput"
-            }
-          },
-          "names": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "$ref": "#/components/schemas/IdInput"
-                },
-                "personId": {
-                  "$ref": "#/components/schemas/IdInput"
-                },
-                "asFound": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "personId",
-                "asFound"
-              ]
-            }
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ImageViewInput"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "sourceId",
-          "page",
-          "transcription",
-          "readOn",
-          "confidence",
-          "note",
-          "source",
-          "events",
-          "names",
-          "images"
-        ]
-      },
-      "HealthInput": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "degraded"
-            ]
-          },
-          "database": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "unreachable"
-            ]
-          },
-          "release": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "status",
-          "database",
-          "release"
+          "places",
+          "notes"
         ]
       },
       "MemberRoleInput": {
@@ -3357,6 +3545,10 @@
           "markFamilyRoots": {
             "type": "boolean",
             "description": "Mark and unmark Family roots (the Owner)"
+          },
+          "acceptBatch": {
+            "type": "boolean",
+            "description": "Accept a whole Import batch at once (the Owner)"
           }
         },
         "required": [
@@ -3367,7 +3559,8 @@
           "inviteMembers",
           "changeRoles",
           "disableMembers",
-          "markFamilyRoots"
+          "markFamilyRoots",
+          "acceptBatch"
         ]
       },
       "MeInput": {
@@ -4196,6 +4389,511 @@
           "retryAt"
         ]
       },
+      "TempIdInput": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "BatchRefInput": {
+        "type": "string",
+        "pattern": "^batch:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\/tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "A record created by an earlier Proposal of the same Import batch: batch:<proposal id>/<its temporary id>"
+      },
+      "RefInput": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          {
+            "$ref": "#/components/schemas/BatchRefInput"
+          }
+        ]
+      },
+      "CreatePlaceInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPlace"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PlaceTypeInput"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPointInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "municipality": {
+            "default": null,
+            "description": "Today's Municipality the Place lies in",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MunicipalityLinkInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "language": {
+                "$ref": "#/components/schemas/NameLanguageInput"
+              },
+              "period": {
+                "default": {
+                  "from": null,
+                  "to": null
+                },
+                "description": "When the name was used; open ends when unknown",
+                "$ref": "#/components/schemas/PeriodInput"
+              }
+            },
+            "required": [
+              "name",
+              "language"
+            ],
+            "description": "The primary name"
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "name"
+        ],
+        "description": "A new Place with its primary name"
+      },
+      "AddPlaceNameInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addPlaceName"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "language": {
+            "$ref": "#/components/schemas/NameLanguageInput"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the name was used; open ends when unknown",
+            "$ref": "#/components/schemas/PeriodInput"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "name",
+          "language"
+        ],
+        "description": "Another name of a Place, in a language and period"
+      },
+      "CreateHouseInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createHouse"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPointInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "numbers": {
+            "default": [],
+            "description": "Its house numbers (čp.) over time",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "pattern": "^\\d{1,5}[a-z]?$"
+                },
+                "period": {
+                  "default": {
+                    "from": null,
+                    "to": null
+                  },
+                  "description": "When the House carried the number",
+                  "$ref": "#/components/schemas/PeriodInput"
+                }
+              },
+              "required": [
+                "number"
+              ]
+            }
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "placeId"
+        ],
+        "description": "A new House in a Place, with its house numbers"
+      },
+      "AddHouseNumberInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addHouseNumber"
+          },
+          "houseId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing House",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "number": {
+            "type": "string",
+            "pattern": "^\\d{1,5}[a-z]?$"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the House carried the number",
+            "$ref": "#/components/schemas/PeriodInput"
+          }
+        },
+        "required": [
+          "op",
+          "houseId",
+          "number"
+        ]
+      },
+      "CreateParishInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createParish"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "seatPlaceId": {
+            "default": null,
+            "description": "Where the parish church stands",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name"
+        ]
+      },
+      "CreateEstateInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEstate"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name"
+        ],
+        "description": "A new Estate (panství)"
+      },
+      "LinkPlaceParishInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceParish"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "parishId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/PeriodInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "parishId"
+        ],
+        "description": "A Place belonged to a Parish during a period"
+      },
+      "LinkPlaceEstateInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceEstate"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "estateId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/PeriodInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "estateId"
+        ],
+        "description": "A Place was part of an Estate during a period"
+      },
+      "NotesRecordInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "family",
+          "event",
+          "place",
+          "house",
+          "parish",
+          "estate",
+          "source"
+        ]
+      },
+      "SetNotesInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setNotes"
+          },
+          "record": {
+            "$ref": "#/components/schemas/NotesRecordInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing record",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Research notes in Markdown; null removes them"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "notes"
+        ],
+        "description": "The research notes of a record. They state no fact, so a Proposal of notes and Labels alone needs no Citation"
+      },
+      "LabelInput": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "description": "A free word or short phrase, such as line/novak; compared ignoring case and diacritics"
+      },
+      "AddLabelInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelInput"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "description": "A Label on a Person; one the Person has already (ignoring case and diacritics) is refused"
+      },
+      "RemoveLabelInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "removeLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "baseVersion": {
+            "description": "Version of the Person",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelInput"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "description": "Takes a Label off a Person, matched ignoring case and diacritics"
+      },
+      "AddDocumentInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addDocument"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "uploadId": {
+            "description": "A finished PDF upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "originalUploadId": {
+            "default": null,
+            "description": "The DOC the PDF was converted from, kept beside it (an upload of type application/msword)",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "What the document is, such as \"Family chronicle, typescript of 1936\""
+          }
+        },
+        "required": [
+          "op",
+          "sourceId",
+          "uploadId",
+          "title"
+        ],
+        "description": "A PDF document of up to 50 MB on a Source (evidence-media spec, \"Documents on Sources\")"
+      },
       "SetFamilyRootInput": {
         "type": "object",
         "properties": {
@@ -4217,21 +4915,6 @@
           "familyRoot"
         ],
         "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
-      },
-      "TempIdInput": {
-        "type": "string",
-        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
-        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
-      },
-      "RefInput": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          {
-            "$ref": "#/components/schemas/TempIdInput"
-          }
-        ]
       },
       "CreatePersonInput": {
         "type": "object",
@@ -4259,6 +4942,18 @@
               },
               "type": {
                 "$ref": "#/components/schemas/NameTypeInput"
+              },
+              "language": {
+                "default": null,
+                "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LanguageTagInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               },
               "asFound": {
                 "type": "string",
@@ -4310,6 +5005,18 @@
           },
           "type": {
             "$ref": "#/components/schemas/NameTypeInput"
+          },
+          "language": {
+            "default": null,
+            "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTagInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "asFound": {
             "type": "string",
@@ -4365,9 +5072,10 @@
           },
           "placeId": {
             "default": null,
+            "description": "A Place of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IdInput"
+                "$ref": "#/components/schemas/RefInput"
               },
               {
                 "type": "null"
@@ -4376,9 +5084,10 @@
           },
           "houseId": {
             "default": null,
+            "description": "A House of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IdInput"
+                "$ref": "#/components/schemas/RefInput"
               },
               {
                 "type": "null"
@@ -4583,7 +5292,54 @@
             "description": "For a register book: its Parish, kinds and years",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RegisterCoverageInput"
+                "type": "object",
+                "properties": {
+                  "parishId": {
+                    "description": "The Parish that kept the register",
+                    "$ref": "#/components/schemas/RefInput"
+                  },
+                  "kinds": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RegisterKindInput"
+                    },
+                    "description": "Which entries it holds"
+                  },
+                  "from": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "First year it covers; null when unknown"
+                  },
+                  "to": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Last year it covers; null when unknown"
+                  }
+                },
+                "required": [
+                  "parishId",
+                  "kinds",
+                  "from",
+                  "to"
+                ]
               },
               {
                 "type": "null"
@@ -4748,7 +5504,11 @@
           "role",
           "childLink",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "SetFieldInput": {
@@ -4832,7 +5592,17 @@
           "name_citation",
           "image",
           "image_person",
-          "family_root"
+          "family_root",
+          "place",
+          "place_name",
+          "house",
+          "house_number",
+          "parish",
+          "place_parish",
+          "estate",
+          "place_estate",
+          "person_label",
+          "source_document"
         ]
       },
       "RestoreRecordInput": {
@@ -4931,6 +5701,42 @@
           },
           {
             "$ref": "#/components/schemas/SetFamilyRootInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreatePlaceInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddPlaceNameInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateHouseInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddHouseNumberInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateParishInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEstateInput"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceParishInput"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceEstateInput"
+          },
+          {
+            "$ref": "#/components/schemas/SetNotesInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddLabelInput"
+          },
+          {
+            "$ref": "#/components/schemas/RemoveLabelInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddDocumentInput"
           }
         ]
       },
@@ -5214,6 +6020,14 @@
           "deleted"
         ]
       },
+      "UploadKindInput": {
+        "type": "string",
+        "enum": [
+          "image",
+          "document"
+        ],
+        "description": "An image, or a document (PDF, or the DOC a PDF was converted from)"
+      },
       "UploadViewInput": {
         "type": "object",
         "properties": {
@@ -5223,6 +6037,9 @@
           "status": {
             "$ref": "#/components/schemas/UploadStatusInput"
           },
+          "kind": {
+            "$ref": "#/components/schemas/UploadKindInput"
+          },
           "contentType": {
             "type": "string",
             "enum": [
@@ -5230,7 +6047,9 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
+              "image/heif",
+              "application/pdf",
+              "application/msword"
             ]
           },
           "byteSize": {
@@ -5264,7 +6083,7 @@
           },
           "url": {
             "type": "string",
-            "description": "Display copy (WebP); redirects to an expiring link"
+            "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
           },
           "fullUrl": {
             "type": "string",
@@ -5274,6 +6093,7 @@
         "required": [
           "id",
           "status",
+          "kind",
           "contentType",
           "byteSize",
           "width",
@@ -5335,7 +6155,9 @@
                     "image/png",
                     "image/webp",
                     "image/heic",
-                    "image/heif"
+                    "image/heif",
+                    "application/pdf",
+                    "application/msword"
                   ]
                 },
                 "byteSize": {
@@ -5369,13 +6191,14 @@
                 },
                 "url": {
                   "type": "string",
-                  "description": "Display copy (WebP); redirects to an expiring link"
+                  "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
                 },
                 "fullUrl": {
                   "type": "string",
                   "description": "The original file; redirects to an expiring link"
                 },
                 "kind": {
+                  "description": "Page image, photo or portrait",
                   "$ref": "#/components/schemas/ImageKindInput"
                 }
               },
@@ -5505,6 +6328,53 @@
               "$ref": "#/components/schemas/LeadRefInput"
             },
             "description": "The Research leads this finding answers; accepting marks them found"
+          },
+          "batch": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/IdInput"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "position"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Import batch and its place in batch order"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "Earlier Proposals of its Import batch it builds on; it is accepted only after them"
+          },
+          "blockedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it"
           }
         },
         "required": [
@@ -5523,7 +6393,10 @@
           "operations",
           "citations",
           "conflicts",
-          "answersLeads"
+          "answersLeads",
+          "batch",
+          "dependsOn",
+          "blockedBy"
         ]
       },
       "ProposalListInput": {
@@ -5802,7 +6675,11 @@
           "family",
           "event",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "HistoryEntryInput": {
@@ -5994,8 +6871,11 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
-            ]
+              "image/heif",
+              "application/pdf",
+              "application/msword"
+            ],
+            "description": "An image type, or application/pdf for a document (application/msword only for the original of a converted PDF)"
           },
           "byteSize": {
             "type": "integer",
@@ -7131,6 +8011,444 @@
         ],
         "description": "Open suggested leads, shown apart from the leads until a Member accepts or dismisses them"
       },
+      "CreateBatchBodyInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Named after the run, such as \"Vault import 2026-11-02\""
+          },
+          "vaultCommit": {
+            "default": null,
+            "description": "The commit of the Vault that was read",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{7,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "BatchCountsInput": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending and not blocked"
+          },
+          "blocked": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending, but building on a rejected Proposal"
+          },
+          "accepted": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "total",
+          "pending",
+          "blocked",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "BatchViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "name": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "vaultCommit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/BatchCountsInput"
+          },
+          "pendingChanges": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Changes to records in the pending Proposals, for the confirmation before accepting the batch"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "author",
+          "createdAt",
+          "vaultCommit",
+          "note",
+          "counts",
+          "pendingChanges"
+        ],
+        "description": "An Import batch with its progress"
+      },
+      "BatchListInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchViewInput"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptBatchBodyInput": {
+        "type": "object",
+        "properties": {
+          "proposals": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "How many pending Proposals the confirmation stated; refused when the batch has changed since"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposals"
+        ]
+      },
+      "AcceptBatchResultInput": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "Accepted, in batch order"
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "message"
+              ]
+            },
+            "description": "Still pending: they could not be accepted"
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "blockedBy": {
+                  "$ref": "#/components/schemas/IdInput"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "blockedBy"
+              ]
+            },
+            "description": "Still pending: they build on a Proposal that was rejected or failed"
+          }
+        },
+        "required": [
+          "accepted",
+          "failed",
+          "blocked"
+        ]
+      },
+      "ImportMapEntryInput": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "default": null,
+            "description": "The record in the Tree, when known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "batchId"
+        ]
+      },
+      "PutImportMapBodyInput": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapEntryInput"
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ]
+      },
+      "ImportMapViewInput": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The record in the Tree: set by the importer, or resolved once the Proposal that creates it is accepted"
+          },
+          "proposalStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalStatusInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "batchId",
+          "recordId",
+          "proposalStatus"
+        ]
+      },
+      "ImportMapInput": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapViewInput"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "next"
+        ]
+      },
       "Id": {
         "type": "string",
         "format": "uuid",
@@ -7255,6 +8573,17 @@
           "en"
         ]
       },
+      "LanguageTag": {
+        "type": "string",
+        "maxLength": 35,
+        "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?(-([0-9a-z]{5,8}|[0-9][0-9a-z]{3}))*$",
+        "description": "BCP 47 language tag in canonical case, such as cs (Czech), la (Latin), de (German) or pl (Polish)",
+        "examples": [
+          "cs",
+          "la",
+          "de"
+        ]
+      },
       "NameLanguage": {
         "type": "string",
         "enum": [
@@ -7302,12 +8631,10 @@
         "enum": [
           "birth",
           "married",
-          "latin",
-          "german",
           "nickname",
           "other"
         ],
-        "description": "Birth name, married name, Latin form, German form, nickname or other"
+        "description": "Birth name, married name, nickname or another form; the language is a separate tag"
       },
       "NameRecord": {
         "type": "object",
@@ -7334,6 +8661,17 @@
           "type": {
             "$ref": "#/components/schemas/NameType"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTag"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -7352,6 +8690,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary"
         ],
@@ -8620,6 +9959,17 @@
           "type": {
             "$ref": "#/components/schemas/NameType"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTag"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -8644,6 +9994,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary",
           "citations"
@@ -8837,6 +10188,20 @@
             "type": "boolean",
             "description": "The Owner marked this Person as a Family root"
           },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The Labels of the Person, such as a family line, in the order they were added"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "names": {
             "type": "array",
             "items": {
@@ -8876,6 +10241,8 @@
           "living",
           "relation",
           "familyRoot",
+          "labels",
+          "notes",
           "names",
           "events",
           "familiesAsPartner",
@@ -9261,6 +10628,13 @@
               "$ref": "#/components/schemas/EventSummary"
             },
             "description": "Events in which the partners take part as partners, such as the marriage"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9268,7 +10642,8 @@
           "version",
           "partners",
           "children",
-          "events"
+          "events",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -9400,6 +10775,13 @@
               "$ref": "#/components/schemas/EstateRef"
             },
             "description": "Estates the Place was part of at the date of the Event"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9416,7 +10798,8 @@
           "roles",
           "citations",
           "parishes",
-          "estates"
+          "estates",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -9545,6 +10928,513 @@
         "required": [
           "events",
           "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "SourceSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register"
+        ],
+        "additionalProperties": false
+      },
+      "SourceSearchResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceSummary"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "limit",
+          "offset"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string",
+            "const": "application/pdf"
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "url": {
+            "type": "string",
+            "description": "The PDF; redirects to a link that expires within minutes"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "const": "application/msword"
+                  },
+                  "byteSize": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Redirects to a link that expires"
+                  }
+                },
+                "required": [
+                  "contentType",
+                  "byteSize",
+                  "url"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The DOC the PDF was converted from, when it was kept"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "title",
+          "contentType",
+          "byteSize",
+          "url",
+          "original"
+        ],
+        "additionalProperties": false
+      },
+      "SourceDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationSummary"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentView"
+            },
+            "description": "PDF documents of the Source, such as a family chronicle"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register",
+          "citations",
+          "documents",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "ImageView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKind"
+          },
+          "citationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Persons shown, for portraits"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 26214400
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Presigned link to the image; expires within minutes"
+          },
+          "urlExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind",
+          "citationId",
+          "personIds",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "sha256",
+          "caption",
+          "url",
+          "urlExpiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "CitationDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Page or frame; null for a Family account"
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "description": "Transcription in the original language"
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "When the entry was read"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceSummary"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentView"
+            },
+            "description": "The Source's documents"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummary"
+            }
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "personId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "asFound": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "personId",
+                "asFound"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageView"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "sourceId",
+          "page",
+          "transcription",
+          "readOn",
+          "confidence",
+          "note",
+          "source",
+          "documents",
+          "events",
+          "names",
+          "images"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unreachable"
+            ]
+          },
+          "release": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "release"
         ],
         "additionalProperties": false
       },
@@ -9909,6 +11799,13 @@
             "items": {
               "$ref": "#/components/schemas/HouseSummary"
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9921,7 +11818,8 @@
           "names",
           "parishes",
           "estates",
-          "houses"
+          "houses",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -9969,6 +11867,13 @@
               "$ref": "#/components/schemas/EventSummary"
             },
             "description": "Events at this House, ordered by earliest date"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9979,7 +11884,8 @@
           "note",
           "numbers",
           "place",
-          "events"
+          "events",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10030,6 +11936,13 @@
               ],
               "additionalProperties": false
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10037,7 +11950,8 @@
           "version",
           "name",
           "seatPlaceId",
-          "places"
+          "places",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10077,427 +11991,21 @@
               ],
               "additionalProperties": false
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
           "version",
           "name",
-          "places"
-        ],
-        "additionalProperties": false
-      },
-      "SourceSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceType"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccount"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverage"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register"
-        ],
-        "additionalProperties": false
-      },
-      "SourceSearchResult": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SourceSummary"
-            }
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "offset": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "items",
-          "limit",
-          "offset"
-        ],
-        "additionalProperties": false
-      },
-      "SourceDetail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceType"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccount"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverage"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          },
-          "citations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CitationSummary"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register",
-          "citations"
-        ],
-        "additionalProperties": false
-      },
-      "ImageView": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ImageKind"
-          },
-          "citationId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "personIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Id"
-            },
-            "description": "Persons shown, for portraits"
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "image/jpeg",
-              "image/png",
-              "image/webp",
-              "image/heic",
-              "image/heif"
-            ]
-          },
-          "byteSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 26214400
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "caption": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Presigned link to the image; expires within minutes"
-          },
-          "urlExpiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "kind",
-          "citationId",
-          "personIds",
-          "contentType",
-          "byteSize",
-          "width",
-          "height",
-          "sha256",
-          "caption",
-          "url",
-          "urlExpiresAt"
-        ],
-        "additionalProperties": false
-      },
-      "CitationDetail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "sourceId": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "page": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Page or frame; null for a Family account"
-          },
-          "transcription": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000,
-            "description": "Transcription in the original language"
-          },
-          "readOn": {
-            "type": "string",
-            "format": "date",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-            "description": "When the entry was read"
-          },
-          "confidence": {
-            "$ref": "#/components/schemas/Confidence"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "$ref": "#/components/schemas/SourceSummary"
-          },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSummary"
-            }
-          },
-          "names": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "$ref": "#/components/schemas/Id"
-                },
-                "personId": {
-                  "$ref": "#/components/schemas/Id"
-                },
-                "asFound": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "personId",
-                "asFound"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ImageView"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "sourceId",
-          "page",
-          "transcription",
-          "readOn",
-          "confidence",
-          "note",
-          "source",
-          "events",
-          "names",
-          "images"
-        ],
-        "additionalProperties": false
-      },
-      "Health": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "degraded"
-            ]
-          },
-          "database": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "unreachable"
-            ]
-          },
-          "release": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "status",
-          "database",
-          "release"
+          "places",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10549,6 +12057,10 @@
           "markFamilyRoots": {
             "type": "boolean",
             "description": "Mark and unmark Family roots (the Owner)"
+          },
+          "acceptBatch": {
+            "type": "boolean",
+            "description": "Accept a whole Import batch at once (the Owner)"
           }
         },
         "required": [
@@ -10559,7 +12071,8 @@
           "inviteMembers",
           "changeRoles",
           "disableMembers",
-          "markFamilyRoots"
+          "markFamilyRoots",
+          "acceptBatch"
         ],
         "additionalProperties": false
       },
@@ -11419,6 +12932,538 @@
         ],
         "additionalProperties": false
       },
+      "TempId": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "BatchRef": {
+        "type": "string",
+        "pattern": "^batch:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\/tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "A record created by an earlier Proposal of the same Import batch: batch:<proposal id>/<its temporary id>"
+      },
+      "Ref": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Id"
+          },
+          {
+            "$ref": "#/components/schemas/TempId"
+          },
+          {
+            "$ref": "#/components/schemas/BatchRef"
+          }
+        ]
+      },
+      "CreatePlace": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPlace"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PlaceType"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "municipality": {
+            "default": null,
+            "description": "Today's Municipality the Place lies in",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MunicipalityLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "language": {
+                "$ref": "#/components/schemas/NameLanguage"
+              },
+              "period": {
+                "default": {
+                  "from": null,
+                  "to": null
+                },
+                "description": "When the name was used; open ends when unknown",
+                "$ref": "#/components/schemas/Period"
+              }
+            },
+            "required": [
+              "name",
+              "language",
+              "period"
+            ],
+            "additionalProperties": false,
+            "description": "The primary name"
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "location",
+          "municipality",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A new Place with its primary name"
+      },
+      "AddPlaceName": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addPlaceName"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/Version"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "language": {
+            "$ref": "#/components/schemas/NameLanguage"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the name was used; open ends when unknown",
+            "$ref": "#/components/schemas/Period"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "name",
+          "language",
+          "period"
+        ],
+        "additionalProperties": false,
+        "description": "Another name of a Place, in a language and period"
+      },
+      "CreateHouse": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createHouse"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "numbers": {
+            "default": [],
+            "description": "Its house numbers (čp.) over time",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "pattern": "^\\d{1,5}[a-z]?$"
+                },
+                "period": {
+                  "default": {
+                    "from": null,
+                    "to": null
+                  },
+                  "description": "When the House carried the number",
+                  "$ref": "#/components/schemas/Period"
+                }
+              },
+              "required": [
+                "number",
+                "period"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "placeId",
+          "location",
+          "note",
+          "numbers"
+        ],
+        "additionalProperties": false,
+        "description": "A new House in a Place, with its house numbers"
+      },
+      "AddHouseNumber": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addHouseNumber"
+          },
+          "houseId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing House",
+            "$ref": "#/components/schemas/Version"
+          },
+          "number": {
+            "type": "string",
+            "pattern": "^\\d{1,5}[a-z]?$"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the House carried the number",
+            "$ref": "#/components/schemas/Period"
+          }
+        },
+        "required": [
+          "op",
+          "houseId",
+          "number",
+          "period"
+        ],
+        "additionalProperties": false
+      },
+      "CreateParish": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createParish"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "seatPlaceId": {
+            "default": null,
+            "description": "Where the parish church stands",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name",
+          "seatPlaceId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateEstate": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEstate"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A new Estate (panství)"
+      },
+      "LinkPlaceParish": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceParish"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "parishId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/Period"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "parishId",
+          "period"
+        ],
+        "additionalProperties": false,
+        "description": "A Place belonged to a Parish during a period"
+      },
+      "LinkPlaceEstate": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceEstate"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "estateId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/Period"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "estateId",
+          "period"
+        ],
+        "additionalProperties": false,
+        "description": "A Place was part of an Estate during a period"
+      },
+      "NotesRecord": {
+        "type": "string",
+        "enum": [
+          "person",
+          "family",
+          "event",
+          "place",
+          "house",
+          "parish",
+          "estate",
+          "source"
+        ]
+      },
+      "SetNotes": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setNotes"
+          },
+          "record": {
+            "$ref": "#/components/schemas/NotesRecord"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing record",
+            "$ref": "#/components/schemas/Version"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Research notes in Markdown; null removes them"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "notes"
+        ],
+        "additionalProperties": false,
+        "description": "The research notes of a record. They state no fact, so a Proposal of notes and Labels alone needs no Citation"
+      },
+      "Label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "description": "A free word or short phrase, such as line/novak; compared ignoring case and diacritics"
+      },
+      "AddLabel": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/Version"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Label"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "additionalProperties": false,
+        "description": "A Label on a Person; one the Person has already (ignoring case and diacritics) is refused"
+      },
+      "RemoveLabel": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "removeLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "baseVersion": {
+            "description": "Version of the Person",
+            "$ref": "#/components/schemas/Version"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Label"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "additionalProperties": false,
+        "description": "Takes a Label off a Person, matched ignoring case and diacritics"
+      },
+      "AddDocument": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addDocument"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "uploadId": {
+            "description": "A finished PDF upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/Id"
+          },
+          "originalUploadId": {
+            "default": null,
+            "description": "The DOC the PDF was converted from, kept beside it (an upload of type application/msword)",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "What the document is, such as \"Family chronicle, typescript of 1936\""
+          }
+        },
+        "required": [
+          "op",
+          "sourceId",
+          "uploadId",
+          "originalUploadId",
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "A PDF document of up to 50 MB on a Source (evidence-media spec, \"Documents on Sources\")"
+      },
       "SetFamilyRoot": {
         "type": "object",
         "properties": {
@@ -11441,21 +13486,6 @@
         ],
         "additionalProperties": false,
         "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
-      },
-      "TempId": {
-        "type": "string",
-        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
-        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
-      },
-      "Ref": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Id"
-          },
-          {
-            "$ref": "#/components/schemas/TempId"
-          }
-        ]
       },
       "CreatePerson": {
         "type": "object",
@@ -11484,6 +13514,18 @@
               "type": {
                 "$ref": "#/components/schemas/NameType"
               },
+              "language": {
+                "default": null,
+                "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LanguageTag"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "asFound": {
                 "type": "string",
                 "minLength": 1,
@@ -11495,6 +13537,7 @@
               "given",
               "surname",
               "type",
+              "language",
               "asFound"
             ],
             "additionalProperties": false
@@ -11537,6 +13580,18 @@
           "type": {
             "$ref": "#/components/schemas/NameType"
           },
+          "language": {
+            "default": null,
+            "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -11550,6 +13605,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound"
         ],
         "additionalProperties": false,
@@ -11592,9 +13648,10 @@
           },
           "placeId": {
             "default": null,
+            "description": "A Place of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Id"
+                "$ref": "#/components/schemas/Ref"
               },
               {
                 "type": "null"
@@ -11603,9 +13660,10 @@
           },
           "houseId": {
             "default": null,
+            "description": "A House of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Id"
+                "$ref": "#/components/schemas/Ref"
               },
               {
                 "type": "null"
@@ -11819,7 +13877,55 @@
             "description": "For a register book: its Parish, kinds and years",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RegisterCoverage"
+                "type": "object",
+                "properties": {
+                  "parishId": {
+                    "description": "The Parish that kept the register",
+                    "$ref": "#/components/schemas/Ref"
+                  },
+                  "kinds": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RegisterKind"
+                    },
+                    "description": "Which entries it holds"
+                  },
+                  "from": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "First year it covers; null when unknown"
+                  },
+                  "to": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Last year it covers; null when unknown"
+                  }
+                },
+                "required": [
+                  "parishId",
+                  "kinds",
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
               },
               {
                 "type": "null"
@@ -11998,7 +14104,11 @@
           "role",
           "childLink",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "SetField": {
@@ -12084,7 +14194,17 @@
           "name_citation",
           "image",
           "image_person",
-          "family_root"
+          "family_root",
+          "place",
+          "place_name",
+          "house",
+          "house_number",
+          "parish",
+          "place_parish",
+          "estate",
+          "place_estate",
+          "person_label",
+          "source_document"
         ]
       },
       "RestoreRecord": {
@@ -12184,6 +14304,42 @@
           },
           {
             "$ref": "#/components/schemas/SetFamilyRoot"
+          },
+          {
+            "$ref": "#/components/schemas/CreatePlace"
+          },
+          {
+            "$ref": "#/components/schemas/AddPlaceName"
+          },
+          {
+            "$ref": "#/components/schemas/CreateHouse"
+          },
+          {
+            "$ref": "#/components/schemas/AddHouseNumber"
+          },
+          {
+            "$ref": "#/components/schemas/CreateParish"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEstate"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceParish"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceEstate"
+          },
+          {
+            "$ref": "#/components/schemas/SetNotes"
+          },
+          {
+            "$ref": "#/components/schemas/AddLabel"
+          },
+          {
+            "$ref": "#/components/schemas/RemoveLabel"
+          },
+          {
+            "$ref": "#/components/schemas/AddDocument"
           }
         ]
       },
@@ -12477,6 +14633,14 @@
           "deleted"
         ]
       },
+      "UploadKind": {
+        "type": "string",
+        "enum": [
+          "image",
+          "document"
+        ],
+        "description": "An image, or a document (PDF, or the DOC a PDF was converted from)"
+      },
       "UploadView": {
         "type": "object",
         "properties": {
@@ -12486,6 +14650,9 @@
           "status": {
             "$ref": "#/components/schemas/UploadStatus"
           },
+          "kind": {
+            "$ref": "#/components/schemas/UploadKind"
+          },
           "contentType": {
             "type": "string",
             "enum": [
@@ -12493,7 +14660,9 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
+              "image/heif",
+              "application/pdf",
+              "application/msword"
             ]
           },
           "byteSize": {
@@ -12527,7 +14696,7 @@
           },
           "url": {
             "type": "string",
-            "description": "Display copy (WebP); redirects to an expiring link"
+            "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
           },
           "fullUrl": {
             "type": "string",
@@ -12537,6 +14706,7 @@
         "required": [
           "id",
           "status",
+          "kind",
           "contentType",
           "byteSize",
           "width",
@@ -12599,7 +14769,9 @@
                     "image/png",
                     "image/webp",
                     "image/heic",
-                    "image/heif"
+                    "image/heif",
+                    "application/pdf",
+                    "application/msword"
                   ]
                 },
                 "byteSize": {
@@ -12633,13 +14805,14 @@
                 },
                 "url": {
                   "type": "string",
-                  "description": "Display copy (WebP); redirects to an expiring link"
+                  "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
                 },
                 "fullUrl": {
                   "type": "string",
                   "description": "The original file; redirects to an expiring link"
                 },
                 "kind": {
+                  "description": "Page image, photo or portrait",
                   "$ref": "#/components/schemas/ImageKind"
                 }
               },
@@ -12771,6 +14944,54 @@
               "$ref": "#/components/schemas/LeadRef"
             },
             "description": "The Research leads this finding answers; accepting marks them found"
+          },
+          "batch": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "position"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Import batch and its place in batch order"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Earlier Proposals of its Import batch it builds on; it is accepted only after them"
+          },
+          "blockedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it"
           }
         },
         "required": [
@@ -12789,7 +15010,10 @@
           "operations",
           "citations",
           "conflicts",
-          "answersLeads"
+          "answersLeads",
+          "batch",
+          "dependsOn",
+          "blockedBy"
         ],
         "additionalProperties": false
       },
@@ -13095,7 +15319,11 @@
           "family",
           "event",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "HistoryEntry": {
@@ -13292,8 +15520,11 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
-            ]
+              "image/heif",
+              "application/pdf",
+              "application/msword"
+            ],
+            "description": "An image type, or application/pdf for a document (application/msword only for the original of a converted PDF)"
           },
           "byteSize": {
             "type": "integer",
@@ -14463,6 +16694,466 @@
         ],
         "additionalProperties": false,
         "description": "Open suggested leads, shown apart from the leads until a Member accepts or dismisses them"
+      },
+      "CreateBatchBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Named after the run, such as \"Vault import 2026-11-02\""
+          },
+          "vaultCommit": {
+            "default": null,
+            "description": "The commit of the Vault that was read",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{7,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "vaultCommit",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "BatchCounts": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending and not blocked"
+          },
+          "blocked": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending, but building on a rejected Proposal"
+          },
+          "accepted": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "total",
+          "pending",
+          "blocked",
+          "accepted",
+          "rejected"
+        ],
+        "additionalProperties": false
+      },
+      "BatchView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "name": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "vaultCommit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/BatchCounts"
+          },
+          "pendingChanges": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Changes to records in the pending Proposals, for the confirmation before accepting the batch"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "author",
+          "createdAt",
+          "vaultCommit",
+          "note",
+          "counts",
+          "pendingChanges"
+        ],
+        "additionalProperties": false,
+        "description": "An Import batch with its progress"
+      },
+      "BatchList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchView"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptBatchBody": {
+        "type": "object",
+        "properties": {
+          "proposals": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "How many pending Proposals the confirmation stated; refused when the batch has changed since"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposals",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptBatchResult": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Accepted, in batch order"
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "message"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Still pending: they could not be accepted"
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "blockedBy": {
+                  "$ref": "#/components/schemas/Id"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "blockedBy"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Still pending: they build on a Proposal that was rejected or failed"
+          }
+        },
+        "required": [
+          "accepted",
+          "failed",
+          "blocked"
+        ],
+        "additionalProperties": false
+      },
+      "ImportMapEntry": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "default": null,
+            "description": "The record in the Tree, when known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "noteHash",
+          "batchId",
+          "proposalId",
+          "tempId",
+          "recordId"
+        ],
+        "additionalProperties": false
+      },
+      "PutImportMapBody": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapEntry"
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "additionalProperties": false
+      },
+      "ImportMapView": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The record in the Tree: set by the importer, or resolved once the Proposal that creates it is accepted"
+          },
+          "proposalStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "noteHash",
+          "batchId",
+          "proposalId",
+          "tempId",
+          "recordId",
+          "proposalStatus"
+        ],
+        "additionalProperties": false
+      },
+      "ImportMap": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapView"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "next"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -14579,6 +17270,30 @@
             "name": "relation",
             "required": false,
             "description": "Only Persons with these relations to the family, comma-separated (relative,possible); without it, everyone"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                {
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              ]
+            },
+            "in": "query",
+            "name": "label",
+            "required": false,
+            "description": "Only Persons carrying this Label, ignoring case and diacritics; repeat it for Persons carrying all of several Labels"
           },
           {
             "schema": {
@@ -15880,6 +18595,72 @@
         }
       }
     },
+    "/api/documents/{id}": {
+      "get": {
+        "summary": "Redirects to an expiring link to a Source's PDF document, or with original=true the DOC it was converted from (Members and Agents only; never in an Export)",
+        "tags": [
+          "Sources"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "original",
+            "required": false,
+            "description": "true: the original DOC the PDF was converted from"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Location: presigned link, valid 5 minutes"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/images/{id}": {
       "get": {
         "summary": "Redirects to an expiring link to the image: the display copy, or with full=true the original file",
@@ -16120,7 +18901,7 @@
     },
     "/api/review": {
       "get": {
-        "summary": "The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)",
+        "summary": "The review queue: pending Proposals outside Import batches, oldest first, with their changes compared with the current Tree (Editors only). Import batches are listed by GET /api/batches",
         "tags": [
           "Review"
         ],
@@ -16850,7 +19631,7 @@
     },
     "/api/uploads": {
       "post": {
-        "summary": "Start an image upload: returns a presigned PUT link into pending/. JPEG, PNG, WebP or HEIC, at most 25 MB",
+        "summary": "Start an upload: returns a presigned PUT link into pending/. An image (JPEG, PNG, WebP or HEIC, at most 25 MB) or a document (PDF, or the DOC a PDF was converted from, at most 50 MB)",
         "tags": [
           "Images"
         ],
@@ -17195,6 +19976,795 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches": {
+      "post": {
+        "summary": "Open an Import batch: the Proposals one run of the Vault importer submits together",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBatchBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Import batches with their progress, newest first: everyone's for Editors, your own otherwise",
+        "tags": [
+          "Import batches"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}": {
+      "get": {
+        "summary": "An Import batch with its progress: accepted, pending, blocked and rejected",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/proposals": {
+      "get": {
+        "summary": "The Proposals of an Import batch in batch order, or a random sample of its pending ones for spot-checking (Editors only)",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "sample",
+            "required": false,
+            "description": "Instead of batch order: this many pending Proposals chosen at random, for spot-checking"
+          },
+          {
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Submit a Proposal into your Import batch, after the ones before it. It may refer to records earlier Proposals of the batch create, as batch:<proposal id>/tmp:x",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitProposalBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/accept": {
+      "post": {
+        "summary": "Accept every pending Proposal of an Import batch in batch order (Owner only). Each is accepted on its own; those that fail, and those building on them, stay pending and are listed",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptBatchBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptBatchResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/uploads": {
+      "post": {
+        "summary": "Start an upload for a Proposal of your Import batch, as POST /api/uploads",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTicket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/uploads/{uploadId}/complete": {
+      "post": {
+        "summary": "Finish an upload for a Proposal of your Import batch, as POST /api/uploads/{id}/complete",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "uploadId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-map": {
+      "get": {
+        "summary": "The Vault importer's map from Vault keys to what it submitted and the records in the Tree, by key",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 400
+            },
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "description": "Keys after this one, for the next page"
+          },
+          {
+            "schema": {
+              "default": 5000,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportMap"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Record entries of the Vault importer's id map, by key, for your own Import batches",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutImportMapBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stored": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "stored"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
                 }
               }
             }

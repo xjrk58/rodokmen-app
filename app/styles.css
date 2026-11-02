@@ -890,6 +890,7 @@ fieldset.language input {
 .field select,
 .field textarea,
 .picker-search input,
+.label-add-row input,
 .work-body > textarea,
 .card textarea {
   width: 100%;
@@ -1777,4 +1778,45 @@ body.signed-in .screen {
 }
 .person-leads {
   margin-top: 18px;
+}
+
+/* Labels and research notes (tree-model spec, "Labels on Persons", "Research notes on records"). */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+}
+
+.chips .chip .icon-button {
+  margin-left: 0.25rem;
+}
+
+.research-notes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--note);
+  border: 1px solid var(--note-line);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+}
+
+.label-add-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.documents {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+}
+.documents li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
 }

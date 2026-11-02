@@ -35,6 +35,7 @@ export const ACTIONS = [
   'ownAccount',
   'manageAccounts',
   'markFamilyRoots',
+  'acceptBatch',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -49,6 +50,7 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
     changeRoles: mayDo(role, 'manageAccounts'),
     disableMembers: mayDo(role, 'manageAccounts'),
     markFamilyRoots: mayDo(role, 'markFamilyRoots'),
+    acceptBatch: mayDo(role, 'acceptBatch'),
   };
 }
 
@@ -62,6 +64,7 @@ export const Permissions = z
     changeRoles: z.boolean(),
     disableMembers: z.boolean(),
     markFamilyRoots: z.boolean().describe('Mark and unmark Family roots (the Owner)'),
+    acceptBatch: z.boolean().describe('Accept a whole Import batch at once (the Owner)'),
   })
   .meta({ id: 'Permissions' });
 
@@ -203,6 +206,8 @@ export const AGENT_TOKEN_PATTERN = /^rdk_ag_[0-9a-f]{64}$/;
 /** Requests an Agent may make per hour (agent-access spec, "Rate limits"). */
 export const AGENT_PROPOSALS_PER_HOUR = 60;
 export const AGENT_READS_PER_HOUR = 1000;
+/** Requests an Agent may make to its Import batches per hour (agent-access spec, "Import batches have their own limit"). */
+export const AGENT_BATCH_REQUESTS_PER_HOUR = 10_000;
 
 export const AgentName = z.string().trim().min(1).max(100);
 

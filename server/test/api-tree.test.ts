@@ -44,10 +44,10 @@ describe('read API on the fixture Tree', () => {
     expect(res.statusCode).toBe(200);
     const jan = PersonDetail.parse(res.json());
     // Latin and German forms are kept next to the primary Name "Jan Novák".
-    expect(jan.names.map((n) => [n.type, n.asFound, n.primary])).toEqual([
-      ['birth', 'Jan Novák', true],
-      ['latin', 'Joannes Nowak', false],
-      ['german', 'Johann Nowak', false],
+    expect(jan.names.map((n) => [n.type, n.language, n.asFound, n.primary])).toEqual([
+      ['birth', 'cs', 'Jan Novák', true],
+      ['other', 'la', 'Joannes Nowak', false],
+      ['other', 'de', 'Johann Nowak', false],
     ]);
     expect(jan.names[1]!.citations).toHaveLength(1);
     expect(jan.living).toBe(false);

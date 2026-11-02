@@ -45,10 +45,15 @@ describe('what a role may do', () => {
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      acceptBatch: false,
     });
     expect(permissionsFor('owner').inviteMembers).toBe(true);
     expect(permissionsFor('owner').markFamilyRoots).toBe(true);
     expect(permissionsFor('editor').markFamilyRoots).toBe(false);
+    // Only the Owner accepts a whole Import batch; an Editor accepts its Proposals one by one (review spec, "Editor cannot accept a batch").
+    expect(permissionsFor('owner').acceptBatch).toBe(true);
+    expect(permissionsFor('editor').acceptBatch).toBe(false);
+    expect(permissionsFor('editor').review).toBe(true);
   });
 });
 

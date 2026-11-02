@@ -75,6 +75,7 @@ describe('Agent accounts belong to the Owner', () => {
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      acceptBatch: false,
     });
     expect((await withToken(token.token)).statusCode).toBe(200);
   });

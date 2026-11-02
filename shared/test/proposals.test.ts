@@ -13,6 +13,7 @@ const ids = {
   event: '0192f0c4-7a1e-7c3b-9d2a-000000000008',
   name: '0192f0c4-7a1e-7c3b-9d2a-000000000009',
   upload: '0192f0c4-7a1e-7c3b-9d2a-00000000000a',
+  upload2: '0192f0c4-7a1e-7c3b-9d2a-00000000000c',
   dup: '0192f0c4-7a1e-7c3b-9d2a-00000000000b',
 };
 const labels: Record<string, { cs: string; en: string }> = {
@@ -37,7 +38,16 @@ const examples: OperationInput[] = [
   { op: 'addRole', eventId: 'tmp:baptism', personId: ids.anna, role: 'godparent' },
   { op: 'linkChild', familyId: ids.family, childId: 'tmp:child', linkType: 'birth', baseVersion: 3 },
   { op: 'createFamily', tempId: 'tmp:fam', partner1Id: ids.father, partner2Id: ids.mother },
-  { op: 'addName', tempId: 'tmp:latin', personId: 'tmp:child', given: 'Wenceslaus', surname: 'Dworžak', type: 'latin', asFound: 'Wenceslaus Dworžak' },
+  {
+    op: 'addName',
+    tempId: 'tmp:latin',
+    personId: 'tmp:child',
+    given: 'Wenceslaus',
+    surname: 'Dworžak',
+    type: 'other',
+    language: 'la',
+    asFound: 'Wenceslaus Dworžak',
+  },
   { op: 'createSource', tempId: 'tmp:register', type: 'parish_register', title: 'Matrika N 1790–1820', repository: 'Státní oblastní archiv (invented)' },
   {
     op: 'createSource',
@@ -62,6 +72,19 @@ const examples: OperationInput[] = [
   { op: 'mergePersons', keepId: ids.anna, mergeId: ids.dup, keepBaseVersion: 1, mergeBaseVersion: 1 },
   { op: 'restoreRecord', table: 'person', id: ids.dup, baseVersion: 2, values: { id: ids.dup, sex: 'male', merged_into_id: null } },
   { op: 'setFamilyRoot', personId: ids.anna, familyRoot: true },
+  { op: 'createPlace', tempId: 'tmp:place', type: 'hamlet', name: { name: 'Nová Ves', language: 'cs' } },
+  { op: 'addPlaceName', placeId: ids.place, baseVersion: 4, name: 'Steinlhota', language: 'de', period: { from: null, to: '1918' } },
+  { op: 'createHouse', tempId: 'tmp:house', placeId: 'tmp:place', numbers: [{ number: '3' }, { number: '15', period: { from: '1850', to: null } }] },
+  { op: 'addHouseNumber', houseId: 'tmp:house', number: '15a', period: { from: '1931', to: null } },
+  { op: 'createParish', tempId: 'tmp:parish', name: 'Nová Ves', seatPlaceId: 'tmp:place' },
+  { op: 'createEstate', tempId: 'tmp:estate', name: 'Vrbice' },
+  { op: 'linkPlaceParish', placeId: 'tmp:place', parishId: 'tmp:parish', period: { from: '1784', to: null } },
+  { op: 'linkPlaceEstate', placeId: ids.place, estateId: 'tmp:estate', baseVersion: 4, period: { from: null, to: '1848' } },
+  { op: 'setNotes', record: 'person', id: ids.anna, baseVersion: 1, notes: 'Baptism not found 1801–1803, check the neighbouring parish.\nSecond line.' },
+  { op: 'setNotes', record: 'place', id: 'tmp:place', notes: null },
+  { op: 'addLabel', personId: 'tmp:child', label: 'line/dvorak' },
+  { op: 'removeLabel', personId: ids.anna, baseVersion: 1, label: 'emigrated' },
+  { op: 'addDocument', sourceId: 'tmp:account', uploadId: ids.upload, originalUploadId: ids.upload2, title: 'Family chronicle, typescript of 1936' },
 ];
 
 describe('links in Sources', () => {

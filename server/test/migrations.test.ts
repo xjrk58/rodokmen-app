@@ -108,36 +108,24 @@ describe('migrations on an empty database', () => {
     );
   });
 
-  it('the Proposals, fold, Agent, Member-Person, family relation and research leads migrations can be rolled back and applied again', async () => {
+  it('every migration after the accounts one can be rolled back and applied again', async () => {
     const migrator = new Migrator({
       db,
       provider: { getMigrations: async () => MIGRATIONS },
       migrationTableName: 'schema_migration',
       migrationLockTableName: 'schema_migration_lock',
     });
+    const later = Object.keys(MIGRATIONS).slice(Object.keys(MIGRATIONS).indexOf('0003_accounts') + 1);
+    expect(later[0]).toBe('0004_proposals');
     const down = await migrator.migrateTo('0003_accounts');
     expect(down.error).toBeUndefined();
-    expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([
-      ['0009_research_leads', 'Success'],
-      ['0008_family_relation', 'Success'],
-      ['0007_member_person', 'Success'],
-      ['0006_agents', 'Success'],
-      ['0005_fold_spaces', 'Success'],
-      ['0004_proposals', 'Success'],
-    ]);
+    expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([...later].reverse().map((m) => [m, 'Success']));
     // The one-primary-Name check works again without merged_into_id.
     await db.transaction().execute(async (tx) => {
       const p = await tx.insertInto('person').values({ sex: 'female' }).returning('id').executeTakeFirstOrThrow();
       await tx.insertInto('name').values({ person_id: p.id, given: 'Dana', surname: 'Invented', type: 'birth', as_found: 'Dana', is_primary: true }).execute();
     });
-    expect(await migrateToLatest(db)).toEqual([
-      '0004_proposals',
-      '0005_fold_spaces',
-      '0006_agents',
-      '0007_member_person',
-      '0008_family_relation',
-      '0009_research_leads',
-    ]);
+    expect(await migrateToLatest(db)).toEqual(later);
   });
 
   it('a change of the derived relation is no change of the Person: it bumps no version', async () => {

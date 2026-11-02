@@ -2,6 +2,7 @@ import {
   baseTargetOf,
   describeOperations,
   detectConflict,
+  isNewRef,
   isTempId,
   mayDecide,
   Operation,
@@ -17,6 +18,7 @@ import {
 import type { Db } from '../db/db.js';
 import type { Account, Proposal, Upload } from '../db/types.js';
 import { fieldOf, RECORD_TABLES } from './apply.js';
+import { blockedProposals, dependenciesOf } from './batch-state.js';
 import { idsIn, labelsFor } from './labels.js';
 import { snapshotsMany, type Snapshot } from './records.js';
 
@@ -107,11 +109,12 @@ export async function findConflicts(db: Db, ops: readonly Operation[]): Promise<
 // ---------------------------------------------------------------- views
 
 export function uploadView(
-  u: Pick<Upload, 'id' | 'status' | 'content_type' | 'declared_type' | 'byte_size' | 'declared_size' | 'width' | 'height'>,
+  u: Pick<Upload, 'id' | 'status' | 'kind' | 'content_type' | 'declared_type' | 'byte_size' | 'declared_size' | 'width' | 'height'>,
 ): UploadView {
   return {
     id: u.id,
     status: u.status,
+    kind: u.kind,
     contentType: u.content_type ?? u.declared_type,
     byteSize: u.byte_size ?? u.declared_size,
     width: u.width,
@@ -150,6 +153,13 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
   const answered = await answeredLeads(
     db,
     rows.map((p) => p.id),
+  );
+  const inBatches = rows.filter((p) => p.batch_id !== null).map((p) => p.id);
+  const dependsOn = await dependenciesOf(db, inBatches);
+  const blocked = await blockedProposals(db, { proposalIds: inBatches });
+  const batchIds = [...new Set(rows.flatMap((p) => (p.batch_id ? [p.batch_id] : [])))];
+  const batchNames = new Map(
+    batchIds.length ? (await db.selectFrom('import_batch').select(['id', 'name']).where('id', 'in', batchIds).execute()).map((b) => [b.id, b.name]) : [],
   );
 
   return rows.map((p) => {
@@ -195,6 +205,9 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
       citations: citationPreviews(effective, support, labels),
       conflicts: conflicts.size,
       answersLeads: answered.get(p.id) ?? [],
+      batch: p.batch_id !== null && p.batch_position !== null ? { id: p.batch_id, name: batchNames.get(p.batch_id) ?? '', position: p.batch_position } : null,
+      dependsOn: dependsOn.get(p.id) ?? [],
+      blockedBy: blocked.get(p.id) ?? null,
     };
   });
 }
@@ -220,7 +233,12 @@ function conflictsSync(ops: readonly Operation[], rows: Map<string, Snapshot>, l
   for (const [position, op] of ops.entries()) {
     for (const target of targetsOf(op)) {
       const current = rows.get(`${target.table}:${target.id}`) ?? null;
-      const proposed = op.op === 'setField' ? Object.entries(op.set).map(([field, value]) => ({ field, value })) : [];
+      const proposed =
+        op.op === 'setField'
+          ? Object.entries(op.set).map(([field, value]) => ({ field, value }))
+          : op.op === 'setNotes'
+            ? [{ field: 'notes', value: op.notes }]
+            : [];
       const conflict = detectConflict(
         target.base,
         current?.version ?? null,
@@ -244,8 +262,8 @@ interface CitationSupport {
 /** Uploads, Sources and Citations the operations refer to, three queries for any number of Proposals. */
 async function citationSupport(db: Db, ops: readonly Operation[]): Promise<CitationSupport> {
   const uploadIds = ops.flatMap((o) => (o.op === 'addImage' ? [o.uploadId] : []));
-  const sourceIds = ops.flatMap((o) => (o.op === 'createCitation' && !isTempId(o.sourceId) ? [o.sourceId] : []));
-  const citationIds = ops.flatMap((o) => (o.op === 'attachCitation' && !isTempId(o.citationId) ? [o.citationId] : []));
+  const sourceIds = ops.flatMap((o) => (o.op === 'createCitation' && !isNewRef(o.sourceId) ? [o.sourceId] : []));
+  const citationIds = ops.flatMap((o) => (o.op === 'attachCitation' && !isNewRef(o.citationId) ? [o.citationId] : []));
   return {
     uploads: new Map(uploadIds.length ? (await db.selectFrom('upload').selectAll().where('id', 'in', uploadIds).execute()).map((u) => [u.id, u]) : []),
     sources: new Map(
@@ -271,7 +289,9 @@ function citationPreviews(ops: readonly Operation[], support: CitationSupport, l
   const imagesOf = (ref: string) =>
     ops.flatMap((o) => {
       const upload = o.op === 'addImage' && o.citationId === ref ? support.uploads.get(o.uploadId) : undefined;
-      return o.op === 'addImage' && upload ? [{ ...uploadView(upload), kind: o.kind }] : [];
+      if (o.op !== 'addImage' || !upload) return [];
+      const { kind: _uploadKind, ...view } = uploadView(upload);
+      return [{ ...view, kind: o.kind }];
     });
   // A new Citation, described by its operation.
   const created = (o: Extract<Operation, { op: 'createCitation' }>): CitationPreview => {
@@ -305,7 +325,7 @@ function citationPreviews(ops: readonly Operation[], support: CitationSupport, l
     if (o.op === 'createCitation') {
       seen.add(o.tempId);
       out.push(created(o));
-    } else if (o.op === 'attachCitation' && !isTempId(o.citationId) && !seen.has(o.citationId)) {
+    } else if (o.op === 'attachCitation' && !isNewRef(o.citationId) && !seen.has(o.citationId)) {
       seen.add(o.citationId);
       out.push(existing(o.citationId));
     }

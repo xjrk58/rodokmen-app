@@ -53,7 +53,9 @@ test('the person page: all Names, Events with Citations and their confidence and
   await page.goto(`./#people/${P.jan}`);
   await expect(page.getByTestId('person-title')).toHaveText('Jan Novák');
   await expect(page.getByTestId('person-name')).toHaveCount(3);
-  await expect(page.getByTestId('person-name').filter({ hasText: 'Joannes Nowak' })).toContainText('Latin form');
+  // Each Name says its type and, apart, its language (tree-model spec, "Names carry a language tag").
+  await expect(page.getByTestId('person-name').filter({ hasText: 'Joannes Nowak' }).getByTestId('name-kind')).toHaveText(' · other form · Latin');
+  await expect(page.getByTestId('person-name').filter({ hasText: 'Jan Novák' }).getByTestId('name-kind')).toHaveText(' · birth name · Czech · main name');
   const baptism = page.locator('[data-testid="person-event"][data-event="0192f0c4-7a1e-7c3b-9d2a-000000000401"]');
   await expect(baptism.getByTestId('role')).toHaveText('Child');
   await expect(baptism.getByTestId('confidence')).toHaveText('confidence: high');
