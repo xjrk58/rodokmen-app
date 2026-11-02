@@ -421,6 +421,16 @@ export async function renderHistory(root, o, signal) {
 }
 
 /**
+ * A logged column (`as_found`) by its field label in the reader's language (`field.asFound`), or as it is when there is none.
+ * @param {string} column
+ */
+function columnLabel(column) {
+  const key = `field.${column.replace(/_([a-z])/g, (_, /** @type {string} */ c) => c.toUpperCase())}`;
+  const label = t(key);
+  return label === key ? column : label;
+}
+
+/**
  * The choices for one record edited again after the Proposal.
  * @param {LaterEdit} e
  * @param {UndoBody['choices'][number]} choice
@@ -437,7 +447,7 @@ function laterEditBlock(e, choice, lang) {
     }
   }
   for (const f of e.fields) {
-    const row = h('div', { class: 'choice' }, h('div', { class: 'small' }, f.field));
+    const row = h('div', { class: 'choice' }, h('div', { class: 'small', 'data-testid': 'later-field' }, columnLabel(f.field)));
     for (const [which, value] of /** @type {const} */ ([
       ['undo', f.before],
       ['keep', f.current],

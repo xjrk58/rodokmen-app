@@ -192,6 +192,23 @@ export const setDisabled = (id, disabled) => api(`members/${encodeURIComponent(i
 /** @param {string} id @param {string | null} personId @returns {Promise<import('./types.js').MemberView>} */
 export const linkPerson = (id, personId) => api(`members/${encodeURIComponent(id)}/person`, { method: 'PUT', body: { personId } });
 
+// ---------------------------------------------------------------- the Owner's Agents
+
+/** Every Agent with its tokens (by prefix) and this hour's use of its limits. @param {AbortSignal} [signal] @returns {Promise<import('./types.js').AgentList>} */
+export const listAgents = (signal) => api('agents', { signal });
+
+/** Creates an Agent with its first token, which only this answer holds in full. @param {{ name: string, tokenLabel?: string }} body @returns {Promise<import('./types.js').CreatedAgent>} */
+export const createAgent = (body) => api('agents', { method: 'POST', body });
+
+/** Issues another token for an Agent, which only this answer holds in full. @param {string} id @param {{ label?: string }} body @returns {Promise<import('./types.js').IssuedAgentToken>} */
+export const issueAgentToken = (id, body) => api(`agents/${encodeURIComponent(id)}/tokens`, { method: 'POST', body });
+
+/** Revokes a token at once. @param {string} id @param {string} tokenId @returns {Promise<null>} */
+export const revokeAgentToken = (id, tokenId) => api(`agents/${encodeURIComponent(id)}/tokens/${encodeURIComponent(tokenId)}`, { method: 'DELETE' });
+
+/** Disables an Agent (none of its tokens works) or enables it again. @param {string} id @param {boolean} disabled @returns {Promise<import('./types.js').AgentView>} */
+export const setAgentDisabled = (id, disabled) => api(`agents/${encodeURIComponent(id)}/${disabled ? 'disable' : 'enable'}`, { method: 'POST' });
+
 // ---------------------------------------------------------------- Family roots
 
 /** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').FamilyRootList>} */

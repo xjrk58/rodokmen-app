@@ -3,6 +3,7 @@ import { loadConfig } from './config.js';
 import { createDb, migrateToLatest } from './db/db.js';
 import { DailyScheduler } from './jobs/daily.js';
 import { createMailer } from './mail/mailer.js';
+import { shutDown, SHUTDOWN_TIMEOUT_MS } from './shutdown.js';
 import { createImageStorage } from './storage/images.js';
 import { systemClock } from './clock.js';
 
@@ -42,16 +43,27 @@ async function main() {
     log: (msg, err) => app.log.error({ err }, msg),
   }).start();
 
-  const shutdown = async (signal: string) => {
-    app.log.info({ signal }, 'shutting down');
+  // Docker sends SIGTERM when a deploy stops the old slot (after the switch) or the stack stops.
+  let stopping = false;
+  const stop = (signal: string) => {
+    if (stopping) return;
+    stopping = true;
+    app.log.info({ signal }, 'shutting down: finishing the requests in flight');
     clearInterval(sweep);
-    await stopJobs();
-    await app.close();
-    await db.destroy();
-    process.exit(0);
+    shutDown({ app, stopJobs, db }).then(
+      (finished) => {
+        if (finished) app.log.info('stopped');
+        else app.log.error(`shutdown did not finish within ${SHUTDOWN_TIMEOUT_MS / 1000} s; the connections still open were cut off`);
+        process.exit(finished ? 0 : 1);
+      },
+      (error: unknown) => {
+        app.log.error({ err: error }, 'shutdown failed');
+        process.exit(1);
+      },
+    );
   };
-  process.on('SIGTERM', () => void shutdown('SIGTERM'));
-  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => stop('SIGTERM'));
+  process.on('SIGINT', () => stop('SIGINT'));
 
   await app.listen({ host: config.host, port: config.port });
 }

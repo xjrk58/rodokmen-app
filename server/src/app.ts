@@ -61,6 +61,9 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
     logger: deps.logger ?? false,
     trustProxy: config.trustProxy,
     bodyLimit: 1024 * 1024,
+    // While the server shuts down (shutdown.ts), a request that still reaches it is answered,
+    // not refused with 503: the proxy already sent it here, and would pass the 503 on (#71).
+    return503OnClosing: false,
   });
   const readingJobs = new ReadingJobs({ db, clock, images, reader, log: (msg, err) => fastify.log.error({ err }, msg) });
   const app: RodokmenApp = Object.assign(fastify, { routeRecords: trackRoutes(fastify), readingJobs });
@@ -128,9 +131,18 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   });
   app.setNotFoundHandler((_request, reply) => reply.code(404).send({ statusCode: 404, error: 'Not Found', message: 'Not found.', code: 'not_found' }));
 
+  // Once close() is called, every answer closes its connection, including those to requests that
+  // were already running: no client sends another request on it, and close() need not wait for
+  // idle keep-alive connections to time out. (Fastify does this itself only for requests that
+  // arrive after close().)
+  let closing = false;
+  app.addHook('preClose', async () => {
+    closing = true;
+  });
   app.addHook('onSend', async (_request, reply) => {
     reply.header('x-content-type-options', 'nosniff');
     if (!reply.hasHeader('referrer-policy')) reply.header('referrer-policy', 'same-origin');
+    if (closing) reply.header('connection', 'close');
   });
 
   const accountDeps: AccountDeps = { db, clock, mailer, publicOrigin: config.publicOrigin, session: { idleDays: config.sessionIdleDays } };
