@@ -527,5 +527,20 @@
   "leads.accept": "Udělat z ní stopu",
   "leads.dismiss": "Zamítnout",
   "leads.dismissed": "Zamítnuto; už se nebude navrhovat.",
-  "propose.answersLead": "Tento nález odpovídá stopě: {question}"
+  "propose.answersLead": "Tento nález odpovídá stopě: {question}",
+  "propose.kind.notes": "Poznámky a štítky",
+  "propose.kindHint.notes": "Badatelské poznámky a štítky osoby; citace není potřeba",
+  "propose.needNotes": "Vyberte osobu a změňte její poznámky nebo štítky.",
+  "notes.notes": "Badatelské poznámky",
+  "notes.placeholder": "Otevřené otázky, kde hledat dál, co už bylo prověřeno …",
+  "notes.labels": "Štítky",
+  "notes.labelsHelp": "Volná slova, která osoby seskupují, například rodová linie (line/novak).",
+  "notes.labelPlaceholder": "line/novak",
+  "notes.addLabel": "Přidat štítek",
+  "notes.removeLabel": "Odebrat štítek {label}",
+  "person.notes": "Badatelské poznámky",
+  "person.labels": "Štítky",
+  "person.editNotes": "Poznámky a štítky",
+  "people.labelFilter": "Štítky",
+  "people.labelPlaceholder": "line/novak, vystěhovalci"
 }

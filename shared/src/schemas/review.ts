@@ -169,7 +169,9 @@ export const UndoBody = z
   })
   .meta({ id: 'UndoBody' });
 
-export const HistoryKind = z.enum(['person', 'name', 'family', 'event', 'source', 'citation']).meta({ id: 'HistoryKind' });
+export const HistoryKind = z
+  .enum(['person', 'name', 'family', 'event', 'source', 'citation', 'place', 'house', 'parish', 'estate'])
+  .meta({ id: 'HistoryKind' });
 
 export const HistoryEntry = z
   .object({

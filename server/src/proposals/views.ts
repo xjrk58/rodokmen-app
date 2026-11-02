@@ -220,7 +220,12 @@ function conflictsSync(ops: readonly Operation[], rows: Map<string, Snapshot>, l
   for (const [position, op] of ops.entries()) {
     for (const target of targetsOf(op)) {
       const current = rows.get(`${target.table}:${target.id}`) ?? null;
-      const proposed = op.op === 'setField' ? Object.entries(op.set).map(([field, value]) => ({ field, value })) : [];
+      const proposed =
+        op.op === 'setField'
+          ? Object.entries(op.set).map(([field, value]) => ({ field, value }))
+          : op.op === 'setNotes'
+            ? [{ field: 'notes', value: op.notes }]
+            : [];
       const conflict = detectConflict(
         target.base,
         current?.version ?? null,

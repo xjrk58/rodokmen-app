@@ -527,5 +527,20 @@
   "leads.accept": "Make it a lead",
   "leads.dismiss": "Dismiss",
   "leads.dismissed": "Dismissed; it will not be suggested again.",
-  "propose.answersLead": "This finding answers the lead: {question}"
+  "propose.answersLead": "This finding answers the lead: {question}",
+  "propose.kind.notes": "Notes and Labels",
+  "propose.kindHint.notes": "Research notes and Labels of a Person; no Citation needed",
+  "propose.needNotes": "Pick a Person and change their notes or Labels.",
+  "notes.notes": "Research notes",
+  "notes.placeholder": "Open questions, where to look next, what was checked …",
+  "notes.labels": "Labels",
+  "notes.labelsHelp": "Free words that group Persons, such as a family line (line/novak).",
+  "notes.labelPlaceholder": "line/novak",
+  "notes.addLabel": "Add Label",
+  "notes.removeLabel": "Take off the Label {label}",
+  "person.notes": "Research notes",
+  "person.labels": "Labels",
+  "person.editNotes": "Notes and Labels",
+  "people.labelFilter": "Labels",
+  "people.labelPlaceholder": "line/novak, emigrated"
 }

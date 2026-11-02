@@ -27,6 +27,9 @@ import {
 
 // ---------------------------------------------------------------- shared pieces
 
+/** A record's research notes in Markdown (tree-model spec, "Research notes on records"). */
+const NotesField = z.string().nullable().describe('Research notes in Markdown; null when there are none');
+
 /** The relation to the family (tree-model spec, "Relation to the family is computed"; shared/src/relation.ts). */
 export const RelationToFamily = z.enum(RELATIONS).meta({
   id: 'RelationToFamily',
@@ -109,6 +112,11 @@ export const PersonSearchQuery = z.object({
   from: z.coerce.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or after this year'),
   to: z.coerce.number().int().min(1).max(9999).optional().describe('Only Persons with an Event that could be in or before this year'),
   relation: RelationFilter.optional(),
+  label: z
+    .union([z.string().trim().min(1).max(200), z.array(z.string().trim().min(1).max(200)).max(10)])
+    .transform((v) => (Array.isArray(v) ? v : [v]))
+    .optional()
+    .describe('Only Persons carrying this Label, ignoring case and diacritics; repeat it for Persons carrying all of several Labels'),
   ...Paging.shape,
 });
 
@@ -160,6 +168,8 @@ export const PersonDetail = z
     living: z.boolean(),
     relation: RelationToFamily,
     familyRoot: z.boolean().describe('The Owner marked this Person as a Family root'),
+    labels: z.array(z.string()).describe('The Labels of the Person, such as a family line, in the order they were added'),
+    notes: NotesField,
     names: z.array(NameView),
     events: z.array(PersonEventView).describe('Ordered by the earliest date each could be'),
     familiesAsPartner: z.array(PartnerFamilyView),
@@ -253,6 +263,7 @@ export const FamilyDetail = z
     partners: z.array(z.object({ position: z.union([z.literal(1), z.literal(2)]), person: PersonSummary })),
     children: z.array(z.object({ linkId: Id, linkVersion: Version, linkType: ChildLinkType, person: PersonSummary })),
     events: z.array(EventSummary).describe('Events in which the partners take part as partners, such as the marriage'),
+    notes: NotesField,
   })
   .meta({ id: 'FamilyDetail' });
 
@@ -263,6 +274,7 @@ export const EventDetail = EventSummary.safeExtend({
   citations: z.array(CitationSummary),
   parishes: z.array(ParishRef).describe('Parishes the Place belonged to at the date of the Event'),
   estates: z.array(EstateRef).describe('Estates the Place was part of at the date of the Event'),
+  notes: NotesField,
 }).meta({ id: 'EventDetail' });
 
 // ---------------------------------------------------------------- Map
@@ -356,6 +368,7 @@ export const PlaceDetail = PlaceSummary.safeExtend({
   parishes: z.array(z.object({ linkId: Id, linkVersion: Version, period: Period, parish: ParishRef })),
   estates: z.array(z.object({ linkId: Id, linkVersion: Version, period: Period, estate: EstateRef })),
   houses: z.array(HouseSummary),
+  notes: NotesField,
 }).meta({ id: 'PlaceDetail' });
 
 export const HouseLookupQuery = z.object({
@@ -369,14 +382,17 @@ export const HouseLookupQuery = z.object({
 export const HouseDetail = HouseSummary.safeExtend({
   place: PlaceRef,
   events: z.array(EventSummary).describe('Events at this House, ordered by earliest date'),
+  notes: NotesField,
 }).meta({ id: 'HouseDetail' });
 
 export const ParishDetail = ParishRecord.safeExtend({
   places: z.array(z.object({ linkId: Id, period: Period, place: PlaceRef })),
+  notes: NotesField,
 }).meta({ id: 'ParishDetail' });
 
 export const EstateDetail = EstateRecord.safeExtend({
   places: z.array(z.object({ linkId: Id, period: Period, place: PlaceRef })),
+  notes: NotesField,
 }).meta({ id: 'EstateDetail' });
 
 // ---------------------------------------------------------------- Sources, Citations, images
@@ -407,6 +423,7 @@ export const SourceSearchResult = z
 
 export const SourceDetail = SourceSummary.safeExtend({
   citations: z.array(CitationSummary),
+  notes: NotesField,
 }).meta({ id: 'SourceDetail' });
 
 export const ImageView = ImageMetadata.safeExtend({

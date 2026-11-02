@@ -49,3 +49,39 @@ restoreRecord
 setFamilyRoot
   cs: označuje osobu Anna Králová za kořen rodu
   en: marks Anna Králová as a Family root
+createPlace
+  cs: přidává místo: Nová Ves (osada)
+  en: adds the Place Nová Ves (hamlet)
+addPlaceName
+  cs: přidává název „Steinlhota“ (de) (…–1918) místu: Kamenná Lhota
+  en: adds the name “Steinlhota” (de) (…–1918) to Kamenná Lhota
+createHouse
+  cs: přidává dům: Nová Ves čp. 3, 15 (1850–…)
+  en: adds the House Nová Ves No. 3, 15 (1850–…)
+addHouseNumber
+  cs: přidává číslo popisné 15a (1931–…) domu: Nová Ves čp. 3/15
+  en: adds the house number 15a (1931–…) to Nová Ves No. 3/15
+createParish
+  cs: přidává farnost: Nová Ves
+  en: adds the Parish Nová Ves
+createEstate
+  cs: přidává panství: Vrbice
+  en: adds the Estate Vrbice
+linkPlaceParish
+  cs: řadí místo Nová Ves k farnosti Nová Ves (1784–…)
+  en: puts Nová Ves in the Parish Nová Ves (1784–…)
+linkPlaceEstate
+  cs: řadí místo Kamenná Lhota k panství Vrbice (…–1848)
+  en: puts Kamenná Lhota in the Estate Vrbice (…–1848)
+setNotes
+  cs: zapisuje badatelské poznámky (osoba) Anna Králová: „Baptism not found 1801–1803, check the neighbouring parish.“
+  en: writes research notes on Anna Králová (Person): “Baptism not found 1801–1803, check the neighbouring parish.”
+setNotes
+  cs: odebírá badatelské poznámky (místo): Nová Ves
+  en: removes the research notes of Nová Ves (Place)
+addLabel
+  cs: přidává štítek „line/dvorak“ osobě: Václav Dvořák
+  en: labels Václav Dvořák “line/dvorak”
+removeLabel
+  cs: odebírá štítek „emigrated“ osobě: Anna Králová
+  en: takes the Label “emigrated” off Anna Králová

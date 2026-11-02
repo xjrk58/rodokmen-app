@@ -1,130 +1,17 @@
-import { isTempId, RegisterCoverage, RegisterKind, type Operation, type RestorableTable, type SettableRecord } from '@rodokmen/shared';
+import { isTempId, type Operation } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import { v7 as uuidv7 } from 'uuid';
 import { ApiProblem } from '../auth/problem.js';
 import { stringField } from '../errors.js';
 import type { Db } from '../db/db.js';
 import { dateColumns } from '../tree/dates.js';
-import { ChangeSet, legacyName, snapshot, trackedRows, type Rows } from './records.js';
+import { checkBase, ConflictProblem, ref, type ApplyResult, type Ctx, type Op } from './apply-context.js';
+import { applyPlaceOrNote } from './apply-places.js';
+import { RECORD_TABLES, registerColumns, setFieldColumns } from './columns.js';
+import { ChangeSet, legacyName, snapshot, trackedRows } from './records.js';
 
-/** Where each settable record kind lives, and how its API fields map to columns. */
-export const RECORD_TABLES: Record<SettableRecord | 'family', RestorableTable> = {
-  person: 'person',
-  name: 'name',
-  event: 'event',
-  role: 'event_role',
-  childLink: 'family_child',
-  source: 'source',
-  citation: 'citation',
-  family: 'family',
-};
-
-export const FIELD_COLUMNS: Record<string, string> = {
-  asFound: 'as_found',
-  typeDetail: 'type_detail',
-  placeId: 'place_id',
-  houseId: 'house_id',
-  roleDetail: 'role_detail',
-  linkType: 'link_type',
-  readOn: 'read_on',
-};
-
-export const columnOf = (field: string): string => FIELD_COLUMNS[field] ?? field;
-
-/** The columns of a register's coverage (a Source's `register` field); all empty for none. */
-export function registerColumns(register: RegisterCoverage | null) {
-  return {
-    register_parish_id: register?.parishId ?? null,
-    register_kinds: register?.kinds ?? [],
-    register_from: register?.from ?? null,
-    register_to: register?.to ?? null,
-  };
-}
-
-/** A Source's `register` field from its columns. */
-export function registerOf(row: Record<string, unknown>): RegisterCoverage | null {
-  const parishId = row.register_parish_id;
-  if (typeof parishId !== 'string') return null;
-  const year = (v: unknown) => (typeof v === 'number' ? v : null);
-  return {
-    parishId,
-    kinds: Array.isArray(row.register_kinds) ? row.register_kinds.filter((k): k is RegisterKind => RegisterKind.safeParse(k).success) : [],
-    from: year(row.register_from),
-    to: year(row.register_to),
-  };
-}
-
-/** Column values for a setField operation (an Event date also sets its earliest and latest days, a Source's register its four columns). */
-export function setFieldColumns(set: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [field, value] of Object.entries(set)) {
-    if (field === 'date') Object.assign(out, dateColumns(typeof value === 'string' ? value : null));
-    else if (field === 'register') Object.assign(out, registerColumns(RegisterCoverage.nullable().parse(value ?? null)));
-    else out[columnOf(field)] = value;
-  }
-  return out;
-}
-
-/** The current value of an API field in a stored row. */
-export function fieldOf(row: Record<string, unknown>, field: string): unknown {
-  if (field === 'register') return registerOf(row);
-  return row[columnOf(field)] ?? null;
-}
-
-/** An operation based on a version of a record that is no longer current. */
-export class ConflictProblem extends ApiProblem {
-  constructor(
-    readonly position: number,
-    what: string,
-  ) {
-    super(409, 'conflict', `Operation ${position + 1}: ${what} was changed since the Proposal was written. Choose per field before accepting.`);
-  }
-}
-
-export interface UploadMove {
-  uploadId: string;
-  imageId: string;
-  from: { original: string; display: string };
-  to: { original: string; display: string };
-}
-
-export interface ApplyResult {
-  changes: ChangeSet;
-  temps: Map<string, string>;
-  citationIds: string[];
-  uploads: UploadMove[];
-}
-
-interface Ctx {
-  db: Db;
-  rows: Rows;
-  changes: ChangeSet;
-  temps: Map<string, string>;
-  citations: Set<string>;
-  uploads: UploadMove[];
-  proposalId: string;
-  authorId: string;
-}
-
-function ref(ctx: Ctx, value: string): string {
-  if (!isTempId(value)) return value;
-  const id = ctx.temps.get(value);
-  if (!id) throw new ApiProblem(400, 'invalid_proposal', `${value} is used before it is created.`);
-  return id;
-}
-
-/** Checks that the record exists and still has the version the Member saw. */
-async function checkBase(ctx: Ctx, position: number, name: RestorableTable, id: string, baseVersion: number | null | undefined, what: string) {
-  const current = await snapshot(ctx.db, name, id);
-  if (!current) throw new ApiProblem(409, 'record_missing', `Operation ${position + 1}: ${what} no longer exists.`);
-  if (name === 'person' && current.merged_into_id)
-    throw new ApiProblem(409, 'person_merged', `Operation ${position + 1}: this Person was merged into another; propose against the remaining Person.`);
-  if (baseVersion === undefined || baseVersion === null) return current;
-  const start = ctx.changes.startVersion(name, id);
-  const seen = start === undefined ? current.version : start;
-  if (seen !== baseVersion) throw new ConflictProblem(position, what);
-  return current;
-}
+export { ConflictProblem, type ApplyResult, type UploadMove } from './apply-context.js';
+export { columnOf, fieldOf, FIELD_COLUMNS, point, RECORD_TABLES, registerColumns, registerOf, setFieldColumns } from './columns.js';
 
 async function nextSort(db: Db, name: 'name' | 'event_role' | 'family_child', column: 'person_id' | 'event_id' | 'family_id', id: string): Promise<number> {
   const { rows } = await sql<{ n: number }>`select coalesce(max(sort_order) + 1, 0)::int as n from ${sql.table(name)} where ${sql.ref(column)} = ${id}`.execute(
@@ -177,6 +64,12 @@ async function merge(ctx: Ctx, position: number, op: Extract<Operation, { op: 'm
   for (const s of await db.selectFrom('source').select('id').where('account_given_by_person_id', '=', gone).execute()) {
     await rows.update('source', s.id, { account_given_by_person_id: keep });
   }
+  // Labels move to the kept Person; one it carries already is not doubled (tree-model spec, "Labels on Persons").
+  for (const l of await db.selectFrom('person_label').select(['id', 'folded']).where('person_id', '=', gone).execute()) {
+    const twin = await db.selectFrom('person_label').select('id').where('person_id', '=', keep).where('folded', '=', l.folded).executeTakeFirst();
+    if (twin) await rows.remove('person_label', l.id);
+    else await rows.update('person_label', l.id, { person_id: keep });
+  }
   // A Family root stays one: the kept Person is a root when either was (tree-model spec, "Family roots").
   const goneRoot = await db.selectFrom('family_root').select('id').where('person_id', '=', gone).executeTakeFirst();
   if (goneRoot) {
@@ -190,8 +83,6 @@ async function merge(ctx: Ctx, position: number, op: Extract<Operation, { op: 'm
   }
   await rows.update('person', gone, { merged_into_id: keep });
 }
-
-type Op<K extends Operation['op']> = Extract<Operation, { op: K }>;
 
 async function createPerson(ctx: Ctx, op: Op<'createPerson'>) {
   const p = await ctx.rows.insert('person', { sex: op.sex });
@@ -229,8 +120,8 @@ async function createEvent(ctx: Ctx, op: Op<'createEvent'>) {
     type: op.type,
     type_detail: op.typeDetail,
     ...dateColumns(op.date),
-    place_id: op.placeId,
-    house_id: op.houseId,
+    place_id: op.placeId ? ref(ctx, op.placeId) : null,
+    house_id: op.houseId ? ref(ctx, op.houseId) : null,
     description: op.description,
   });
   ctx.temps.set(op.tempId, e.id);
@@ -286,9 +177,13 @@ async function createSource(ctx: Ctx, position: number, op: Op<'createSource'>) 
     account_given_by: account?.givenBy ?? null,
     account_given_by_person_id: account?.givenByPersonId ?? null,
     account_given_on: account?.givenOn ?? null,
-    ...registerColumns(op.register),
+    ...registerColumns(createSourceRegister(ctx, op)),
   });
   ctx.temps.set(op.tempId, s.id);
+}
+
+function createSourceRegister(ctx: Ctx, op: Op<'createSource'>) {
+  return op.register ? { ...op.register, parishId: ref(ctx, op.register.parishId) } : null;
 }
 
 async function createCitation(ctx: Ctx, op: Op<'createCitation'>) {
@@ -406,6 +301,8 @@ function applyOne(ctx: Ctx, position: number, op: Operation): Promise<void> {
       return restoreRecord(ctx, position, op);
     case 'setFamilyRoot':
       return setFamilyRoot(ctx, position, op);
+    default:
+      return applyPlaceOrNote(ctx, position, op);
   }
 }
 

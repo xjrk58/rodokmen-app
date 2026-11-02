@@ -71,6 +71,18 @@ const examples: OperationInput[] = [
   { op: 'mergePersons', keepId: ids.anna, mergeId: ids.dup, keepBaseVersion: 1, mergeBaseVersion: 1 },
   { op: 'restoreRecord', table: 'person', id: ids.dup, baseVersion: 2, values: { id: ids.dup, sex: 'male', merged_into_id: null } },
   { op: 'setFamilyRoot', personId: ids.anna, familyRoot: true },
+  { op: 'createPlace', tempId: 'tmp:place', type: 'hamlet', name: { name: 'Nová Ves', language: 'cs' } },
+  { op: 'addPlaceName', placeId: ids.place, baseVersion: 4, name: 'Steinlhota', language: 'de', period: { from: null, to: '1918' } },
+  { op: 'createHouse', tempId: 'tmp:house', placeId: 'tmp:place', numbers: [{ number: '3' }, { number: '15', period: { from: '1850', to: null } }] },
+  { op: 'addHouseNumber', houseId: 'tmp:house', number: '15a', period: { from: '1931', to: null } },
+  { op: 'createParish', tempId: 'tmp:parish', name: 'Nová Ves', seatPlaceId: 'tmp:place' },
+  { op: 'createEstate', tempId: 'tmp:estate', name: 'Vrbice' },
+  { op: 'linkPlaceParish', placeId: 'tmp:place', parishId: 'tmp:parish', period: { from: '1784', to: null } },
+  { op: 'linkPlaceEstate', placeId: ids.place, estateId: 'tmp:estate', baseVersion: 4, period: { from: null, to: '1848' } },
+  { op: 'setNotes', record: 'person', id: ids.anna, baseVersion: 1, notes: 'Baptism not found 1801–1803, check the neighbouring parish.\nSecond line.' },
+  { op: 'setNotes', record: 'place', id: 'tmp:place', notes: null },
+  { op: 'addLabel', personId: 'tmp:child', label: 'line/dvorak' },
+  { op: 'removeLabel', personId: ids.anna, baseVersion: 1, label: 'emigrated' },
 ];
 
 describe('links in Sources', () => {

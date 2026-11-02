@@ -97,6 +97,7 @@ export async function getSource(db: Db, id: string): Promise<SourceDetail | null
   return {
     ...sourceSummary(s),
     citations: citations.map((c) => ({ id: c.id, version: c.version, sourceId: c.source_id, sourceTitle: s.title, page: c.page, confidence: c.confidence })),
+    notes: s.notes,
   };
 }
 

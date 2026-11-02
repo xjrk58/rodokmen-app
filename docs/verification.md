@@ -39,6 +39,7 @@ this page with `node scripts/verification-trace.mjs`.
 | tree-model: Living people are computed | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `isLivingOn` | shared/src/living.ts | see below |
 | tree-model: Relation follows the evidence | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
 | tree-model: Relation to the family is computed | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
+| tree-model: Research notes on records | openspec/changes/add-vault-import/specs/tree-model/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 
 ## Assumed, not proved
 

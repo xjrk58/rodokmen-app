@@ -200,11 +200,19 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     </header>
     <${AsOf} asOf=${loaded.asOf} />
     <${ErrorLine} error=${loaded.asOf ? null : loaded.error} />
+    ${
+      person.labels.length
+        ? html`<ul class="chips" data-testid="person-labels" aria-label=${t('person.labels')}>
+            ${person.labels.map((l) => html`<li class="chip" data-testid="person-label" key=${l}>${l}</li>`)}
+          </ul>`
+        : null
+    }
     <nav class="person-actions">
       <a class="button primary" href=${treeAddress(person.id)} data-testid="show-in-tree">${t('people.showInTree')}</a>
       <a class="button" href=${lifeAddress(person.id)} data-testid="life-path">${t('person.lifePath')}</a>
       <a class="button" href=${`#work/propose/correction/${person.id}`} data-testid="propose-change">${t('person.propose')}</a>
       <a class="button" href=${`#work/history/person/${person.id}`} data-testid="history">${t('person.history')}</a>
+      <a class="button" href=${`#work/propose/notes/${person.id}`} data-testid="edit-notes">${t('person.editNotes')}</a>
       ${
         me?.permissions.markFamilyRoots
           ? html`<${FamilyRootButton}
@@ -217,6 +225,12 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
           : null
       }
     </nav>
+    ${
+      person.notes
+        ? html`<h2>${t('person.notes')}</h2>
+            <div class="research-notes" data-testid="person-notes">${person.notes}</div>`
+        : null
+    }
     <h2>${t('person.names')}</h2>
     <${Names} person=${person} cache=${cache} />
     <h2>${t('person.events')}</h2>

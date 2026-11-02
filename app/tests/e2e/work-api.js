@@ -151,6 +151,8 @@ export function personDetail(n, given, surname) {
     living: false,
     relation: 'unrelated',
     familyRoot: false,
+    labels: [],
+    notes: null,
     names: [
       {
         id: ID(n + 1000),

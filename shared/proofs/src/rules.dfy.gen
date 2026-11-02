@@ -109,7 +109,7 @@ function isCitationOperation(op: string): bool
 
 function isFactFreeOperation(op: string): bool
 {
-  (((op == "mergePersons") || (op == "restoreRecord")) || (op == "setFamilyRoot"))
+  ((((((op == "mergePersons") || (op == "restoreRecord")) || (op == "setFamilyRoot")) || (op == "setNotes")) || (op == "addLabel")) || (op == "removeLabel"))
 }
 
 function sameRecord(a: RecordKey, b: RecordKey): bool
@@ -173,6 +173,7 @@ method satisfiesEvidenceRule(ops: seq<string>) returns (res: bool)
   ensures ((exists i: nat :: ((i < |ops|) && isCitationOperation(ops[i]))) ==> res)
   ensures ((forall i: nat :: ((i < |ops|) ==> !(isCitationOperation(ops[i])))) ==> (exists i: nat :: ((i < |ops|) && !(isFactFreeOperation(ops[i])))) ==> !(res))
   ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> isFactFreeOperation(ops[i]))) ==> res)
+  ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> (((ops[i] == "setNotes") || (ops[i] == "addLabel")) || (ops[i] == "removeLabel")))) ==> res)
   ensures ((|ops| == 0) ==> !(res))
 {
   if (|ops| == 0) {

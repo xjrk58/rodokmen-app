@@ -316,9 +316,9 @@ export function detail(n) {
     id: ID(n),
     version: 1,
     sex,
-    living: s.living,
-    relation: s.relation,
-    familyRoot: s.familyRoot,
+    ...(({ living, relation, familyRoot }) => ({ living, relation, familyRoot }))(s),
+    labels: [],
+    notes: null,
     names: [`${given} ${surname}`, ...others].map((asFound, i) => ({
       id: ID(i === 0 ? 1000 + n : 1100 + n * 10 + i - 1),
       version: 1,

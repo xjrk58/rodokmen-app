@@ -1718,6 +1718,20 @@
             "type": "boolean",
             "description": "The Owner marked this Person as a Family root"
           },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The Labels of the Person, such as a family line, in the order they were added"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "names": {
             "type": "array",
             "items": {
@@ -1757,6 +1771,8 @@
           "living",
           "relation",
           "familyRoot",
+          "labels",
+          "notes",
           "names",
           "events",
           "familiesAsPartner",
@@ -2129,6 +2145,13 @@
               "$ref": "#/components/schemas/EventSummaryInput"
             },
             "description": "Events in which the partners take part as partners, such as the marriage"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2136,7 +2159,8 @@
           "version",
           "partners",
           "children",
-          "events"
+          "events",
+          "notes"
         ]
       },
       "EventDetailInput": {
@@ -2266,6 +2290,13 @@
               "$ref": "#/components/schemas/EstateRefInput"
             },
             "description": "Estates the Place was part of at the date of the Event"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2282,7 +2313,8 @@
           "roles",
           "citations",
           "parishes",
-          "estates"
+          "estates",
+          "notes"
         ]
       },
       "MapEventInput": {
@@ -2763,6 +2795,13 @@
             "items": {
               "$ref": "#/components/schemas/HouseSummaryInput"
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2775,7 +2814,8 @@
           "names",
           "parishes",
           "estates",
-          "houses"
+          "houses",
+          "notes"
         ]
       },
       "HouseDetailInput": {
@@ -2822,6 +2862,13 @@
               "$ref": "#/components/schemas/EventSummaryInput"
             },
             "description": "Events at this House, ordered by earliest date"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2832,7 +2879,8 @@
           "note",
           "numbers",
           "place",
-          "events"
+          "events",
+          "notes"
         ]
       },
       "ParishDetailInput": {
@@ -2881,6 +2929,13 @@
                 "place"
               ]
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -2888,7 +2943,8 @@
           "version",
           "name",
           "seatPlaceId",
-          "places"
+          "places",
+          "notes"
         ]
       },
       "EstateDetailInput": {
@@ -2926,13 +2982,21 @@
                 "place"
               ]
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
           "version",
           "name",
-          "places"
+          "places",
+          "notes"
         ]
       },
       "SourceSummaryInput": {
@@ -3087,6 +3151,13 @@
             "items": {
               "$ref": "#/components/schemas/CitationSummaryInput"
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -3099,7 +3170,8 @@
           "url",
           "familyAccount",
           "register",
-          "citations"
+          "citations",
+          "notes"
         ]
       },
       "ImageViewInput": {
@@ -4229,6 +4301,470 @@
           "retryAt"
         ]
       },
+      "TempIdInput": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "BatchRefInput": {
+        "type": "string",
+        "pattern": "^batch:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\/tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "A record created by an earlier Proposal of the same Import batch: batch:<proposal id>/<its temporary id>"
+      },
+      "RefInput": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          {
+            "$ref": "#/components/schemas/BatchRefInput"
+          }
+        ]
+      },
+      "CreatePlaceInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPlace"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PlaceTypeInput"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPointInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "municipality": {
+            "default": null,
+            "description": "Today's Municipality the Place lies in",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MunicipalityLinkInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "language": {
+                "$ref": "#/components/schemas/NameLanguageInput"
+              },
+              "period": {
+                "default": {
+                  "from": null,
+                  "to": null
+                },
+                "description": "When the name was used; open ends when unknown",
+                "$ref": "#/components/schemas/PeriodInput"
+              }
+            },
+            "required": [
+              "name",
+              "language"
+            ],
+            "description": "The primary name"
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "name"
+        ],
+        "description": "A new Place with its primary name"
+      },
+      "AddPlaceNameInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addPlaceName"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "language": {
+            "$ref": "#/components/schemas/NameLanguageInput"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the name was used; open ends when unknown",
+            "$ref": "#/components/schemas/PeriodInput"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "name",
+          "language"
+        ],
+        "description": "Another name of a Place, in a language and period"
+      },
+      "CreateHouseInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createHouse"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPointInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "numbers": {
+            "default": [],
+            "description": "Its house numbers (čp.) over time",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "pattern": "^\\d{1,5}[a-z]?$"
+                },
+                "period": {
+                  "default": {
+                    "from": null,
+                    "to": null
+                  },
+                  "description": "When the House carried the number",
+                  "$ref": "#/components/schemas/PeriodInput"
+                }
+              },
+              "required": [
+                "number"
+              ]
+            }
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "placeId"
+        ],
+        "description": "A new House in a Place, with its house numbers"
+      },
+      "AddHouseNumberInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addHouseNumber"
+          },
+          "houseId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing House",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "number": {
+            "type": "string",
+            "pattern": "^\\d{1,5}[a-z]?$"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the House carried the number",
+            "$ref": "#/components/schemas/PeriodInput"
+          }
+        },
+        "required": [
+          "op",
+          "houseId",
+          "number"
+        ]
+      },
+      "CreateParishInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createParish"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "seatPlaceId": {
+            "default": null,
+            "description": "Where the parish church stands",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name"
+        ]
+      },
+      "CreateEstateInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEstate"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name"
+        ],
+        "description": "A new Estate (panství)"
+      },
+      "LinkPlaceParishInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceParish"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "parishId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/PeriodInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "parishId"
+        ],
+        "description": "A Place belonged to a Parish during a period"
+      },
+      "LinkPlaceEstateInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceEstate"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "estateId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/PeriodInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "estateId"
+        ],
+        "description": "A Place was part of an Estate during a period"
+      },
+      "NotesRecordInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "family",
+          "event",
+          "place",
+          "house",
+          "parish",
+          "estate",
+          "source"
+        ]
+      },
+      "SetNotesInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setNotes"
+          },
+          "record": {
+            "$ref": "#/components/schemas/NotesRecordInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing record",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Research notes in Markdown; null removes them"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "notes"
+        ],
+        "description": "The research notes of a record. They state no fact, so a Proposal of notes and Labels alone needs no Citation"
+      },
+      "LabelInput": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "description": "A free word or short phrase, such as line/novak; compared ignoring case and diacritics"
+      },
+      "AddLabelInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelInput"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "description": "A Label on a Person; one the Person has already (ignoring case and diacritics) is refused"
+      },
+      "RemoveLabelInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "removeLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "baseVersion": {
+            "description": "Version of the Person",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "label": {
+            "$ref": "#/components/schemas/LabelInput"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "description": "Takes a Label off a Person, matched ignoring case and diacritics"
+      },
       "SetFamilyRootInput": {
         "type": "object",
         "properties": {
@@ -4250,21 +4786,6 @@
           "familyRoot"
         ],
         "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
-      },
-      "TempIdInput": {
-        "type": "string",
-        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
-        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
-      },
-      "RefInput": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          {
-            "$ref": "#/components/schemas/TempIdInput"
-          }
-        ]
       },
       "CreatePersonInput": {
         "type": "object",
@@ -4422,9 +4943,10 @@
           },
           "placeId": {
             "default": null,
+            "description": "A Place of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IdInput"
+                "$ref": "#/components/schemas/RefInput"
               },
               {
                 "type": "null"
@@ -4433,9 +4955,10 @@
           },
           "houseId": {
             "default": null,
+            "description": "A House of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/IdInput"
+                "$ref": "#/components/schemas/RefInput"
               },
               {
                 "type": "null"
@@ -4640,7 +5163,54 @@
             "description": "For a register book: its Parish, kinds and years",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RegisterCoverageInput"
+                "type": "object",
+                "properties": {
+                  "parishId": {
+                    "description": "The Parish that kept the register",
+                    "$ref": "#/components/schemas/RefInput"
+                  },
+                  "kinds": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RegisterKindInput"
+                    },
+                    "description": "Which entries it holds"
+                  },
+                  "from": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "First year it covers; null when unknown"
+                  },
+                  "to": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Last year it covers; null when unknown"
+                  }
+                },
+                "required": [
+                  "parishId",
+                  "kinds",
+                  "from",
+                  "to"
+                ]
               },
               {
                 "type": "null"
@@ -4805,7 +5375,11 @@
           "role",
           "childLink",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "SetFieldInput": {
@@ -4889,7 +5463,16 @@
           "name_citation",
           "image",
           "image_person",
-          "family_root"
+          "family_root",
+          "place",
+          "place_name",
+          "house",
+          "house_number",
+          "parish",
+          "place_parish",
+          "estate",
+          "place_estate",
+          "person_label"
         ]
       },
       "RestoreRecordInput": {
@@ -4988,6 +5571,39 @@
           },
           {
             "$ref": "#/components/schemas/SetFamilyRootInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreatePlaceInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddPlaceNameInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateHouseInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddHouseNumberInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateParishInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEstateInput"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceParishInput"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceEstateInput"
+          },
+          {
+            "$ref": "#/components/schemas/SetNotesInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddLabelInput"
+          },
+          {
+            "$ref": "#/components/schemas/RemoveLabelInput"
           }
         ]
       },
@@ -5859,7 +6475,11 @@
           "family",
           "event",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "HistoryEntryInput": {
@@ -8927,6 +9547,20 @@
             "type": "boolean",
             "description": "The Owner marked this Person as a Family root"
           },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The Labels of the Person, such as a family line, in the order they were added"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "names": {
             "type": "array",
             "items": {
@@ -8966,6 +9600,8 @@
           "living",
           "relation",
           "familyRoot",
+          "labels",
+          "notes",
           "names",
           "events",
           "familiesAsPartner",
@@ -9351,6 +9987,13 @@
               "$ref": "#/components/schemas/EventSummary"
             },
             "description": "Events in which the partners take part as partners, such as the marriage"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9358,7 +10001,8 @@
           "version",
           "partners",
           "children",
-          "events"
+          "events",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -9490,6 +10134,13 @@
               "$ref": "#/components/schemas/EstateRef"
             },
             "description": "Estates the Place was part of at the date of the Event"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9506,7 +10157,8 @@
           "roles",
           "citations",
           "parishes",
-          "estates"
+          "estates",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -9999,6 +10651,13 @@
             "items": {
               "$ref": "#/components/schemas/HouseSummary"
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10011,7 +10670,8 @@
           "names",
           "parishes",
           "estates",
-          "houses"
+          "houses",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10059,6 +10719,13 @@
               "$ref": "#/components/schemas/EventSummary"
             },
             "description": "Events at this House, ordered by earliest date"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10069,7 +10736,8 @@
           "note",
           "numbers",
           "place",
-          "events"
+          "events",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10120,6 +10788,13 @@
               ],
               "additionalProperties": false
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10127,7 +10802,8 @@
           "version",
           "name",
           "seatPlaceId",
-          "places"
+          "places",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10167,13 +10843,21 @@
               ],
               "additionalProperties": false
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
           "version",
           "name",
-          "places"
+          "places",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -10331,6 +11015,13 @@
             "items": {
               "$ref": "#/components/schemas/CitationSummary"
             }
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -10343,7 +11034,8 @@
           "url",
           "familyAccount",
           "register",
-          "citations"
+          "citations",
+          "notes"
         ],
         "additionalProperties": false
       },
@@ -11509,6 +12201,495 @@
         ],
         "additionalProperties": false
       },
+      "TempId": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "BatchRef": {
+        "type": "string",
+        "pattern": "^batch:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\/tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "A record created by an earlier Proposal of the same Import batch: batch:<proposal id>/<its temporary id>"
+      },
+      "Ref": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Id"
+          },
+          {
+            "$ref": "#/components/schemas/TempId"
+          },
+          {
+            "$ref": "#/components/schemas/BatchRef"
+          }
+        ]
+      },
+      "CreatePlace": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPlace"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/PlaceType"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "municipality": {
+            "default": null,
+            "description": "Today's Municipality the Place lies in",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MunicipalityLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "language": {
+                "$ref": "#/components/schemas/NameLanguage"
+              },
+              "period": {
+                "default": {
+                  "from": null,
+                  "to": null
+                },
+                "description": "When the name was used; open ends when unknown",
+                "$ref": "#/components/schemas/Period"
+              }
+            },
+            "required": [
+              "name",
+              "language",
+              "period"
+            ],
+            "additionalProperties": false,
+            "description": "The primary name"
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "location",
+          "municipality",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A new Place with its primary name"
+      },
+      "AddPlaceName": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addPlaceName"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/Version"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "language": {
+            "$ref": "#/components/schemas/NameLanguage"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the name was used; open ends when unknown",
+            "$ref": "#/components/schemas/Period"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "name",
+          "language",
+          "period"
+        ],
+        "additionalProperties": false,
+        "description": "Another name of a Place, in a language and period"
+      },
+      "CreateHouse": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createHouse"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "location": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GeoPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "numbers": {
+            "default": [],
+            "description": "Its house numbers (čp.) over time",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "number": {
+                  "type": "string",
+                  "pattern": "^\\d{1,5}[a-z]?$"
+                },
+                "period": {
+                  "default": {
+                    "from": null,
+                    "to": null
+                  },
+                  "description": "When the House carried the number",
+                  "$ref": "#/components/schemas/Period"
+                }
+              },
+              "required": [
+                "number",
+                "period"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "placeId",
+          "location",
+          "note",
+          "numbers"
+        ],
+        "additionalProperties": false,
+        "description": "A new House in a Place, with its house numbers"
+      },
+      "AddHouseNumber": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addHouseNumber"
+          },
+          "houseId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing House",
+            "$ref": "#/components/schemas/Version"
+          },
+          "number": {
+            "type": "string",
+            "pattern": "^\\d{1,5}[a-z]?$"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "description": "When the House carried the number",
+            "$ref": "#/components/schemas/Period"
+          }
+        },
+        "required": [
+          "op",
+          "houseId",
+          "number",
+          "period"
+        ],
+        "additionalProperties": false
+      },
+      "CreateParish": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createParish"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "seatPlaceId": {
+            "default": null,
+            "description": "Where the parish church stands",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name",
+          "seatPlaceId"
+        ],
+        "additionalProperties": false
+      },
+      "CreateEstate": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEstate"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A new Estate (panství)"
+      },
+      "LinkPlaceParish": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceParish"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "parishId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/Period"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "parishId",
+          "period"
+        ],
+        "additionalProperties": false,
+        "description": "A Place belonged to a Parish during a period"
+      },
+      "LinkPlaceEstate": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkPlaceEstate"
+          },
+          "placeId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "estateId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "period": {
+            "default": {
+              "from": null,
+              "to": null
+            },
+            "$ref": "#/components/schemas/Period"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Place",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "placeId",
+          "estateId",
+          "period"
+        ],
+        "additionalProperties": false,
+        "description": "A Place was part of an Estate during a period"
+      },
+      "NotesRecord": {
+        "type": "string",
+        "enum": [
+          "person",
+          "family",
+          "event",
+          "place",
+          "house",
+          "parish",
+          "estate",
+          "source"
+        ]
+      },
+      "SetNotes": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setNotes"
+          },
+          "record": {
+            "$ref": "#/components/schemas/NotesRecord"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing record",
+            "$ref": "#/components/schemas/Version"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Research notes in Markdown; null removes them"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "notes"
+        ],
+        "additionalProperties": false,
+        "description": "The research notes of a record. They state no fact, so a Proposal of notes and Labels alone needs no Citation"
+      },
+      "Label": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200,
+        "description": "A free word or short phrase, such as line/novak; compared ignoring case and diacritics"
+      },
+      "AddLabel": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/Version"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Label"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "additionalProperties": false,
+        "description": "A Label on a Person; one the Person has already (ignoring case and diacritics) is refused"
+      },
+      "RemoveLabel": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "removeLabel"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "baseVersion": {
+            "description": "Version of the Person",
+            "$ref": "#/components/schemas/Version"
+          },
+          "label": {
+            "$ref": "#/components/schemas/Label"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "label"
+        ],
+        "additionalProperties": false,
+        "description": "Takes a Label off a Person, matched ignoring case and diacritics"
+      },
       "SetFamilyRoot": {
         "type": "object",
         "properties": {
@@ -11531,21 +12712,6 @@
         ],
         "additionalProperties": false,
         "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
-      },
-      "TempId": {
-        "type": "string",
-        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
-        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
-      },
-      "Ref": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Id"
-          },
-          {
-            "$ref": "#/components/schemas/TempId"
-          }
-        ]
       },
       "CreatePerson": {
         "type": "object",
@@ -11708,9 +12874,10 @@
           },
           "placeId": {
             "default": null,
+            "description": "A Place of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Id"
+                "$ref": "#/components/schemas/Ref"
               },
               {
                 "type": "null"
@@ -11719,9 +12886,10 @@
           },
           "houseId": {
             "default": null,
+            "description": "A House of the Tree, or one created earlier in the same Proposal or Import batch",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Id"
+                "$ref": "#/components/schemas/Ref"
               },
               {
                 "type": "null"
@@ -11935,7 +13103,55 @@
             "description": "For a register book: its Parish, kinds and years",
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RegisterCoverage"
+                "type": "object",
+                "properties": {
+                  "parishId": {
+                    "description": "The Parish that kept the register",
+                    "$ref": "#/components/schemas/Ref"
+                  },
+                  "kinds": {
+                    "minItems": 1,
+                    "maxItems": 3,
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/RegisterKind"
+                    },
+                    "description": "Which entries it holds"
+                  },
+                  "from": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "First year it covers; null when unknown"
+                  },
+                  "to": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 9999
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Last year it covers; null when unknown"
+                  }
+                },
+                "required": [
+                  "parishId",
+                  "kinds",
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false
               },
               {
                 "type": "null"
@@ -12114,7 +13330,11 @@
           "role",
           "childLink",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "SetField": {
@@ -12200,7 +13420,16 @@
           "name_citation",
           "image",
           "image_person",
-          "family_root"
+          "family_root",
+          "place",
+          "place_name",
+          "house",
+          "house_number",
+          "parish",
+          "place_parish",
+          "estate",
+          "place_estate",
+          "person_label"
         ]
       },
       "RestoreRecord": {
@@ -12300,6 +13529,39 @@
           },
           {
             "$ref": "#/components/schemas/SetFamilyRoot"
+          },
+          {
+            "$ref": "#/components/schemas/CreatePlace"
+          },
+          {
+            "$ref": "#/components/schemas/AddPlaceName"
+          },
+          {
+            "$ref": "#/components/schemas/CreateHouse"
+          },
+          {
+            "$ref": "#/components/schemas/AddHouseNumber"
+          },
+          {
+            "$ref": "#/components/schemas/CreateParish"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEstate"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceParish"
+          },
+          {
+            "$ref": "#/components/schemas/LinkPlaceEstate"
+          },
+          {
+            "$ref": "#/components/schemas/SetNotes"
+          },
+          {
+            "$ref": "#/components/schemas/AddLabel"
+          },
+          {
+            "$ref": "#/components/schemas/RemoveLabel"
           }
         ]
       },
@@ -13211,7 +14473,11 @@
           "family",
           "event",
           "source",
-          "citation"
+          "citation",
+          "place",
+          "house",
+          "parish",
+          "estate"
         ]
       },
       "HistoryEntry": {
@@ -14695,6 +15961,30 @@
             "name": "relation",
             "required": false,
             "description": "Only Persons with these relations to the family, comma-separated (relative,possible); without it, everyone"
+          },
+          {
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                {
+                  "maxItems": 10,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                }
+              ]
+            },
+            "in": "query",
+            "name": "label",
+            "required": false,
+            "description": "Only Persons carrying this Label, ignoring case and diacritics; repeat it for Persons carrying all of several Labels"
           },
           {
             "schema": {

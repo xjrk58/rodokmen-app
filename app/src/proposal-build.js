@@ -10,7 +10,7 @@
 /** @typedef {import('./types.js').Confidence} Confidence */
 /** @typedef {import('./types.js').RoleType} RoleType */
 
-export const KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction']);
+export const KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction', 'notes']);
 /** @typedef {typeof KINDS[number]} ProposeKind */
 export const OPERATIONS_VERSION = 1;
 
@@ -57,7 +57,14 @@ export const OPERATIONS_VERSION = 1;
  * @typedef {{ record: 'name' | 'event', id: string, version: number, label: string, current: Record<string, string> }} CorrectionTarget
  */
 /** @typedef {FormBase & { person: PersonInput | null, target: CorrectionTarget | null, set: Record<string, string> }} CorrectionForm */
-/** @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm }} FormByKind */
+/**
+ * Research notes and Labels of a Person (tree-model spec, "Research notes on records", "Labels on
+ * Persons"). `base` is the Person as loaded when picked: its version, notes and Labels, so that
+ * only what the Member changed is proposed.
+ * @typedef {FormBase & { person: PersonInput | null, notes: string, labels: string[],
+ *   base: { version: number, notes: string, labels: string[] } | null }} NotesForm
+ */
+/** @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm, notes: NotesForm }} FormByKind */
 /**
  * A kind of finding with its form, as a Draft holds them.
  * @typedef {{ [K in ProposeKind]: { kind: K, form: FormByKind[K] } }[ProposeKind]} KindForm
@@ -161,7 +168,29 @@ export function emptyForm(kind) {
       return { kind, form: { ...base, person: null, given: '', surname: '', type: 'other', language: 'la', asFound: '' } };
     case 'correction':
       return { kind, form: { ...base, person: null, target: null, set: {} } };
+    case 'notes':
+      return { kind, form: { ...base, person: null, notes: '', labels: [], base: null } };
   }
+}
+
+/** A Label as the server compares it: ignoring case, diacritics and outer spaces. @param {string} label */
+export const foldLabel = (label) => label.trim().normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/**
+ * The Labels added and taken off, compared ignoring case and diacritics.
+ * @param {NotesForm} form
+ */
+export function labelChanges(form) {
+  const before = form.base?.labels ?? [];
+  const has = (/** @type {string[]} */ list, /** @type {string} */ l) => list.some((x) => foldLabel(x) === foldLabel(l));
+  const after = form.labels.map(clean).filter((l, i, all) => l !== '' && all.findIndex((x) => foldLabel(x) === foldLabel(l)) === i);
+  return { added: after.filter((l) => !has(before, l)), removed: before.filter((l) => !has(after, l)) };
+}
+
+/** Whether a notes form changes anything. @param {NotesForm} form */
+function notesChanged(form) {
+  const { added, removed } = labelChanges(form);
+  return clean(form.notes) !== clean(form.base?.notes) || added.length > 0 || removed.length > 0;
 }
 
 /**
@@ -180,6 +209,16 @@ export function personLabel(p) {
 }
 
 /**
+ * What a correction is missing: a record and a change, and never an empty spelling as found.
+ * @param {CorrectionForm} form
+ * @returns {string[]}
+ */
+function correctionProblems({ target, set }) {
+  if (!target || Object.keys(set ?? {}).length === 0) return ['propose.needCorrection'];
+  return target.record === 'name' && set.asFound !== undefined && clean(set.asFound) === '' ? ['propose.needAsFound'] : [];
+}
+
+/**
  * What a form of its kind is missing, as i18n keys.
  * @param {KindForm} draft
  * @returns {string[]}
@@ -192,15 +231,12 @@ function kindProblems(draft) {
       return isPerson(draft.form.partner1) && isPerson(draft.form.partner2) ? [] : ['propose.needPartners'];
     case 'death':
       return isPerson(draft.form.person) ? [] : ['propose.needPerson'];
-    case 'name': {
-      const f = draft.form;
-      return f.person?.mode === 'existing' && (clean(f.given) !== '' || clean(f.surname) !== '') ? [] : ['propose.needName'];
-    }
-    case 'correction': {
-      const { target, set } = draft.form;
-      if (!target || Object.keys(set ?? {}).length === 0) return ['propose.needCorrection'];
-      return target.record === 'name' && set.asFound !== undefined && clean(set.asFound) === '' ? ['propose.needAsFound'] : [];
-    }
+    case 'name':
+      return draft.form.person?.mode === 'existing' && (clean(draft.form.given) !== '' || clean(draft.form.surname) !== '') ? [] : ['propose.needName'];
+    case 'correction':
+      return correctionProblems(draft.form);
+    case 'notes':
+      return draft.form.person?.mode === 'existing' && draft.form.base && notesChanged(draft.form) ? [] : ['propose.needNotes'];
   }
 }
 
@@ -217,6 +253,8 @@ function hasSource(c) {
  * @returns {string[]}
  */
 export function formProblems(draft) {
+  // Notes and Labels state no fact: they need no Citation (tree-model spec, "Research notes on records").
+  if (draft.kind === 'notes') return kindProblems(draft);
   const c = draft.form.citation ?? { sourceMode: 'new' };
   return [...kindProblems(draft), ...(hasSource(c) && clean(c.transcription) !== '' ? [] : ['propose.needEvidence'])];
 }
@@ -441,6 +479,22 @@ function buildCorrection(b, form, ctx) {
 }
 
 /**
+ * Research notes and Labels: what changed against the Person as loaded.
+ * @param {Builder} b
+ * @param {NotesForm} form
+ */
+function buildNotes(b, form) {
+  const person = present(form.person, 'Person');
+  const base = present(form.base, 'Person as loaded');
+  if (person.mode !== 'existing') throw new Error('Notes are for a Person in the Tree');
+  if (clean(form.notes) !== clean(base.notes))
+    b.ops.push({ op: 'setNotes', record: 'person', id: person.id, baseVersion: base.version, notes: clean(form.notes) === '' ? null : form.notes.trim() });
+  const { added, removed } = labelChanges(form);
+  for (const label of removed) b.ops.push({ op: 'removeLabel', personId: person.id, baseVersion: base.version, label });
+  for (const label of added) b.ops.push({ op: 'addLabel', personId: person.id, baseVersion: base.version, label });
+}
+
+/**
  * The operations of one Proposal for a filled-in form (one that has no formProblems).
  * @param {KindForm} draft
  * @param {BuildContext} ctx
@@ -463,6 +517,9 @@ export function buildOperations(draft, ctx) {
       break;
     case 'correction':
       buildCorrection(b, draft.form, ctx);
+      break;
+    case 'notes':
+      buildNotes(b, draft.form);
       break;
   }
   return b.ops;

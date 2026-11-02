@@ -25,6 +25,7 @@ export const PRECACHE = [
   'src/lead-screen.js',
   'src/leads-screen.js',
   'src/map.js',
+  'src/notes-form.js',
   'src/people-screen.js',
   'src/person-screen.js',
   'src/pickers.js',

@@ -96,6 +96,17 @@ async function evidenceLabels(db: Db, ids: string[], out: Labels): Promise<void>
   }
 }
 
+async function placeRecordLabels(db: Db, ids: string[], out: Labels): Promise<void> {
+  for (const p of await db.selectFrom('parish').select(['id', 'name']).where('id', 'in', ids).execute())
+    out.set(p.id, { cs: `farnost ${p.name}`, en: `the Parish of ${p.name}` });
+  for (const e of await db.selectFrom('estate').select(['id', 'name']).where('id', 'in', ids).execute())
+    out.set(e.id, { cs: `panství ${e.name}`, en: `the Estate of ${e.name}` });
+  for (const n of await db.selectFrom('place_name').select(['id', 'name']).where('id', 'in', ids).execute()) out.set(n.id, both(n.name));
+  for (const n of await db.selectFrom('house_number').select(['id', 'number']).where('id', 'in', ids).execute())
+    out.set(n.id, { cs: `čp. ${n.number}`, en: `No. ${n.number}` });
+  for (const l of await db.selectFrom('person_label').select(['id', 'label']).where('id', 'in', ids).execute()) out.set(l.id, both(`“${l.label}”`));
+}
+
 async function familyLabels(db: Db, ids: string[], out: Labels): Promise<void> {
   const families = await db.selectFrom('family').select(['id', 'partner1_id', 'partner2_id']).where('id', 'in', ids).execute();
   if (families.length === 0) return;
@@ -155,6 +166,7 @@ export async function labelsFor(db: Db, ids: readonly string[]): Promise<Summary
     for (const p of await db.selectFrom('place_name').select(['place_id', 'name']).where('place_id', 'in', list).where('is_primary', '=', true).execute())
       labels.set(p.place_id, both(p.name));
     await houseLabels(db, list, labels);
+    await placeRecordLabels(db, list, labels);
     await evidenceLabels(db, list, labels);
     await familyLabels(db, list, labels);
     await linkLabels(db, list, labels);

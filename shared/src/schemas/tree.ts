@@ -164,12 +164,15 @@ export const HouseRecord = z
   })
   .meta({ id: 'HouseRecord' });
 
+/** A house number (čp.): digits, optionally followed by one letter. */
+export const HouseNumber = z.string().regex(/^\d{1,5}[a-z]?$/, 'a house number (čp.) is digits, optionally followed by one letter');
+
 export const HouseNumberRecord = z
   .object({
     id: Id,
     version: Version,
     houseId: Id,
-    number: z.string().regex(/^\d{1,5}[a-z]?$/, 'a house number (čp.) is digits, optionally followed by one letter'),
+    number: HouseNumber,
     period: Period,
   })
   .meta({ id: 'HouseNumberRecord', description: 'A house number (čp.) the House carried during a period' });

@@ -153,27 +153,35 @@ export function isCitationOperation(op: string): boolean {
   return op === 'createCitation' || op === 'attachCitation';
 }
 
-/** Operations that change no facts and so need no evidence: merges, the server's undo steps, and marking Family roots. */
+/**
+ * Operations that change no facts and so need no evidence: merges, the server's undo steps,
+ * marking Family roots, and research notes and Labels, which state no fact about the family
+ * (tree-model spec, "Research notes on records").
+ */
 export function isFactFreeOperation(op: string): boolean {
   //@ verify
-  return op === 'mergePersons' || op === 'restoreRecord' || op === 'setFamilyRoot';
+  return op === 'mergePersons' || op === 'restoreRecord' || op === 'setFamilyRoot' || op === 'setNotes' || op === 'addLabel' || op === 'removeLabel';
 }
 
 /**
  * The evidence rule (proposals spec, "Evidence is required"): a Proposal includes at least one
  * Citation, created or attached. A Citation of a Family account Source is a Citation like any
- * other, so it counts. Proposals made only of merges and undo steps change no facts and are
- * exempt. An empty Proposal has no evidence.
+ * other, so it counts. Proposals made only of merges, undo steps, Family roots, research notes
+ * and Labels change no facts and are exempt (tree-model spec, "Research notes on records"). An
+ * empty Proposal has no evidence.
  */
 export function satisfiesEvidenceRule(ops: readonly string[]): boolean {
   //@ verify
   //@ contract proposals: Evidence is required
+  //@ contract tree-model: Research notes on records
   // A Citation, created or attached, is evidence (one of a Family account Source like any other).
   //@ ensures exists(i: nat, i < ops.length && isCitationOperation(ops[i])) ==> \result
   // Scenario "Missing evidence": a Proposal that changes facts and has no Citation is refused.
   //@ ensures forall(i: nat, i < ops.length ==> !isCitationOperation(ops[i])) && exists(i: nat, i < ops.length && !isFactFreeOperation(ops[i])) ==> !\result
   // Merges and undo steps alone change no facts; an empty Proposal has no evidence.
   //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> isFactFreeOperation(ops[i])) ==> \result
+  // Scenario "A note needs no evidence": research notes and Labels alone need no Citation.
+  //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i] === 'setNotes' || ops[i] === 'addLabel' || ops[i] === 'removeLabel') ==> \result
   //@ ensures ops.length === 0 ==> !\result
   if (ops.length === 0) return false;
   let factFree = true;

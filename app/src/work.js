@@ -320,7 +320,7 @@ export class WorkPanel {
       return;
     }
     const draft = newDraft(emptyForm(kind));
-    if (personId && draft.kind === 'correction') {
+    if (personId && (draft.kind === 'correction' || draft.kind === 'notes')) {
       const person = await getPerson(personId, signal);
       if (signal?.aborted) return;
       const primary = person.names.find((n) => n.primary) ?? person.names[0];

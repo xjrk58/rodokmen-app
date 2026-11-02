@@ -22,6 +22,7 @@ import type {
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 import type { LeadEventTable, LeadLinkTable, LeadSearchTable, LeadSuggestionTable, LeadTable, ProposalLeadTable } from './lead-types.js';
+import type { PersonLabelTable } from './vault-import-types.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -37,6 +38,11 @@ interface RecordColumns {
   updated_at: Generated<Date>;
 }
 
+/** Research notes in Markdown (tree-model spec, "Research notes on records"); set through setNotes. */
+interface NotesColumn {
+  notes: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
 interface PeriodColumns {
   period_from: string | null;
   period_to: string | null;
@@ -44,7 +50,7 @@ interface PeriodColumns {
   valid_to: Generated<Day>;
 }
 
-export interface PersonTable extends RecordColumns {
+export interface PersonTable extends RecordColumns, NotesColumn {
   sex: Generated<Sex>;
   /** Set when the Person was merged into another; the record stays as a redirect. */
   merged_into_id: ColumnType<string | null, string | null | undefined, string | null>;
@@ -70,7 +76,7 @@ export interface NameTable extends RecordColumns {
   search_text: ColumnType<string, never, never>;
 }
 
-export interface FamilyTable extends RecordColumns {
+export interface FamilyTable extends RecordColumns, NotesColumn {
   partner1_id: string | null;
   partner2_id: string | null;
 }
@@ -82,7 +88,7 @@ export interface FamilyChildTable extends RecordColumns {
   sort_order: Generated<number>;
 }
 
-export interface PlaceTable extends RecordColumns {
+export interface PlaceTable extends RecordColumns, NotesColumn {
   type: Generated<PlaceType>;
   location: Geography | null;
   municipality_code: string | null;
@@ -97,7 +103,7 @@ export interface PlaceNameTable extends RecordColumns, PeriodColumns {
   search_text: ColumnType<string, never, never>;
 }
 
-export interface HouseTable extends RecordColumns {
+export interface HouseTable extends RecordColumns, NotesColumn {
   place_id: string;
   location: Geography | null;
   note: string | null;
@@ -108,7 +114,7 @@ export interface HouseNumberTable extends RecordColumns, PeriodColumns {
   number: string;
 }
 
-export interface ParishTable extends RecordColumns {
+export interface ParishTable extends RecordColumns, NotesColumn {
   name: string;
   seat_place_id: string | null;
 }
@@ -118,7 +124,7 @@ export interface PlaceParishTable extends RecordColumns, PeriodColumns {
   parish_id: string;
 }
 
-export interface EstateTable extends RecordColumns {
+export interface EstateTable extends RecordColumns, NotesColumn {
   name: string;
 }
 
@@ -127,7 +133,7 @@ export interface PlaceEstateTable extends RecordColumns, PeriodColumns {
   estate_id: string;
 }
 
-export interface EventTable extends RecordColumns {
+export interface EventTable extends RecordColumns, NotesColumn {
   type: EventType;
   type_detail: string | null;
   date: string | null;
@@ -146,7 +152,7 @@ export interface EventRoleTable extends RecordColumns {
   sort_order: Generated<number>;
 }
 
-export interface SourceTable extends RecordColumns {
+export interface SourceTable extends RecordColumns, NotesColumn {
   type: SourceType;
   title: string;
   repository: string | null;
@@ -397,6 +403,7 @@ export interface Database {
   person: PersonTable;
   family_root: FamilyRootTable;
   name: NameTable;
+  person_label: PersonLabelTable;
   family: FamilyTable;
   family_child: FamilyChildTable;
   place: PlaceTable;

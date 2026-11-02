@@ -8,6 +8,7 @@ import { guarded, h, showError } from './dom.js';
 import { draftPhotos, deletePhoto, savePhoto, newKey } from './drafts.js';
 import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
+import { notesFields } from './notes-form.js';
 import { CONFIDENCES, formProblems, KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -389,6 +390,8 @@ function findingFields(draft) {
     }
     case 'correction':
       return correctionFields(draft.form);
+    case 'notes':
+      return notesFields(draft.form);
   }
 }
 
@@ -422,7 +425,8 @@ export function proposeForm(draft, actions) {
     draft.lead ? h('p', { class: 'note small', 'data-testid': 'answers-lead' }, t('propose.answersLead', { question: draft.lead.question })) : null,
     notice,
     h('section', { class: 'form-section' }, ...findingFields(draft)),
-    citationFields(draft, actions.save, report),
+    // Notes and Labels state no fact, so they need no Citation (tree-model spec, "Research notes on records").
+    draft.kind === 'notes' ? null : citationFields(draft, actions.save, report),
     h('section', { class: 'form-section' }, field(t('propose.note'), note)),
     status,
     h('div', { class: 'form-actions' }, saveButton, submitButton),

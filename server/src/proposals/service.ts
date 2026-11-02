@@ -21,8 +21,8 @@ import { recomputeRelations } from '../tree/relation.js';
 import { refreshSuggestions } from '../leads/gaps.js';
 import { touchedPersons } from '../leads/touched.js';
 import { checkAnsweredLeads, markAnsweredLeads, storeAnsweredLeads } from '../leads/service.js';
-import { snapshot } from './records.js';
-import { canReview, findConflicts, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
+import { canReview, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
+import { resolveConflicts } from './conflicts.js';
 
 /** Writing Proposals: submit, accept (with corrections and conflict choices), reject and merge. */
 export interface ProposalDeps {
@@ -225,57 +225,6 @@ function applyCorrections(
     if (issues.length) throw issuesProblem(issues, editor.language);
   }
   return { effective, corrected };
-}
-
-/** The same operation based on another version of its record, for those that name one. */
-function withBaseVersion(op: Operation, baseVersion: number): Operation | null {
-  switch (op.op) {
-    case 'addName':
-    case 'addRole':
-    case 'linkChild':
-    case 'attachCitation':
-    case 'setField':
-      return { ...op, baseVersion };
-    default:
-      return null;
-  }
-}
-
-/** One conflict resolved by the Editor's choice: the operation to apply instead, or null to leave it. */
-async function resolved(tx: Db, op: Operation, choice: AcceptBody['resolutions'][number], currentVersion: number | null): Promise<Operation | null> {
-  if (op.op === 'setField') {
-    const missing = Object.keys(op.set).filter((f) => !(f in choice.fields));
-    if (missing.length) throw new ApiProblem(409, 'conflict', `Operation ${choice.position + 1}: choose a value for ${missing.join(', ')}.`);
-    const set = Object.fromEntries(Object.entries(op.set).filter(([f]) => choice.fields[f] === 'proposal'));
-    return { ...op, set, baseVersion: currentVersion ?? op.baseVersion };
-  }
-  if (op.op === 'mergePersons') {
-    const keep = await snapshot(tx, 'person', op.keepId);
-    const gone = await snapshot(tx, 'person', op.mergeId);
-    return { ...op, keepBaseVersion: keep?.version ?? op.keepBaseVersion, mergeBaseVersion: gone?.version ?? op.mergeBaseVersion };
-  }
-  return currentVersion === null ? null : withBaseVersion(op, currentVersion);
-}
-
-/** Conflicts: the Editor chooses per field; each choice is stored as an Editor correction. */
-async function resolveConflicts(tx: Db, effective: Operation[], corrected: Map<number, Operation>, resolutions: AcceptBody['resolutions']): Promise<void> {
-  const conflicts = await findConflicts(tx, effective);
-  for (const r of resolutions) {
-    const conflict = conflicts.get(r.position);
-    const op = effective[r.position];
-    if (!conflict || !op) continue;
-    const next = await resolved(tx, op, r, conflict.currentVersion);
-    if (!next) continue;
-    effective[r.position] = next;
-    corrected.set(r.position, next);
-    conflicts.delete(r.position);
-  }
-  const [first] = conflicts.entries();
-  if (first) {
-    const [position, c] = first;
-    const what = c.currentVersion === null ? 'no longer exists' : 'was changed since the Proposal was written';
-    throw new ApiProblem(409, 'conflict', `Operation ${position + 1}: ${c.label.en} ${what}. Choose per field before accepting.`);
-  }
 }
 
 /** The log entry of an accepted Proposal, with every changed record before and after. */

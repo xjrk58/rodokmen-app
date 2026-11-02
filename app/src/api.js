@@ -122,13 +122,15 @@ export const getHourglass = (id, depth, signal) => api(`persons/${encodeURICompo
 /**
  * People list and search: every Person by any Name, or all of them alphabetically without a query;
  * with `relation`, only Persons of those relations to the family (relative,possible).
- * @param {{ q: string, offset: number, limit: number, relation?: string | null }} o
+ * @param {{ q: string, offset: number, limit: number, relation?: string | null, labels?: string[] }} o labels: only Persons carrying all of them
  * @param {AbortSignal} [signal]
  * @returns {Promise<PersonSearchResult>}
  */
 export const listPersons = (o, signal) =>
   api(
-    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}limit=${o.limit}&offset=${o.offset}`,
+    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}${(o.labels ?? [])
+      .map((l) => `label=${encodeURIComponent(l)}&`)
+      .join('')}limit=${o.limit}&offset=${o.offset}`,
     { signal },
   );
 

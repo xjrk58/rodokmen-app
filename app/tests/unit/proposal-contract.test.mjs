@@ -7,7 +7,8 @@ import './shared-loader.mjs';
 import { buildOperations, CONFIDENCES, NAME_LANGUAGES, NAME_TYPES, NEW_SOURCE_TYPES, OPERATIONS_VERSION, SEXES } from '../../src/proposal-build.js';
 
 // After shared-loader.mjs: these are TypeScript.
-const { checkOperations, OPERATIONS_VERSION: SHARED_OPERATIONS_VERSION } = await import('../../../shared/src/schemas/proposals.js');
+const { OPERATIONS_VERSION: SHARED_OPERATIONS_VERSION } = await import('../../../shared/src/schemas/proposals.js');
+const { checkOperations } = await import('../../../shared/src/schemas/check-operations.js');
 const { Confidence, NameType, Sex, SourceType } = await import('../../../shared/src/schemas/tree.js');
 const { LANGUAGE_TAG_PATTERN } = await import('../../../shared/src/schemas/common.js');
 
@@ -76,6 +77,20 @@ const forms = (citation) => [
   ],
   ['burial', { kind: 'death', form: { eventType: 'burial', date: '', place: null, person: newPerson, citation, note: '' } }],
   ['new Name', { kind: 'name', form: { person: anna, given: '', surname: 'Kralowa', type: 'other', language: 'de', asFound: '', citation, note: '' } }],
+  [
+    'notes and Labels, with no Citation',
+    {
+      kind: 'notes',
+      form: {
+        person: anna,
+        notes: 'Check the land book.',
+        labels: ['line/kral', 'Emigrated'],
+        base: { version: 3, notes: '', labels: ['emigrated', 'old'] },
+        citation,
+        note: '',
+      },
+    },
+  ],
   [
     'new Name, language not known',
     { kind: 'name', form: { person: anna, given: 'Ana', surname: '', type: 'nickname', language: '', asFound: '', citation, note: '' } },
