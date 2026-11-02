@@ -4,33 +4,22 @@ This guide shows the Owner how to give an AI assistant its own Agent account and
 
 ## Create the Agent and its first token
 
-There is no screen for this yet; one is being added to Settings ([#45](https://github.com/xjrk58/rodokmen-app/issues/45)). Until then, sign in as the Owner, open the browser's developer console on the Rodokmen page, and run:
+1. Sign in as the Owner and open **Settings**. Under **Agents**, click **Add an Agent**.
+2. Enter its name, which is shown next to its Proposals, such as `Register reader`, and optionally what the token is for, such as the computer the assistant runs on.
+3. Click **Create the Agent and its token**.
+4. The token, `rdk_ag_…`, is shown once. Click **Copy the token** and paste it into the assistant's settings (below), then click **Done, I have saved it**.
 
-```js
-await (
-  await fetch('/api/agents', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Register reader' }) })
-).json();
-```
-
-The answer holds the new Agent with its id, and its first token, `rdk_ag_…`, which is shown only this once. Keep the token like a password: whoever has it can read the whole Tree.
-
-Each Agent may submit 60 Proposals and make 1,000 other requests an hour.
+You will not see the token again: it is not kept on the device, and after a reload only its prefix shows. Keep it like a password: whoever has it can read the whole Tree. If it is lost, issue another token and revoke the lost one.
 
 ## Manage Agents and tokens
 
-In the same console:
+In **Settings**, under **Agents**, each Agent lists its tokens by prefix and label, when each was added and last used, and this hour's use of its limits (60 Proposals and 1,000 other requests).
 
-```js
-// List Agents, their tokens (by prefix) and this hour's use of their limits.
-await (await fetch('/api/agents')).json();
-// Give an Agent another token, for example one per machine.
-await (await fetch('/api/agents/<agent id>/tokens', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json();
-// Revoke one token at once.
-await fetch('/api/agents/<agent id>/tokens/<token id>', { method: 'DELETE' });
-// Stop an Agent with all its tokens, and let it go on again.
-await fetch('/api/agents/<agent id>/disable', { method: 'POST' });
-await fetch('/api/agents/<agent id>/enable', { method: 'POST' });
-```
+- To give an Agent another token, for example for a second machine, click **Issue another token**, then **Issue the token**, and copy it as above.
+- To stop one token at once, click **Revoke** next to it and confirm. The next request with it is refused.
+- To stop an Agent with all its tokens, click **Disable**. **Enable again** lets its tokens that are not revoked work again.
+
+The same can be done through the API, under `/api/agents` ([API](../reference/api.md)).
 
 ## Connect the assistant
 
@@ -65,5 +54,5 @@ Proposals it submits appear in the review queue with an **Agent** badge.
 
 ## If the assistant is refused
 
-- "The Agent token was refused": the token is mistyped or revoked, or the Agent is disabled. Create a new token, or enable the Agent.
+- "The Agent token was refused": the token is mistyped or revoked, or the Agent is disabled. In **Settings**, under **Agents**, issue another token, or click **Enable again**.
 - A refusal with a time to retry after: the Agent reached its hourly limit. It may go on after that time.

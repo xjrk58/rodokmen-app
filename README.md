@@ -9,8 +9,8 @@ Rodokmen is a private family Tree for one extended family, together with a publi
 - **Proposals and review**: Members submit each finding as a Proposal, offline too as a Draft. Editors accept, correct or reject it whole, merge duplicate Persons and undo whole Proposals, and every change has a history.
 - **The family view**: for signed-in Members the tree around a Focus Person is the home screen, with people search, person pages and the family on the map through the decades. The Owner invites Members and sets their roles in the app.
 - **The relation to the family**: from the Family roots the Owner marks, every Person is a Relative, a Possible relative or an Unrelated person, worked out from the evidence.
-- **Agents and MCP**: the Owner gives an AI assistant its own Agent account and token; through the MCP server it searches the Tree and submits Proposals, and nothing else.
-- **Hosting**: one EU server, deploys that switch only to a healthy release, nightly encrypted Backups with a monthly restore test, and email alerts.
+- **Agents and MCP**: in Settings, the Owner gives an AI assistant its own Agent account and tokens; through the MCP server it searches the Tree and submits Proposals, and nothing else.
+- **Hosting**: one EU server, deploys that switch only to a healthy release without failing a request, nightly encrypted Backups with a monthly restore test, and email alerts.
 
 In progress: Research leads ([#16](https://github.com/xjrk58/rodokmen-app/issues/16)), the one-time import of the Vault ([#17](https://github.com/xjrk58/rodokmen-app/issues/17)) and scan reading ([#18](https://github.com/xjrk58/rodokmen-app/issues/18)). Planned: Exports and erasure ([#19](https://github.com/xjrk58/rodokmen-app/issues/19)), and Country packs beyond the Czech lands ([#67](https://github.com/xjrk58/rodokmen-app/issues/67)).
 

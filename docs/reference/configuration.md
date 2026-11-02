@@ -75,7 +75,7 @@ The production stack (`deploy/docker-compose.yml`) reads two files on the VPS, b
 | `GARAGE_RPC_SECRET`                                    | 64 hex digits; Garage's internal secret                                                                            |
 | `SESSION_IDLE_DAYS`                                    | optional, as for the API server above                                                                              |
 
-Set by `docker-compose.yml` rather than `.env`: `NODE_ENV=production`, `HOST`, `PORT`, `APP_DIR=/srv/app`, `TRUST_PROXY=true`, `PUBLIC_ORIGIN=https://$DOMAIN`, `DATABASE_URL`, `S3_ENDPOINT=http://garage:3900`, `S3_PUBLIC_ENDPOINT=https://files.$DOMAIN`, `S3_REGION=garage`, `S3_BUCKET=rodokmen-images`, `S3_FORCE_PATH_STYLE=true`, `MALLOC_ARENA_MAX=2` for the API slots, `RODOKMEN_API_URL` for the MCP server, and `WATCHDOG_URL` and `BACKUP_STATUS_FILE` for the watchdog. The image sets `RELEASE` to the commit it was built from.
+Set by `docker-compose.yml` rather than `.env`: `NODE_ENV=production`, `HOST`, `PORT`, `APP_DIR=/srv/app`, `TRUST_PROXY=true`, `PUBLIC_ORIGIN=https://$DOMAIN`, `DATABASE_URL`, `S3_ENDPOINT=http://garage:3900`, `S3_PUBLIC_ENDPOINT=https://files.$DOMAIN`, `S3_REGION=garage`, `S3_BUCKET=rodokmen-images`, `S3_FORCE_PATH_STYLE=true`, `MALLOC_ARENA_MAX=2` for the API slots, `RODOKMEN_API_URL=http://api:3000` for the MCP server (Caddy, which forwards to the active API slot), and `WATCHDOG_URL` and `BACKUP_STATUS_FILE` for the watchdog. The image sets `RELEASE` to the commit it was built from.
 
 `/opt/rodokmen/backup.env` (from `deploy/backup.env.example`), read only by the Backup job:
 
@@ -99,5 +99,6 @@ GitHub environments (repo Settings, Environments):
 | `TEST_DATABASE_URL`                   | the server tests (`pnpm test`)                  | a PostgreSQL role that may create databases; each run creates and drops its own. Default: `DATABASE_URL`, else the development default above |
 | `RODOKMEN_DENYLIST`                   | `scripts/vault-guard.mjs` and the Git hooks     | where the Vault-name denylist is; default `~/.config/rodokmen/vault-denylist.txt`                                                            |
 | `NODE_USE_ENV_PROXY`                  | `app/scripts/build-data.mjs`, `check-links.mjs` | `1` behind an HTTPS proxy (a Node.js setting)                                                                                                |
+| `DRAIN_SECONDS`                       | `deploy/scripts/deploy.sh`                      | how long the old API slot may take to answer the requests it still has after the switch before it is stopped; default 30                     |
 | `PNG_DIR`                             | `docs/architecture/generate.sh`                 | also render each diagram as PNG into this folder, outside the repo                                                                           |
 | `STRUCTURIZR_IMAGE`, `PLANTUML_IMAGE` | `docs/architecture/generate.sh`                 | other images than the pinned `structurizr/structurizr:2026.10.26` and `plantuml/plantuml:1.2026.9`                                           |

@@ -62,13 +62,13 @@ Package scripts, with `pnpm --filter <package> <script>`:
 
 ## Other scripts
 
-| Command                                                 | What it does                                                                                                                 |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `node app/scripts/build-data.mjs [--refresh]`           | rebuilds districts, the border, Municipalities and `municipalityOverrides`; `--refresh` downloads the sources again          |
-| `node app/scripts/check-links.mjs [--extra "Name=URL"]` | exits 1 on a definite failure; timeouts, certificate-chain errors, 401, 403, 408, 429 and lasting server errors are warnings |
-| `node app/scripts/stamp-version.mjs [--check]`          | writes the release version into `app/sw.js` and `app/src/version.js`; `--check` exits 1 if it is stale                       |
-| `node app/scripts/site-files.mjs [--copy DIR]`          | lists the deployed files of `app/`, or copies them to `DIR`                                                                  |
-| `node app/scripts/make-icons.mjs`                       | renders the app icons from their SVG drawing                                                                                 |
-| `docs/architecture/generate.sh`                         | validates the C4 model and regenerates every diagram (Docker)                                                                |
-| `deploy/scripts/deploy.sh <image>\|rollback`            | on the VPS: starts the image in the idle API slot and switches when it is healthy                                            |
-| `deploy/scripts/storage-init.sh`                        | on the VPS: checks the image bucket and gives the Backup job its read-only key; safe to repeat                               |
+| Command                                                 | What it does                                                                                                                                                                                                       |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `node app/scripts/build-data.mjs [--refresh]`           | rebuilds districts, the border, Municipalities and `municipalityOverrides`; `--refresh` downloads the sources again                                                                                                |
+| `node app/scripts/check-links.mjs [--extra "Name=URL"]` | exits 1 on a definite failure; timeouts, certificate-chain errors, 401, 403, 408, 429 and lasting server errors are warnings                                                                                       |
+| `node app/scripts/stamp-version.mjs [--check]`          | writes the release version into `app/sw.js` and `app/src/version.js`; `--check` exits 1 if it is stale                                                                                                             |
+| `node app/scripts/site-files.mjs [--copy DIR]`          | lists the deployed files of `app/`, or copies them to `DIR`                                                                                                                                                        |
+| `node app/scripts/make-icons.mjs`                       | renders the app icons from their SVG drawing                                                                                                                                                                       |
+| `docs/architecture/generate.sh`                         | validates the C4 model and regenerates every diagram (Docker)                                                                                                                                                      |
+| `deploy/scripts/deploy.sh <image>\|rollback`            | on the VPS: starts the image in the idle API slot; once it is healthy, points Caddy at it (`state/api-slot/`), waits until the old slot has answered its requests in flight (at most `DRAIN_SECONDS`) and stops it |
+| `deploy/scripts/storage-init.sh`                        | on the VPS: checks the image bucket and gives the Backup job its read-only key; safe to repeat                                                                                                                     |

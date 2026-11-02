@@ -29,10 +29,10 @@ Images are the one exception. Page images and portraits live in Garage, a small 
 
 ## One server
 
-Production is one VPS in the EU, run with Docker Compose: the database, two API slots, Garage, Caddy for HTTPS, the MCP server and a watchdog. A deploy starts the new release in the idle API slot and switches only when it passes its health check, so a bad release never replaces a good one. Migrations therefore have to work with the previous release still running. Nightly Backups go encrypted to a second EU provider, and a monthly job restores the latest one to prove it can be read.
+Production is one VPS in the EU, run with Docker Compose: the database, two API slots, Garage, Caddy for HTTPS, the MCP server and a watchdog. Every request to the API passes through Caddy, the MCP server's too. A deploy starts the new release in the idle API slot, and Caddy sends new requests to it only once it passes its health check, so a bad release never replaces a good one. The old slot then answers the requests it already has before it stops, so no request fails during a deploy. Migrations therefore have to work with the previous release still running. Nightly Backups go encrypted to a second EU provider, and a monthly job restores the latest one to prove it can be read.
 
-The details, and the reasons behind the memory limits, are in the [deploy guide](../../deploy/README.md).
+The details, from the [switch during a deploy](../../deploy/README.md#deploys) to the reasons behind the memory limits, are in the [deploy guide](../../deploy/README.md).
 
 ## What is not here yet
 
-Several parts in the diagrams are Planned: the one-way nightly Export to a private repo (ADR 0008), the one-time import of the Vault (ADR 0010), Research leads, and scan reading (ADR 0011). The diagrams mark each element as Built, In progress or Planned.
+The diagrams mark each element as Built, In progress or Planned. Research leads are In progress. Planned are the rest of the one-time import of the Vault (ADR 0010; its Family roots and the relation to the family are built), scan reading (ADR 0011), the one-way nightly Export to a private repo (ADR 0008) and erasure, and Country packs beyond the Czech lands.
