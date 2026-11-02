@@ -63,6 +63,11 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
     logger: deps.logger ?? false,
     trustProxy: config.trustProxy,
     bodyLimit: 1024 * 1024,
+    // An idle keep-alive connection is closed after this long (Fastify's default, stated here),
+    // plus the 1 s Node adds (keepAliveTimeoutBuffer). Caddy closes its own sooner
+    // (deploy/caddy/Caddyfile), so it never sends a request on a connection the server is closing
+    // (#90).
+    keepAliveTimeout: 72_000,
     // While the server shuts down (shutdown.ts), a request that still reaches it is answered,
     // not refused with 503: the proxy already sent it here, and would pass the 503 on (#71).
     return503OnClosing: false,

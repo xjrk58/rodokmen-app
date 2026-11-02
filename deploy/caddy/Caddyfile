@@ -14,10 +14,20 @@
 # again for up to 10 s, whatever its method: nothing was sent yet. When the request was sent and
 # then failed, only a GET is tried again (Caddy's default), since a POST may already have taken
 # effect.
+#
+# Idle connections (#90): Caddy closes a connection to the API after 60 s without a request, before
+# the API would (72 s, keepAliveTimeout in server/src/app.ts, and Node waits 1 s more). Otherwise
+# Caddy could send a request on a connection at the moment the API closes it, and a POST would
+# fail with 502. Caddy's clock starts only once it has read the whole answer, the API's once it has
+# written it, so the margin of over 12 s also covers the end of a large answer still on its way.
+# server/test/proxy.test.ts checks that Caddy's time stays the shorter.
 (api-slot) {
 	reverse_proxy api-{args[0]}:3000 {
 		lb_try_duration 10s
 		lb_try_interval 250ms
+		transport http {
+			keepalive 60s
+		}
 	}
 }
 

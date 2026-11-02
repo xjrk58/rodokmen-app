@@ -325,6 +325,13 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
 **Migrations must work with the previous release still running**, since it serves while the new
 one migrates: add columns and tables in one release, remove the old ones in a later one.
 
+**Idle connections**, at any time, not only during a deploy: Caddy keeps its connections to the
+API open between requests, and gives one up after 60 s without a request. The API would close it
+after 73 s (`keepAliveTimeout` of 72 s in `server/src/app.ts`, and Node waits 1 s more), so Caddy
+always does it first. The other way round, Caddy could send a request on a connection at the
+moment the API closes it, and a POST would fail with 502 (#90). `server/test/proxy.test.ts`
+checks that Caddy's time stays the shorter.
+
 **Configuration files** are mounted as folders (`caddy/`, `garage/`), not as single files: a
 deploy replaces each changed file with a new one, which a container with the old file mounted
 would never see. An invalid Caddyfile is refused by the reload, and Caddy keeps serving with the
