@@ -4,12 +4,12 @@
 // for each person the existing Persons they may be, linked with one tap, or a new Person.
 // Nothing is submitted until the Member does; the Draft keeps every change on the device.
 
-import { ApiError, getReading, messageOf, uploadUrl } from './api.js';
+import { ApiError, createLead, getReading, messageOf, uploadUrl } from './api.js';
 import { guarded, h, showError } from './dom.js';
 import { draftPhotos } from './drafts.js';
 import { language, t } from './i18n.js';
 import { sourcePicker } from './pickers.js';
-import { fillFromReading, isMarked, READING_CONFIDENCES, readingProblems } from './reading-draft.js';
+import { fillFromReading, isMarked, leadBodyOf, READING_CONFIDENCES, readingProblems } from './reading-draft.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
 /** @typedef {import('./reading-draft.js').ReadingForm} ReadingForm */
@@ -219,7 +219,61 @@ function scanPane(draft) {
 }
 
 /**
- * Suggested Research leads, each to dismiss; accepting them as leads comes with add-research-leads (#16).
+ * One suggested lead: keep it as a Research lead (POST /api/leads), or dismiss it. A kept one links to its lead.
+ * @param {import('./reading-draft.js').ReadingLeadSuggestion} l
+ * @param {ReadingForm} form
+ * @param {{ changed: () => void, render: () => void }} on
+ */
+function leadItem(l, form, on) {
+  const lang = language();
+  const kept = form.kept?.[l.key];
+  const status = h('p', { class: 'form-status small', role: 'status' });
+  const actions = kept
+    ? [h('a', { href: `#leads/${kept}`, 'data-testid': 'lead-kept' }, t('reading.leadKept'))]
+    : [
+        h('button', { type: 'button', class: 'button small', 'data-testid': 'lead-keep' }, t('reading.keepLead')),
+        h('button', { type: 'button', class: 'link-button', 'data-testid': 'lead-dismiss' }, t('reading.dismiss')),
+      ];
+  const [keep, dismiss] = actions;
+  if (!kept && keep && dismiss) {
+    keep.addEventListener(
+      'click',
+      guarded(showError(status), async () => {
+        keep.setAttribute('disabled', '');
+        try {
+          const lead = await createLead(leadBodyOf(l, form, lang));
+          form.kept = { ...form.kept, [l.key]: lead.id };
+          on.changed();
+          on.render();
+        } finally {
+          keep.removeAttribute('disabled');
+        }
+      }),
+    );
+    dismiss.addEventListener('click', () => {
+      form.dismissed.push(l.key);
+      on.changed();
+      on.render();
+    });
+  }
+  return h(
+    'div',
+    { class: 'lead', 'data-testid': 'lead', 'data-kind': l.kind },
+    h('strong', {}, l.question[lang]),
+    h(
+      'p',
+      { class: 'small muted' },
+      l.reason[lang],
+      l.sourceTitle ? ` ${t('reading.leadSource', { source: l.sourceTitle })}` : l.archive ? ` ${t('reading.leadArchive', { archive: l.archive })}` : '',
+    ),
+    h('div', { class: 'form-actions' }, ...actions),
+    status,
+  );
+}
+
+/**
+ * Suggested Research leads (scan-reading spec, "Reading suggests next steps"): the Member keeps
+ * each one as a lead, or dismisses it.
  * @param {ReadingForm} form
  * @param {() => void} changed
  */
@@ -227,25 +281,10 @@ function leadsSection(form, changed) {
   const section = h('section', { class: 'form-section', 'data-testid': 'leads' });
   const render = () => {
     const shown = form.leads.filter((l) => !form.dismissed.includes(l.key));
-    const lang = language();
     section.replaceChildren(
       h('h3', {}, t('reading.leads')),
       h('p', { class: 'small muted' }, t('reading.leadsHelp')),
-      ...shown.map((l) => {
-        const dismiss = h('button', { type: 'button', class: 'link-button', 'data-testid': 'lead-dismiss' }, t('reading.dismiss'));
-        dismiss.addEventListener('click', () => {
-          form.dismissed.push(l.key);
-          render();
-          changed();
-        });
-        return h(
-          'div',
-          { class: 'lead', 'data-testid': 'lead', 'data-kind': l.kind },
-          h('strong', {}, l.question[lang]),
-          h('p', { class: 'small muted' }, l.reason[lang], l.sourceTitle ? ` ${t('reading.leadSource', { source: l.sourceTitle })}` : ''),
-          dismiss,
-        );
-      }),
+      ...shown.map((l) => leadItem(l, form, { changed, render })),
     );
   };
   render();

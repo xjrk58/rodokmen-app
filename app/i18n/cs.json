@@ -621,7 +621,7 @@
   "reading.scanAlt": "Sken {n}",
   "reading.pageTranscription": "Stránka, jak byla přečtena",
   "reading.leads": "Další kroky",
-  "reading.leadsHelp": "Výzkumné stopy, které čtení navrhuje. Uložit je jako stopy půjde s výzkumnými stopami; do té doby si poznamenejte, co chcete dohledat.",
+  "reading.leadsHelp": "Výzkumné stopy, které čtení navrhuje. Uložte si stopu, kterou rodina dohledá, nebo ji zahoďte.",
   "reading.dismiss": "Zahodit",
   "reading.leadSource": "Matrika v rodokmenu: {source}.",
   "reading.citationHelp": "Jedna citace na stránku, s obrázkem a přepisem. Přečtení má nejvýš běžnou důvěryhodnost.",
@@ -641,5 +641,8 @@
   "settings.scanReadingModel": "Model: {model}. Dnes přečteno: {today}.",
   "settings.scanReadingUsage": "Přečtení za posledních 30 dní",
   "settings.scanReadingNone": "Zatím žádné přečtení.",
-  "settings.scanReadingCount": "{count} přečtení, {failed} nepovedených"
+  "settings.scanReadingCount": "{count} přečtení, {failed} nepovedených",
+  "reading.keepLead": "Uložit jako stopu",
+  "reading.leadKept": "Uloženo jako výzkumná stopa: otevřít",
+  "reading.leadArchive": "Archiv: {archive}."
 }

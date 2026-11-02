@@ -10,11 +10,11 @@
  */
 import type { LeadHint, ReadingLeadSuggestion, ReadEntry, ReadingResult, ReadPerson } from './schemas/reading.js';
 
-/** A register of the Tree, as the server finds it: a Source, the kinds of Events cited from it, and the years they span. */
+/** A register of the Tree: a Source with a register Parish, the kinds of entries it holds and its years. */
 export interface RegisterOption {
   sourceId: string;
   title: string;
-  /** Event types its Citations are attached to, such as "baptism" or "marriage". */
+  /** The register kinds it holds: birth, marriage or death (RegisterKind). */
   kinds: readonly string[];
   from: number;
   to: number;
@@ -64,7 +64,7 @@ interface Texts {
   question: { cs: string; en: string };
   reason: { cs: string; en: string };
   years: { from: number; to: number } | null;
-  /** The kind of Event a register to check holds, or "any". */
+  /** The register kind to check (birth, marriage or death), or "any" for none in particular. */
   kind: string;
 }
 
@@ -99,7 +99,7 @@ function godparentHouse({ hint, named, year, ctx }: Facts): Texts {
   const house = hint.house ?? '?';
   const note = suffix(hint.note, (n) => ` (${n})`);
   return {
-    kind: 'residence',
+    kind: 'any',
     years: around(year, 5, 5),
     question: {
       cs: `Zjistit, kdo žil v čp. ${house}${suffix(ctx.place, (p) => ` v obci ${p}`)}: ${named.join(', ') || 'kmotr'}`,

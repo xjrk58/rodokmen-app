@@ -256,7 +256,7 @@ describe('suggested leads (scenario "Parents\' marriage")', () => {
       place: 'Kamenná Lhota',
       registers: [
         { sourceId: ID(70), title: 'Invented register of marriages 1784–1820', kinds: ['marriage'], from: 1784, to: 1820 },
-        { sourceId: ID(71), title: 'Invented register of births 1784–1820', kinds: ['baptism'], from: 1784, to: 1820 },
+        { sourceId: ID(71), title: 'Invented register of births 1784–1820', kinds: ['birth'], from: 1784, to: 1820 },
       ],
     });
     const marriage = leads.find((l) => l.kind === 'parents_marriage')!;

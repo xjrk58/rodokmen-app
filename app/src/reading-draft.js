@@ -73,6 +73,7 @@
  * @property {EntryCheck[]} entries
  * @property {ReadingLeadSuggestion[]} leads
  * @property {string[]} dismissed keys of dismissed lead suggestions
+ * @property {Record<string, string>} [kept] lead suggestions kept as Research leads: key → the lead's id
  * @property {{ id: string, label: string } | null} place
  * @property {import('./proposal-build.js').CitationForm} citation
  * @property {string | null} link the archive viewer address, kept as the Citation's link
@@ -175,7 +176,34 @@ export function fillFromReading(view, form) {
  * @returns {ReadingForm}
  */
 export function newReadingForm(readingId, given) {
-  return { readingId, state: 'reading', error: null, model: null, pages: [], entries: [], leads: [], dismissed: [], ...given };
+  return { readingId, state: 'reading', error: null, model: null, pages: [], entries: [], leads: [], dismissed: [], kept: {}, ...given };
+}
+
+/**
+ * A suggested lead as a Research lead (research-leads spec; POST /api/leads): its question and
+ * reason in the reader's language, the register it names or else the archive, the years, the
+ * Place of the reading, and the Persons of the Tree the Member matched its read persons to.
+ * Persons the Member chose as new are not in the Tree yet; the question names them.
+ * @param {ReadingLeadSuggestion} s
+ * @param {ReadingForm} form
+ * @param {'cs' | 'en'} lang
+ * @returns {import('./types.js').CreateLeadBody}
+ */
+export function leadBodyOf(s, form, lang) {
+  const persons = form.entries[s.entry]?.persons ?? [];
+  const personIds = s.personKeys.flatMap((key) => {
+    const choice = persons.find((p) => p.key === key)?.choice;
+    return choice?.mode === 'existing' ? [choice.id] : [];
+  });
+  return {
+    question: s.question[lang],
+    reason: s.reason[lang],
+    sourceId: s.sourceId,
+    archive: s.sourceId ? null : s.archive,
+    years: s.years,
+    personIds: [...new Set(personIds)],
+    placeIds: form.place ? [form.place.id] : [],
+  };
 }
 
 /**

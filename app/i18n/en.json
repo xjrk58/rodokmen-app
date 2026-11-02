@@ -621,7 +621,7 @@
   "reading.scanAlt": "Scan {n}",
   "reading.pageTranscription": "The page as read",
   "reading.leads": "Next steps",
-  "reading.leadsHelp": "Research leads this reading suggests. Keeping them as leads comes with Research leads; until then, note what you want to follow up.",
+  "reading.leadsHelp": "Research leads this reading suggests. Keep one as a lead for the family to follow up, or dismiss it.",
   "reading.dismiss": "Dismiss",
   "reading.leadSource": "Register in the Tree: {source}.",
   "reading.citationHelp": "One Citation per page, with its image and transcription. A reading has at most normal confidence.",
@@ -641,5 +641,8 @@
   "settings.scanReadingModel": "Model: {model}. Readings today: {today}.",
   "settings.scanReadingUsage": "Readings, last 30 days",
   "settings.scanReadingNone": "No readings yet.",
-  "settings.scanReadingCount": "{count} readings, {failed} failed"
+  "settings.scanReadingCount": "{count} readings, {failed} failed",
+  "reading.keepLead": "Keep as a lead",
+  "reading.leadKept": "Kept as a Research lead: open it",
+  "reading.leadArchive": "Archive: {archive}."
 }
