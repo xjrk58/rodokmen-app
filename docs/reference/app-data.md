@@ -1,6 +1,6 @@
 # Map data files
 
-The public map reads its reference data from `app/data/` (`app/src/data.js`). The files are public: they hold no family data. The service worker precaches them, so a change needs a new version stamp (`node app/scripts/stamp-version.mjs`). Prettier skips the folder; `app/scripts/build-data.mjs` writes JSON in the layout of `app/scripts/lib/json-format.mjs`, and hand edits keep it.
+The public map reads its reference data from `app/data/` (`app/src/data.js`). The files are public: they hold no family data. The service worker precaches them, so a change needs a new version stamp (`node app/scripts/stamp-version.mjs`). Prettier skips the folder; `app/scripts/build-data.mjs` writes JSON in the layout of `app/scripts/lib/json-format.mjs`, and hand edits keep it. Where each file comes from and its licence: [Licences](licences.md).
 
 | File                  | Edited                                  | Holds                                                                |
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------- |

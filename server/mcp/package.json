@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Rodokmen MCP server: lets AI assistants search the Tree and submit Proposals with an Agent token, as a client of the public API",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "bin": {
     "rodokmen-mcp": "dist/stdio.js"
