@@ -73,7 +73,7 @@ There is no email service on your computer, so the email is printed instead. The
 [outbox] to owner@example.org: Sign in to Rodokmen
 Hello Eva Example,
 …
-http://localhost:3000/#link/k3ydubkJgwJ7-OzMNznIpxXzwhgJYGhHPh-Sc2njgKk
+http://localhost:3000/#link/<a long random token>
 …
 Owner owner@example.org created; a sign-in link was emailed. After signing in, register a passkey.
 ```
