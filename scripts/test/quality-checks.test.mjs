@@ -173,3 +173,25 @@ describe('dependency-cruiser', () => {
     assert.doesNotMatch(stale.stdout, /error (app-not-server|support-not-tree)/);
   });
 });
+
+// ---------------------------------------------------------------- jscpd (.jscpd.json)
+
+describe('jscpd', () => {
+  test('a copy of 40 lines fails (the near-copy pickers were about 60), one of 20 does not', (t) => {
+    const dir = copyOfRepo(t);
+    /** The same `n` lines of code in two new app modules. */
+    const copy = (n) => {
+      const lines = Array.from({ length: n }, (_, i) => `  if (form.field${i} !== undefined) out.push(['field${i}', String(form.field${i}).trim()]);`);
+      for (const name of ['first', 'second']) {
+        writeFileSync(join(dir, `app/src/${name}-picker.js`), `export function ${name}(form, out) {\n${lines.join('\n')}\n  return out;\n}\n`);
+      }
+    };
+    copy(20);
+    const short = spawnSync('pnpm', ['-s', 'jscpd'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(short.status, 0, short.stdout);
+    copy(40);
+    const long = spawnSync('pnpm', ['-s', 'jscpd'], { cwd: dir, encoding: 'utf8' });
+    assert.equal(long.status, 1, long.stdout);
+    assert.match(long.stdout, /app\/src\/first-picker\.js/);
+  });
+});

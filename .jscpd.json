@@ -1,0 +1,21 @@
+{
+  "minLines": 30,
+  "format": ["javascript", "typescript"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.lemmascript/**",
+    "app/vendor/**",
+    "app/data/**",
+    "app/tests/**",
+    "server/test/**",
+    "server/mcp/test/**",
+    "shared/test/**",
+    "scripts/test/**",
+    "openspec/**",
+    ".claude/**"
+  ],
+  "exitCode": 1,
+  "reporters": ["console"],
+  "noTips": true
+}

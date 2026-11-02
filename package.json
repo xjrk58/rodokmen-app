@@ -20,6 +20,7 @@
     "knip": "knip",
     "depcruise": "depcruise --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json app server shared scripts",
     "depcruise:baseline": "depcruise --config .dependency-cruiser.cjs --baseline .dependency-cruiser-known-violations.json app server shared scripts",
+    "jscpd": "jscpd .",
     "vault-guard": "node scripts/vault-guard.mjs",
     "prepare": "git config core.hooksPath .githooks || true"
   },
