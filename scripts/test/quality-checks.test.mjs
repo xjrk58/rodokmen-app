@@ -330,3 +330,16 @@ describe('gitleaks', () => {
     assert.equal(scan(`${listed}..${elsewhere}`).status, 1);
   });
 });
+
+// ---------------------------------------------------------------- pnpm check (scripts/check.mjs)
+
+test('AGENTS.md says how to fix each check pnpm check runs, in its order, and gitleaks', async () => {
+  const { CHECKS } = await import('../check.mjs');
+  const agents = readFileSync(join(ROOT, 'AGENTS.md'), 'utf8');
+  const start = agents.indexOf('The checks, in the order `pnpm check` runs them');
+  assert.notEqual(start, -1, 'AGENTS.md lists the checks under "Tools before agents"');
+  // The paragraph after that line: the list.
+  const list = agents.slice(start).split('\n\n')[1];
+  const rows = [...list.matchAll(/^- \*\*([^*]+)\*\*/gm)].map((m) => m[1]);
+  assert.deepEqual(rows, [...CHECKS.map(([name]) => name), 'gitleaks']);
+});
