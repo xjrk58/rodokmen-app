@@ -311,6 +311,6 @@ describe('Family roots and the relation to the family (add-vault-import tasks 1.
   });
 
   it('recomputing again changes nothing: the stored relation is what the rule says', async () => {
-    expect(await t.db.transaction().execute((tx) => recomputeRelations(tx))).toEqual({ changed: 0 });
+    expect(await t.db.transaction().execute((tx) => recomputeRelations(tx))).toEqual({ changed: 0, changedIds: [] });
   });
 });

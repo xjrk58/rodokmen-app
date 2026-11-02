@@ -79,7 +79,7 @@ export async function familyRootIds(db: Db): Promise<string[]> {
  * merge, an undo, a Family root); a batch of them calls it once at the end. Concurrent changes
  * take turns, so the last to commit computes from everything committed before it.
  */
-export async function recomputeRelations(db: Db): Promise<{ changed: number }> {
+export async function recomputeRelations(db: Db): Promise<{ changed: number; changedIds: string[] }> {
   await sql`select pg_advisory_xact_lock(hashtext('rodokmen:family-relation'))`.execute(db);
   const persons = await db.selectFrom('person').select(['id', 'relation', 'merged_into_id']).execute();
   const current = persons.filter((p) => p.merged_into_id === null);
@@ -104,5 +104,5 @@ export async function recomputeRelations(db: Db): Promise<{ changed: number }> {
       .executeTakeFirst();
     changed += Number(r.numUpdatedRows);
   }
-  return { changed };
+  return { changed, changedIds: [...changes.values()].flat() };
 }

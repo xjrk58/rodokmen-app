@@ -3,7 +3,7 @@
   "info": {
     "title": "Rodokmen API",
     "version": "0.1.0",
-    "description": "Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts, Agents and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member (session cookie) or an Agent token (Authorization: Bearer rdk_ag_…). Agents may only read and submit Proposals, within hourly limits (429 with retryAt beyond them)."
+    "description": "Read API of the Rodokmen Tree, Proposals and review, history, images, Research leads, member accounts, Agents and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member (session cookie) or an Agent token (Authorization: Bearer rdk_ag_…). Agents may only read, submit Proposals and write Research leads, within hourly limits (429 with retryAt beyond them)."
   },
   "components": {
     "securitySchemes": {
@@ -824,6 +824,65 @@
           "givenOn"
         ]
       },
+      "RegisterKindInput": {
+        "type": "string",
+        "enum": [
+          "birth",
+          "marriage",
+          "death"
+        ],
+        "description": "Births (and baptisms), marriages or deaths (and burials): the N, O and Z of a matrika"
+      },
+      "RegisterCoverageInput": {
+        "type": "object",
+        "properties": {
+          "parishId": {
+            "description": "The Parish that kept the register",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "kinds": {
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegisterKindInput"
+            },
+            "description": "Which entries it holds"
+          },
+          "from": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First year it covers; null when unknown"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last year it covers; null when unknown"
+          }
+        },
+        "required": [
+          "parishId",
+          "kinds",
+          "from",
+          "to"
+        ]
+      },
       "SourceRecordInput": {
         "type": "object",
         "properties": {
@@ -881,6 +940,18 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "default": null,
+            "description": "For a register book: its Parish, kinds and years",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
               },
               {
                 "type": "null"
@@ -2873,6 +2944,17 @@
                 "type": "null"
               }
             ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
           }
         },
         "required": [
@@ -2883,7 +2965,8 @@
           "repository",
           "reference",
           "url",
-          "familyAccount"
+          "familyAccount",
+          "register"
         ]
       },
       "SourceSearchResultInput": {
@@ -2955,6 +3038,17 @@
               }
             ]
           },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          },
           "citations": {
             "type": "array",
             "items": {
@@ -2971,6 +3065,7 @@
           "reference",
           "url",
           "familyAccount",
+          "register",
           "citations"
         ]
       },
@@ -3231,13 +3326,21 @@
           "owner",
           "agent"
         ],
-        "description": "A Member role, or agent for an Agent account (read and propose only)"
+        "description": "A Member role, or agent for an Agent account (read, propose and write Research leads only)"
       },
       "PermissionsInput": {
         "type": "object",
         "properties": {
           "propose": {
             "type": "boolean"
+          },
+          "writeLeads": {
+            "type": "boolean",
+            "description": "Write Research leads and search records (Members and Agents)"
+          },
+          "decideSuggestions": {
+            "type": "boolean",
+            "description": "Accept or dismiss a suggested lead (Members)"
           },
           "review": {
             "type": "boolean"
@@ -3258,6 +3361,8 @@
         },
         "required": [
           "propose",
+          "writeLeads",
+          "decideSuggestions",
           "review",
           "inviteMembers",
           "changeRoles",
@@ -4472,6 +4577,18 @@
                 "type": "null"
               }
             ]
+          },
+          "register": {
+            "default": null,
+            "description": "For a register book: its Parish, kinds and years",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -4870,6 +4987,15 @@
             "maxItems": 300,
             "type": "array",
             "items": {}
+          },
+          "answersLeads": {
+            "default": [],
+            "description": "The Research leads this finding answers: accepting the Proposal marks them found, undoing it reopens them",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            }
           }
         },
         "required": [
@@ -4912,6 +5038,35 @@
           "id",
           "displayName",
           "isAgent"
+        ]
+      },
+      "LeadStatusInput": {
+        "type": "string",
+        "enum": [
+          "open",
+          "in_progress",
+          "found",
+          "not_found"
+        ],
+        "description": "open, in_progress (someone is working on it), found or not_found"
+      },
+      "LeadRefInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "question": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatusInput"
+          }
+        },
+        "required": [
+          "id",
+          "question",
+          "status"
         ]
       },
       "FieldConflictInput": {
@@ -5343,6 +5498,13 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991,
             "description": "Operations based on an older version of their record"
+          },
+          "answersLeads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadRefInput"
+            },
+            "description": "The Research leads this finding answers; accepting marks them found"
           }
         },
         "required": [
@@ -5360,7 +5522,8 @@
           "undoneBy",
           "operations",
           "citations",
-          "conflicts"
+          "conflicts",
+          "answersLeads"
         ]
       },
       "ProposalListInput": {
@@ -5892,6 +6055,1081 @@
         "required": [
           "outcomeEmails"
         ]
+      },
+      "YearRangeInput": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
+      "LeadSourceInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "repository",
+          "reference"
+        ]
+      },
+      "SearchRecordBodyInput": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "default": null,
+            "description": "The register Source looked at",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archive": {
+            "default": null,
+            "description": "The archive, when no Source of the Tree names it",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "default": null,
+            "description": "The years looked at",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "default": null,
+            "description": "The pages or frames looked at, such as 1–60",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "searchedOn": {
+            "description": "When the search was made (EDTF); today when left out",
+            "$ref": "#/components/schemas/EdtfDateInput"
+          },
+          "searchedBy": {
+            "description": "Who looked; the author when left out",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "found": {
+            "type": "boolean",
+            "description": "Whether the search found what the lead asks"
+          },
+          "note": {
+            "default": null,
+            "description": "What was found, or what was seen instead",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "found"
+        ]
+      },
+      "SearchRecordViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSourceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archive": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searchedOn": {
+            "type": "string",
+            "description": "EDTF date"
+          },
+          "searchedBy": {
+            "type": "string"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "description": "Who recorded it",
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "archive",
+          "years",
+          "pages",
+          "searchedOn",
+          "searchedBy",
+          "found",
+          "note",
+          "author",
+          "createdAt"
+        ]
+      },
+      "CreateLeadBodyInput": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "The question, such as \"Find Jan’s baptism\""
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "Why, and what is known so far"
+          },
+          "archive": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The archive to look in"
+          },
+          "sourceId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The register Source to check"
+          },
+          "years": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The years to check"
+          },
+          "pages": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The pages or frames to check"
+          },
+          "personIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "The Persons the lead concerns"
+          },
+          "placeIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "The Places the lead concerns"
+          },
+          "assigneeId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Member or Agent working on it"
+          },
+          "outcome": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What came of it"
+          },
+          "status": {
+            "default": "open",
+            "description": "not_found needs at least one search record",
+            "$ref": "#/components/schemas/LeadStatusInput"
+          },
+          "searches": {
+            "default": [],
+            "description": "Searches already made, recorded with the lead",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecordBodyInput"
+            }
+          }
+        },
+        "required": [
+          "question",
+          "reason"
+        ],
+        "description": "A new Research lead; written at once, without review"
+      },
+      "UpdateLeadBodyInput": {
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "description": "The version of the lead you saw; a lead changed since answers 409",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "The question, such as \"Find Jan’s baptism\""
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "Why, and what is known so far"
+          },
+          "archive": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The archive to look in"
+          },
+          "sourceId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The register Source to check"
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The years to check"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The pages or frames to check"
+          },
+          "personIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "The Persons the lead concerns"
+          },
+          "placeIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "The Places the lead concerns"
+          },
+          "assigneeId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Member or Agent working on it"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What came of it"
+          },
+          "status": {
+            "description": "not_found needs at least one search record",
+            "$ref": "#/components/schemas/LeadStatusInput"
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "description": "Changes fields of a lead; written at once, without review"
+      },
+      "CloseLeadBodyInput": {
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "found",
+              "not_found"
+            ]
+          },
+          "outcome": {
+            "default": null,
+            "description": "What came of it",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "search": {
+            "description": "The search that closes it, recorded with the closing",
+            "$ref": "#/components/schemas/SearchRecordBodyInput"
+          }
+        },
+        "required": [
+          "baseVersion",
+          "status"
+        ],
+        "description": "Closes a lead as found or not found; not found needs at least one search record"
+      },
+      "LeadViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "question": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "archive": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSourceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatusInput"
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummaryInput"
+            },
+            "description": "A Person merged into another shows as the one kept"
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceRefInput"
+            }
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRefInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who is working on it"
+          },
+          "author": {
+            "description": "Who wrote it",
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "foundBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The accepted Proposal that answered it"
+          },
+          "fromSuggestion": {
+            "description": "The key of the suggested lead it was accepted from",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecordViewInput"
+            },
+            "description": "Every search made, newest first"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "question",
+          "reason",
+          "archive",
+          "source",
+          "years",
+          "pages",
+          "status",
+          "outcome",
+          "persons",
+          "places",
+          "assignee",
+          "author",
+          "foundBy",
+          "fromSuggestion",
+          "searches",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "LeadChangeKindInput": {
+        "type": "string",
+        "enum": [
+          "created",
+          "edited",
+          "searched",
+          "closed",
+          "answered",
+          "reopened"
+        ],
+        "description": "What a change of a lead did"
+      },
+      "LeadChangeInput": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LeadChangeKindInput"
+          },
+          "proposalId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For answered and reopened: the Proposal accepted or undone"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "before": {},
+                "after": {}
+              },
+              "required": [
+                "field",
+                "before",
+                "after"
+              ]
+            }
+          }
+        },
+        "required": [
+          "at",
+          "author",
+          "kind",
+          "proposalId",
+          "fields"
+        ]
+      },
+      "LeadDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "question": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "archive": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSourceInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatusInput"
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummaryInput"
+            },
+            "description": "A Person merged into another shows as the one kept"
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceRefInput"
+            }
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRefInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who is working on it"
+          },
+          "author": {
+            "description": "Who wrote it",
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "foundBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The accepted Proposal that answered it"
+          },
+          "fromSuggestion": {
+            "description": "The key of the suggested lead it was accepted from",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecordViewInput"
+            },
+            "description": "Every search made, newest first"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadChangeInput"
+            },
+            "description": "Every change, newest first, with author and time"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "question",
+          "reason",
+          "archive",
+          "source",
+          "years",
+          "pages",
+          "status",
+          "outcome",
+          "persons",
+          "places",
+          "assignee",
+          "author",
+          "foundBy",
+          "fromSuggestion",
+          "searches",
+          "createdAt",
+          "updatedAt",
+          "history"
+        ]
+      },
+      "LeadListInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadViewInput"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "description": "Open and in-progress leads first, then the rest, newest first"
+      },
+      "GapKindInput": {
+        "type": "string",
+        "enum": [
+          "birth",
+          "parents",
+          "marriage"
+        ],
+        "description": "No birth or baptism Citation; unknown parents with a known Parish and years; a marriage without a Citation"
+      },
+      "SuggestionStatusInput": {
+        "type": "string",
+        "enum": [
+          "open",
+          "accepted",
+          "dismissed"
+        ]
+      },
+      "LeadSuggestionInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "key": {
+            "type": "string",
+            "description": "Stable: the kind of gap, the Person or Family, and the register Source"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GapKindInput"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SuggestionStatusInput"
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonSummaryInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Relative it is about (for a marriage, a Relative partner)"
+          },
+          "familyId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a marriage: the Family"
+          },
+          "partners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummaryInput"
+            },
+            "description": "For a marriage: both partners"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRefInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the birth, baptism or marriage was, when known"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSourceInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The register to check, when the Tree holds one that fits"
+          },
+          "archive": {
+            "description": "The archive to look in: the register’s, or the one that holds the Place’s registers",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRangeInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The years to check"
+          },
+          "question": {
+            "type": "object",
+            "properties": {
+              "cs": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "cs",
+              "en"
+            ],
+            "description": "The lead it suggests, in Czech and English"
+          },
+          "reason": {
+            "type": "object",
+            "properties": {
+              "cs": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "cs",
+              "en"
+            ]
+          },
+          "leadId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The lead it became, once accepted"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "kind",
+          "status",
+          "person",
+          "familyId",
+          "partners",
+          "place",
+          "source",
+          "archive",
+          "years",
+          "question",
+          "reason",
+          "leadId"
+        ]
+      },
+      "SuggestionListInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadSuggestionInput"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "description": "Open suggested leads, shown apart from the leads until a Member accepts or dismisses them"
       },
       "Id": {
         "type": "string",
@@ -6719,6 +7957,66 @@
         ],
         "additionalProperties": false
       },
+      "RegisterKind": {
+        "type": "string",
+        "enum": [
+          "birth",
+          "marriage",
+          "death"
+        ],
+        "description": "Births (and baptisms), marriages or deaths (and burials): the N, O and Z of a matrika"
+      },
+      "RegisterCoverage": {
+        "type": "object",
+        "properties": {
+          "parishId": {
+            "description": "The Parish that kept the register",
+            "$ref": "#/components/schemas/Id"
+          },
+          "kinds": {
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegisterKind"
+            },
+            "description": "Which entries it holds"
+          },
+          "from": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First year it covers; null when unknown"
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9999
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Last year it covers; null when unknown"
+          }
+        },
+        "required": [
+          "parishId",
+          "kinds",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
       "SourceRecord": {
         "type": "object",
         "properties": {
@@ -6781,6 +8079,18 @@
                 "type": "null"
               }
             ]
+          },
+          "register": {
+            "default": null,
+            "description": "For a register book: its Parish, kinds and years",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -6791,7 +8101,8 @@
           "repository",
           "reference",
           "url",
-          "familyAccount"
+          "familyAccount",
+          "register"
         ],
         "additionalProperties": false
       },
@@ -8818,6 +10129,17 @@
                 "type": "null"
               }
             ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
           }
         },
         "required": [
@@ -8828,7 +10150,8 @@
           "repository",
           "reference",
           "url",
-          "familyAccount"
+          "familyAccount",
+          "register"
         ],
         "additionalProperties": false
       },
@@ -8902,6 +10225,17 @@
               }
             ]
           },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          },
           "citations": {
             "type": "array",
             "items": {
@@ -8918,6 +10252,7 @@
           "reference",
           "url",
           "familyAccount",
+          "register",
           "citations"
         ],
         "additionalProperties": false
@@ -9183,13 +10518,21 @@
           "owner",
           "agent"
         ],
-        "description": "A Member role, or agent for an Agent account (read and propose only)"
+        "description": "A Member role, or agent for an Agent account (read, propose and write Research leads only)"
       },
       "Permissions": {
         "type": "object",
         "properties": {
           "propose": {
             "type": "boolean"
+          },
+          "writeLeads": {
+            "type": "boolean",
+            "description": "Write Research leads and search records (Members and Agents)"
+          },
+          "decideSuggestions": {
+            "type": "boolean",
+            "description": "Accept or dismiss a suggested lead (Members)"
           },
           "review": {
             "type": "boolean"
@@ -9210,6 +10553,8 @@
         },
         "required": [
           "propose",
+          "writeLeads",
+          "decideSuggestions",
           "review",
           "inviteMembers",
           "changeRoles",
@@ -10468,6 +11813,18 @@
                 "type": "null"
               }
             ]
+          },
+          "register": {
+            "default": null,
+            "description": "For a register book: its Parish, kinds and years",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -10478,7 +11835,8 @@
           "repository",
           "reference",
           "url",
-          "familyAccount"
+          "familyAccount",
+          "register"
         ],
         "additionalProperties": false
       },
@@ -10882,6 +12240,15 @@
             "maxItems": 300,
             "type": "array",
             "items": {}
+          },
+          "answersLeads": {
+            "default": [],
+            "description": "The Research leads this finding answers: accepting the Proposal marks them found, undoing it reopens them",
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
           }
         },
         "required": [
@@ -10889,7 +12256,8 @@
           "idempotencyKey",
           "note",
           "direct",
-          "operations"
+          "operations",
+          "answersLeads"
         ],
         "additionalProperties": false
       },
@@ -10928,6 +12296,36 @@
           "id",
           "displayName",
           "isAgent"
+        ],
+        "additionalProperties": false
+      },
+      "LeadStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "in_progress",
+          "found",
+          "not_found"
+        ],
+        "description": "open, in_progress (someone is working on it), found or not_found"
+      },
+      "LeadRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "question": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatus"
+          }
+        },
+        "required": [
+          "id",
+          "question",
+          "status"
         ],
         "additionalProperties": false
       },
@@ -11366,6 +12764,13 @@
             "minimum": -9007199254740991,
             "maximum": 9007199254740991,
             "description": "Operations based on an older version of their record"
+          },
+          "answersLeads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadRef"
+            },
+            "description": "The Research leads this finding answers; accepting marks them found"
           }
         },
         "required": [
@@ -11383,7 +12788,8 @@
           "undoneBy",
           "operations",
           "citations",
-          "conflicts"
+          "conflicts",
+          "answersLeads"
         ],
         "additionalProperties": false
       },
@@ -11950,6 +13356,1113 @@
           "outcomeEmails"
         ],
         "additionalProperties": false
+      },
+      "YearRange": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9999
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "LeadSource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "repository",
+          "reference"
+        ],
+        "additionalProperties": false
+      },
+      "SearchRecordBody": {
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "default": null,
+            "description": "The register Source looked at",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archive": {
+            "default": null,
+            "description": "The archive, when no Source of the Tree names it",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "default": null,
+            "description": "The years looked at",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "default": null,
+            "description": "The pages or frames looked at, such as 1–60",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "searchedOn": {
+            "description": "When the search was made (EDTF); today when left out",
+            "$ref": "#/components/schemas/EdtfDate"
+          },
+          "searchedBy": {
+            "description": "Who looked; the author when left out",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "found": {
+            "type": "boolean",
+            "description": "Whether the search found what the lead asks"
+          },
+          "note": {
+            "default": null,
+            "description": "What was found, or what was seen instead",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "sourceId",
+          "archive",
+          "years",
+          "pages",
+          "found",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "SearchRecordView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "archive": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searchedOn": {
+            "type": "string",
+            "description": "EDTF date"
+          },
+          "searchedBy": {
+            "type": "string"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "description": "Who recorded it",
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "archive",
+          "years",
+          "pages",
+          "searchedOn",
+          "searchedBy",
+          "found",
+          "note",
+          "author",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "CreateLeadBody": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "The question, such as \"Find Jan’s baptism\""
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "Why, and what is known so far"
+          },
+          "archive": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The archive to look in"
+          },
+          "sourceId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The register Source to check"
+          },
+          "years": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The years to check"
+          },
+          "pages": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The pages or frames to check"
+          },
+          "personIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "The Persons the lead concerns"
+          },
+          "placeIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "The Places the lead concerns"
+          },
+          "assigneeId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Member or Agent working on it"
+          },
+          "outcome": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What came of it"
+          },
+          "status": {
+            "default": "open",
+            "description": "not_found needs at least one search record",
+            "$ref": "#/components/schemas/LeadStatus"
+          },
+          "searches": {
+            "default": [],
+            "description": "Searches already made, recorded with the lead",
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecordBody"
+            }
+          }
+        },
+        "required": [
+          "question",
+          "reason",
+          "archive",
+          "sourceId",
+          "years",
+          "pages",
+          "personIds",
+          "placeIds",
+          "assigneeId",
+          "outcome",
+          "status",
+          "searches"
+        ],
+        "additionalProperties": false,
+        "description": "A new Research lead; written at once, without review"
+      },
+      "UpdateLeadBody": {
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "description": "The version of the lead you saw; a lead changed since answers 409",
+            "$ref": "#/components/schemas/Version"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000,
+            "description": "The question, such as \"Find Jan’s baptism\""
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "description": "Why, and what is known so far"
+          },
+          "archive": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The archive to look in"
+          },
+          "sourceId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The register Source to check"
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The years to check"
+          },
+          "pages": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The pages or frames to check"
+          },
+          "personIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "The Persons the lead concerns"
+          },
+          "placeIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "The Places the lead concerns"
+          },
+          "assigneeId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Member or Agent working on it"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "What came of it"
+          },
+          "status": {
+            "description": "not_found needs at least one search record",
+            "$ref": "#/components/schemas/LeadStatus"
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false,
+        "description": "Changes fields of a lead; written at once, without review"
+      },
+      "CloseLeadBody": {
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "found",
+              "not_found"
+            ]
+          },
+          "outcome": {
+            "default": null,
+            "description": "What came of it",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "search": {
+            "description": "The search that closes it, recorded with the closing",
+            "$ref": "#/components/schemas/SearchRecordBody"
+          }
+        },
+        "required": [
+          "baseVersion",
+          "status",
+          "outcome"
+        ],
+        "additionalProperties": false,
+        "description": "Closes a lead as found or not found; not found needs at least one search record"
+      },
+      "LeadView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "question": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "archive": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatus"
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummary"
+            },
+            "description": "A Person merged into another shows as the one kept"
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceRef"
+            }
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who is working on it"
+          },
+          "author": {
+            "description": "Who wrote it",
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "foundBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The accepted Proposal that answered it"
+          },
+          "fromSuggestion": {
+            "description": "The key of the suggested lead it was accepted from",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecordView"
+            },
+            "description": "Every search made, newest first"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "question",
+          "reason",
+          "archive",
+          "source",
+          "years",
+          "pages",
+          "status",
+          "outcome",
+          "persons",
+          "places",
+          "assignee",
+          "author",
+          "foundBy",
+          "fromSuggestion",
+          "searches",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "LeadChangeKind": {
+        "type": "string",
+        "enum": [
+          "created",
+          "edited",
+          "searched",
+          "closed",
+          "answered",
+          "reopened"
+        ],
+        "description": "What a change of a lead did"
+      },
+      "LeadChange": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LeadChangeKind"
+          },
+          "proposalId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For answered and reopened: the Proposal accepted or undone"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "before": {},
+                "after": {}
+              },
+              "required": [
+                "field",
+                "before",
+                "after"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "at",
+          "author",
+          "kind",
+          "proposalId",
+          "fields"
+        ],
+        "additionalProperties": false
+      },
+      "LeadDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "question": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "archive": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pages": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatus"
+          },
+          "outcome": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummary"
+            },
+            "description": "A Person merged into another shows as the one kept"
+          },
+          "places": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaceRef"
+            }
+          },
+          "assignee": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AuthorRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Who is working on it"
+          },
+          "author": {
+            "description": "Who wrote it",
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "foundBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The accepted Proposal that answered it"
+          },
+          "fromSuggestion": {
+            "description": "The key of the suggested lead it was accepted from",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "searches": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchRecordView"
+            },
+            "description": "Every search made, newest first"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadChange"
+            },
+            "description": "Every change, newest first, with author and time"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "question",
+          "reason",
+          "archive",
+          "source",
+          "years",
+          "pages",
+          "status",
+          "outcome",
+          "persons",
+          "places",
+          "assignee",
+          "author",
+          "foundBy",
+          "fromSuggestion",
+          "searches",
+          "createdAt",
+          "updatedAt",
+          "history"
+        ],
+        "additionalProperties": false
+      },
+      "LeadList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadView"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "additionalProperties": false,
+        "description": "Open and in-progress leads first, then the rest, newest first"
+      },
+      "GapKind": {
+        "type": "string",
+        "enum": [
+          "birth",
+          "parents",
+          "marriage"
+        ],
+        "description": "No birth or baptism Citation; unknown parents with a known Parish and years; a marriage without a Citation"
+      },
+      "SuggestionStatus": {
+        "type": "string",
+        "enum": [
+          "open",
+          "accepted",
+          "dismissed"
+        ]
+      },
+      "LeadSuggestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "key": {
+            "type": "string",
+            "description": "Stable: the kind of gap, the Person or Family, and the register Source"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/GapKind"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SuggestionStatus"
+          },
+          "person": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonSummary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Relative it is about (for a marriage, a Relative partner)"
+          },
+          "familyId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a marriage: the Family"
+          },
+          "partners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummary"
+            },
+            "description": "For a marriage: both partners"
+          },
+          "place": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlaceRef"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the birth, baptism or marriage was, when known"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The register to check, when the Tree holds one that fits"
+          },
+          "archive": {
+            "description": "The archive to look in: the register’s, or the one that holds the Place’s registers",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "years": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/YearRange"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The years to check"
+          },
+          "question": {
+            "type": "object",
+            "properties": {
+              "cs": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "cs",
+              "en"
+            ],
+            "additionalProperties": false,
+            "description": "The lead it suggests, in Czech and English"
+          },
+          "reason": {
+            "type": "object",
+            "properties": {
+              "cs": {
+                "type": "string"
+              },
+              "en": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "cs",
+              "en"
+            ],
+            "additionalProperties": false
+          },
+          "leadId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The lead it became, once accepted"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "kind",
+          "status",
+          "person",
+          "familyId",
+          "partners",
+          "place",
+          "source",
+          "archive",
+          "years",
+          "question",
+          "reason",
+          "leadId"
+        ],
+        "additionalProperties": false
+      },
+      "SuggestionList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeadSuggestion"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "additionalProperties": false,
+        "description": "Open suggested leads, shown apart from the leads until a Member accepts or dismisses them"
       }
     }
   },
@@ -14677,6 +17190,800 @@
             }
           },
           "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads": {
+      "get": {
+        "summary": "Research leads, filtered by status, Person, Place, archive and who is working on them: open and in-progress first, newest change first",
+        "tags": [
+          "Leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "description": "Only leads with these statuses, such as open,in_progress"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "query",
+            "name": "placeId",
+            "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            },
+            "in": "query",
+            "name": "archive",
+            "required": false,
+            "description": "Only leads to look in this archive (its name, or the repository of their register)"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "query",
+            "name": "assigneeId",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Write a Research lead: a question and its reason, where to look, the Persons and Places it concerns. Written at once, without review; searches already made may come with it",
+        "tags": [
+          "Leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeadBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/{id}": {
+      "get": {
+        "summary": "A Research lead with its search records and its history of changes",
+        "tags": [
+          "Leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Change a Research lead, against the version you read (409 when it changed since). Not found needs a search record",
+        "tags": [
+          "Leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/{id}/searches": {
+      "post": {
+        "summary": "Record a search made on a lead: the Source or archive, the years and pages, when, by whom and what was found, including nothing",
+        "tags": [
+          "Leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRecordBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/{id}/close": {
+      "post": {
+        "summary": "Close a lead as found or not found, with the outcome and the search that closes it. Not found needs at least one search record",
+        "tags": [
+          "Leads"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CloseLeadBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lead-suggestions": {
+      "get": {
+        "summary": "Leads the gap finder suggests, apart from the leads, until a Member accepts or dismisses them",
+        "tags": [
+          "Leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "query",
+            "name": "personId",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "query",
+            "name": "placeId",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuggestionList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lead-suggestions/{id}/accept": {
+      "post": {
+        "summary": "Accept a suggested lead (Members): it becomes a lead, and is not suggested again",
+        "tags": [
+          "Leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lead-suggestions/{id}/dismiss": {
+      "post": {
+        "summary": "Dismiss a suggested lead (Members): the gap finder does not suggest it again",
+        "tags": [
+          "Leads"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadSuggestion"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
             "description": "Default Response",
             "content": {
               "application/json": {

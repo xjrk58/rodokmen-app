@@ -18,6 +18,9 @@ import { uploadKeys, type ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { applyOperations, RECORD_TABLES, translateDbError, type ApplyResult, type UploadMove } from './apply.js';
 import { recomputeRelations } from '../tree/relation.js';
+import { refreshSuggestions } from '../leads/gaps.js';
+import { touchedPersons } from '../leads/touched.js';
+import { checkAnsweredLeads, markAnsweredLeads, storeAnsweredLeads } from '../leads/service.js';
 import { snapshot } from './records.js';
 import { canReview, findConflicts, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
 
@@ -69,7 +72,7 @@ async function insertProposal(
   tx: Db,
   now: Date,
   author: Account,
-  fields: { kind: Proposal['kind']; note: string | null; idempotencyKey: string; undoes?: string },
+  fields: { kind: Proposal['kind']; note: string | null; idempotencyKey: string; undoes?: string; answersLeads?: readonly string[] },
   ops: readonly Operation[],
 ): Promise<Created> {
   const inserted = await tx
@@ -99,6 +102,7 @@ async function insertProposal(
     .insertInto('proposal_operation')
     .values(ops.map((op, position) => ({ proposal_id: inserted.id, position, op: op.op, operation: JSON.stringify(op), ...targetColumns(op) })))
     .execute();
+  await storeAnsweredLeads(tx, inserted.id, fields.answersLeads ?? []);
   const uploadIds = ops.flatMap((o) => (o.op === 'addImage' ? [o.uploadId] : []));
   for (const uploadId of uploadIds) {
     const r = await tx
@@ -133,11 +137,12 @@ export async function submitProposal(deps: ProposalDeps, author: Account, body: 
   const result = await transaction(
     deps.db,
     async (tx) => {
+      await checkAnsweredLeads(tx, body.answersLeads);
       const created = await insertProposal(
         tx,
         now,
         author,
-        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey },
+        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads },
         operations,
       );
       if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
@@ -358,7 +363,11 @@ async function acceptInTransaction(
   const applied = await applyOperations(tx, effective, { proposalId: proposal.id, authorId: proposal.author_id });
   await writeLog(tx, proposal, editor, now, applied);
   await followUploads(tx, applied, now);
-  if (affectsRelation(applied)) await recomputeRelations(tx);
+  const relation = affectsRelation(applied) ? await recomputeRelations(tx) : { changedIds: [] };
+  // The leads this finding answers are found (research-leads spec, "Findings link back to leads"); an undo reopens them (history.ts).
+  if (proposal.kind !== 'undo') await markAnsweredLeads(tx, proposal.id, editor.id, now);
+  // The gap finder looks again at whom the change touched (research-leads spec, "Gap finder suggests leads").
+  await refreshSuggestions(tx, now, { personIds: [...(await touchedPersons(tx, applied.changes.list())), ...relation.changedIds] });
   const updated = await tx
     .updateTable('proposal')
     .set({ status: 'accepted', decided_at: now, decided_by: editor.id, decision_note: body.note })
@@ -445,6 +454,7 @@ export async function mergePersons(
     note: body.note,
     direct: true,
     operations: [op],
+    answersLeads: [],
   });
   return view;
 }

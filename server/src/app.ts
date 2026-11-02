@@ -18,6 +18,7 @@ import { trackRoutes, transform, type RouteRecord } from './openapi.js';
 import { accountRoutes } from './routes/accounts.js';
 import { agentRoutes } from './routes/agents.js';
 import { authRoutes } from './routes/auth.js';
+import { leadRoutes } from './routes/leads.js';
 import { pageRoutes } from './routes/pages.js';
 import { proposalRoutes } from './routes/proposals.js';
 import { systemRoutes } from './routes/system.js';
@@ -67,7 +68,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
         title: 'Rodokmen API',
         version: '0.1.0',
         description:
-          'Read API of the Rodokmen Tree, Proposals and review, history, images, member accounts, Agents and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member (session cookie) or an Agent token (Authorization: Bearer rdk_ag_…). Agents may only read and submit Proposals, within hourly limits (429 with retryAt beyond them).',
+          'Read API of the Rodokmen Tree, Proposals and review, history, images, Research leads, member accounts, Agents and sign-in. Every route except the health check and the sign-in steps needs a signed-in Member (session cookie) or an Agent token (Authorization: Bearer rdk_ag_…). Agents may only read, submit Proposals and write Research leads, within hourly limits (429 with retryAt beyond them).',
       },
       // Relative, so the committed description does not depend on where it was generated.
       servers: [{ url: '/' }],
@@ -128,6 +129,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   await app.register(systemRoutes, { db, release: config.release });
   await app.register(treeRoutes, { db, clock, images });
   await app.register(proposalRoutes, { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) });
+  await app.register(leadRoutes, { db, clock });
   await app.register(accountRoutes, accountDeps);
   await app.register(agentRoutes, { db, clock });
   await app.register(authRoutes, {

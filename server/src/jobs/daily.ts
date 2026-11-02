@@ -2,6 +2,7 @@ import { permissionsFor } from '@rodokmen/shared';
 import type { Db } from '../db/db.js';
 import type { Mailer } from '../mail/mailer.js';
 import { digestEmail } from '../mail/templates.js';
+import { refreshSuggestions } from '../leads/gaps.js';
 import { proposalDigestLines } from '../proposals/views.js';
 import { uploadKeys, type ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
@@ -161,10 +162,21 @@ export async function deleteUnusedImages(deps: JobDeps, now: Date): Promise<JobR
   return { detail: `deleted ${uploads.length} uploads`, complete: true };
 }
 
+/**
+ * The gap finder's nightly run over everyone (research-leads spec, "Gap finder suggests leads"):
+ * catches what the runs after each accepted Proposal could not see, such as a register added,
+ * and removes suggestions whose gap is gone.
+ */
+export async function suggestLeads(deps: JobDeps, now: Date): Promise<JobResult> {
+  const { open } = await deps.db.transaction().execute((tx) => refreshSuggestions(tx, now, 'everyone'));
+  return { detail: `${open} suggested leads`, complete: true };
+}
+
 export function dailyJobs(deps: JobDeps): DailyJob[] {
   return [
     { name: 'editor-digest', at: { hour: 18, minute: 0 }, run: (_now, day) => sendDigests(deps, day) },
     { name: 'delete-unused-images', at: { hour: 3, minute: 30 }, run: (now) => deleteUnusedImages(deps, now) },
+    { name: 'lead-suggestions', at: { hour: 2, minute: 30 }, run: (now) => suggestLeads(deps, now) },
   ];
 }
 

@@ -66,7 +66,16 @@ describe('Agent accounts belong to the Owner', () => {
     // An Agent is an account without email, and the token works at once.
     const me = Me.parse((await withToken(token.token, '/api/me')).json());
     expect(me).toMatchObject({ id: agent.id, role: 'agent', email: null, displayName: 'Register reader' });
-    expect(me.permissions).toEqual({ propose: true, review: false, inviteMembers: false, changeRoles: false, disableMembers: false, markFamilyRoots: false });
+    expect(me.permissions).toEqual({
+      propose: true,
+      writeLeads: true,
+      decideSuggestions: false,
+      review: false,
+      inviteMembers: false,
+      changeRoles: false,
+      disableMembers: false,
+      markFamilyRoots: false,
+    });
     expect((await withToken(token.token)).statusCode).toBe(200);
   });
 
@@ -85,7 +94,7 @@ describe('Agent accounts belong to the Owner', () => {
     // Nor does an Agent, for itself or another.
     const own = await a.app.inject({ method: 'POST', url: `/api/agents/${agent.id}/tokens`, headers: bearer(token), payload: {} });
     expect(own.statusCode).toBe(403);
-    expect(errorOf(own).message).toBe('An Agent may only read the Tree and submit Proposals.');
+    expect(errorOf(own).message).toBe('An Agent may only read the Tree, submit Proposals and write Research leads.');
     expect((await a.app.inject({ method: 'POST', url: '/api/agents', headers: bearer(token), payload: { name: 'Child' } })).statusCode).toBe(403);
     expect(await t.db.selectFrom('agent_token').select('id').where('account_id', '=', agent.id).execute()).toHaveLength(1);
   });
@@ -184,7 +193,7 @@ describe('Read and propose only', () => {
     const p = ProposalView.parse((await submit(baptism('Bohumila'))).json());
     const res = await asAgent('POST', `/api/proposals/${p.id}/accept`, {});
     expect(res.statusCode).toBe(403);
-    expect(errorOf(res)).toMatchObject({ code: 'forbidden', message: 'An Agent may only read the Tree and submit Proposals.' });
+    expect(errorOf(res)).toMatchObject({ code: 'forbidden', message: 'An Agent may only read the Tree, submit Proposals and write Research leads.' });
     expect(await statusOf(p.id)).toBe('pending');
     // Nor reject it, see the queue, or undo or merge anything.
     expect((await asAgent('POST', `/api/proposals/${p.id}/reject`, { note: 'no' })).statusCode).toBe(403);
@@ -224,7 +233,7 @@ describe('Read and propose only', () => {
     }
   });
 
-  it('every route asks the role-and-action rule: an Agent gets 403 exactly where the route does more than read or propose', async () => {
+  it('every route asks the role-and-action rule: an Agent gets 403 exactly where the route does more than read, propose or write leads', async () => {
     const UNKNOWN = '0192f0c4-7a1e-7c3b-9d2a-00000000beef';
     const routes = a.app.routeRecords.filter((r) => r.url.startsWith('/api/') && !r.public && r.method !== 'HEAD' && r.url !== '/api/*');
     let refused = 0;
@@ -238,7 +247,7 @@ describe('Read and propose only', () => {
       const method = METHODS.find((m) => m === r.method);
       if (!method) throw new Error(`unexpected method ${r.method}`);
       const res = await asAgent(method, url, method === 'GET' || method === 'DELETE' ? undefined : {});
-      if (r.action === 'read' || r.action === 'propose') {
+      if (r.action === 'read' || r.action === 'propose' || r.action === 'writeLeads') {
         expect(res.statusCode, `${r.method} ${url}`).not.toBe(403);
         allowed++;
       } else {

@@ -21,6 +21,7 @@ import {
 import { sql, type Kysely } from 'kysely';
 import type { z } from 'zod';
 import type { Database } from '../db/types.js';
+import { registerColumns } from '../proposals/apply.js';
 import { dateColumns, periodColumns } from '../tree/dates.js';
 import { generateFixture, type FixtureModel } from './generate.js';
 
@@ -187,6 +188,7 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
             account_given_by: s.familyAccount?.givenBy ?? null,
             account_given_by_person_id: s.familyAccount?.givenByPersonId ?? null,
             account_given_on: s.familyAccount?.givenOn ?? null,
+            ...registerColumns(s.register),
           })),
         )
         .execute(),

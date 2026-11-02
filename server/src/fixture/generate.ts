@@ -485,6 +485,7 @@ class Builder {
       reference: `${parish.slice(0, 3).toUpperCase()} ${kind} ${start - 1700}`,
       url: null,
       familyAccount: null,
+      register: { parishId, kinds: [({ N: 'birth', O: 'marriage', Z: 'death' } as const)[kind]], from: start, to: end },
     });
     this.sourceCache.set(key, id);
     return id;
@@ -602,6 +603,7 @@ class Builder {
         reference: `SL ${year}`,
         url: null,
         familyAccount: null,
+        register: null,
       });
       this.sourceCache.set(key, sourceId);
     }
@@ -1087,6 +1089,7 @@ export function generateFixture(seed = 267): FixtureModel {
     reference: null,
     url: null,
     familyAccount: { givenBy: `Ludmila ${ludmilaFather.surname.f} (invented)`, givenByPersonId: ludmilaG6.id, givenOn: '2026-05-01' },
+    register: null,
   });
   L.familyAccountSource = accountId;
   L.oralMarriage = b.event('marriage', '1931~', { placeId: lomnice }, [

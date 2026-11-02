@@ -1,7 +1,8 @@
 import { foldForSearch, type CitationDetail, type CitationSummary, type SourceDetail, type SourceSummary } from '@rodokmen/shared';
-import { sql } from 'kysely';
+import { sql, type Selectable } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { SourceTable } from '../db/types.js';
+import { registerOf } from '../proposals/apply.js';
 import { IMAGE_COLUMNS, imageViews, type TreeDeps } from './persons.js';
 import { containsPattern, eventSummaries } from './summaries.js';
 
@@ -36,8 +37,22 @@ export async function citationSummariesFor(db: Db, of: 'event' | 'name', ids: re
   return out;
 }
 
-function sourceSummary(
-  s: Pick<SourceTable, 'type' | 'title' | 'repository' | 'reference' | 'url' | 'account_given_by' | 'account_given_by_person_id' | 'account_given_on'> & {
+export function sourceSummary(
+  s: Pick<
+    Selectable<SourceTable>,
+    | 'type'
+    | 'title'
+    | 'repository'
+    | 'reference'
+    | 'url'
+    | 'account_given_by'
+    | 'account_given_by_person_id'
+    | 'account_given_on'
+    | 'register_parish_id'
+    | 'register_kinds'
+    | 'register_from'
+    | 'register_to'
+  > & {
     id: string;
     version: number;
   },
@@ -54,6 +69,7 @@ function sourceSummary(
       s.type === 'family_account' && s.account_given_by && s.account_given_on
         ? { givenBy: s.account_given_by, givenByPersonId: s.account_given_by_person_id, givenOn: s.account_given_on }
         : null,
+    register: registerOf(s),
   };
 }
 

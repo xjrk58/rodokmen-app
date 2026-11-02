@@ -1,4 +1,4 @@
-import { isTempId, type Operation, type RestorableTable, type SettableRecord } from '@rodokmen/shared';
+import { isTempId, RegisterCoverage, RegisterKind, type Operation, type RestorableTable, type SettableRecord } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import { v7 as uuidv7 } from 'uuid';
 import { ApiProblem } from '../auth/problem.js';
@@ -31,11 +31,35 @@ export const FIELD_COLUMNS: Record<string, string> = {
 
 export const columnOf = (field: string): string => FIELD_COLUMNS[field] ?? field;
 
-/** Column values for a setField operation (an Event date also sets its earliest and latest days). */
+/** The columns of a register's coverage (a Source's `register` field); all empty for none. */
+export function registerColumns(register: RegisterCoverage | null) {
+  return {
+    register_parish_id: register?.parishId ?? null,
+    register_kinds: register?.kinds ?? [],
+    register_from: register?.from ?? null,
+    register_to: register?.to ?? null,
+  };
+}
+
+/** A Source's `register` field from its columns. */
+export function registerOf(row: Record<string, unknown>): RegisterCoverage | null {
+  const parishId = row.register_parish_id;
+  if (typeof parishId !== 'string') return null;
+  const year = (v: unknown) => (typeof v === 'number' ? v : null);
+  return {
+    parishId,
+    kinds: Array.isArray(row.register_kinds) ? row.register_kinds.filter((k): k is RegisterKind => RegisterKind.safeParse(k).success) : [],
+    from: year(row.register_from),
+    to: year(row.register_to),
+  };
+}
+
+/** Column values for a setField operation (an Event date also sets its earliest and latest days, a Source's register its four columns). */
 export function setFieldColumns(set: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const [field, value] of Object.entries(set)) {
     if (field === 'date') Object.assign(out, dateColumns(typeof value === 'string' ? value : null));
+    else if (field === 'register') Object.assign(out, registerColumns(RegisterCoverage.nullable().parse(value ?? null)));
     else out[columnOf(field)] = value;
   }
   return out;
@@ -43,6 +67,7 @@ export function setFieldColumns(set: Record<string, unknown>): Record<string, un
 
 /** The current value of an API field in a stored row. */
 export function fieldOf(row: Record<string, unknown>, field: string): unknown {
+  if (field === 'register') return registerOf(row);
   return row[columnOf(field)] ?? null;
 }
 
@@ -259,6 +284,7 @@ async function createSource(ctx: Ctx, position: number, op: Op<'createSource'>) 
     account_given_by: account?.givenBy ?? null,
     account_given_by_person_id: account?.givenByPersonId ?? null,
     account_given_on: account?.givenOn ?? null,
+    ...registerColumns(op.register),
   });
   ctx.temps.set(op.tempId, s.id);
 }

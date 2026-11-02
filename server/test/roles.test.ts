@@ -43,7 +43,16 @@ describe('roles, the single Owner, sessions and disabling', () => {
     // Same session, next request: the role is read on every request.
     const after = Me.parse((await me(cookie)).json());
     expect(after.role).toBe('editor');
-    expect(after.permissions).toEqual({ propose: true, review: true, inviteMembers: false, changeRoles: false, disableMembers: false, markFamilyRoots: false });
+    expect(after.permissions).toEqual({
+      propose: true,
+      writeLeads: true,
+      decideSuggestions: true,
+      review: true,
+      inviteMembers: false,
+      changeRoles: false,
+      disableMembers: false,
+      markFamilyRoots: false,
+    });
   });
 
   it('only the Owner changes roles', async () => {

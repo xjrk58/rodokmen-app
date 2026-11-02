@@ -136,6 +136,8 @@ export function member(role, o = {}) {
     role,
     permissions: {
       propose: true,
+      writeLeads: true,
+      decideSuggestions: true,
       review: role !== 'contributor',
       inviteMembers: role === 'owner',
       changeRoles: role === 'owner',
@@ -243,6 +245,7 @@ function citation(id) {
       reference: null,
       url: null,
       familyAccount: null,
+      register: null,
     },
     events: [],
     names: [],

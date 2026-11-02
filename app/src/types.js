@@ -134,7 +134,7 @@
 /** @typedef {import('../../shared/src/schemas/tree.js').RoleType} RoleType */
 /** @typedef {import('../../shared/src/schemas/proposals.js').OperationInput} OperationInput */
 /** @typedef {import('../../shared/src/schemas/proposals.js').Operation} Operation */
-/** @typedef {import('../../shared/src/schemas/proposals.js').SubmitProposalBody} SubmitProposalBody */
+/** @typedef {import('../../shared/src/schemas/submit.js').SubmitProposalBody} SubmitProposalBody */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalView} ProposalView */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalList} ProposalList */
 /** @typedef {import('../../shared/src/schemas/review.js').OperationView} OperationView */

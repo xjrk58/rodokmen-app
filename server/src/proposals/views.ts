@@ -147,6 +147,10 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
   const effectiveAll = allOps.map((s) => s.effective);
   const current = await currentRows(db, effectiveAll);
   const support = await citationSupport(db, effectiveAll);
+  const answered = await answeredLeads(
+    db,
+    rows.map((p) => p.id),
+  );
 
   return rows.map((p) => {
     const ops = stored.get(p.id) ?? [];
@@ -190,8 +194,24 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
       operations,
       citations: citationPreviews(effective, support, labels),
       conflicts: conflicts.size,
+      answersLeads: answered.get(p.id) ?? [],
     };
   });
+}
+
+/** The Research leads each Proposal answers (research-leads spec, "Findings link back to leads"), in one query. */
+async function answeredLeads(db: Db, proposalIds: readonly string[]): Promise<Map<string, ProposalView['answersLeads']>> {
+  const rows = await db
+    .selectFrom('proposal_lead as pl')
+    .innerJoin('lead as l', 'l.id', 'pl.lead_id')
+    .select(['pl.proposal_id', 'l.id', 'l.question', 'l.status'])
+    .where('pl.proposal_id', 'in', [...proposalIds])
+    .orderBy('l.created_at')
+    .orderBy('l.id')
+    .execute();
+  const out = new Map<string, ProposalView['answersLeads']>();
+  for (const r of rows) out.set(r.proposal_id, [...(out.get(r.proposal_id) ?? []), { id: r.id, question: r.question, status: r.status }]);
+  return out;
 }
 
 /** Conflicts of operations against rows already loaded; the rule itself is detectConflict (shared/src/rules.ts). */

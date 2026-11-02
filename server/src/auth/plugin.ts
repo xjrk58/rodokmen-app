@@ -60,7 +60,7 @@ export function actionOf(route: { method: string | string[]; config?: { action?:
 }
 
 function refusal(member: Account, action: Action): string {
-  if (member.role === 'agent') return 'An Agent may only read the Tree and submit Proposals.';
+  if (member.role === 'agent') return 'An Agent may only read the Tree, submit Proposals and write Research leads.';
   if (action === 'manageAccounts' || action === 'markFamilyRoots') return 'Only the Owner can do this.';
   return 'Only Editors can do this.';
 }

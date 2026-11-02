@@ -10,6 +10,7 @@ import type {
   PlaceType,
   ProposalKind,
   ProposalStatus,
+  RegisterKind,
   Relation,
   RestorableTable,
   RoleType,
@@ -20,6 +21,7 @@ import type {
 } from '@rodokmen/shared';
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
+import type { LeadEventTable, LeadLinkTable, LeadSearchTable, LeadSuggestionTable, LeadTable, ProposalLeadTable } from './lead-types.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -151,6 +153,11 @@ export interface SourceTable extends RecordColumns {
   account_given_by: string | null;
   account_given_by_person_id: string | null;
   account_given_on: string | null;
+  /** What a register book covers (research-leads): its Parish, kinds and years. */
+  register_parish_id: ColumnType<string | null, string | null | undefined, string | null>;
+  register_kinds: ColumnType<RegisterKind[], RegisterKind[] | undefined, RegisterKind[]>;
+  register_from: ColumnType<number | null, number | null | undefined, number | null>;
+  register_to: ColumnType<number | null, number | null | undefined, number | null>;
 }
 
 export interface CitationTable extends RecordColumns {
@@ -421,6 +428,12 @@ export interface Database {
   upload: UploadTable;
   job_run: JobRunTable;
   job_delivery: JobDeliveryTable;
+  lead: LeadTable;
+  lead_link: LeadLinkTable;
+  lead_search: LeadSearchTable;
+  lead_event: LeadEventTable;
+  proposal_lead: ProposalLeadTable;
+  lead_suggestion: LeadSuggestionTable;
 }
 
 export type Proposal = Selectable<ProposalTable>;
