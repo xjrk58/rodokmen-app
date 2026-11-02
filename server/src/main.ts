@@ -1,6 +1,6 @@
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
-import { createDb, migrateToLatest } from './db/db.js';
+import { CONNECTION_CLOSED, createDb, migrateToLatest, reportOnStderr } from './db/db.js';
 import { DailyScheduler } from './jobs/daily.js';
 import { createMailer } from './mail/mailer.js';
 import { shutDown, SHUTDOWN_TIMEOUT_MS } from './shutdown.js';
@@ -14,7 +14,9 @@ import { systemClock } from './clock.js';
  */
 async function main() {
   const config = loadConfig();
-  const db = createDb(config.databaseUrl);
+  // A connection PostgreSQL closed is reported on stderr until the app's logger exists (#96).
+  let reportIdleError = reportOnStderr;
+  const db = createDb(config.databaseUrl, { onIdleError: (error) => reportIdleError(error) });
   const applied = await migrateToLatest(db);
   const mailer = createMailer(config, (line) => console.log(line));
   const images = createImageStorage(config.s3, systemClock);
@@ -25,6 +27,7 @@ async function main() {
     images,
     logger: { level: config.env === 'production' ? 'info' : 'debug', redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers["set-cookie"]'] },
   });
+  reportIdleError = (error) => app.log.warn({ error }, CONNECTION_CLOSED);
   if (applied.length) app.log.info({ applied }, 'migrations applied');
   // Readings left in the queue by the previous process run now, one at a time.
   const resumed = await app.readingJobs.resume();
