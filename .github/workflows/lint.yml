@@ -1,7 +1,9 @@
-# Lint and formatting on every push and pull request: ESLint with type information (server,
-# shared, app), ShellCheck for the shell scripts, and Prettier. Existing ESLint findings are
-# recorded in eslint-suppressions.json and files not yet formatted in .prettierignore; anything
-# new fails. Run the same locally with `pnpm lint` and `pnpm format:check`.
+# The code checks on every push and pull request, and before every deploy (deploy.yml): gitleaks
+# over the new commits, then `pnpm check` (scripts/check.mjs): types, ESLint, ShellCheck,
+# Prettier, knip, dependency-cruiser, jscpd, pnpm audit, the OpenAPI check and the proofs' trace
+# check. Run the same locally with `pnpm check` and `pnpm gitleaks`; AGENTS.md ("Tools before
+# agents") says how to fix what each reports. Known findings are recorded where the tool can only
+# shrink them: eslint-suppressions.json and .dependency-cruiser-known-violations.json.
 name: lint
 
 on:
@@ -31,12 +33,6 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: ESLint
-        run: pnpm run lint:js
-      - name: ShellCheck
-        run: pnpm run lint:sh
-      - name: Prettier
-        run: pnpm run format:check
       - name: gitleaks (secrets in the pushed commits)
         env:
           BASE: ${{ github.event.pull_request.base.sha }}
@@ -53,3 +49,7 @@ jobs:
           fi
           echo "Scanning $range"
           node scripts/gitleaks.mjs "$range"
+      - name: pnpm check
+        # Also after gitleaks fails, so one run shows everything to fix.
+        if: ${{ !cancelled() }}
+        run: pnpm check

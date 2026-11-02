@@ -12,6 +12,7 @@
     "test:scripts": "node --test 'scripts/test/*.test.mjs'",
     "verify": "pnpm --filter @rodokmen/shared verify",
     "verify:trace": "node scripts/verification-trace.mjs",
+    "check": "node scripts/check.mjs",
     "lint": "pnpm run lint:js && pnpm run lint:sh",
     "lint:js": "eslint --max-warnings 0 .",
     "lint:sh": "node scripts/shellcheck.mjs",
