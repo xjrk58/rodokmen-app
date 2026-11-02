@@ -28,6 +28,9 @@ sharp.cache({ memory: 16, items: 10, files: 0 });
  */
 const turns = new SerialQueue();
 
+/** Uploads and crops waiting for their turn or in it. */
+export const queuedImages = (): number => turns.size;
+
 export type ImageType = ImageContentType;
 
 export interface ProcessedImage {

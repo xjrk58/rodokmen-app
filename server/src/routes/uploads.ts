@@ -39,27 +39,42 @@ export async function createUpload(deps: ProposalDeps, member: Account, body: Cr
 }
 
 /**
+ * When the file at the upload link is gone: another request for the same upload (a double tap, a
+ * retry, the app and an MCP client) may have finished it meanwhile and moved the file, or refused
+ * it (#95). Only an upload still waiting has really not arrived.
+ */
+async function finishedElsewhere(deps: ProposalDeps, u: Upload): Promise<UploadView> {
+  const current = await deps.db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
+  if (current.status === 'ready') return uploadView(current);
+  if (current.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
+  throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+}
+
+/**
+ * Refuses an upload with `error`. The upload is marked deleted before its file goes, so that a
+ * request for it that then finds no file answers 404, not "not arrived" (#95).
+ */
+async function refuse(deps: ProposalDeps, u: Upload, error: unknown): Promise<never> {
+  await deps.db.updateTable('upload').set({ status: 'deleted', deleted_at: deps.clock.now() }).where('id', '=', u.id).where('status', '=', 'waiting').execute();
+  await deps.images.delete(u.storage_key).catch(() => undefined);
+  throw error;
+}
+
+/**
  * Finishes a document upload (evidence-media spec, "Documents on Sources"): the file must be the
  * PDF (or DOC) it was announced as and match its SHA-256. The checked bytes go where no upload
  * link reaches, as for images; a document has no display copy.
  */
 async function completeDocument(deps: ProposalDeps, u: Upload) {
   const original = await deps.images.get(u.storage_key);
-  if (!original) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+  if (!original) return finishedElsewhere(deps, u);
   const declared = isDocumentType(u.declared_type) ? u.declared_type : 'application/pdf';
   let checked;
   try {
     checked = checkDocument(original, declared);
     if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
   } catch (error) {
-    await deps.images.delete(u.storage_key).catch(() => undefined);
-    await deps.db
-      .updateTable('upload')
-      .set({ status: 'deleted', deleted_at: deps.clock.now() })
-      .where('id', '=', u.id)
-      .where('status', '=', 'waiting')
-      .execute();
-    throw error;
+    return refuse(deps, u, error);
   }
   const verified = uploadKeys(u.id).verified;
   await deps.images.put(verified, original, checked.contentType);
@@ -85,7 +100,7 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
   if (u.kind === 'document') return completeDocument(deps, u);
   // Loaded and checked in its turn, one upload at a time (memory, issue #39).
   const checked = await checkUpload(() => deps.images.get(u.storage_key));
-  if (!checked) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+  if (!checked) return finishedElsewhere(deps, u);
   const { original } = checked;
   let processed;
   try {
@@ -93,14 +108,7 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
     processed = checked.processed;
     if (processed.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
   } catch (error) {
-    await deps.images.delete(u.storage_key).catch(() => undefined);
-    await deps.db
-      .updateTable('upload')
-      .set({ status: 'deleted', deleted_at: deps.clock.now() })
-      .where('id', '=', u.id)
-      .where('status', '=', 'waiting')
-      .execute();
-    throw error;
+    return refuse(deps, u, error);
   }
   // The upload link stays valid for its 15 minutes, so the file it points at could still be
   // replaced. The bytes just checked go where no link reaches, and only they are used.
