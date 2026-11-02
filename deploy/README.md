@@ -89,8 +89,8 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   hence 1.5 GB rather than 2), `work_mem=8MB`, `maintenance_work_mem=128MB`, and
   `max_connections=40`: two API slots with a pool of 10 each during a deploy, a CLI command, the
   Backup's two, psql by hand and the three reserved for superusers. The MCP server and the
-  watchdog never connect. A change to these recreates `db` on the next deploy, a few seconds
-  without service.
+  watchdog never connect. A change to these recreates `db` on the next deploy
+  ([Deploys](#deploys), step 1).
 - **Images** (`server/src/storage/process.ts`): sharp works with one thread and a small cache, and
   uploads are checked one at a time, from loading the original to writing its checked copy and
   display copy, so uploads arriving together wait their turn instead of adding up. Those waiting
@@ -315,7 +315,11 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
 1. it starts the database, Garage and Caddy if they are not running, reloads the Caddyfile,
    restarts Garage if `garage.toml` changed, and runs `scripts/storage-init.sh` (bucket and keys;
    changes nothing when they exist). If that fails, nothing else happens and the Owner gets an
-   alert;
+   alert. `compose up -d db garage caddy` also recreates any of them whose Compose settings
+   changed, such as the PostgreSQL settings under [Memory](#memory). The database is then gone
+   for a few seconds: the serving API keeps running and opens new connections once `db` is back
+   (`server/src/db/db.ts`, #96), but a request in flight then, or made before `db` is back,
+   may still fail;
 2. it starts the new image in the idle slot (`api-green` if `api-blue` serves, and back);
 3. the new container migrates the database and must pass its health check within 3 minutes;
 4. only then does Caddy send new requests to it: `deploy.sh` writes `state/api-slot/green` when
