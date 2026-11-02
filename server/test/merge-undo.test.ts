@@ -218,7 +218,16 @@ describe('Merging Persons and undoing Proposals', () => {
       (
         await submit(other, [
           ...citation('Y1'),
-          { op: 'addName', personId: prokop, baseVersion: p.version, given: 'Procopius', surname: 'Invented', type: 'latin', asFound: 'Procopius Inventus' },
+          {
+            op: 'addName',
+            personId: prokop,
+            baseVersion: p.version,
+            given: 'Procopius',
+            surname: 'Invented',
+            type: 'other',
+            language: 'la',
+            asFound: 'Procopius Inventus',
+          },
           { op: 'addRole', eventId: L.janDeath, personId: prokop, role: 'witness', baseVersion: death.version },
           { op: 'linkChild', familyId: L.janFirstFamily, childId: prokop, linkType: 'foster', baseVersion: family.version },
           { op: 'attachCitation', citationId: 'tmp:citY1', eventId: L.janDeath, baseVersion: death.version },

@@ -62,6 +62,8 @@ export interface NameTable extends RecordColumns {
   given: Generated<string>;
   surname: Generated<string>;
   type: NameType;
+  /** BCP 47 tag of the language the Name is written in; null when not known. */
+  language: ColumnType<string | null, string | null | undefined, string | null>;
   as_found: string;
   is_primary: Generated<boolean>;
   sort_order: Generated<number>;

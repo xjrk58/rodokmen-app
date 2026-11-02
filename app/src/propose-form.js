@@ -8,7 +8,7 @@ import { guarded, h, showError } from './dom.js';
 import { draftPhotos, deletePhoto, savePhoto, newKey } from './drafts.js';
 import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
-import { CONFIDENCES, formProblems, KINDS, NAME_TYPES, NEW_SOURCE_TYPES } from './proposal-build.js';
+import { CONFIDENCES, formProblems, KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
 /** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
@@ -369,6 +369,9 @@ function findingFields(draft) {
     }
     case 'name': {
       const form = draft.form;
+      // A Draft from before the language tags: shown in the new form, stored so on the next save.
+      Object.assign(form, nameKind(form));
+      form.language = form.language ?? '';
       return [
         personPicker({ value: form.person, label: t('propose.whichPerson'), testid: 'person', allowNew: false, onChange: (v) => (form.person = v) }),
         field(t('picker.given'), textInput(form, 'given', { 'data-testid': 'name-given' })),
@@ -377,6 +380,10 @@ function findingFields(draft) {
         field(
           t('field.type'),
           select(form, 'type', NAME_TYPES, (v) => t(`nameType.${v}`), { 'data-testid': 'name-type' }),
+        ),
+        field(
+          t('field.language'),
+          select(form, 'language', NAME_LANGUAGES, (v) => t(`language.${v || 'none'}`), { 'data-testid': 'name-language' }),
         ),
       ];
     }

@@ -4,11 +4,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import './shared-loader.mjs';
-import { buildOperations, CONFIDENCES, NAME_TYPES, NEW_SOURCE_TYPES, OPERATIONS_VERSION, SEXES } from '../../src/proposal-build.js';
+import { buildOperations, CONFIDENCES, NAME_LANGUAGES, NAME_TYPES, NEW_SOURCE_TYPES, OPERATIONS_VERSION, SEXES } from '../../src/proposal-build.js';
 
 // After shared-loader.mjs: these are TypeScript.
 const { checkOperations, OPERATIONS_VERSION: SHARED_OPERATIONS_VERSION } = await import('../../../shared/src/schemas/proposals.js');
 const { Confidence, NameType, Sex, SourceType } = await import('../../../shared/src/schemas/tree.js');
+const { LANGUAGE_TAG_PATTERN } = await import('../../../shared/src/schemas/common.js');
 
 /** @typedef {import('../../src/proposal-build.js').KindForm} KindForm */
 /** @typedef {import('../../src/proposal-build.js').PersonInput} PersonInput */
@@ -74,7 +75,15 @@ const forms = (citation) => [
     { kind: 'marriage', form: { date: '1858-11-23', place: null, partner1: anna, partner2: newPerson, witnesses: [newPerson], citation, note: 'n' } },
   ],
   ['burial', { kind: 'death', form: { eventType: 'burial', date: '', place: null, person: newPerson, citation, note: '' } }],
-  ['new Name', { kind: 'name', form: { person: anna, given: '', surname: 'Kralowa', type: 'german', asFound: '', citation, note: '' } }],
+  ['new Name', { kind: 'name', form: { person: anna, given: '', surname: 'Kralowa', type: 'other', language: 'de', asFound: '', citation, note: '' } }],
+  [
+    'new Name, language not known',
+    { kind: 'name', form: { person: anna, given: 'Ana', surname: '', type: 'nickname', language: '', asFound: '', citation, note: '' } },
+  ],
+  [
+    'new Name from a Draft written before the language tags',
+    { kind: 'name', form: { person: anna, given: 'Anna', surname: '', type: 'latin', asFound: '', citation, note: '' } },
+  ],
   [
     'Event correction that clears the description',
     {
@@ -119,6 +128,7 @@ test("the app's copies of shared constants match shared/", () => {
   assert.equal(OPERATIONS_VERSION, SHARED_OPERATIONS_VERSION);
   assert.deepEqual([...CONFIDENCES], Confidence.options);
   assert.deepEqual([...NAME_TYPES].sort(), [...NameType.options].sort());
+  for (const tag of NAME_LANGUAGES) if (tag !== '') assert.match(tag, LANGUAGE_TAG_PATTERN);
   assert.deepEqual([...SEXES].sort(), [...Sex.options].sort());
   assert.deepEqual([...NEW_SOURCE_TYPES].sort(), SourceType.options.filter((s) => s !== 'family_account').sort());
 });

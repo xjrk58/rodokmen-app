@@ -245,6 +245,7 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
       given: n.given,
       surname: n.surname,
       type: n.type,
+      language: n.language,
       asFound: n.as_found,
       primary: n.is_primary,
       citations: nameCitations.get(n.id) ?? [],

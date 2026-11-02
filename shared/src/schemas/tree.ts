@@ -4,7 +4,7 @@
  * Every record has an `id` (UUIDv7) and a `version`.
  */
 import { z } from 'zod';
-import { EdtfDate, GeoPoint, Id, IsoDay, NameLanguage, Period, Version, WebUrl } from './common.js';
+import { EdtfDate, GeoPoint, Id, IsoDay, LanguageTag, NameLanguage, Period, Version, WebUrl } from './common.js';
 
 const text = (max: number) => z.string().max(max);
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
@@ -13,9 +13,10 @@ const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
 
 export const Sex = z.enum(['female', 'male', 'unknown']).meta({ id: 'Sex' });
 
+/** What kind of Name it is; the language it is written in is its own field (tree-model spec, "Names carry a language tag"). */
 export const NameType = z
-  .enum(['birth', 'married', 'latin', 'german', 'nickname', 'other'])
-  .meta({ id: 'NameType', description: 'Birth name, married name, Latin form, German form, nickname or other' });
+  .enum(['birth', 'married', 'nickname', 'other'])
+  .meta({ id: 'NameType', description: 'Birth name, married name, nickname or another form; the language is a separate tag' });
 
 export const NameRecord = z
   .object({
@@ -25,6 +26,7 @@ export const NameRecord = z
     given: text(200).describe('Given names; empty when unknown'),
     surname: text(200).describe('Surname; empty when unknown'),
     type: NameType,
+    language: LanguageTag.nullable().describe('The language the Name is written in (BCP 47); null when not known'),
     asFound: nonEmpty(400).describe('The spelling exactly as found in the Source'),
     primary: z.boolean().describe('Exactly one Name of each Person is primary'),
   })

@@ -10,6 +10,7 @@ import * as m0006 from './migrations/0006_agents.js';
 import * as m0007 from './migrations/0007_member_person.js';
 import * as m0008 from './migrations/0008_family_relation.js';
 import * as m0009 from './migrations/0009_research_leads.js';
+import * as m0010 from './migrations/0010_name_languages.js';
 import { messageOf } from '../errors.js';
 import type { Database } from './types.js';
 
@@ -49,6 +50,7 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0007_member_person': m0007,
   '0008_family_relation': m0008,
   '0009_research_leads': m0009,
+  '0010_name_languages': m0010,
 };
 
 const provider: MigrationProvider = { getMigrations: async () => MIGRATIONS };

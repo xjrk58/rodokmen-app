@@ -47,7 +47,11 @@ export const OPERATIONS_VERSION = 1;
  */
 /** @typedef {FormBase & EventFields & { partner1: PersonInput | null, partner2: PersonInput | null, witnesses: (PersonInput | null)[] }} MarriageForm */
 /** @typedef {FormBase & EventFields & { eventType: 'death' | 'burial', person: PersonInput | null }} DeathForm */
-/** @typedef {FormBase & { person: PersonInput | null, given: string, surname: string, type: NameType, asFound: string }} NameForm */
+/**
+ * A new Name: its type and, apart, the language it is written in (a BCP 47 tag, or '' when not known).
+ * Drafts written before Names carried a language tag may still hold the type 'latin' or 'german'.
+ * @typedef {FormBase & { person: PersonInput | null, given: string, surname: string, type: NameType | 'latin' | 'german', language?: string, asFound: string }} NameForm
+ */
 /**
  * The Name or Event a correction changes, with its values when it was picked.
  * @typedef {{ record: 'name' | 'event', id: string, version: number, label: string, current: Record<string, string> }} CorrectionTarget
@@ -71,7 +75,9 @@ export const NEW_SOURCE_TYPES = ['parish_register', 'census', 'land_book', 'othe
 /** @type {readonly Confidence[]} */
 export const CONFIDENCES = ['very_low', 'low', 'normal', 'high', 'very_high'];
 /** @type {readonly NameType[]} */
-export const NAME_TYPES = ['latin', 'german', 'married', 'nickname', 'birth', 'other'];
+export const NAME_TYPES = ['other', 'birth', 'married', 'nickname'];
+/** Languages offered for a Name, as BCP 47 tags; '' is "not known" (tree-model spec, "Names carry a language tag"). */
+export const NAME_LANGUAGES = ['la', 'de', 'cs', 'pl', 'sk', 'ru', ''];
 /** @type {readonly Sex[]} */
 export const SEXES = ['unknown', 'female', 'male'];
 
@@ -152,7 +158,7 @@ export function emptyForm(kind) {
     case 'death':
       return { kind, form: { ...base, eventType: 'death', date: '', place: null, person: null } };
     case 'name':
-      return { kind, form: { ...base, person: null, given: '', surname: '', type: 'latin', asFound: '' } };
+      return { kind, form: { ...base, person: null, given: '', surname: '', type: 'other', language: 'la', asFound: '' } };
     case 'correction':
       return { kind, form: { ...base, person: null, target: null, set: {} } };
   }
@@ -384,6 +390,18 @@ function buildDeath(b, form, ctx) {
 }
 
 /**
+ * A Name form's type and language tag. A Draft from before the tags says 'latin' or 'german':
+ * those are forms of type other in Latin or German now.
+ * @param {NameForm} form
+ * @returns {{ type: NameType, language: string | null }}
+ */
+export function nameKind(form) {
+  if (form.type === 'latin') return { type: 'other', language: 'la' };
+  if (form.type === 'german') return { type: 'other', language: 'de' };
+  return { type: form.type || 'other', language: clean(form.language) || null };
+}
+
+/**
  * @param {Builder} b
  * @param {NameForm} form
  * @param {BuildContext} ctx
@@ -392,6 +410,7 @@ function buildName(b, form, ctx) {
   const person = present(form.person, 'Person');
   if (person.mode !== 'existing') throw new Error('A new Name is for a Person in the Tree');
   const nameId = b.temp('name');
+  const { type, language } = nameKind(form);
   b.ops.push({
     op: 'addName',
     tempId: nameId,
@@ -399,7 +418,8 @@ function buildName(b, form, ctx) {
     baseVersion: person.version,
     given: clean(form.given),
     surname: clean(form.surname),
-    type: form.type || 'other',
+    type,
+    language,
     asFound: clean(form.asFound) || `${clean(form.given)} ${clean(form.surname)}`.trim(),
   });
   b.cite(form.citation, ctx, { nameId });

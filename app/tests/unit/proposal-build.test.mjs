@@ -163,7 +163,7 @@ test('a missing Citation is refused before submitting', () => {
 
 test('a new Name and a correction cite the record they change', () => {
   const name = buildOperations(
-    { kind: 'name', form: { person: anna, given: 'Anna', surname: 'Kralowa', type: 'german', asFound: 'Anna Kralowa', citation, note: '' } },
+    { kind: 'name', form: { person: anna, given: 'Anna', surname: 'Kralowa', type: 'other', language: 'de', asFound: 'Anna Kralowa', citation, note: '' } },
     { uploadIds: [] },
   );
   const added = at(name, 0, 'addName');
@@ -174,7 +174,8 @@ test('a new Name and a correction cite the record they change', () => {
     baseVersion: 1,
     given: 'Anna',
     surname: 'Kralowa',
-    type: 'german',
+    type: 'other',
+    language: 'de',
     asFound: 'Anna Kralowa',
   });
   assert.deepEqual(name.at(-1), { op: 'attachCitation', citationId: at(name, -2, 'createCitation').tempId, nameId: added.tempId });

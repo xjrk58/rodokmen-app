@@ -17,8 +17,8 @@ createFamily
   cs: přidává rodinu: Josef Dvořák a Marie Dvořáková
   en: adds the Family of Josef Dvořák and Marie Dvořáková
 addName
-  cs: přidává jméno „Wenceslaus Dworžak“ (latinská podoba) osobě: Václav Dvořák
-  en: adds the Name “Wenceslaus Dworžak” (Latin form) to Václav Dvořák
+  cs: přidává jméno „Wenceslaus Dworžak“ (jiná podoba, latinsky) osobě: Václav Dvořák
+  en: adds the Name “Wenceslaus Dworžak” (other form, Latin) to Václav Dvořák
 createSource
   cs: přidává pramen: „Matrika N 1790–1820“
   en: adds the Source “Matrika N 1790–1820”

@@ -5,7 +5,7 @@ import { ApiProblem } from '../auth/problem.js';
 import { stringField } from '../errors.js';
 import type { Db } from '../db/db.js';
 import { dateColumns } from '../tree/dates.js';
-import { ChangeSet, snapshot, trackedRows, type Rows } from './records.js';
+import { ChangeSet, legacyName, snapshot, trackedRows, type Rows } from './records.js';
 
 /** Where each settable record kind lives, and how its API fields map to columns. */
 export const RECORD_TABLES: Record<SettableRecord | 'family', RestorableTable> = {
@@ -200,6 +200,7 @@ async function createPerson(ctx: Ctx, op: Op<'createPerson'>) {
     given: op.name.given,
     surname: op.name.surname,
     type: op.name.type,
+    language: op.name.language,
     as_found: op.name.asFound,
     is_primary: true,
     sort_order: 0,
@@ -215,6 +216,7 @@ async function addName(ctx: Ctx, position: number, op: Op<'addName'>) {
     given: op.given,
     surname: op.surname,
     type: op.type,
+    language: op.language,
     as_found: op.asFound,
     is_primary: false,
     sort_order: await nextSort(ctx.db, 'name', 'person_id', personId),
@@ -371,7 +373,7 @@ async function restoreRecord(ctx: Ctx, position: number, op: Op<'restoreRecord'>
   const current = await snapshot(ctx.db, op.table, op.id);
   if (op.baseVersion !== null && current && current.version !== op.baseVersion) throw new ConflictProblem(position, `the ${op.table.replace('_', ' ')} record`);
   if (op.values === null) await ctx.rows.remove(op.table, op.id);
-  else await ctx.rows.restore(op.table, op.id, op.values, op.fields);
+  else await ctx.rows.restore(op.table, op.id, op.table === 'name' ? legacyName(op.values) : op.values, op.fields);
 }
 
 function applyOne(ctx: Ctx, position: number, op: Operation): Promise<void> {

@@ -7,7 +7,7 @@
 
 import { getCitation, getPerson, setFamilyRoot } from './api.js';
 import { lifeYears } from './hourglass-layout.js';
-import { t } from './i18n.js';
+import { has, t } from './i18n.js';
 import { PersonLeads } from './leads-screen.js';
 import { lifeAddress, personAddress, treeAddress } from './routes.js';
 import { AsOf, ErrorLine, errorText, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
@@ -92,6 +92,9 @@ function Events({ person, cache }) {
   </ol>`;
 }
 
+/** The language of a Name in words, or its tag when the app has no name for it. @param {string} tag */
+const languageLabel = (tag) => (has(`language.${tag}`) ? t(`language.${tag}`) : tag);
+
 /** @param {{ person: PersonDetail, cache: boolean }} props */
 function Names({ person, cache }) {
   return html`<ul class="names">
@@ -99,7 +102,9 @@ function Names({ person, cache }) {
       (n) =>
         html`<li key=${n.id} data-testid="person-name">
           <span class="name-as-found">${n.asFound}</span>
-          <span class="muted small"> · ${t(`nameType.${n.type}`)}${n.primary ? ` · ${t('person.primaryName')}` : ''}</span>
+          <span class="muted small" data-testid="name-kind">
+            · ${t(`nameType.${n.type}`)}${n.language ? ` · ${languageLabel(n.language)}` : ''}${n.primary ? ` · ${t('person.primaryName')}` : ''}</span
+          >
           ${n.citations.length ? html`<${Citations} citations=${n.citations} cache=${cache} />` : null}
         </li>`,
     )}

@@ -140,6 +140,17 @@
           "en"
         ]
       },
+      "LanguageTagInput": {
+        "type": "string",
+        "maxLength": 35,
+        "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?(-([0-9a-z]{5,8}|[0-9][0-9a-z]{3}))*$",
+        "description": "BCP 47 language tag in canonical case, such as cs (Czech), la (Latin), de (German) or pl (Polish)",
+        "examples": [
+          "cs",
+          "la",
+          "de"
+        ]
+      },
       "NameLanguageInput": {
         "type": "string",
         "enum": [
@@ -186,12 +197,10 @@
         "enum": [
           "birth",
           "married",
-          "latin",
-          "german",
           "nickname",
           "other"
         ],
-        "description": "Birth name, married name, Latin form, German form, nickname or other"
+        "description": "Birth name, married name, nickname or another form; the language is a separate tag"
       },
       "NameRecordInput": {
         "type": "object",
@@ -218,6 +227,17 @@
           "type": {
             "$ref": "#/components/schemas/NameTypeInput"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTagInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -236,6 +256,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary"
         ]
@@ -1475,6 +1496,17 @@
           "type": {
             "$ref": "#/components/schemas/NameTypeInput"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTagInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -1499,6 +1531,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary",
           "citations"
@@ -4260,6 +4293,18 @@
               "type": {
                 "$ref": "#/components/schemas/NameTypeInput"
               },
+              "language": {
+                "default": null,
+                "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LanguageTagInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "asFound": {
                 "type": "string",
                 "minLength": 1,
@@ -4310,6 +4355,18 @@
           },
           "type": {
             "$ref": "#/components/schemas/NameTypeInput"
+          },
+          "language": {
+            "default": null,
+            "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTagInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "asFound": {
             "type": "string",
@@ -7255,6 +7312,17 @@
           "en"
         ]
       },
+      "LanguageTag": {
+        "type": "string",
+        "maxLength": 35,
+        "pattern": "^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?(-([0-9a-z]{5,8}|[0-9][0-9a-z]{3}))*$",
+        "description": "BCP 47 language tag in canonical case, such as cs (Czech), la (Latin), de (German) or pl (Polish)",
+        "examples": [
+          "cs",
+          "la",
+          "de"
+        ]
+      },
       "NameLanguage": {
         "type": "string",
         "enum": [
@@ -7302,12 +7370,10 @@
         "enum": [
           "birth",
           "married",
-          "latin",
-          "german",
           "nickname",
           "other"
         ],
-        "description": "Birth name, married name, Latin form, German form, nickname or other"
+        "description": "Birth name, married name, nickname or another form; the language is a separate tag"
       },
       "NameRecord": {
         "type": "object",
@@ -7334,6 +7400,17 @@
           "type": {
             "$ref": "#/components/schemas/NameType"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTag"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -7352,6 +7429,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary"
         ],
@@ -8620,6 +8698,17 @@
           "type": {
             "$ref": "#/components/schemas/NameType"
           },
+          "language": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTag"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The language the Name is written in (BCP 47); null when not known"
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -8644,6 +8733,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound",
           "primary",
           "citations"
@@ -11484,6 +11574,18 @@
               "type": {
                 "$ref": "#/components/schemas/NameType"
               },
+              "language": {
+                "default": null,
+                "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LanguageTag"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "asFound": {
                 "type": "string",
                 "minLength": 1,
@@ -11495,6 +11597,7 @@
               "given",
               "surname",
               "type",
+              "language",
               "asFound"
             ],
             "additionalProperties": false
@@ -11537,6 +11640,18 @@
           "type": {
             "$ref": "#/components/schemas/NameType"
           },
+          "language": {
+            "default": null,
+            "description": "The language the Name is written in (BCP 47, such as la or de); null when not known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LanguageTag"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "asFound": {
             "type": "string",
             "minLength": 1,
@@ -11550,6 +11665,7 @@
           "given",
           "surname",
           "type",
+          "language",
           "asFound"
         ],
         "additionalProperties": false,

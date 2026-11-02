@@ -37,7 +37,16 @@ const examples: OperationInput[] = [
   { op: 'addRole', eventId: 'tmp:baptism', personId: ids.anna, role: 'godparent' },
   { op: 'linkChild', familyId: ids.family, childId: 'tmp:child', linkType: 'birth', baseVersion: 3 },
   { op: 'createFamily', tempId: 'tmp:fam', partner1Id: ids.father, partner2Id: ids.mother },
-  { op: 'addName', tempId: 'tmp:latin', personId: 'tmp:child', given: 'Wenceslaus', surname: 'Dworžak', type: 'latin', asFound: 'Wenceslaus Dworžak' },
+  {
+    op: 'addName',
+    tempId: 'tmp:latin',
+    personId: 'tmp:child',
+    given: 'Wenceslaus',
+    surname: 'Dworžak',
+    type: 'other',
+    language: 'la',
+    asFound: 'Wenceslaus Dworžak',
+  },
   { op: 'createSource', tempId: 'tmp:register', type: 'parish_register', title: 'Matrika N 1790–1820', repository: 'Státní oblastní archiv (invented)' },
   {
     op: 'createSource',

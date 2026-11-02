@@ -64,9 +64,25 @@ export const ROLE_LABELS: Record<SummaryLanguage, Record<RoleType, string>> = {
 };
 
 const NAME_TYPE_LABELS: Record<SummaryLanguage, Record<NameType, string>> = {
-  en: { birth: 'birth name', married: 'married name', latin: 'Latin form', german: 'German form', nickname: 'nickname', other: 'other form' },
-  cs: { birth: 'rodné jméno', married: 'jméno po sňatku', latin: 'latinská podoba', german: 'německá podoba', nickname: 'přezdívka', other: 'jiná podoba' },
+  en: { birth: 'birth name', married: 'married name', nickname: 'nickname', other: 'other form' },
+  cs: { birth: 'rodné jméno', married: 'jméno po sňatku', nickname: 'přezdívka', other: 'jiná podoba' },
 };
+
+/** Names of the languages Names are most often written in; any other tag is shown as it is. */
+const LANGUAGE_NAMES: Record<SummaryLanguage, Record<string, string>> = {
+  en: { cs: 'Czech', la: 'Latin', de: 'German', pl: 'Polish', sk: 'Slovak', ru: 'Russian', uk: 'Ukrainian', hu: 'Hungarian', en: 'English' },
+  cs: { cs: 'česky', la: 'latinsky', de: 'německy', pl: 'polsky', sk: 'slovensky', ru: 'rusky', uk: 'ukrajinsky', hu: 'maďarsky', en: 'anglicky' },
+};
+
+/** The language of a Name in words ("Latin", "latinsky"), or its tag when it has no common name. */
+export function languageName(tag: string, language: SummaryLanguage): string {
+  const names = LANGUAGE_NAMES[language];
+  return Object.hasOwn(names, tag) ? names[tag]! : tag;
+}
+
+/** A Name's type and language, as "other form, Latin". */
+const nameKind = (n: { type: NameType; language: string | null }, language: SummaryLanguage) =>
+  n.language ? `${NAME_TYPE_LABELS[language][n.type]}, ${languageName(n.language, language)}` : NAME_TYPE_LABELS[language][n.type];
 
 const LINK_TYPE_LABELS: Record<SummaryLanguage, Record<ChildLinkType, string>> = {
   en: { birth: 'birth child', adoptive: 'adoptive child', foster: 'foster child', step: 'stepchild' },
@@ -96,6 +112,7 @@ export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
     surname: 'surname',
     type: 'type',
     asFound: 'spelling as found',
+    language: 'language',
     typeDetail: 'kind',
     date: 'date',
     placeId: 'Place',
@@ -120,6 +137,7 @@ export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
     surname: 'příjmení',
     type: 'druh',
     asFound: 'zápis v prameni',
+    language: 'jazyk',
     typeDetail: 'upřesnění',
     date: 'datum',
     placeId: 'místo',
@@ -164,8 +182,8 @@ const typeOf = (op: { type: EventType; typeDetail: string | null }, language: Su
 
 function addName(op: Op<'addName'>, { L, cs, language }: Say): string {
   return cs
-    ? `přidává jméno ${quote(op.asFound, language)} (${NAME_TYPE_LABELS.cs[op.type]}) osobě: ${L(op.personId)}`
-    : `adds the Name ${quote(op.asFound, language)} (${NAME_TYPE_LABELS.en[op.type]}) to ${L(op.personId)}`;
+    ? `přidává jméno ${quote(op.asFound, language)} (${nameKind(op, 'cs')}) osobě: ${L(op.personId)}`
+    : `adds the Name ${quote(op.asFound, language)} (${nameKind(op, 'en')}) to ${L(op.personId)}`;
 }
 
 function addRole(op: Op<'addRole'>, { L, cs, language }: Say): string {

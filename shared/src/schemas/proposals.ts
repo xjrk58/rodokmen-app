@@ -9,7 +9,7 @@
  */
 import { z } from 'zod';
 import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
-import { EdtfDate, Id, IsoDay, Version, WebUrl } from './common.js';
+import { EdtfDate, Id, IsoDay, LanguageTag, Version, WebUrl } from './common.js';
 import { SERVER_OPERATIONS, serverOnly, SetFamilyRoot, type CheckOptions } from './server-operations.js';
 import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RegisterCoverage, RoleType, Sex, SourceType } from './tree.js';
 
@@ -33,6 +33,7 @@ const NameFields = {
   given: text(200),
   surname: text(200),
   type: NameType,
+  language: LanguageTag.nullable().default(null).describe('The language the Name is written in (BCP 47, such as la or de); null when not known'),
   asFound: nonEmpty(400).describe('The spelling exactly as found in the Source'),
 };
 
@@ -169,7 +170,7 @@ export const AddImage = z
 /** Fields an operation may set on an existing record, by record kind. */
 export const SETTABLE_FIELDS = {
   person: { sex: Sex },
-  name: { given: text(200), surname: text(200), type: NameType, asFound: nonEmpty(400) },
+  name: { given: text(200), surname: text(200), type: NameType, language: LanguageTag.nullable(), asFound: nonEmpty(400) },
   event: {
     type: EventType,
     typeDetail: text(200).nullable(),
