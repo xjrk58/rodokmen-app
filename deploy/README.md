@@ -92,8 +92,10 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   watchdog never connect. A change to these recreates `db` on the next deploy, a few seconds
   without service.
 - **Images** (`server/src/storage/process.ts`): sharp works with one thread and a small cache, and
-  uploads are checked one at a time, from loading the original to making its display copy, so
-  uploads arriving together wait their turn instead of adding up. An image may have at most
+  uploads are checked one at a time, from loading the original to writing its checked copy and
+  display copy, so uploads arriving together wait their turn instead of adding up. Those waiting
+  hold nothing yet, and an upload holds nothing once its turn is over (#97): an API slot holds one
+  original (at most 25 MB), its decode and its display copy at a time. An image may have at most
   sharp's own limit of 268,402,689 pixels (16,383 × 16,383, #98); a file claiming more is refused
   from its header with a clear message.
   The API slots run with `MALLOC_ARENA_MAX=2`, which keeps their peaks with several large images

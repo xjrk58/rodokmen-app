@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { CHECKSUM_MESSAGE, checkUpload, DISPLAY_MAX_PIXELS, processImage } from '../src/storage/process.js';
+import { CHECKSUM_MESSAGE, checkUpload, DISPLAY_MAX_PIXELS, processImage, type PendingUpload } from '../src/storage/process.js';
 import { SerialQueue } from '../src/storage/serial-queue.js';
+import { GatedStorage } from './gated-storage.js';
 
 /** A promise with its resolve and reject at hand. */
 function deferred<T = void>() {
@@ -25,6 +26,12 @@ const picture = (width: number, height = 2000) =>
   sharp({ create: { width, height, channels: 3, background: { r: 90, g: 120, b: 150 } } })
     .jpeg()
     .toBuffer();
+
+/** An upload whose file `body` is at its link in `storage`, announced with `sha256`. */
+function pending(storage: GatedStorage, name: string, body: Buffer, sha256 = sha(body)): PendingUpload {
+  storage.objects.set(`pending/${name}/original`, { body, contentType: 'image/jpeg' });
+  return { link: `pending/${name}/original`, verified: `pending/${name}/verified`, display: `pending/${name}/display.webp`, sha256 };
+}
 
 describe('SerialQueue', () => {
   it('runs tasks one at a time, in the order they were queued', async () => {
@@ -104,44 +111,60 @@ describe('image processing on a small server (issue #39)', () => {
     expect(accepted).toMatchObject({ status: 'fulfilled', value: { contentType: 'image/png', width: 800, height: 600 } });
   });
 
-  it('loads an upload only in its turn, so the ones waiting hold no original yet', async () => {
+  it('loads an upload only in its turn, and writes its files before the next one loads (#97)', async () => {
     const image = await picture(1200, 900);
-    const gate = deferred<Buffer>();
-    const loads: string[] = [];
     let decodingWhenSecondLoads = -1;
-    const first = checkUpload(() => {
-      loads.push('first');
-      return gate.promise;
-    }, sha(image));
-    const second = checkUpload(() => {
-      loads.push('second');
-      decodingWhenSecondLoads = sharp.counters().process;
-      return Promise.resolve(image);
-    }, sha(image));
+    const storage = new (class extends GatedStorage {
+      override async get(key: string) {
+        if (key === 'pending/b/original') decodingWhenSecondLoads = sharp.counters().process;
+        return super.get(key);
+      }
+    })();
+    const [a, b] = [pending(storage, 'a', image), pending(storage, 'b', image)];
+    const release = storage.hold(a.link);
+    const first = checkUpload(storage, a);
+    const second = checkUpload(storage, b);
     await settle();
-    expect(loads).toEqual(['first']); // the second waits while the first is still loading
-    gate.resolve(image);
-    const [a, b] = await Promise.all([first, second]);
-    expect(loads).toEqual(['first', 'second']);
+    expect(storage.log).toEqual(['get pending/a/original']); // the second waits while the first is still loading
+    release();
+    const results = await Promise.all([first, second]);
+    // Its checked copy and display copy are written in its turn, so it holds nothing once the next one starts.
+    expect(storage.log).toEqual([
+      'get pending/a/original',
+      'put pending/a/verified',
+      'put pending/a/display.webp',
+      'get pending/b/original',
+      'put pending/b/verified',
+      'put pending/b/display.webp',
+    ]);
     expect(decodingWhenSecondLoads).toBe(0); // and until the first one's display copy is made
-    expect(a).toMatchObject({ original: image, processed: { width: 1200, height: 900 } });
-    expect(b).toMatchObject({ original: image, processed: { width: 1200, height: 900 } });
+    for (const r of results)
+      expect(r).toEqual({ checked: { contentType: 'image/jpeg', byteSize: image.length, sha256: sha(image), width: 1200, height: 900 } });
+    expect(storage.objects.get('pending/a/verified')!.body.equals(image)).toBe(true);
+    expect(await sharp(storage.objects.get('pending/b/display.webp')!.body).metadata()).toMatchObject({ format: 'webp', width: 1200, height: 900 });
   });
 
-  it('a missing file is null, a refused image is returned, an error of loading is passed on', async () => {
-    await expect(checkUpload(() => Promise.resolve(null), 'a'.repeat(64))).resolves.toBeNull();
+  it('a missing file is null, a refused image writes nothing, an error of the store is passed on', async () => {
+    const storage = new GatedStorage();
+    const none = { link: 'pending/none/original', verified: 'pending/none/verified', display: 'pending/none/display.webp', sha256: 'a'.repeat(64) };
+    await expect(checkUpload(storage, none)).resolves.toBeNull();
     const notAnImage = Buffer.from('not an image at all');
-    await expect(checkUpload(() => Promise.resolve(notAnImage), sha(notAnImage))).resolves.toMatchObject({
-      original: notAnImage,
+    await expect(checkUpload(storage, pending(storage, 'words', notAnImage))).resolves.toMatchObject({
       refused: { statusCode: 415, code: 'unsupported_image' },
     });
-    await expect(checkUpload(() => Promise.reject(new Error('storage unavailable')), 'a'.repeat(64))).rejects.toThrow('storage unavailable');
+    expect(storage.log.filter((l) => l.startsWith('put'))).toEqual([]);
+    const broken = new (class extends GatedStorage {
+      override get(): Promise<Buffer | null> {
+        return Promise.reject(new Error('storage unavailable'));
+      }
+    })();
+    await expect(checkUpload(broken, pending(broken, 'x', notAnImage))).rejects.toThrow('storage unavailable');
     // The next upload gets its turn as usual.
-    const next = await picture(640, 480);
-    await expect(checkUpload(() => Promise.resolve(next), sha(next))).resolves.toMatchObject({ processed: { width: 640, height: 480 } });
+    await expect(checkUpload(storage, pending(storage, 'next', await picture(640, 480)))).resolves.toMatchObject({ checked: { width: 640, height: 480 } });
   });
 
   it('a file other than the one announced is refused before anything is decoded (#97)', async () => {
+    const storage = new GatedStorage();
     const image = await picture(4000, 3000);
     let most = 0;
     let sampling = true;
@@ -150,12 +173,13 @@ describe('image processing on a small server (issue #39)', () => {
       if (sampling) setImmediate(sample);
     };
     sample();
-    const checked = await checkUpload(() => Promise.resolve(image), sha(Buffer.from('the file announced'))).finally(() => {
+    const checked = await checkUpload(storage, pending(storage, 'other', image, sha(Buffer.from('the file announced')))).finally(() => {
       sampling = false;
     });
     expect(checked).toMatchObject({ refused: { statusCode: 400, code: 'checksum', message: CHECKSUM_MESSAGE } });
     expect(most).toBe(0);
     // Not even its type or size is looked at: not an image, it is still told it differs.
-    await expect(checkUpload(() => Promise.resolve(Buffer.from('words')), sha(image))).resolves.toMatchObject({ refused: { code: 'checksum' } });
+    await expect(checkUpload(storage, pending(storage, 'words', Buffer.from('words'), sha(image)))).resolves.toMatchObject({ refused: { code: 'checksum' } });
+    expect(storage.log.filter((l) => l.startsWith('put'))).toEqual([]);
   });
 });

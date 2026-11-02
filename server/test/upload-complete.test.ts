@@ -3,9 +3,9 @@ import { UploadTicket, UploadView } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../src/db/types.js';
-import { MemoryImageStorage } from '../src/storage/images.js';
 import { queuedImages } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
+import { GatedStorage } from './gated-storage.js';
 import { createMember, ensureOwner, makeApp, signIn, type TestApp } from './helpers.js';
 
 /**
@@ -19,29 +19,6 @@ const picture = (width: number, height: number, format: 'jpeg' | 'png' = 'jpeg')
   sharp({ create: { width, height, channels: 3, background: { r: 120, g: 140, b: 90 } } })
     [format]()
     .toBuffer();
-
-/** The bucket in memory, where a test can hold up the reads of a key until it lets them go. */
-class GatedStorage extends MemoryImageStorage {
-  /** Every key read, in order. */
-  readonly reads: string[] = [];
-  private readonly holds = new Map<string, Promise<void>>();
-
-  /** Reads of `key` wait from now until the returned function is called. */
-  hold(key: string): () => void {
-    let release!: () => void;
-    this.holds.set(key, new Promise<void>((resolve) => (release = resolve)));
-    return () => {
-      this.holds.delete(key);
-      release();
-    };
-  }
-
-  override async get(storageKey: string): Promise<Buffer | null> {
-    this.reads.push(storageKey);
-    await this.holds.get(storageKey);
-    return super.get(storageKey);
-  }
-}
 
 const PDF = Buffer.concat([Buffer.from('%PDF-1.4\n% Invented parish chronicle\n', 'latin1'), Buffer.alloc(1024, 0x20), Buffer.from('\n%%EOF\n')]);
 

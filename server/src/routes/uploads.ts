@@ -98,26 +98,24 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
   if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
   if (u.status === 'ready') return uploadView(u);
   if (u.kind === 'document') return completeDocument(deps, u);
-  // Loaded and checked in its turn, one upload at a time (memory, issue #39).
-  const checked = await checkUpload(() => deps.images.get(u.storage_key), u.declared_sha256);
-  if (!checked) return finishedElsewhere(deps, u);
-  if ('refused' in checked) return refuse(deps, u, checked.refused);
-  const { original, processed } = checked;
   // The upload link stays valid for its 15 minutes, so the file it points at could still be
-  // replaced. The bytes just checked go where no link reaches, and only they are used.
-  const verified = uploadKeys(u.id).verified;
-  await deps.images.put(verified, original, processed.contentType);
-  await deps.images.put(u.display_key, processed.display, 'image/webp');
+  // replaced. The bytes checked go where no link reaches, and only they are used. Loaded, checked
+  // and written in its turn, one upload at a time (memory, issues #39 and #97).
+  const { verified } = uploadKeys(u.id);
+  const result = await checkUpload(deps.images, { link: u.storage_key, verified, display: u.display_key, sha256: u.declared_sha256 });
+  if (!result) return finishedElsewhere(deps, u);
+  if ('refused' in result) return refuse(deps, u, result.refused);
+  const { checked } = result;
   const row = await deps.db
     .updateTable('upload')
     .set({
       status: 'ready',
       storage_key: verified,
-      content_type: processed.contentType,
-      byte_size: processed.byteSize,
-      sha256: processed.sha256,
-      width: processed.width,
-      height: processed.height,
+      content_type: checked.contentType,
+      byte_size: checked.byteSize,
+      sha256: checked.sha256,
+      width: checked.width,
+      height: checked.height,
     })
     .where('id', '=', u.id)
     .where('status', '=', 'waiting')

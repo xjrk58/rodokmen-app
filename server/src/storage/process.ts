@@ -3,6 +3,7 @@ import { IMAGE_MAX_BYTES, type ImageContentType } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
+import type { ImageStorage } from './images.js';
 import { SerialQueue } from './serial-queue.js';
 
 /** Longest side of the display copy (evidence-media spec, "Originals are kept"). */
@@ -23,8 +24,9 @@ sharp.cache({ memory: 16, items: 10, files: 0 });
 
 /**
  * Images are checked one at a time, so uploads finished at the same moment cannot stack their
- * decodes, each of which can take a few hundred MB. An upload's turn also covers loading its
- * original (checkUpload), so the ones waiting hold nothing yet.
+ * decodes, each of which can take a few hundred MB. An upload's turn covers loading its original
+ * and writing its checked copy and display copy too (checkUpload), so the ones waiting hold
+ * nothing yet, and the one done holds nothing any more.
  */
 const turns = new SerialQueue();
 
@@ -33,12 +35,16 @@ export const queuedImages = (): number => turns.size;
 
 export type ImageType = ImageContentType;
 
-export interface ProcessedImage {
+/** What an upload's row records of its checked image. */
+export interface CheckedImage {
   contentType: ImageType;
   byteSize: number;
   sha256: string;
   width: number;
   height: number;
+}
+
+export interface ProcessedImage extends CheckedImage {
   /** WebP, at most DISPLAY_MAX_PIXELS on its longest side. */
   display: Buffer;
 }
@@ -76,28 +82,45 @@ export async function processImage(original: Buffer): Promise<ProcessedImage> {
   return turns.run(() => displayCopy(original, contentType));
 }
 
-/** An upload's original, loaded in its turn, with its display copy or why it was refused. */
-export type UploadCheck = { original: Buffer } & ({ processed: ProcessedImage } | { refused: ApiProblem });
+/** Where an upload's files are, and the SHA-256 it was announced with. */
+export interface PendingUpload {
+  /** The file the upload link put. */
+  link: string;
+  /** Where the checked original goes, which no upload link reaches (issue #52). */
+  verified: string;
+  /** Where its display copy goes. */
+  display: string;
+  sha256: string;
+}
+
+/** An upload checked and kept, or why it was refused. */
+export type UploadCheck = { checked: CheckedImage } | { refused: ApiProblem };
 
 /**
- * Loads an upload's original with `load`, then checks it in one turn: first against `sha256`, the
- * SHA-256 it was announced with, so that a file other than the one announced costs no decode
- * (#97), then as processImage does. Any number of uploads finished at once hold one original and
- * one decode in memory, not one each. Null when `load` finds no file; an error of `load` itself
- * is passed on.
+ * Checks an upload in one turn: loads the file at its link, compares it with the SHA-256 it was
+ * announced with, so that a file other than the one announced costs no decode (#97), checks it as
+ * processImage does, and writes the checked original and its display copy. Any number of uploads
+ * finished at once hold one original, one decode and one display copy in memory, not one each,
+ * and nothing of an upload is held once its turn is over (#97). Null when there is no file at the
+ * link; an error of the store is passed on.
  */
-export function checkUpload(load: () => Promise<Buffer | null>, sha256: string): Promise<UploadCheck | null> {
+export function checkUpload(images: ImageStorage, upload: PendingUpload): Promise<UploadCheck | null> {
   return turns.run(async () => {
-    const original = await load();
+    const original = await images.get(upload.link);
     if (!original) return null;
+    let processed: ProcessedImage;
     try {
-      const hash = sha256Of(original);
-      if (hash !== sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
-      return { original, processed: await displayCopy(original, typeOf(original), hash) };
+      const sha256 = sha256Of(original);
+      if (sha256 !== upload.sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
+      processed = await displayCopy(original, typeOf(original), sha256);
     } catch (error) {
-      if (error instanceof ApiProblem) return { original, refused: error };
+      if (error instanceof ApiProblem) return { refused: error };
       throw error;
     }
+    const { display, ...checked } = processed;
+    await images.put(upload.verified, original, checked.contentType);
+    await images.put(upload.display, display, 'image/webp');
+    return { checked };
   });
 }
 
