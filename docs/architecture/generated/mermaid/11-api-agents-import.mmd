@@ -4,50 +4,50 @@ graph LR
   subgraph diagram ["API server: Agents and the Vault import"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles, marks<br />Family roots, issues Agent<br />tokens and keeps the Backups.</div>"]
     style 4 fill:#08427b,stroke:#052e56,color:#ffffff
     5["<div style='font-weight: bold'>Agent</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>An AI assistant with its own<br />Owner-issued account that<br />contributes only through<br />Proposals.</div>"]
-    style 5 fill:#ffffff,stroke:#777777,color:#555555
+    style 5 fill:#08427b,stroke:#052e56,color:#ffffff
 
-    69["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
-    style 69 fill:#ffffff,stroke:#777777,color:#555555
+    73["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
+    style 73 fill:#ffffff,stroke:#777777,color:#555555
 
     subgraph 6 ["Rodokmen"]
       style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
 
-      subgraph 25 ["API server"]
-        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+      subgraph 27 ["API server"]
+        style 27 fill:#ffffff,stroke:#2e6295,color:#2e6295
 
-        27["<div style='font-weight: bold'>Accounts and sign-in</div><div style='font-size: 70%; margin-top: 0px'>[Component: @simplewebauthn/server]</div><div style='font-size: 80%; margin-top:10px'>Invitations, passkeys,<br />emailed links, sessions and<br />roles; checks the session on<br />every request.</div>"]
-        style 27 fill:#85bbf0,stroke:#5d82a8,color:#000000
-        28["<div style='font-weight: bold'>Tree read API</div><div style='font-size: 70%; margin-top: 0px'>[Component: Recursive SQL, PostGIS]</div><div style='font-size: 80%; margin-top:10px'>Person search across Names,<br />records, ancestors and<br />descendants, and Events for a<br />map area and years.</div>"]
-        style 28 fill:#85bbf0,stroke:#5d82a8,color:#000000
-        32["<div style='font-weight: bold'>Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/proposals.ts]</div><div style='font-size: 80%; margin-top:10px'>Takes Proposals as typed<br />operations with base<br />versions; requires a<br />Citation; private until<br />accepted.</div>"]
-        style 32 fill:#85bbf0,stroke:#c25e00,color:#000000
-        33["<div style='font-weight: bold'>Review</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/review.ts]</div><div style='font-size: 80%; margin-top:10px'>Accepts or rejects a whole<br />Proposal in one transaction,<br />with corrections, conflicts<br />and merges.</div>"]
-        style 33 fill:#85bbf0,stroke:#c25e00,color:#000000
-        35["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks each upload and<br />makes a 2,000-pixel WebP<br />copy.</div>"]
-        style 35 fill:#85bbf0,stroke:#c25e00,color:#000000
-        37["<div style='font-weight: bold'>Agent access</div><div style='font-size: 70%; margin-top: 0px'>[Component: Fixed window per token in PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Agent accounts, hashed<br />revocable tokens, the<br />read-and-propose-only rule,<br />and rate limits.</div>"]
-        style 37 fill:#ffffff,stroke:#777777,color:#555555
+        29["<div style='font-weight: bold'>Accounts and sign-in</div><div style='font-size: 70%; margin-top: 0px'>[Component: @simplewebauthn/server]</div><div style='font-size: 80%; margin-top:10px'>Invitations, passkeys,<br />emailed links, sessions and<br />roles; the Member's own<br />Person and language; checks<br />the session or Agent token<br />and the action on every<br />request.</div>"]
+        style 29 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        30["<div style='font-weight: bold'>Tree read API</div><div style='font-size: 70%; margin-top: 0px'>[Component: Recursive SQL, PostGIS]</div><div style='font-size: 80%; margin-top:10px'>Person search across Names<br />with the relation filter,<br />records, ancestors,<br />descendants and the<br />hourglass, and Events for a<br />map area, years or a Place.</div>"]
+        style 30 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        35["<div style='font-weight: bold'>Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/proposals.ts]</div><div style='font-size: 80%; margin-top:10px'>Takes Proposals as typed<br />operations with base<br />versions; requires a<br />Citation; private until<br />accepted.</div>"]
+        style 35 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        36["<div style='font-weight: bold'>Review</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/review.ts]</div><div style='font-size: 80%; margin-top:10px'>Accepts or rejects a whole<br />Proposal in one transaction,<br />with corrections, conflicts<br />and merges.</div>"]
+        style 36 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        38["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks uploads one at<br />a time, keeps the checked<br />bytes and makes a 2,000-pixel<br />WebP copy.</div>"]
+        style 38 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        40["<div style='font-weight: bold'>Agent access</div><div style='font-size: 70%; margin-top: 0px'>[Component: Fixed window per Agent in PostgreSQL]</div><div style='font-size: 80%; margin-top:10px'>Agent accounts, hashed<br />revocable tokens, the<br />read-and-propose-only rule,<br />and hourly limits.</div>"]
+        style 40 fill:#85bbf0,stroke:#5d82a8,color:#000000
       end
 
-      42["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API.</div>"]
-      style 42 fill:#ffffff,stroke:#777777,color:#555555
-      43["<div style='font-weight: bold'>Vault importer</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22 CLI in server/, Agent token]</div><div style='font-size: 80%; margin-top:10px'>Reads the Vault once and<br />submits one Proposal per<br />Source note as an import<br />batch; can be re-run.</div>"]
-      style 43 fill:#ffffff,stroke:#777777,color:#555555
+      45["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK v2; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API with<br />the Agent's token, without<br />database access.</div>"]
+      style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      46["<div style='font-weight: bold'>Vault importer</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22 CLI in server/, Agent token]</div><div style='font-size: 80%; margin-top:10px'>Reads the Vault once and<br />submits one Proposal per<br />Source note as an import<br />batch; can be re-run.</div>"]
+      style 46 fill:#ffffff,stroke:#777777,color:#555555
     end
 
-    4-. "<div>Runs a dry run, then the<br />import</div><div style='font-size: 70%'>[CLI]</div>" .->43
-    5-. "<div>Searches the Tree and submits<br />Proposals</div><div style='font-size: 70%'>[MCP: stdio, or streamable HTTP at /mcp]</div>" .->42
-    43-. "<div>Reads notes, scans and PDFs</div><div style='font-size: 70%'>[Git checkout]</div>" .->69
-    27-. "<div>Checks Agent tokens,<br />permissions and limits</div><div style='font-size: 70%'>[JS call]</div>" .->37
-    4-. "<div>Creates Agents; issues and<br />revokes tokens</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->37
-    4-. "<div>Accepts an import batch at<br />once</div><div style='font-size: 70%'>[Browser]</div>" .->33
-    42-. "<div>Searches Persons and Places;<br />reads records and pedigrees</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->28
-    42-. "<div>Submits Proposals labelled as<br />Agent work</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->32
-    43-. "<div>Submits one Proposal per<br />Source note, in one import<br />batch</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->32
-    43-. "<div>Uploads scans as Citation<br />images, PDFs as Source<br />documents</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->35
-    5-. "<div>Opens pull requests until<br />import day; afterwards uses<br />MCP</div><div style='font-size: 70%'>[Git]</div>" .->69
+    4-. "<div>Runs a dry run, then the<br />import</div><div style='font-size: 70%'>[CLI]</div>" .->46
+    5-- "<div>Searches the Tree and submits<br />Proposals</div><div style='font-size: 70%'>[MCP: stdio, or streamable HTTP at /mcp]</div>" -->45
+    46-. "<div>Reads notes, scans and PDFs</div><div style='font-size: 70%'>[Git checkout]</div>" .->73
+    29-- "<div>Checks Agent tokens,<br />permissions and limits</div><div style='font-size: 70%'>[JS call]</div>" -->40
+    4-- "<div>Creates Agents; issues and<br />revokes tokens</div><div style='font-size: 70%'>[JSON/HTTPS from the browser console, no screen yet]</div>" -->40
+    4-. "<div>Accepts an import batch at<br />once</div><div style='font-size: 70%'>[Browser]</div>" .->36
+    45-- "<div>Searches Persons, Places and<br />Sources; reads records,<br />ancestors and descendants</div><div style='font-size: 70%'>[JSON/HTTP(S), Agent token]</div>" -->30
+    45-- "<div>Submits Proposals labelled as<br />Agent work; lists its own</div><div style='font-size: 70%'>[JSON/HTTP(S), Agent token]</div>" -->35
+    46-. "<div>Submits one Proposal per<br />Source note, in one import<br />batch</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->35
+    46-. "<div>Uploads scans as Citation<br />images, PDFs as Source<br />documents</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->38
+    5-. "<div>Opens pull requests until<br />import day; afterwards uses<br />MCP</div><div style='font-size: 70%'>[Git]</div>" .->73
 
   end

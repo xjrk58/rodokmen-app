@@ -307,8 +307,14 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
    alert;
 2. it starts the new image in the idle slot (`api-green` if `api-blue` serves, and back);
 3. the new container migrates the database and must pass its health check within 3 minutes;
-4. only then is the old slot stopped. Both slots answer to `api` for Caddy, so requests keep
-   flowing throughout;
+4. only then does Caddy send new requests to it: `deploy.sh` writes `state/api-slot/green` when
+   `api-green` takes over and removes it for `api-blue`, and Caddy looks for that file on every
+   request, so the switch needs no reload. `deploy.sh` then waits until Caddy has no request in
+   flight to the old slot (Caddy's admin API, at most 30 s) and stops it. On SIGTERM the server
+   stops accepting connections, answers what still reaches it, closes the database pool and
+   exits, within 15 s (`server/src/shutdown.ts`; Docker would kill it after 20 s). No request
+   fails on the way (#71). The MCP server reaches the API through Caddy as well
+   (`http://api:3000` inside the network), so its calls follow the same switch;
 5. if the health check fails, the new slot is removed, the old version keeps serving, the Owner
    gets an alert, and the workflow fails.
 
@@ -322,7 +328,7 @@ one it has; the deploy log says so.
 
 Rollback: run the `deploy` workflow by hand with `rollback` ticked, or on the VPS
 `./scripts/deploy.sh rollback`. State lives in `/opt/rodokmen/state/` (`active`, `previous`,
-`images.env`).
+`images.env`, and `api-slot/`, which Caddy reads).
 
 ## Backups and restoring
 
@@ -371,23 +377,18 @@ reapplied before the API accepts requests.)
 ## Agents and the MCP server
 
 Agents (AI assistants with their own account, add-agent-access) read the Tree and submit
-Proposals, and nothing else. Only the Owner creates them, through the API; there is no screen for
-it yet. Signed in as the Owner, in the browser's developer console on the Rodokmen page:
+Proposals, and nothing else. Only the Owner manages them, in the app under **Settings → Agents**
+(the same through the API, `/api/agents`):
 
-```js
-// Create an Agent; the answer holds its first token, shown only this once.
-await (
-  await fetch('/api/agents', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Register reader' }) })
-).json();
-// List Agents with their tokens (by prefix) and this hour's use of their limits.
-await (await fetch('/api/agents')).json();
-// Another token for an Agent, or revoke one at once:
-await (await fetch('/api/agents/<agent id>/tokens', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).json();
-await fetch('/api/agents/<agent id>/tokens/<token id>', { method: 'DELETE' });
-// Stop an Agent (all its tokens) and let it go on again:
-await fetch('/api/agents/<agent id>/disable', { method: 'POST' });
-await fetch('/api/agents/<agent id>/enable', { method: 'POST' });
-```
+- **Add an Agent** with its name and, optionally, what its first token is for. The token is shown
+  once, with a copy button; it is not kept on the device and cannot be shown again. Lost? Issue
+  another and revoke the lost one.
+- Each Agent lists its tokens by prefix and label, when each was added and last used, and which
+  are revoked, with this hour's use of its limits.
+- **Issue another token** for an Agent, for example for a second machine; **Revoke** a token
+  (the page asks first), and the next request with it is refused.
+- **Disable** an Agent to stop all its tokens at once, and **Enable again** to let its tokens
+  that are not revoked work again.
 
 Keep a token like a password: whoever has it can read the whole Tree. Each Agent may submit 60
 Proposals and make 1,000 other requests an hour.

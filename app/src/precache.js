@@ -35,6 +35,8 @@ export const PRECACHE = [
   'src/routes.js',
   'src/screen-parts.js',
   'src/search-box.js',
+  'src/settings-agents.js',
+  'src/settings-parts.js',
   'src/settings-screen.js',
   'src/settings.js',
   'src/shell.js',

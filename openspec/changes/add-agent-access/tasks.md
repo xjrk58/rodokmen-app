@@ -3,7 +3,7 @@
 ## 1. Agent accounts and tokens
 
 - [x] 1.1 Add the `agent` role, Agent creation by the Owner, and token issue, list and revoke (hashed, shown once, visible prefix); verify the revoke scenario
-  Note: API only (`/api/agents`, `server/test/agents.test.ts`); creating an Agent issues its first token, so every Agent has one. The Owner can also disable an Agent, which stops all its tokens at once (design goal "stop any Agent at once"). The Owner settings screen is a follow-up issue (#45).
+  Note: API only (`/api/agents`, `server/test/agents.test.ts`); creating an Agent issues its first token, so every Agent has one. The Owner can also disable an Agent, which stops all its tokens at once (design goal "stop any Agent at once"). The Owner manages Agents in the app under Settings → Agents (#45, `app/src/settings-agents.js`), which adds nothing beyond the API; `server/test/agent-settings.e2e.test.ts` checks it against the real server at phone and desktop size.
 - [x] 1.2 Enforce read-and-propose-only for Agent tokens on every route; verify the accept-own-Proposal scenario and a direct edit attempt both return 403
   Note: every route names its action and the auth plugin asks `mayDo` for each request; a test calls every registered route with an Agent token and expects 403 exactly where the action is neither `read` nor `propose`.
 - [x] 1.2a Prove the role-and-action rule with `lsc check` in `shared/src/rules.ts`, with `//@ contract agent-access: Read and propose only` and ensures for each refused action and for the accept-own-Proposal scenario; verify with `pnpm verify` and `pnpm verify:trace`, and that allowing `accept` for Agents makes `lsc check` fail

@@ -19,23 +19,22 @@ skinparam {
 
 AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
-AddElementTag("Container,In progress,Data store", $bgColor="#438dd5", $borderColor="#c25e00", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
 AddElementTag("Container,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Container,Built,Browser", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 
+AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
 AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
-AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
 
 Person(Contributor, "Contributor", $descr="A Member who reads the Tree and submits Proposals; every new Member starts here.", $tags="Person,Built", $link="")
 box "Rodokmen\n<size:12>[Software System]</size>"
-  Container(Rodokmen.AppPWA, "App (PWA)", $techn="HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9", $descr="The only interface: the map for anyone; for Members a Tree home, Proposals and review.", $tags="Container,Built,Browser", $link="")
-  ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted; later also the last-loaded Tree records.", $tags="Container,In progress,Data store", $link="")
+  Container(Rodokmen.AppPWA, "App (PWA)", $techn="HTML, CSS, ES modules checked by tsc, vendored Leaflet 1.9, Preact and htm", $descr="The only interface: the map for anyone; for Members sign-in, the Tree home, People, person pages, Proposals, review and Settings.", $tags="Container,Built,Browser", $link="")
+  ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted, and up to 400 last-loaded Tree records; emptied on sign-out.", $tags="Container,Built,Data store", $link="")
   ContainerDb(Rodokmen.Imagebucket, "Image bucket", $techn="Garage (S3-compatible), on the VPS", $descr="Private page images, photos and portraits: originals, display copies, and pending/ uploads. Reached by browsers only with presigned links at files.<domain>.", $tags="Container,Built,Data store", $link="")
-  Container(Rodokmen.APIserver, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app, the sign-in pages and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
-  ContainerDb(Rodokmen.Database, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
+  Container(Rodokmen.APIserver, "API server", $techn="TypeScript on Node 22, Fastify, Zod, Kysely", $descr="Serves the app with its Content-Security-Policy, and the JSON API; runs the daily jobs.", $tags="Container,Built", $link="")
+  ContainerDb(Rodokmen.Database, "Database", $techn="PostgreSQL 16 with PostGIS 3.4", $descr="The Tree, accounts and sessions, Agent tokens, Proposals and the log of accepted changes; the source of truth.", $tags="Container,Built,Data store", $link="")
   Container(Rodokmen.Exportjob, "Export job", $techn="Node 22, git with a deploy key", $descr="Every night writes the one-way Export: Markdown notes and a GEDCOM file, Living people reduced.", $tags="Container,Planned", $link="")
 end box
 Person(Editor, "Editor", $descr="A Member who reviews Proposals and may change the Tree directly.", $tags="Person,Built", $link="")
@@ -44,15 +43,15 @@ box "GitHub\n<size:12>[Software System]</size>"
   Container(GitHub.rodokmenexportrepo, "rodokmen-export repo", $techn="Git: Markdown notes, family.ged", $descr="Private repo with the nightly one-way Export; nobody edits it by hand.", $tags="Container,External,Planned", $link="")
 end box
 
-Rel(Contributor, Rodokmen.AppPWA, "1: Writes a Draft without signal, with a photo of the register page", $techn="Browser", $tags="In progress", $link="")
-Rel(Rodokmen.AppPWA, Rodokmen.Ondevicestore, "2: Keeps the Draft and the photo", $techn="IndexedDB", $tags="In progress", $link="")
-Rel(Rodokmen.AppPWA, Rodokmen.Imagebucket, "3: Back online: uploads the photo to pending/", $techn="HTTPS PUT and GET at files.<domain>, presigned links", $tags="In progress", $link="")
-Rel(Rodokmen.AppPWA, Rodokmen.APIserver, "4: Submits it: typed operations, base versions, idempotency key", $techn="JSON/HTTPS, session cookie", $tags="In progress", $link="")
-Rel(Rodokmen.APIserver, Rodokmen.Database, "5: Stores it as pending; only its author and the Editors see it", $techn="SQL", $tags="In progress", $link="")
-Rel(Editor, Rodokmen.AppPWA, "6: Opens the review queue, fixes a misread year and accepts", $techn="Browser", $tags="In progress", $link="")
-Rel(Rodokmen.AppPWA, Rodokmen.APIserver, "7: Accepts the whole Proposal with the correction", $techn="JSON/HTTPS, session cookie", $tags="In progress", $link="")
-Rel(Rodokmen.APIserver, Rodokmen.Database, "8: One transaction: applies the operations, bumps versions, logs before and after", $techn="SQL", $tags="In progress", $link="")
-Rel(Rodokmen.APIserver, EUemailservice, "9: Emails the author the outcome in their language", $techn="SMTP, STARTTLS", $tags="In progress", $link="")
+Rel(Contributor, Rodokmen.AppPWA, "1: Writes a Draft without signal, with a photo of the register page", $techn="Browser", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA, Rodokmen.Ondevicestore, "2: Keeps the Draft and the photo", $techn="IndexedDB", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA, Rodokmen.Imagebucket, "3: Back online: uploads the photo to pending/", $techn="HTTPS PUT and GET at files.<domain>, presigned links", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA, Rodokmen.APIserver, "4: Submits it: typed operations, base versions, idempotency key", $techn="JSON/HTTPS, session cookie", $tags="Built", $link="")
+Rel(Rodokmen.APIserver, Rodokmen.Database, "5: Stores it as pending; only its author and the Editors see it", $techn="SQL", $tags="Built", $link="")
+Rel(Editor, Rodokmen.AppPWA, "6: Opens the review queue, fixes a misread year and accepts", $techn="Browser", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA, Rodokmen.APIserver, "7: Accepts the whole Proposal with the correction", $techn="JSON/HTTPS, session cookie", $tags="Built", $link="")
+Rel(Rodokmen.APIserver, Rodokmen.Database, "8: One transaction: applies the operations, bumps versions, logs before and after", $techn="SQL", $tags="Built", $link="")
+Rel(Rodokmen.APIserver, EUemailservice, "9: Emails the author the outcome in their language", $techn="SMTP, STARTTLS", $tags="Built", $link="")
 Rel(Rodokmen.Exportjob, Rodokmen.Database, "10: Overnight: reads the Tree", $techn="SQL", $tags="Planned", $link="")
 Rel(Rodokmen.Exportjob, GitHub.rodokmenexportrepo, "11: Commits changed notes and family.ged, Living people reduced", $techn="Git over SSH, deploy key", $tags="Planned", $link="")
 
