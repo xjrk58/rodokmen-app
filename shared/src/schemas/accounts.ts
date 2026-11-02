@@ -33,6 +33,7 @@ export const ACTIONS = [
   'ownAccount',
   'manageAccounts',
   'markFamilyRoots',
+  'manageSettings',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -45,6 +46,7 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
     changeRoles: mayDo(role, 'manageAccounts'),
     disableMembers: mayDo(role, 'manageAccounts'),
     markFamilyRoots: mayDo(role, 'markFamilyRoots'),
+    manageSettings: mayDo(role, 'manageSettings'),
   };
 }
 
@@ -56,6 +58,7 @@ export const Permissions = z
     changeRoles: z.boolean(),
     disableMembers: z.boolean(),
     markFamilyRoots: z.boolean().describe('Mark and unmark Family roots (the Owner)'),
+    manageSettings: z.boolean().describe('Change the Tree’s settings, such as scan reading (the Owner)'),
   })
   .meta({ id: 'Permissions' });
 

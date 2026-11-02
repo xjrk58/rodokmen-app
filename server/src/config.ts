@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+/**
+ * The default reader: Claude Opus 5.5, which reads images and answers in a JSON schema
+ * (structured output). Task 1.2's benchmark against a second Claude model and Transkribus may
+ * change it; RODOKMEN_SCAN_MODEL overrides it.
+ */
+export const DEFAULT_SCAN_MODEL = 'claude-opus-5-5';
+
 const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
 
 /**
@@ -42,6 +49,24 @@ const Env = z
     S3_ACCESS_KEY_ID: z.string().optional(),
     S3_SECRET_ACCESS_KEY: z.string().optional(),
     S3_FORCE_PATH_STYLE: bool.default(true),
+
+    /**
+     * Scan reading (ADR 0011): the Anthropic API key, optional. Without it scan reading cannot be
+     * switched on. It is read here only, never sent to the browser.
+     */
+    ANTHROPIC_API_KEY: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
+    /** The model that reads scans; the default is set from the benchmark (add-scan-reading task 1.2). */
+    RODOKMEN_SCAN_MODEL: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v : DEFAULT_SCAN_MODEL)),
+    /** How much effort the model puts into a reading: low, medium, high, xhigh or max. */
+    RODOKMEN_SCAN_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('high'),
 
     /** Watchdog: URL to poll, and the backup status file written by deploy/backup/backup.sh. */
     WATCHDOG_URL: z.string().optional(),
@@ -99,6 +124,8 @@ export interface Config {
     configured: boolean;
   };
   watchdog: { url: string; backupStatusFile: string | undefined };
+  /** Scan reading: the API key (null when not configured), the model and its effort. */
+  scanReading: { apiKey: string | null; model: string; effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max' };
 }
 
 export function loadConfig(source: Record<string, string | undefined> = process.env): Config {
@@ -150,5 +177,6 @@ export function loadConfig(source: Record<string, string | undefined> = process.
       configured: s3Configured,
     },
     watchdog: { url: e.WATCHDOG_URL ?? `${publicOrigin}/api/health`, backupStatusFile: e.BACKUP_STATUS_FILE },
+    scanReading: { apiKey: e.ANTHROPIC_API_KEY ?? null, model: e.RODOKMEN_SCAN_MODEL, effort: e.RODOKMEN_SCAN_EFFORT },
   };
 }

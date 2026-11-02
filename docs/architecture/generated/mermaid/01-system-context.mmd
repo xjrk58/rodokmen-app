@@ -28,8 +28,8 @@ graph TB
     style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
     71["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
     style 71 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    72["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
-    style 72 fill:#ffffff,stroke:#777777,color:#555555
+    72["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the entries<br />it finds, in the reading<br />schema.</div>"]
+    style 72 fill:#8c8c8c,stroke:#616161,color:#ffffff
     73["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
     style 73 fill:#ffffff,stroke:#777777,color:#555555
     74["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
@@ -44,7 +44,7 @@ graph TB
     6-. "<div>Imports the Vault once, then<br />leaves it frozen</div><div style='font-size: 70%'>[Git checkout]</div>" .->73
     6-- "<div>Links each place to the<br />register viewer of its<br />archive</div><div style='font-size: 70%'>[HTTPS link]</div>" -->52
     6-. "<div>Links places outside the<br />Czech lands to their register<br />viewers</div><div style='font-size: 70%'>[HTTPS link]</div>" .->62
-    6-. "<div>Sends uploaded scans for<br />reading, once the Owner<br />switches it on</div><div style='font-size: 70%'>[HTTPS]</div>" .->72
+    6-- "<div>Sends uploaded scans for<br />reading, once the Owner<br />switches it on</div><div style='font-size: 70%'>[HTTPS]</div>" -->72
     6-- "<div>Overlays military survey maps<br />and links to historical map<br />viewers</div><div style='font-size: 70%'>[WMS, HTTPS links]</div>" -->63
     6-- "<div>Loads base map tiles</div><div style='font-size: 70%'>[HTTPS]</div>" -->69
     6-- "<div>Sends invitations, sign-in<br />links, digests, outcomes and<br />alerts</div><div style='font-size: 70%'>[SMTP]</div>" -->70

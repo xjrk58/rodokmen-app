@@ -56,8 +56,11 @@ describe('MCP tools on the fixture Tree', () => {
     expect(tools.map((t) => t.name).sort()).toEqual([
       'get_ancestors',
       'get_descendants',
+      'get_reading',
       'get_record',
       'list_my_proposals',
+      'propose_reading',
+      'read_scan',
       'search_persons',
       'search_places',
       'search_sources',
@@ -65,7 +68,11 @@ describe('MCP tools on the fixture Tree', () => {
     ]);
     const submit = tools.find((t) => t.name === 'submit_proposal')!;
     expect(JSON.stringify(submit.inputSchema)).not.toContain('direct');
-    for (const t of tools.filter((x) => x.name !== 'submit_proposal')) expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+    // Writing tools submit Proposals or ask for a reading; none decides on anything.
+    const writing = ['submit_proposal', 'read_scan', 'propose_reading'];
+    for (const t of tools.filter((x) => !writing.includes(x.name))) expect(t.annotations?.readOnlyHint, t.name).toBe(true);
+    for (const name of ['read_scan', 'propose_reading'])
+      expect(JSON.stringify(tools.find((t) => t.name === name)!.inputSchema), name).not.toMatch(/"direct"|accept|merge/);
   });
 
   it('search_persons finds Jan Novák by a Name as found, without diacritics, and narrows by Place and years', async () => {

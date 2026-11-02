@@ -2,3 +2,5 @@ src/edtf.ts
 src/living.ts
 src/rules.ts
 src/relation.ts
+src/reading.ts
+src/matching.ts

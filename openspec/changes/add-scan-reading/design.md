@@ -43,6 +43,19 @@ These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each l
 - [Misreadings look plausible] → "read by AI" marking, confidence capped, a Member check before submission, then Editor review.
 - [Cost] → a daily limit per Member and a usage view for the Owner.
 
+### Decided in implementation
+- **Default reader:** `claude-opus-5-5` until the benchmark settles it (task 1.2), set by `RODOKMEN_SCAN_MODEL`, with adaptive thinking at effort `high` (`RODOKMEN_SCAN_EFFORT`), streaming, and the server-side fallback on a policy decline. It reads images and answers in a JSON schema (structured output), which a reading needs.
+- **Structured output keeps enums:** the server sends the JSON Schema of `ReadingResult` with `enum` kept (roles, Event types, sex), objects closed, and the keywords structured output does not support moved into descriptions; the Zod schema checks everything afterwards.
+- **One Citation per page:** a page's Citation carries its image and transcription and is attached to the Event of every entry read from it, since a Citation carries the image of its page (ADR 0002) and an upload becomes one image.
+- **Marks travel with the Proposal:** `reader: { readingIds, marks }` names, per operation, the fields still as read; the server stores and shows them, and caps the confidence of every new Citation of a Proposal that names a reading or has an image that was read.
+- **What goes out:** the display copy or a crop cut from the checked original (WebP, at most 2,000 pixels), the Member's context, and the names the Tree has for the Place and its Parishes, of people who are not Living. No dates, Houses or relations from the Tree.
+- **Leads:** suggestions are computed with each reading view and can be dismissed; keeping them as Research leads waits for add-research-leads (#16).
+- **Names in a language:** every read Name has its BCP 47 language (decision #64); until #17, `la` becomes the Latin form, `de` the German form and any other language `other`.
+
 ## Open Questions
 
 - Which reader gives the best Kurrent and Latin reading at an acceptable cost is settled by a small benchmark during implementation (task 1.2): two Claude models against Transkribus's public Kurrent models. Claude stays the default unless Transkribus reads clearly better. If it does, the switch, limits, marking and Draft flow stay as specified, and ADR 0011 is revisited for the new service. Transkribus only transcribes, so entries would still need structuring.
+
+## Benchmark results
+
+Not run yet (task 1.2): it needs the Owner's Anthropic API key, a Transkribus account and the 10 sample pages. `pnpm --filter @rodokmen/server bench:scan` writes the table (`summary.md`) that goes here.

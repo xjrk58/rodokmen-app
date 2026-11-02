@@ -7,6 +7,7 @@ import {
   OPERATIONS_VERSION,
   type AcceptBody,
   type ProposalView,
+  type ReaderInfo,
   type SubmitProposalBody,
 } from '@rodokmen/shared';
 import type { Db } from '../db/db.js';
@@ -20,6 +21,7 @@ import { applyOperations, RECORD_TABLES, translateDbError, type ApplyResult, typ
 import { recomputeRelations } from '../tree/relation.js';
 import { snapshot } from './records.js';
 import { canReview, findConflicts, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
+import { capped, readerDrafted } from '../readings/proposals.js';
 
 /** Writing Proposals: submit, accept (with corrections and conflict choices), reject and merge. */
 export interface ProposalDeps {
@@ -69,7 +71,7 @@ async function insertProposal(
   tx: Db,
   now: Date,
   author: Account,
-  fields: { kind: Proposal['kind']; note: string | null; idempotencyKey: string; undoes?: string },
+  fields: { kind: Proposal['kind']; note: string | null; idempotencyKey: string; undoes?: string; reader?: ReaderInfo | null },
   ops: readonly Operation[],
 ): Promise<Created> {
   const inserted = await tx
@@ -82,6 +84,7 @@ async function insertProposal(
       idempotency_key: fields.idempotencyKey,
       submitted_at: now,
       undoes_proposal_id: fields.undoes ?? null,
+      reader: fields.reader ? JSON.stringify(fields.reader) : null,
     })
     .onConflict((oc) => oc.columns(['author_id', 'idempotency_key']).doNothing())
     .returningAll()
@@ -127,8 +130,10 @@ export async function submitProposal(deps: ProposalDeps, author: Account, body: 
   const editor = canReview(author);
   if (body.direct && !mayDo(author.role, 'directEdit'))
     throw new ApiProblem(403, 'forbidden', 'Only Editors change the Tree directly. Submit a Proposal for review instead.');
-  const { operations, issues } = checkOperations(body.operations, { editor });
-  if (issues.length) throw issuesProblem(issues, author.language);
+  const checked = checkOperations(body.operations, { editor });
+  if (checked.issues.length) throw issuesProblem(checked.issues, author.language);
+  const drafted = await readerDrafted(deps.db, author, body.reader, checked.operations);
+  const operations = drafted ? checked.operations.map(capped) : checked.operations;
   const now = deps.clock.now();
   const result = await transaction(
     deps.db,
@@ -137,7 +142,7 @@ export async function submitProposal(deps: ProposalDeps, author: Account, body: 
         tx,
         now,
         author,
-        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey },
+        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey, reader: body.reader },
         operations,
       );
       if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
@@ -445,6 +450,7 @@ export async function mergePersons(
     note: body.note,
     direct: true,
     operations: [op],
+    reader: null,
   });
   return view;
 }

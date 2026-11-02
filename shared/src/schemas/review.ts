@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { Id, Version } from './common.js';
 import { Operation, ProposalKind, ProposalStatus, RestorableTable } from './proposals.js';
 import { Confidence, IMAGE_CONTENT_TYPES, ImageKind } from './tree.js';
+import { ReaderInfo } from './reading.js';
 
 const Sentence = z.object({ cs: z.string(), en: z.string() }).meta({ id: 'Sentence', description: 'The same sentence in Czech and English' });
 
@@ -84,6 +85,7 @@ export const ProposalView = z
     operations: z.array(OperationView),
     citations: z.array(CitationPreview),
     conflicts: z.number().int().describe('Operations based on an older version of their record'),
+    reader: ReaderInfo.nullable().describe('Drafted from scan readings: the values still marked "read by AI", by operation'),
   })
   .meta({ id: 'ProposalView' });
 

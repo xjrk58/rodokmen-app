@@ -10,8 +10,14 @@
 /** @typedef {import('./types.js').Confidence} Confidence */
 /** @typedef {import('./types.js').RoleType} RoleType */
 
-export const KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction']);
+import { buildReading, readingProblems, readingTitle } from './reading-draft.js';
+
+/** Findings the Member fills in by hand. */
+export const HAND_KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction']);
+/** Every kind of Draft: the hand forms, and a scan reading being checked (reading-draft.js). */
+export const KINDS = /** @type {const} */ ([...HAND_KINDS, 'reading']);
 /** @typedef {typeof KINDS[number]} ProposeKind */
+/** @typedef {typeof HAND_KINDS[number]} HandKind */
 export const OPERATIONS_VERSION = 1;
 
 /**
@@ -53,7 +59,10 @@ export const OPERATIONS_VERSION = 1;
  * @typedef {{ record: 'name' | 'event', id: string, version: number, label: string, current: Record<string, string> }} CorrectionTarget
  */
 /** @typedef {FormBase & { person: PersonInput | null, target: CorrectionTarget | null, set: Record<string, string> }} CorrectionForm */
-/** @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm }} FormByKind */
+/**
+ * @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm,
+ *   reading: import('./reading-draft.js').ReadingForm }} FormByKind
+ */
 /**
  * A kind of finding with its form, as a Draft holds them.
  * @typedef {{ [K in ProposeKind]: { kind: K, form: FormByKind[K] } }[ProposeKind]} KindForm
@@ -63,6 +72,7 @@ export const OPERATIONS_VERSION = 1;
  * @typedef {object} BuildContext
  * @property {string[]} uploadIds uploaded photos of the Draft
  * @property {{ id: string, version: number } | null} [family] the existing Family of both parents (or partners)
+ * @property {Map<number, { id: string, version: number } | null>} [families] a reading's: per entry (from 1), the Family of its two parents in the Tree
  */
 
 // Choices offered by the forms; tests/unit/proposal-contract.test.mjs checks them against shared/.
@@ -113,7 +123,7 @@ function sourceTypeOf(c) {
 
 /**
  * An empty form of a kind.
- * @param {ProposeKind} kind
+ * @param {HandKind} kind
  * @returns {KindForm}
  */
 export function emptyForm(kind) {
@@ -175,7 +185,7 @@ export function personLabel(p) {
 
 /**
  * What a form of its kind is missing, as i18n keys.
- * @param {KindForm} draft
+ * @param {Exclude<KindForm, { kind: 'reading' }>} draft
  * @returns {string[]}
  */
 function kindProblems(draft) {
@@ -211,6 +221,7 @@ function hasSource(c) {
  * @returns {string[]}
  */
 export function formProblems(draft) {
+  if (draft.kind === 'reading') return readingProblems(draft.form);
   const c = draft.form.citation ?? { sourceMode: 'new' };
   return [...kindProblems(draft), ...(hasSource(c) && clean(c.transcription) !== '' ? [] : ['propose.needEvidence'])];
 }
@@ -444,6 +455,8 @@ export function buildOperations(draft, ctx) {
     case 'correction':
       buildCorrection(b, draft.form, ctx);
       break;
+    case 'reading':
+      return buildReading(draft.form, { uploadIds: ctx.uploadIds, families: ctx.families, readOn: today() }).operations;
   }
   return b.ops;
 }
@@ -459,6 +472,8 @@ function draftPersons(draft) {
       return [draft.form.child, null];
     case 'marriage':
       return [draft.form.partner1, draft.form.partner2];
+    case 'reading':
+      return [null, null];
     default:
       return [draft.form.person, null];
   }
@@ -467,9 +482,10 @@ function draftPersons(draft) {
 /**
  * A short title for a Draft in the list, e.g. "Baptism: Václav Dvořák".
  * @param {KindForm} draft
- * @param {(key: string) => string} translate
+ * @param {(key: string, params?: Record<string, string | number>) => string} translate
  */
 export function draftTitle(draft, translate) {
+  if (draft.kind === 'reading') return readingTitle(draft.form, translate);
   const [who, second] = draftPersons(draft);
   const name = isPerson(who) ? personLabel(who) : translate('propose.unnamed');
   return `${translate(`propose.kind.${draft.kind}`)}: ${name}${isPerson(second) ? ` & ${personLabel(second)}` : ''}`;

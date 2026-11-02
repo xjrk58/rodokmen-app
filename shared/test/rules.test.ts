@@ -31,10 +31,14 @@ describe('what a role may do', () => {
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      manageSettings: false,
     });
     expect(permissionsFor('owner').inviteMembers).toBe(true);
     expect(permissionsFor('owner').markFamilyRoots).toBe(true);
     expect(permissionsFor('editor').markFamilyRoots).toBe(false);
+    // Only the Owner switches scan reading on (scan-reading spec, "The Owner switches it on").
+    expect(permissionsFor('owner').manageSettings).toBe(true);
+    expect(permissionsFor('editor').manageSettings).toBe(false);
   });
 });
 

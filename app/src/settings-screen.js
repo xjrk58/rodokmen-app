@@ -1,13 +1,14 @@
 // Settings (family-view spec, "Owner settings in the app"): every Member's own language,
 // passkeys and sessions, and sign-out; for the Owner also the Family roots, the family
 // (invitations, roles, disabling and enabling Members, and the link from each Member to their
-// Person) and the Agents (src/settings-agents.js). Settings that later changes add (scan
-// reading) get their own section here. Other Members see nothing about anyone else.
+// Person), the Agents (src/settings-agents.js) and scan reading (src/settings-scan-reading.js).
+// Other Members see nothing about anyone else.
 
 import * as API from './api.js';
 import { LANGUAGES, language, t } from './i18n.js';
 import { formatTime, PersonLine, useDebounced } from './screen-parts.js';
 import { AgentsSection } from './settings-agents.js';
+import { ScanReadingSection } from './settings-scan-reading.js';
 import { Status, useAction, useLoad } from './settings-parts.js';
 import { html, useEffect, useState } from './ui.js';
 import { APP_VERSION } from './version.js';
@@ -329,6 +330,7 @@ export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
     <${SessionsSection} />
     ${me.permissions.markFamilyRoots ? html`<${FamilyRootsSection} refreshMe=${refreshMe} />` : null}
     ${me.role === 'owner' ? html`<${FamilySection} me=${me} /><${AgentsSection} />` : null}
+    ${me.permissions.manageSettings ? html`<${ScanReadingSection} />` : null}
     <section class="card">
       <h2>${t('settings.about')}</h2>
       <p class="muted small">${t('settings.version', { version: APP_VERSION })}</p>

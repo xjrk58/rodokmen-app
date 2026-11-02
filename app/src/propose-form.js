@@ -8,7 +8,7 @@ import { guarded, h, showError } from './dom.js';
 import { draftPhotos, deletePhoto, savePhoto, newKey } from './drafts.js';
 import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
-import { CONFIDENCES, formProblems, KINDS, NAME_TYPES, NEW_SOURCE_TYPES } from './proposal-build.js';
+import { CONFIDENCES, formProblems, HAND_KINDS, NAME_TYPES, NEW_SOURCE_TYPES } from './proposal-build.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
 /** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
@@ -17,12 +17,25 @@ import { CONFIDENCES, formProblems, KINDS, NAME_TYPES, NEW_SOURCE_TYPES } from '
 /** @typedef {import('./proposal-build.js').CorrectionTarget} CorrectionTarget */
 /** @typedef {import('./types.js').PersonDetail} PersonDetail */
 
-/** The kind chooser at the top of "Propose". */
-export function kindChooser() {
+/**
+ * The kind chooser at the top of "Propose": "Read a scan" first while scan reading is on (null:
+ * it is off, and not offered), then the forms by hand, which are always there.
+ * @param {import('./types.js').ReadingStatusView | null} [reading]
+ */
+export function kindChooser(reading = null) {
+  const read = reading
+    ? h(
+        'a',
+        { class: 'kind-card read', href: '#work/read', 'data-testid': 'kind-read' },
+        h('strong', {}, t('reading.kind')),
+        h('span', { class: 'muted small' }, t('reading.kindHint', { remaining: reading.remaining, limit: reading.dailyLimit })),
+      )
+    : null;
   return h(
     'div',
     { class: 'kind-grid' },
-    ...KINDS.map((kind) =>
+    read,
+    ...HAND_KINDS.map((kind) =>
       h(
         'a',
         { class: 'kind-card', href: `#work/propose/${kind}`, 'data-testid': `kind-${kind}` },
@@ -382,6 +395,9 @@ function findingFields(draft) {
     }
     case 'correction':
       return correctionFields(draft.form);
+    case 'reading':
+      // A reading has its own check screen (reading-check.js).
+      return [];
   }
 }
 

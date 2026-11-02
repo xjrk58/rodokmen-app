@@ -134,7 +134,7 @@
 /** @typedef {import('../../shared/src/schemas/tree.js').RoleType} RoleType */
 /** @typedef {import('../../shared/src/schemas/proposals.js').OperationInput} OperationInput */
 /** @typedef {import('../../shared/src/schemas/proposals.js').Operation} Operation */
-/** @typedef {import('../../shared/src/schemas/proposals.js').SubmitProposalBody} SubmitProposalBody */
+/** @typedef {import('../../shared/src/schemas/submit.js').SubmitProposalBody} SubmitProposalBody */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalView} ProposalView */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalList} ProposalList */
 /** @typedef {import('../../shared/src/schemas/review.js').OperationView} OperationView */
@@ -152,5 +152,20 @@
 /** @typedef {import('../../shared/src/schemas/review.js').RejectBody} RejectBody */
 /** @typedef {import('../../shared/src/schemas/review.js').MergeBody} MergeBody */
 /** @typedef {import('../../shared/src/schemas/review.js').UndoBody} UndoBody */
+/** @typedef {import('../../shared/src/schemas/review.js').ProposalView['reader']} ProposalReader */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadingView} ReadingView */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadingResult} ReadingResult */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadEntry} ReadEntry */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadPerson} ReadPerson */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadName} ReadName */
+/** @typedef {import('../../shared/src/schemas/reading.js').Illegible} Illegible */
+/** @typedef {import('../../shared/src/schemas/reading.js').MatchCandidate} MatchCandidate */
+/** @typedef {import('../../shared/src/schemas/reading.js').LeadSuggestion} LeadSuggestion */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadingStatusView} ReadingStatusView */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReadingCrop} ReadingCrop */
+/** @typedef {import('../../shared/src/schemas/reading.js').CreateReadingBody} CreateReadingBody */
+/** @typedef {import('../../shared/src/schemas/reading.js').ScanReadingSettings} ScanReadingSettings */
+/** @typedef {import('../../shared/src/schemas/reading.js').UpdateScanReadingBody} UpdateScanReadingBody */
+/** @typedef {import('../../shared/src/schemas/reading.js').ReaderMark} ReaderMark */
 
 export {};

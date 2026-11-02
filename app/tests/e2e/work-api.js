@@ -93,7 +93,15 @@ export function me(role) {
     displayName: editor ? 'Eva Editor' : 'Karel Contributor',
     language: 'en',
     role,
-    permissions: { propose: true, review: editor, inviteMembers: editor, changeRoles: false, disableMembers: false, markFamilyRoots: false },
+    permissions: {
+      propose: true,
+      review: editor,
+      inviteMembers: editor,
+      changeRoles: false,
+      disableMembers: false,
+      markFamilyRoots: false,
+      manageSettings: false,
+    },
     passkeyCount: 1,
     person: null,
     familyRoots: [],
@@ -209,6 +217,7 @@ export function conflictingProposal() {
     ],
     citations: [],
     conflicts: 1,
+    reader: null,
   };
 }
 

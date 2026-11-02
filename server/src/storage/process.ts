@@ -129,3 +129,43 @@ async function displayCopy(original: Buffer, contentType: ImageType): Promise<Pr
     throw new ApiProblem(415, 'image_unreadable', `This image could not be read (${messageOf(error)}). Try another copy of it.`);
   }
 }
+
+/** The part of an image the Member marked, as shares of its width and height (as it is shown, after EXIF rotation). */
+export interface Crop {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * A crop for scan reading (evidence-media spec, "Images sent for reading"): only the marked part
+ * of the checked original, at most DISPLAY_MAX_PIXELS on its longest side, as WebP. The original
+ * file itself never leaves the server. Loaded and decoded in its turn, like every upload. Null
+ * when `load` finds no file.
+ */
+export function cropForReading(load: () => Promise<Buffer | null>, crop: Crop): Promise<Buffer | null> {
+  return turns.run(async () => {
+    const original = await load();
+    if (!original) return null;
+    const meta = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS }).metadata();
+    if (!meta.width || !meta.height) throw new Error('an image without dimensions');
+    const rotated = (meta.orientation ?? 1) >= 5;
+    const width = rotated ? meta.height : meta.width;
+    const height = rotated ? meta.width : meta.height;
+    const left = Math.min(width - 1, Math.max(0, Math.round(crop.left * width)));
+    const top = Math.min(height - 1, Math.max(0, Math.round(crop.top * height)));
+    const box = {
+      left,
+      top,
+      width: Math.max(1, Math.min(width - left, Math.round(crop.width * width))),
+      height: Math.max(1, Math.min(height - top, Math.round(crop.height * height))),
+    };
+    return sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })
+      .rotate()
+      .extract(box)
+      .resize({ width: DISPLAY_MAX_PIXELS, height: DISPLAY_MAX_PIXELS, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toBuffer();
+  });
+}
