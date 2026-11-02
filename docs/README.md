@@ -21,6 +21,12 @@ Running Rodokmen:
 - [Restore from a Backup](how-to/restore-from-a-backup.md): rebuild the server after a loss, or check that a Backup restores.
 - [Connect an AI assistant through MCP](how-to/connect-an-assistant.md): create an Agent and its token, and connect the assistant.
 - [Mark Family roots and link Members to their Persons](how-to/mark-family-roots.md): tell Rodokmen where the family starts and who each Member is.
+- [Import the Vault](how-to/import-the-vault.md): the Owner's one-time import of the Vault as an Import batch, from the dry run to accepting the batch.
+
+Researching:
+
+- [Work with Research leads](how-to/work-with-research-leads.md): write a lead, take it on, record searches, close it, start a Proposal from it, and decide on suggested leads.
+- [Record research as an Agent](how-to/record-research-as-an-agent.md): the lead tools of the MCP server, from looking up what was searched to naming the leads a Proposal answers.
 
 Keeping the repo public-safe:
 
@@ -42,6 +48,7 @@ Developing:
 - [The API](reference/api.md): where the OpenAPI description is, sign-in, errors and limits.
 - [MCP tools](reference/mcp-tools.md): what an assistant with an Agent token can call.
 - [Roles and actions](reference/roles-and-actions.md): what Agents, Contributors, Editors and the Owner may do.
+- [Research leads](reference/research-leads.md): the lead routes and fields, search records, suggested leads, the register coverage of a Source and when the gap finder runs.
 - [Map data files](reference/app-data.md): the files in `app/data/`.
 - [Vault denylist format](reference/vault-denylist.md): the private file the Vault-name guard reads, and the guard's options.
 - [Glossary](../GLOSSARY.md): the words we use, and the ones we avoid.
@@ -52,9 +59,10 @@ Developing:
 ## Explanation
 
 - [The architecture](explanation/architecture.md): one TypeScript codebase, one database, one domain, and how the parts fit. The diagrams are in [C4 architecture](architecture/README.md), also as [Mermaid](architecture/generated/mermaid.md).
-- [Proposals and review](explanation/proposals-and-review.md): why every change to the Tree is a reviewed Proposal.
+- [Proposals and review](explanation/proposals-and-review.md): why every change to the Tree is a reviewed Proposal, and why the Vault import comes as Import batches.
 - [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, Living people, images, the Vault and this public repo.
 - [The relation to the family](explanation/relation-to-the-family.md): Relatives, Possible relatives and Unrelated people, and why they are computed from the evidence.
+- [Research leads](explanation/research-leads.md): why leads sit beside the Tree and change without review, how the gap finder picks gaps, registers and years, and what is proved.
 - [Offline and the app](explanation/offline.md): what works without a connection, and why offline means Drafts rather than sync.
 - [Proofs with LemmaScript](explanation/proofs.md): which rules are proved, what that buys, and where the proofs stop.
 

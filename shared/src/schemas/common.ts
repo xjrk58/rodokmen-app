@@ -66,6 +66,25 @@ export const GeoPoint = z
 /** Language of the interface and of emails. */
 export const UiLanguage = z.enum(['cs', 'en']).meta({ id: 'UiLanguage' });
 
+/**
+ * A BCP 47 language tag in its canonical case (RFC 5646): a language subtag (`cs`, `la`, `de`,
+ * `pl`, `ru`), optionally a script (`sr-Latn`), a region (`de-AT`) and variants. Checked for its
+ * shape, not against a list, so a new language needs no change here. The database checks the
+ * same pattern (migration 0010_name_languages).
+ */
+export const LANGUAGE_TAG_PATTERN = /^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?(-([0-9a-z]{5,8}|[0-9][0-9a-z]{3}))*$/;
+
+/** The language a Name is written in (tree-model spec, "Names carry a language tag"). */
+export const LanguageTag = z
+  .string()
+  .max(35)
+  .regex(LANGUAGE_TAG_PATTERN, 'a BCP 47 language tag such as cs, la, de or pl')
+  .meta({
+    id: 'LanguageTag',
+    description: 'BCP 47 language tag in canonical case, such as cs (Czech), la (Latin), de (German) or pl (Polish)',
+    examples: ['cs', 'la', 'de'],
+  });
+
 /** Languages that historical Place names were recorded in. */
 export const NameLanguage = z.enum(['cs', 'de', 'la']).meta({ id: 'NameLanguage', description: 'Czech, German or Latin' });
 
@@ -91,4 +110,5 @@ export type Period = z.infer<typeof Period>;
 export type GeoPoint = z.infer<typeof GeoPoint>;
 export type UiLanguage = z.infer<typeof UiLanguage>;
 export type NameLanguage = z.infer<typeof NameLanguage>;
+export type LanguageTag = z.infer<typeof LanguageTag>;
 export type ApiError = z.infer<typeof ApiError>;

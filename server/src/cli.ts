@@ -11,6 +11,7 @@ import { OPENAPI_FILE, openApiJson } from './ops/openapi-file.js';
 import { backupStatusReader, httpHealthCheck, Watchdog } from './ops/watchdog.js';
 import { systemClock } from './clock.js';
 import { messageOf } from './errors.js';
+import { vaultImportCommand } from './vault-import/command.js';
 
 const USAGE = `Usage: node dist/cli.js <command>
 
@@ -23,6 +24,10 @@ const USAGE = `Usage: node dist/cli.js <command>
   alert --subject S [--details D] email the Owner an alert
   health [url]                    exit 0 when the health check passes
   watchdog                        alert the Owner on failing health checks and Backups
+  vault-import --vault DIR [--dry-run] [--report FILE] [--name N] [--given-by N] [--root ID]…
+                                  import the Vault through the API as one Import batch, with
+                                  RODOKMEN_URL and an Agent token in RODOKMEN_TOKEN (see
+                                  server/src/vault-import/README.md)
 `;
 
 type Config = ReturnType<typeof loadConfig>;
@@ -114,7 +119,11 @@ const COMMANDS: Record<string, Command> = {
   },
 };
 
+/** Commands that are clients of a running server: they need no server configuration. */
+const CLIENT_COMMANDS: Record<string, (args: string[]) => Promise<number | null>> = { 'vault-import': vaultImportCommand };
+
 async function run([name, ...args]: string[]): Promise<number> {
+  if (name !== undefined && Object.hasOwn(CLIENT_COMMANDS, name)) return (await CLIENT_COMMANDS[name]!(args)) ?? (console.error(USAGE), 2);
   const command = name !== undefined && Object.hasOwn(COMMANDS, name) ? COMMANDS[name] : undefined;
   const code = command ? await command(loadConfig(), args) : null;
   if (code !== null) return code;

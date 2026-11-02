@@ -40,6 +40,16 @@ Merging two records of the same Person works the same way: the merged Person is 
 
 The one exception to the append-only log is erasure, still to be built: when a Living relative asks to be removed, the Owner erases them from the log as well. A relative's wish to be forgotten outweighs a complete audit trail ([Privacy](privacy.md)).
 
+## Import batches
+
+The Vault comes into the Tree once, as thousands of Proposals from one Agent (ADR 0010). One by one, they would bury the review queue, and many of them depend on each other: a Person's baptism cites a Source that an earlier Proposal creates.
+
+So the importer submits them into an Import batch. Within a batch a Proposal may refer to a record an earlier one creates, so they are submitted in order, and one that builds on a rejected Proposal is blocked rather than accepted against a gap. The review queue shows the batch as one entry. An Editor reads it in order or as a random sample, and the Owner alone may accept the whole batch after a confirmation. Even then each Proposal is accepted on its own, in its own transaction, and logged as the importing Agent's like any other; those that fail stay pending with the ones that build on them.
+
+Such a batch needs far more requests than an Agent's hourly limit allows, so an Agent's requests to its own batches count against a separate, larger window. The limit on what it may do is unchanged: it still only proposes.
+
+Research leads from the Vault link Persons and Places that exist only once the batch is accepted, so the importer creates them on a later run. Leads are not Proposals at all; why: [Research leads](research-leads.md).
+
 ## Where the rules are
 
-Who may accept, reject, merge and undo, that every Proposal carries evidence, how conflicts are detected and when an undo is blocked are pure rules in `shared/src/rules.ts`, proved with LemmaScript ([verification](../verification.md)). The requirements are in the OpenSpec change `add-proposals-and-review`.
+Who may accept, reject, merge and undo, who may accept a whole Import batch, that every Proposal carries evidence (Research notes and Labels state no fact, so need none), how conflicts are detected and when an undo is blocked are pure rules in `shared/src/rules.ts`, proved with LemmaScript ([verification](../verification.md)). The requirements are in the OpenSpec change `add-proposals-and-review`.

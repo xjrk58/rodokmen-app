@@ -48,7 +48,7 @@ To try it against a local server (as in the [tutorial](../tutorials/first-propos
 
 ## Check the connection
 
-Ask the assistant which Rodokmen tools it has. It should list `search_persons`, `search_places`, `search_sources`, `get_record`, `get_ancestors`, `get_descendants`, `submit_proposal` and `list_my_proposals`. Then ask it to search for a Person you know.
+Ask the assistant which Rodokmen tools it has. It should list `search_persons`, `search_places`, `search_sources`, `get_record`, `get_ancestors`, `get_descendants`, `submit_proposal` and `list_my_proposals`, and the Research lead tools `list_leads`, `create_lead`, `update_lead`, `add_search_record` and `close_lead` ([how an Agent uses them](record-research-as-an-agent.md)). Then ask it to search for a Person you know.
 
 Proposals it submits appear in the review queue with an **Agent** badge.
 

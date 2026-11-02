@@ -8,6 +8,8 @@
 //   #settings        Settings
 //   #map, #map=z/lat/lon   the map; #life/<id> the map with that Person's life path
 //   #sign-in, #invite/<token>, #link/<token>   signing in
+//   #leads, #leads/place/<id>   Research leads, all or at a Place; #leads/<id> one lead
+//   #leads/new[/person/<id> | /place/<id>]   writing a lead
 //   #work/…          the work panel (Propose, Drafts, review, history; src/work.js)
 
 const ID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
@@ -17,7 +19,8 @@ const TOKEN = '[A-Za-z0-9_-]{20,200}';
  * @typedef {{ screen: 'home' } | { screen: 'tree', focus: string | null } | { screen: 'people' }
  *   | { screen: 'person', id: string } | { screen: 'settings' } | { screen: 'map', life: string | null }
  *   | { screen: 'sign-in' } | { screen: 'invite', token: string } | { screen: 'link', token: string }
- *   | { screen: 'work', view: string }} Route
+ *   | { screen: 'work', view: string } | { screen: 'leads', place: string | null } | { screen: 'lead', id: string }
+ *   | { screen: 'lead-new', person: string | null, place: string | null }} Route
  */
 
 /**
@@ -33,12 +36,31 @@ export function parseRoute(hash) {
   if (h === 'people') return { screen: 'people' };
   if ((m = new RegExp(`^people/(${ID})$`, 'i').exec(h))) return { screen: 'person', id: m[1].toLowerCase() };
   if (h === 'settings') return { screen: 'settings' };
+  if (h === 'leads' || h.startsWith('leads/')) return parseLeadsRoute(h);
   if (h === 'map' || h.startsWith('map=')) return { screen: 'map', life: null };
   if ((m = new RegExp(`^life/(${ID})$`, 'i').exec(h))) return { screen: 'map', life: m[1].toLowerCase() };
   if (h === 'sign-in') return { screen: 'sign-in' };
   if ((m = new RegExp(`^invite/(${TOKEN})$`).exec(h))) return { screen: 'invite', token: m[1] };
   if ((m = new RegExp(`^link/(${TOKEN})$`).exec(h))) return { screen: 'link', token: m[1] };
   if ((m = /^work(?:\/([a-z]+))?/.exec(h))) return { screen: 'work', view: m[1] ?? 'propose' };
+  return { screen: 'home' };
+}
+
+/**
+ * The Research lead addresses: #leads, #leads/place/<id>, #leads/<id>, #leads/new[/person|place/<id>].
+ * @param {string} h
+ * @returns {Route}
+ */
+function parseLeadsRoute(h) {
+  let m;
+  if (h === 'leads') return { screen: 'leads', place: null };
+  if ((m = new RegExp(`^leads/place/(${ID})$`, 'i').exec(h))) return { screen: 'leads', place: m[1].toLowerCase() };
+  if (h === 'leads/new') return { screen: 'lead-new', person: null, place: null };
+  if ((m = new RegExp(`^leads/new/(person|place)/(${ID})$`, 'i').exec(h))) {
+    const id = m[2].toLowerCase();
+    return m[1].toLowerCase() === 'person' ? { screen: 'lead-new', person: id, place: null } : { screen: 'lead-new', person: null, place: id };
+  }
+  if ((m = new RegExp(`^leads/(${ID})$`, 'i').exec(h))) return { screen: 'lead', id: m[1].toLowerCase() };
   return { screen: 'home' };
 }
 
@@ -53,6 +75,9 @@ export function needsMember(route) {
     route.screen === 'people' ||
     route.screen === 'person' ||
     route.screen === 'settings' ||
+    route.screen === 'leads' ||
+    route.screen === 'lead' ||
+    route.screen === 'lead-new' ||
     (route.screen === 'map' && route.life !== null)
   );
 }
@@ -61,5 +86,7 @@ export function needsMember(route) {
 export const treeAddress = (id) => `#person-${id}`;
 /** The address of a person page. @param {string} id */
 export const personAddress = (id) => `#people/${id}`;
+/** The address of a Research lead. @param {string} id */
+export const leadAddress = (id) => `#leads/${id}`;
 /** The address of a Person's life path on the map. @param {string} id */
 export const lifeAddress = (id) => `#life/${id}`;

@@ -92,6 +92,11 @@ export function onLanguageChange(listener) {
   listeners.add(listener);
 }
 
+/** Whether the interface has a text for this key. @param {string} key */
+export function has(key) {
+  return Object.hasOwn(strings, key);
+}
+
 /**
  * @param {string} key
  * @param {Record<string, string | number>} [params]

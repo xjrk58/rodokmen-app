@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { CACHE_LIMIT, toEvict } from '../../src/cache.js';
 import { chooseFocus, clampDepth } from '../../src/focus.js';
 import { familyRoots, isShown, relationFilter, relationKnown, relationOf, rootsKnown, setFamilyRoots } from '../../src/relation.js';
-import { lifeAddress, needsMember, parseRoute, personAddress, treeAddress } from '../../src/routes.js';
+import { leadAddress, lifeAddress, needsMember, parseRoute, personAddress, treeAddress } from '../../src/routes.js';
 import { P, summary } from '../e2e/family-data.js';
 
 test('addresses: the tree focus is #person-<id>, and every screen has its own', () => {
@@ -26,6 +26,17 @@ test('addresses: the tree focus is #person-<id>, and every screen has its own', 
   assert.deepEqual(parseRoute('#work/review/x'), { screen: 'work', view: 'review' });
   assert.deepEqual(parseRoute('#work'), { screen: 'work', view: 'propose' });
   for (const odd of ['#person-123', '#people/x', '#invite/short', '#elsewhere']) assert.deepEqual(parseRoute(odd), { screen: 'home' }, odd);
+});
+
+test('addresses of Research leads: the list, at a Place, one lead, and writing one about a Person or a Place', () => {
+  assert.deepEqual(parseRoute('#leads'), { screen: 'leads', place: null });
+  assert.deepEqual(parseRoute(`#leads/place/${P.jan}`), { screen: 'leads', place: P.jan });
+  assert.deepEqual(parseRoute(leadAddress(P.jan)), { screen: 'lead', id: P.jan });
+  assert.deepEqual(parseRoute('#leads/new'), { screen: 'lead-new', person: null, place: null });
+  assert.deepEqual(parseRoute(`#leads/new/person/${P.jan}`), { screen: 'lead-new', person: P.jan, place: null });
+  assert.deepEqual(parseRoute(`#leads/new/place/${P.jan.toUpperCase()}`), { screen: 'lead-new', person: null, place: P.jan });
+  for (const odd of ['#leads/x', '#leads/new/house/x', '#leads/place/']) assert.deepEqual(parseRoute(odd), { screen: 'home' }, odd);
+  for (const hash of ['#leads', leadAddress(P.jan), '#leads/new']) assert.equal(needsMember(parseRoute(hash)), true, hash);
 });
 
 test('family screens need a signed-in Member; the map, signing in and the work panel do not', () => {

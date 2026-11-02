@@ -59,7 +59,7 @@ describe('search folding: shared foldForSearch and the database rdk_fold agree',
         .execute();
       await tx
         .insertInto('name')
-        .values({ person_id: id, given: 'Cäcilie', surname: 'Großmann', type: 'german', as_found: 'Cäcilie Großmann', sort_order: 1 })
+        .values({ person_id: id, given: 'Cäcilie', surname: 'Großmann', type: 'other', language: 'de', as_found: 'Cäcilie Großmann', sort_order: 1 })
         .execute();
       return id;
     });

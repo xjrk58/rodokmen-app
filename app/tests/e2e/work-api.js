@@ -93,7 +93,17 @@ export function me(role) {
     displayName: editor ? 'Eva Editor' : 'Karel Contributor',
     language: 'en',
     role,
-    permissions: { propose: true, review: editor, inviteMembers: editor, changeRoles: false, disableMembers: false, markFamilyRoots: false },
+    permissions: {
+      propose: true,
+      writeLeads: true,
+      decideSuggestions: true,
+      review: editor,
+      inviteMembers: editor,
+      changeRoles: false,
+      disableMembers: false,
+      markFamilyRoots: false,
+      acceptBatch: false,
+    },
     passkeyCount: 1,
     person: null,
     familyRoots: [],
@@ -142,7 +152,22 @@ export function personDetail(n, given, surname) {
     living: false,
     relation: 'unrelated',
     familyRoot: false,
-    names: [{ id: ID(n + 1000), version: 1, personId: ID(n), given, surname, type: 'birth', asFound: `${given} ${surname}`, primary: true, citations: [] }],
+    labels: [],
+    notes: null,
+    names: [
+      {
+        id: ID(n + 1000),
+        version: 1,
+        personId: ID(n),
+        given,
+        surname,
+        type: 'birth',
+        language: 'cs',
+        asFound: `${given} ${surname}`,
+        primary: true,
+        citations: [],
+      },
+    ],
     events: [],
     familiesAsPartner: [],
     familiesAsChild: [],
@@ -209,6 +234,10 @@ export function conflictingProposal() {
     ],
     citations: [],
     conflicts: 1,
+    answersLeads: [],
+    batch: null,
+    dependsOn: [],
+    blockedBy: null,
   };
 }
 
@@ -228,7 +257,11 @@ export function places(...names) {
  * @returns {import('../../src/types.js').SourceSearchResult}
  */
 export function sources(title, type) {
-  return { items: [{ id: ID(250), version: 1, type, title, repository: null, reference: null, url: null, familyAccount: null }], limit: 8, offset: 0 };
+  return {
+    items: [{ id: ID(250), version: 1, type, title, repository: null, reference: null, url: null, familyAccount: null, register: null }],
+    limit: 8,
+    offset: 0,
+  };
 }
 
 /** The answer to a submitted Proposal. @param {string} id @returns {ProposalView} */

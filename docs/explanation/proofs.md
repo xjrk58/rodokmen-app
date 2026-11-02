@@ -10,7 +10,8 @@ The proved rules are pure functions in `shared/src/`: no database, no clock, no 
 - that a Proposal carries evidence, when it conflicts with the current Tree, and when an undo is blocked;
 - the hourly window of an Agent's rate limit;
 - who is Living, and the date ranges of uncertain dates (EDTF);
-- the relation to the family.
+- the relation to the family;
+- Research leads: when a lead may be closed as not found, which leads accepting or undoing a Proposal changes, which links of a lead an Export keeps, and what the gap finder suggests ([Research leads](research-leads.md#what-is-proved)).
 
 [`docs/verification.md`](../verification.md) lists each proof with the requirement it proves.
 

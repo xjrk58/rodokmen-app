@@ -220,7 +220,16 @@ describe('Merging Persons and undoing Proposals', () => {
       (
         await submit(other, [
           ...citation('Y1'),
-          { op: 'addName', personId: prokop, baseVersion: p.version, given: 'Procopius', surname: 'Invented', type: 'latin', asFound: 'Procopius Inventus' },
+          {
+            op: 'addName',
+            personId: prokop,
+            baseVersion: p.version,
+            given: 'Procopius',
+            surname: 'Invented',
+            type: 'other',
+            language: 'la',
+            asFound: 'Procopius Inventus',
+          },
           { op: 'addRole', eventId: L.janDeath, personId: prokop, role: 'witness', baseVersion: death.version },
           { op: 'linkChild', familyId: L.janFirstFamily, childId: prokop, linkType: 'foster', baseVersion: family.version },
           { op: 'attachCitation', citationId: 'tmp:citY1', eventId: L.janDeath, baseVersion: death.version },
@@ -317,7 +326,8 @@ describe('Merging Persons and undoing Proposals', () => {
             baseVersion: (await person(kristyna)).version,
             given: 'Christina',
             surname: 'Inventa',
-            type: 'latin',
+            type: 'other',
+            language: 'la',
             asFound: 'Christina Inventa',
           },
           { op: 'attachCitation', citationId: 'tmp:citK2', nameId: 'tmp:n' },
@@ -381,8 +391,8 @@ describe('Merging Persons and undoing Proposals', () => {
       ]),
     );
     // The entries before the undo still name her, though she is gone.
-    expect(said(y.id, 'en')).toContain('adds the Name “Christina Inventa” (Latin form) to Kristýna Invented');
-    expect(said(y.id, 'cs')).toContain('přidává jméno „Christina Inventa“ (latinská podoba) osobě: Kristýna Invented');
+    expect(said(y.id, 'en')).toContain('adds the Name “Christina Inventa” (other form, Latin) to Kristýna Invented');
+    expect(said(y.id, 'cs')).toContain('přidává jméno „Christina Inventa“ (jiná podoba, latinsky) osobě: Kristýna Invented');
     expect(said(root, 'en')).toEqual(['marks Kristýna Invented as a Family root']);
     for (const h of history) {
       expect(h.summaries.map((s) => s.en).join('\n')).not.toMatch(/record [0-9a-f]{6}/);

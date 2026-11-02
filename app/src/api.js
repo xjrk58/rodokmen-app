@@ -22,6 +22,10 @@ import { hex } from './text.js';
 /** @typedef {import('./types.js').RejectBody} RejectBody */
 /** @typedef {import('./types.js').AcceptBody} AcceptBody */
 /** @typedef {import('./types.js').UndoBody} UndoBody */
+/** @typedef {import('./types.js').BatchView} BatchView */
+/** @typedef {import('./types.js').BatchList} BatchList */
+/** @typedef {import('./types.js').AcceptBatchBody} AcceptBatchBody */
+/** @typedef {import('./types.js').AcceptBatchResult} AcceptBatchResult */
 
 export const API = '/api/';
 
@@ -122,13 +126,15 @@ export const getHourglass = (id, depth, signal) => api(`persons/${encodeURICompo
 /**
  * People list and search: every Person by any Name, or all of them alphabetically without a query;
  * with `relation`, only Persons of those relations to the family (relative,possible).
- * @param {{ q: string, offset: number, limit: number, relation?: string | null }} o
+ * @param {{ q: string, offset: number, limit: number, relation?: string | null, labels?: string[] }} o labels: only Persons carrying all of them
  * @param {AbortSignal} [signal]
  * @returns {Promise<PersonSearchResult>}
  */
 export const listPersons = (o, signal) =>
   api(
-    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}limit=${o.limit}&offset=${o.offset}`,
+    `persons?${o.q.trim() ? `q=${encodeURIComponent(o.q.trim())}&` : ''}${o.relation ? `relation=${encodeURIComponent(o.relation)}&` : ''}${(o.labels ?? [])
+      .map((l) => `label=${encodeURIComponent(l)}&`)
+      .join('')}limit=${o.limit}&offset=${o.offset}`,
     { signal },
   );
 
@@ -249,6 +255,25 @@ export const myProposals = (signal) => api('proposals?mine=true&limit=100', { si
 /** @param {AbortSignal} [signal] @returns {Promise<ProposalList>} */
 export const reviewQueue = (signal) => api('review?limit=50', { signal });
 
+/** Import batches with their progress (review spec, "Batch view in the review queue"). @param {AbortSignal} [signal] @returns {Promise<BatchList>} */
+export const listBatches = (signal) => api('batches', { signal });
+
+/**
+ * A batch's Proposals in batch order, or a random sample of its pending ones.
+ * @param {string} id
+ * @param {{ sample: number } | { offset: number, limit: number }} q
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ProposalList>}
+ */
+export const batchProposals = (id, q, signal) =>
+  api(`batches/${encodeURIComponent(id)}/proposals?${'sample' in q ? `sample=${q.sample}` : `offset=${q.offset}&limit=${q.limit}`}`, { signal });
+
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<BatchView>} */
+export const getBatch = (id, signal) => api(`batches/${encodeURIComponent(id)}`, { signal });
+
+/** @param {string} id @param {AcceptBatchBody} body @returns {Promise<AcceptBatchResult>} */
+export const acceptBatch = (id, body) => api(`batches/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
+
 /** @param {string} id @param {AbortSignal} [signal] @returns {Promise<ProposalView>} */
 export const getProposal = (id, signal) => api(`proposals/${encodeURIComponent(id)}`, { signal });
 
@@ -276,6 +301,53 @@ export const notificationSettings = (signal) => api('me/notifications', { signal
 /** @param {NotificationSettings} body @returns {Promise<NotificationSettings>} */
 export const setNotificationSettings = (body) => api('me/notifications', { method: 'PUT', body });
 
+// ---------------------------------------------------------------- Research leads
+
+/**
+ * Research leads: open and in-progress first, newest change first.
+ * @param {{ status?: string | null, personId?: string | null, placeId?: string | null, archive?: string | null, assigneeId?: string | null, limit?: number }} q
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import('./types.js').LeadList>}
+ */
+export function listLeads(q, signal) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(q)) if (value !== null && value !== undefined && value !== '') params.set(key, String(value));
+  return api(`leads?${params.toString()}`, { signal });
+}
+
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<import('./types.js').LeadDetail>} */
+export const getLead = (id, signal) => api(`leads/${encodeURIComponent(id)}`, { signal });
+
+/** @param {import('./types.js').CreateLeadBody} body @returns {Promise<import('./types.js').LeadDetail>} */
+export const createLead = (body) => api('leads', { method: 'POST', body });
+
+/** @param {string} id @param {import('./types.js').UpdateLeadBody} body @returns {Promise<import('./types.js').LeadDetail>} */
+export const updateLead = (id, body) => api(`leads/${encodeURIComponent(id)}`, { method: 'PATCH', body });
+
+/** @param {string} id @param {import('./types.js').SearchRecordBody} body @returns {Promise<import('./types.js').LeadDetail>} */
+export const addSearch = (id, body) => api(`leads/${encodeURIComponent(id)}/searches`, { method: 'POST', body });
+
+/** @param {string} id @param {import('./types.js').CloseLeadBody} body @returns {Promise<import('./types.js').LeadDetail>} */
+export const closeLead = (id, body) => api(`leads/${encodeURIComponent(id)}/close`, { method: 'POST', body });
+
+/**
+ * Suggested leads, apart from the leads.
+ * @param {{ personId?: string | null, placeId?: string | null, limit?: number }} q
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import('./types.js').SuggestionList>}
+ */
+export function listSuggestions(q, signal) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(q)) if (value !== null && value !== undefined) params.set(key, String(value));
+  return api(`lead-suggestions?${params.toString()}`, { signal });
+}
+
+/** @param {string} id @returns {Promise<import('./types.js').LeadDetail>} */
+export const acceptSuggestion = (id) => api(`lead-suggestions/${encodeURIComponent(id)}/accept`, { method: 'POST' });
+
+/** @param {string} id @returns {Promise<import('./types.js').LeadSuggestion>} */
+export const dismissSuggestion = (id) => api(`lead-suggestions/${encodeURIComponent(id)}/dismiss`, { method: 'POST' });
+
 /** The URL of an upload's display copy. @param {string} uploadId */
 export const uploadUrl = (uploadId) => `${API}uploads/${encodeURIComponent(uploadId)}`;
 
@@ -285,9 +357,22 @@ export const uploadUrl = (uploadId) => `${API}uploads/${encodeURIComponent(uploa
  * @param {Blob} blob
  * @returns {Promise<string>}
  */
-export async function uploadImage(blob) {
+export const uploadImage = (blob) => uploadFile(blob, /** @type {UploadTicket['upload']['contentType']} */ (blob.type || 'image/jpeg'));
+
+/**
+ * Uploads one PDF document for a Source (evidence-media spec, "Documents on Sources"). Returns the upload id.
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+export const uploadDocument = (blob) => uploadFile(blob, 'application/pdf');
+
+/**
+ * @param {Blob} blob
+ * @param {UploadTicket['upload']['contentType']} contentType
+ * @returns {Promise<string>}
+ */
+async function uploadFile(blob, contentType) {
   const sha256 = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())));
-  const contentType = blob.type || 'image/jpeg';
   /** @type {UploadTicket} */
   const ticket = await api('uploads', { method: 'POST', body: { contentType, byteSize: blob.size, sha256 } });
   let put;

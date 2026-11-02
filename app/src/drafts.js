@@ -22,6 +22,7 @@ export const QUOTA_WARNING = 0.8;
  * @property {string} idempotencyKey
  * @property {string} createdAt ISO time
  * @property {string} updatedAt ISO time
+ * @property {{ id: string, question: string }} [lead] the Research lead the finding answers ("Start from this lead")
  */
 
 /**
@@ -38,6 +39,7 @@ export const QUOTA_WARNING = 0.8;
  * @property {Blob} blob
  * @property {string} name
  * @property {string | null} uploadId set once uploaded, so a retried submit does not upload it again
+ * @property {'photo' | 'document'} [kind] a photo (the default) or a PDF document for the Source
  */
 
 /** @type {Promise<IDBDatabase> | null} */

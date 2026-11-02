@@ -74,7 +74,7 @@ describe('labels of records an undo removed, from the log (#74)', () => {
       (
         await submit(contributor, [
           { op: 'createPerson', tempId: 'tmp:p', sex: 'female', name: { given: 'Ludmila', surname: 'Invented', type: 'birth', asFound: 'Ludmilla Inventa' } },
-          { op: 'addName', tempId: 'tmp:n', personId: 'tmp:p', given: 'Lidmila', surname: 'Invented', type: 'german', asFound: 'Lidmila' },
+          { op: 'addName', tempId: 'tmp:n', personId: 'tmp:p', given: 'Lidmila', surname: 'Invented', type: 'other', language: 'de', asFound: 'Lidmila' },
           { op: 'createPerson', tempId: 'tmp:c', sex: 'male', name: { given: 'Václav', surname: 'Invented', type: 'birth', asFound: 'Wenceslaus' } },
           { op: 'createEvent', tempId: 'tmp:e', type: 'baptism', date: '1830-05-06', placeId: L.kamennaLhota },
           { op: 'addRole', eventId: 'tmp:e', personId: 'tmp:c', role: 'child' },

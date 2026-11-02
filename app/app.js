@@ -9,6 +9,7 @@ import { required } from './src/dom.js';
 import { FamilyMap } from './src/family-map.js';
 import { detectLanguage, onLanguageChange, setLanguage, t } from './src/i18n.js';
 import { LayersPanel } from './src/layers-panel.js';
+import { placeLeads } from './src/leads-screen.js';
 import { createMap } from './src/map.js';
 import { PlaceSheet } from './src/place-sheet.js';
 import { SearchBox } from './src/search-box.js';
@@ -108,8 +109,17 @@ async function main() {
   const mapView = createMap(byId('map', HTMLElement), data, () => document.body.dataset.screen === 'map');
   mapShown = mapView;
 
-  /** @type {(family: { placeId: string }) => HTMLElement} */
-  const familyHere = (family) => (familyMap ? familyMap.familyHere(family) : document.createElement('div'));
+  /**
+   * A Place of the Tree on the sheet: who of the family was there, and its Research leads (research-leads spec, "Village sheet").
+   * @type {(family: { placeId: string }) => HTMLElement}
+   */
+  const familyHere = (family) => {
+    const box = document.createElement('div');
+    if (!familyMap) return box;
+    box.append(familyMap.familyHere(family));
+    if (shell.me) box.append(placeLeads(family.placeId, { cache: true, writeLeads: shell.me.permissions.writeLeads }));
+    return box;
+  };
   const sheet = new PlaceSheet(byId('place-sheet', HTMLElement), {
     index,
     gazetteer,

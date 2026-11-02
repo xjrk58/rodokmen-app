@@ -16,6 +16,17 @@ const PAGE = 50;
 const SEARCH_DELAY_MS = 250;
 /** The search kept while the Member looks at a person page and comes back. */
 let lastQuery = '';
+let lastLabels = '';
+
+/** The Labels typed into the filter, separated by commas. @param {string} text */
+const labelsOf = (text) => [
+  ...new Set(
+    text
+      .split(',')
+      .map((l) => l.trim())
+      .filter(Boolean),
+  ),
+];
 
 /**
  * @param {{ hit: PersonSearchHit }} props
@@ -38,15 +49,17 @@ function Result({ hit }) {
  */
 export function PeopleSearch({ cache }) {
   const [query, setQuery] = useState(lastQuery);
+  const [labelText, setLabelText] = useState(lastLabels);
   const [pages, setPages] = useState(1);
   const [includeUnrelated, setIncludeUnrelated] = useState(false);
   const settled = useDebounced(query.trim(), SEARCH_DELAY_MS);
+  const labels = labelsOf(useDebounced(labelText, SEARCH_DELAY_MS));
   const limit = PAGE * pages;
   // Unrelated people are left out by the server, so that a page holds as many as it can.
   const relation = relationFilter(includeUnrelated);
   const loaded = useCachedLoad(
-    `people:${settled}:${relation ?? 'all'}:${limit}`,
-    (signal) => listPersons({ q: settled, offset: 0, limit, relation }, signal),
+    `people:${settled}:${relation ?? 'all'}:${labels.join(',')}:${limit}`,
+    (signal) => listPersons({ q: settled, offset: 0, limit, relation, labels }, signal),
     cache,
   );
   const items = loaded.data?.items ?? [];
@@ -76,6 +89,19 @@ export function PeopleSearch({ cache }) {
         }}
       />
     </form>
+    <label class="field small label-filter"
+      ><span>${t('people.labelFilter')}</span
+      ><input
+        type="text"
+        data-testid="label-filter"
+        placeholder=${t('people.labelPlaceholder')}
+        value=${labelText}
+        onInput=${(/** @type {Event} */ e) => {
+          lastLabels = /** @type {HTMLInputElement} */ (e.currentTarget).value;
+          setLabelText(lastLabels);
+          setPages(1);
+        }}
+    /></label>
     ${
       showSwitch
         ? html`<label class="switch-row"
@@ -93,7 +119,7 @@ export function PeopleSearch({ cache }) {
     <ul class="person-results" data-testid="person-results" aria-busy=${loaded.loading ? 'true' : 'false'}>
       ${shown.map((hit) => html`<${Result} key=${hit.person.id} hit=${hit} />`)}
     </ul>
-    ${!loaded.loading && !loaded.error && shown.length === 0 ? html`<p class="empty" data-testid="no-people">${settled ? t('people.none') : t('people.empty')}</p>` : null}
+    ${!loaded.loading && !loaded.error && shown.length === 0 ? html`<p class="empty" data-testid="no-people">${settled || labels.length ? t('people.none') : t('people.empty')}</p>` : null}
     ${items.length >= limit ? html`<button type="button" class="button" data-testid="more-people" onClick=${() => setPages(pages + 1)}>${t('people.more')}</button>` : null}
   </div>`;
 }

@@ -5,14 +5,15 @@ Rodokmen is a private family Tree for one extended family, together with a publi
 ## What works today
 
 - **The map**: search every Municipality of the Czech lands, see which archive holds its registers and open the archive's portal, lay the 19th-century military surveys over today's map, and install it as an app that works offline.
-- **The Tree**: Persons, Names, Families, Events with their Roles, Places and Houses, Sources and Citations with private page images, for invited Members who sign in with passkeys.
+- **The Tree**: Persons, Names with their language, Families, Events with their Roles, Places, Houses, Parishes and Estates, Sources and Citations with private page images and PDF documents, research notes and Labels, for invited Members who sign in with passkeys.
 - **Proposals and review**: Members submit each finding as a Proposal, offline too as a Draft. Editors accept, correct or reject it whole, merge duplicate Persons and undo whole Proposals, and every change has a history.
 - **The family view**: for signed-in Members the tree around a Focus Person is the home screen, with people search, person pages and the family on the map through the decades. The Owner invites Members and sets their roles in the app.
 - **The relation to the family**: from the Family roots the Owner marks, every Person is a Relative, a Possible relative or an Unrelated person, worked out from the evidence.
-- **Agents and MCP**: in Settings, the Owner gives an AI assistant its own Agent account and tokens; through the MCP server it searches the Tree and submits Proposals, and nothing else.
+- **Research leads**: Members and Agents write down the next steps of the research and every search, found or not; a Proposal names the leads it answers, and the gap finder suggests leads for gaps in the Relatives' records, with the register and years to check.
+- **Agents and MCP**: in Settings, the Owner gives an AI assistant its own Agent account and tokens; through the MCP server it searches the Tree, submits Proposals and keeps Research leads, and nothing else.
 - **Hosting**: one EU server, deploys that switch only to a healthy release without failing a request, nightly encrypted Backups with a monthly restore test, and email alerts.
 
-In progress: Research leads ([#16](https://github.com/xjrk58/rodokmen-app/issues/16)), the one-time import of the Vault ([#17](https://github.com/xjrk58/rodokmen-app/issues/17)) and scan reading ([#18](https://github.com/xjrk58/rodokmen-app/issues/18)). Planned: Exports and erasure ([#19](https://github.com/xjrk58/rodokmen-app/issues/19)), and Country packs beyond the Czech lands ([#67](https://github.com/xjrk58/rodokmen-app/issues/67)).
+In progress: the one-time import of the Vault ([#17](https://github.com/xjrk58/rodokmen-app/issues/17): the importer and Import batches work, the import itself is still to come) and scan reading ([#18](https://github.com/xjrk58/rodokmen-app/issues/18)). Planned: Exports and erasure ([#19](https://github.com/xjrk58/rodokmen-app/issues/19)), and Country packs beyond the Czech lands ([#67](https://github.com/xjrk58/rodokmen-app/issues/67)).
 
 ## This repo is public
 
