@@ -9,6 +9,7 @@ import type { Account } from '../src/db/types.js';
 import { vaultImportCommand } from '../src/vault-import/command.js';
 import { libreOfficeConvert } from '../src/vault-import/run.js';
 import { createAgentWithToken, ensureOwner, signIn } from './helpers.js';
+import { fixtureVault, FIXTURE_VAULT } from './fixture-vault.js';
 import { startLiveServer, type LiveServer } from './live-server.js';
 
 /**
@@ -17,7 +18,6 @@ import { startLiveServer, type LiveServer } from './live-server.js';
  * dry run, the import, the Owner accepting the batch, and the run that creates the leads. Also
  * the DOC conversion with LibreOffice where it is installed, and the fixture against the guard.
  */
-const FIXTURE = new URL('./fixtures/vault/', import.meta.url).pathname;
 const REPO = new URL('../../', import.meta.url).pathname;
 const hasSoffice = await promisify(execFile)('soffice', ['--version'])
   .then(() => true)
@@ -28,6 +28,8 @@ describe('importing the fixture Vault as the README says', () => {
   let owner: Account;
   let env: NodeJS.ProcessEnv;
   let dir: string;
+  /** The fixture Vault in its layout, as the Owner's checkout would be. */
+  let vault: Awaited<ReturnType<typeof fixtureVault>>;
   const lines: string[] = [];
   const command = (args: string[]) => vaultImportCommand([...args, '--municipalities', join(dir, 'municipalities.json')], env, (l) => lines.push(l));
 
@@ -38,27 +40,29 @@ describe('importing the fixture Vault as the README says', () => {
     const { token } = await createAgentWithToken(s.t.db, s.clock, 'Vault importer');
     env = { RODOKMEN_URL: s.origin, RODOKMEN_TOKEN: token };
     dir = await mkdtemp(join(tmpdir(), 'rodokmen-readme-'));
+    vault = await fixtureVault();
     await writeFile(join(dir, 'municipalities.json'), '[]');
   }, 60_000);
   afterAll(async () => {
     await s?.close();
     if (dir) await rm(dir, { recursive: true, force: true });
+    await vault?.remove();
   });
 
   it('without RODOKMEN_URL and an Agent token it says what to set; without --vault it shows the usage', async () => {
-    expect(await vaultImportCommand(['--vault', FIXTURE], {}, (l) => lines.push(l))).toBe(2);
+    expect(await vaultImportCommand(['--vault', vault.path], {}, (l) => lines.push(l))).toBe(2);
     expect(lines.pop()).toMatch(/Set RODOKMEN_URL/);
     expect(await vaultImportCommand([], env)).toBeNull();
   });
 
   it('steps 3 to 6: dry run, import, accept the batch, and the run that creates the leads', async () => {
     const report = join(dir, 'report.md');
-    expect(await command(['--vault', FIXTURE, '--dry-run', '--report', report])).toBe(0);
+    expect(await command(['--vault', vault.path, '--dry-run', '--report', report])).toBe(0);
     expect(lines.some((l) => l.startsWith('Dry run: nothing was submitted.'))).toBe(true);
     expect(await readFile(report, 'utf8')).toContain('## Links to missing notes');
     expect((await s.t.db.selectFrom('proposal').select('id').execute()).length).toBe(0);
 
-    expect(await command(['--vault', FIXTURE, '--report', report, '--given-by', 'Owner Example'])).toBe(0);
+    expect(await command(['--vault', vault.path, '--report', report, '--given-by', 'Owner Example'])).toBe(0);
     const cookie = await signIn(s.t.db, s.clock, owner);
     const [batch] = BatchList.parse((await s.app.inject({ method: 'GET', url: '/api/batches', headers: { cookie } })).json()).items;
     expect(batch!.name).toMatch(/^Vault import \d{4}-\d{2}-\d{2}$/);
@@ -70,13 +74,13 @@ describe('importing the fixture Vault as the README says', () => {
     });
     expect(accepted.statusCode, accepted.body).toBe(200);
 
-    expect(await command(['--vault', FIXTURE, '--report', report])).toBe(0);
+    expect(await command(['--vault', vault.path, '--report', report])).toBe(0);
     expect(lines.at(-1)).toBe('Research leads: 2 (0 wait for the batch to be accepted).');
     expect(LeadList.parse((await s.app.inject({ method: 'GET', url: '/api/leads', headers: { cookie } })).json()).items).toHaveLength(2);
   });
 
   it.skipIf(!hasSoffice)('converts a DOC to PDF with LibreOffice', async () => {
-    const pdf = await libreOfficeConvert(join(FIXTURE, 'attachments/documents/rod-novaku.doc'), dir);
+    const pdf = await libreOfficeConvert(join(FIXTURE_VAULT, 'attachments/documents/rod-novaku.doc'), dir);
     expect((await readFile(pdf)).subarray(0, 5).toString('latin1')).toBe('%PDF-');
   });
 

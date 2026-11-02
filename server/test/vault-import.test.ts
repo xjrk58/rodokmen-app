@@ -11,8 +11,7 @@ import {
   SourceDetail,
   SourceSearchResult,
 } from '@rodokmen/shared';
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
@@ -20,6 +19,7 @@ import type { Municipality } from '../src/vault-import/map-places.js';
 import { readVault } from '../src/vault-import/reader.js';
 import { runImport, type ImportOptions, type ImportResult } from '../src/vault-import/run.js';
 import { bearer, createAgentWithToken, ensureOwner, signIn } from './helpers.js';
+import { fixtureVault } from './fixture-vault.js';
 import { startLiveServer, type LiveServer } from './live-server.js';
 
 /**
@@ -27,7 +27,6 @@ import { startLiveServer, type LiveServer } from './live-server.js';
  * on the invented fixture Vault in test/fixtures/vault. DOC files are "converted" by a stand-in
  * here; vault-import-soffice.test.ts converts with LibreOffice where it is installed.
  */
-const FIXTURE = new URL('./fixtures/vault/', import.meta.url).pathname;
 const MUNICIPALITIES: Municipality[] = [{ code: '572128', name: 'Vrbice', district: 'Jičín', lat: 50.38, lon: 15.39 }];
 const PDF = Buffer.from('%PDF-1.4\n% converted from the invented DOC\n%%EOF\n');
 
@@ -36,6 +35,7 @@ describe('the Vault importer', () => {
   let token: string;
   let owner: Account;
   let vault: string;
+  let removeVault: (() => Promise<void>) | undefined;
   let dry: ImportResult;
   let first: ImportResult;
 
@@ -92,13 +92,14 @@ describe('the Vault importer', () => {
     s = await startLiveServer();
     owner = await ensureOwner(s.t.db);
     ({ token } = await createAgentWithToken(s.t.db, s.clock, 'Vault importer'));
-    // A copy, so that the second-run test can add a note.
-    vault = await mkdtemp(join(tmpdir(), 'rodokmen-vault-'));
-    await cp(FIXTURE, vault, { recursive: true });
+    // A copy in the Vault's layout, which the second-run test also adds a note to.
+    const copy = await fixtureVault();
+    vault = copy.path;
+    removeVault = copy.remove;
   }, 60_000);
   afterAll(async () => {
     await s?.close();
-    if (vault) await rm(vault, { recursive: true, force: true });
+    await removeVault?.();
   });
 
   it('reads the Vault format: unknown folders are skipped and listed, every note is read', async () => {
