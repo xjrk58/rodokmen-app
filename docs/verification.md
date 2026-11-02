@@ -25,6 +25,7 @@ this page with `node scripts/verification-trace.mjs`.
 | research-leads: Gap finder suggests leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `suggestGaps` | shared/src/gaps.ts | nothing beyond the trusted base |
 | research-leads: Leads need no review | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | research-leads: What was searched is recorded | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayHaveStatus` | shared/src/leads.ts | nothing beyond the trusted base |
+| review: Accept a whole Import batch | openspec/changes/add-vault-import/specs/review/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Decide on the whole Proposal | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |

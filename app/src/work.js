@@ -37,6 +37,7 @@ import { leadStart } from './lead-parts.js';
 import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
 import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
+import { batchEntries, renderBatch } from './batch-review.js';
 import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -284,7 +285,8 @@ export class WorkPanel {
     else if (!this.me) body.replaceChildren(this.signInPrompt());
     else if (view === 'mine') await this.renderMine(a, signal);
     else if (view === 'lead' && a) await this.renderFromLead(a, b, signal);
-    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal);
+    else if (view === 'review' && this.me.permissions.review && a === 'batch' && b) await renderBatch(body, b, this.me, signal);
+    else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal, batchEntries);
     else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review }, signal);
     else await this.renderPropose(undefined);
   }

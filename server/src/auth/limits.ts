@@ -1,4 +1,4 @@
-import { AGENT_PROPOSALS_PER_HOUR, AGENT_READS_PER_HOUR, fixedWindow } from '@rodokmen/shared';
+import { AGENT_BATCH_REQUESTS_PER_HOUR, AGENT_PROPOSALS_PER_HOUR, AGENT_READS_PER_HOUR, fixedWindow } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { AgentRateWindowTable } from '../db/types.js';
@@ -14,7 +14,8 @@ import type { Clock } from '../clock.js';
 export type LimitKind = AgentRateWindowTable['kind'];
 
 export const WINDOW_MS = 3_600_000;
-export const LIMITS: Record<LimitKind, number> = { proposal: AGENT_PROPOSALS_PER_HOUR, read: AGENT_READS_PER_HOUR };
+/** The batch window counts an Agent's requests to its Import batches (agent-access spec, "Import batches have their own limit"). */
+export const LIMITS: Record<LimitKind, number> = { proposal: AGENT_PROPOSALS_PER_HOUR, read: AGENT_READS_PER_HOUR, batch: AGENT_BATCH_REQUESTS_PER_HOUR };
 
 export type Slot = { allowed: true } | { allowed: false; retryAt: Date };
 

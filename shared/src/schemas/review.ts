@@ -97,6 +97,9 @@ export const ProposalView = z
     citations: z.array(CitationPreview),
     conflicts: z.number().int().describe('Operations based on an older version of their record'),
     answersLeads: z.array(LeadRef).describe('The Research leads this finding answers; accepting marks them found'),
+    batch: z.object({ id: Id, name: z.string(), position: z.number().int() }).nullable().describe('The Import batch and its place in batch order'),
+    dependsOn: z.array(Id).describe('Earlier Proposals of its Import batch it builds on; it is accepted only after them'),
+    blockedBy: Id.nullable().describe('A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it'),
   })
   .meta({ id: 'ProposalView' });
 

@@ -21,7 +21,15 @@ import type {
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 import type { LeadEventTable, LeadLinkTable, LeadSearchTable, LeadSuggestionTable, LeadTable, ProposalLeadTable } from './lead-types.js';
-import type { PersonLabelTable, SourceDocumentTable, UploadTable } from './vault-import-types.js';
+import type {
+  ImportBatchTable,
+  PersonLabelTable,
+  ProposalDependencyTable,
+  ProposalTempTable,
+  SourceDocumentTable,
+  UploadTable,
+  VaultImportMapTable,
+} from './vault-import-types.js';
 
 export type { UploadTable } from './vault-import-types.js';
 
@@ -295,7 +303,7 @@ export interface AgentTokenTable {
 
 export interface AgentRateWindowTable {
   account_id: string;
-  kind: 'proposal' | 'read';
+  kind: 'proposal' | 'read' | 'batch';
   window_start: Timestamp;
   count: number;
 }
@@ -320,6 +328,9 @@ export interface ProposalTable {
   decision_note: string | null;
   undoes_proposal_id: string | null;
   undone_by_proposal_id: string | null;
+  /** Its Import batch and place in batch order (add-vault-import). */
+  batch_id: Generated<string | null>;
+  batch_position: Generated<number | null>;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -383,6 +394,10 @@ export interface Database {
   name: NameTable;
   person_label: PersonLabelTable;
   source_document: SourceDocumentTable;
+  import_batch: ImportBatchTable;
+  proposal_dependency: ProposalDependencyTable;
+  proposal_temp: ProposalTempTable;
+  vault_import_map: VaultImportMapTable;
   family: FamilyTable;
   family_child: FamilyChildTable;
   place: PlaceTable;

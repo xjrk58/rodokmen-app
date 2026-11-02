@@ -59,3 +59,37 @@ export interface UploadTable {
   created_at: ColumnType<Date, Date | string | undefined, never>;
   updated_at: Generated<Date>;
 }
+
+/** An Import batch (review spec): the Proposals one importer run submits together. */
+export interface ImportBatchTable extends RecordColumns {
+  name: string;
+  author_id: string;
+  vault_commit: string | null;
+  note: string | null;
+}
+
+/** An earlier Proposal of its Import batch that a Proposal builds on. */
+export interface ProposalDependencyTable {
+  proposal_id: string;
+  depends_on_id: string;
+}
+
+/** A record an accepted batch Proposal created, by its temporary id there. */
+export interface ProposalTempTable {
+  proposal_id: string;
+  temp_id: string;
+  record_id: string;
+}
+
+/** The Vault importer's id map (vault-import spec, "Re-runs submit only what is new"). */
+export interface VaultImportMapTable {
+  key: string;
+  kind: string;
+  note_hash: string | null;
+  batch_id: string;
+  proposal_id: string | null;
+  temp_id: string | null;
+  record_id: string | null;
+  created_at: ColumnType<Date, Date | string | undefined, never>;
+  updated_at: Generated<Date>;
+}

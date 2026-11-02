@@ -24,6 +24,7 @@ import { checkAnsweredLeads, markAnsweredLeads, storeAnsweredLeads } from '../le
 import { canReview, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
 import type { Snapshot } from './records.js';
 import { resolveConflicts } from './conflicts.js';
+import { checkBatchRefs, lockBatch, resolveBatchRefs, storeDependencies, storeTemps } from './batches.js';
 
 /** Writing Proposals: submit, accept (with corrections and conflict choices), reject and merge. */
 export interface ProposalDeps {
@@ -73,7 +74,14 @@ async function insertProposal(
   tx: Db,
   now: Date,
   author: Account,
-  fields: { kind: Proposal['kind']; note: string | null; idempotencyKey: string; undoes?: string; answersLeads?: readonly string[] },
+  fields: {
+    kind: Proposal['kind'];
+    note: string | null;
+    idempotencyKey: string;
+    undoes?: string;
+    answersLeads?: readonly string[];
+    batch?: { id: string; position: number };
+  },
   ops: readonly Operation[],
 ): Promise<Created> {
   const inserted = await tx
@@ -86,6 +94,8 @@ async function insertProposal(
       idempotency_key: fields.idempotencyKey,
       submitted_at: now,
       undoes_proposal_id: fields.undoes ?? null,
+      batch_id: fields.batch?.id ?? null,
+      batch_position: fields.batch?.position ?? null,
     })
     .onConflict((oc) => oc.columns(['author_id', 'idempotency_key']).doNothing())
     .returningAll()
@@ -132,8 +142,14 @@ async function insertProposal(
  * Submits a Proposal (proposals spec). An Editor's direct change is a Proposal created and
  * accepted in the same transaction, so it is logged exactly like any accepted Proposal.
  */
-export async function submitProposal(deps: ProposalDeps, author: Account, body: SubmitProposalBody): Promise<{ view: ProposalView; created: boolean }> {
+export async function submitProposal(
+  deps: ProposalDeps,
+  author: Account,
+  body: SubmitProposalBody,
+  batchId: string | null = null,
+): Promise<{ view: ProposalView; created: boolean }> {
   const editor = canReview(author);
+  if (body.direct && batchId !== null) throw new ApiProblem(400, 'invalid_proposal', 'A Proposal of an Import batch is reviewed, never a direct change.');
   if (body.direct && !mayDo(author.role, 'directEdit'))
     throw new ApiProblem(403, 'forbidden', 'Only Editors change the Tree directly. Submit a Proposal for review instead.');
   const { operations, issues } = checkOperations(body.operations, { editor });
@@ -143,13 +159,12 @@ export async function submitProposal(deps: ProposalDeps, author: Account, body: 
     deps.db,
     async (tx) => {
       await checkAnsweredLeads(tx, body.answersLeads);
-      const created = await insertProposal(
-        tx,
-        now,
-        author,
-        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads },
-        operations,
-      );
+      // In an Import batch: the next place in batch order, and the earlier Proposals it builds on (review spec).
+      const batch = batchId === null ? undefined : { id: batchId, position: (await lockBatch(tx, author, batchId)).next };
+      const dependsOn = await checkBatchRefs(tx, operations, batch?.id ?? null, batch?.position ?? null);
+      const fields = { note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads, batch };
+      const created = await insertProposal(tx, now, author, { kind: body.direct ? 'direct' : 'contribution', ...fields }, operations);
+      if (created.created && batch) await storeDependencies(tx, created.proposal.id, dependsOn);
       if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
       const accepted = await acceptInTransaction(tx, deps, created.proposal, author, { note: null, corrections: [], resolutions: [] });
       return { proposal: accepted.proposal, created: true, moves: accepted.moves };
@@ -317,9 +332,14 @@ async function acceptInTransaction(
   proposal: Proposal,
   editor: Account,
   body: AcceptBody,
+  /** Accepting a whole Import batch: the relation and the gap finder wait for the end of the batch, which gets the Persons touched. */
+  batchTouched?: Set<string>,
 ): Promise<{ proposal: Proposal; moves: UploadMove[] }> {
   const now = deps.clock.now();
-  const { effective, corrected } = applyCorrections(await loadOperations(tx, proposal.id), body, proposal, editor);
+  const corrections = applyCorrections(await loadOperations(tx, proposal.id), body, proposal, editor);
+  const { corrected } = corrections;
+  // A batch Proposal's references to earlier ones of its batch become their records (review spec, "Out of order").
+  const effective = proposal.batch_id === null ? corrections.effective : await resolveBatchRefs(tx, proposal, corrections.effective);
   await resolveConflicts(tx, effective, corrected, body.resolutions);
   for (const [position, op] of corrected) {
     await tx
@@ -332,11 +352,16 @@ async function acceptInTransaction(
   const applied = await applyOperations(tx, effective, { proposalId: proposal.id, authorId: proposal.author_id });
   await writeLog(tx, proposal, editor, now, applied);
   await followUploads(tx, applied, now);
-  const relation = affectsRelation(applied) ? await recomputeRelations(tx) : { changedIds: [] };
+  await storeTemps(tx, proposal, applied.temps);
   // The leads this finding answers are found (research-leads spec, "Findings link back to leads"); an undo reopens them (history.ts).
   if (proposal.kind !== 'undo') await markAnsweredLeads(tx, proposal.id, editor.id, now);
-  // The gap finder looks again at whom the change touched (research-leads spec, "Gap finder suggests leads").
-  await refreshSuggestions(tx, now, { personIds: [...(await touchedPersons(tx, applied.changes.list())), ...relation.changedIds] });
+  const touched = await touchedPersons(tx, applied.changes.list());
+  if (batchTouched) for (const id of touched) batchTouched.add(id);
+  else {
+    const relation = affectsRelation(applied) ? await recomputeRelations(tx) : { changedIds: [] };
+    // The gap finder looks again at whom the change touched (research-leads spec, "Gap finder suggests leads").
+    await refreshSuggestions(tx, now, { personIds: [...touched, ...relation.changedIds] });
+  }
   const updated = await tx
     .updateTable('proposal')
     .set({ status: 'accepted', decided_at: now, decided_by: editor.id, decision_note: body.note })
@@ -428,4 +453,4 @@ export async function mergePersons(
   return view;
 }
 
-export { insertProposal, acceptInTransaction, transaction, finishMoves };
+export { insertProposal, acceptInTransaction, transaction, finishMoves, lockPending };

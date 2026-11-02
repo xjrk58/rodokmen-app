@@ -1,15 +1,15 @@
-import { EVENT_TYPE_LABELS, ROLE_LABELS, type SummaryContext, type SummaryLanguage } from '@rodokmen/shared';
+import { EVENT_TYPE_LABELS, isBatchRef, parseBatchRef, ROLE_LABELS, tempLabels, type SummaryContext, type SummaryLanguage } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import { displayName } from '../tree/summaries.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-/** Every record id mentioned anywhere in some JSON values. */
+/** Every record id, and every batch reference (batch:<proposal>/tmp:x), mentioned anywhere in some JSON values. */
 export function idsIn(...values: unknown[]): string[] {
   const out = new Set<string>();
   const walk = (v: unknown) => {
-    if (typeof v === 'string' && UUID.test(v)) out.add(v);
+    if (typeof v === 'string' && (UUID.test(v) || parseBatchRef(v) !== null)) out.add(v);
     else if (Array.isArray(v)) v.forEach(walk);
     else if (v && typeof v === 'object') Object.values(v).forEach(walk);
   };
@@ -154,12 +154,46 @@ async function linkLabels(db: Db, ids: string[], out: Labels): Promise<void> {
 }
 
 /**
+ * Labels of batch references (review spec, "Proposals in an Import batch build on each other"):
+ * the record's own label once the earlier Proposal is accepted, else what that Proposal says of it.
+ */
+async function batchRefLabels(db: Db, refs: string[], out: Labels): Promise<void> {
+  const parsed = refs.flatMap((ref) => {
+    const p = parseBatchRef(ref);
+    return p ? [{ ref, ...p }] : [];
+  });
+  if (parsed.length === 0) return;
+  const proposalIds = [...new Set(parsed.map((p) => p.proposalId))];
+  const temps = await db.selectFrom('proposal_temp').selectAll().where('proposal_id', 'in', proposalIds).execute();
+  const records = await labelsFor(
+    db,
+    temps.map((t) => t.record_id),
+  );
+  const { loadOperationsOf } = await import('./views.js');
+  const stored = await loadOperationsOf(db, proposalIds);
+  for (const p of parsed) {
+    const record = temps.find((t) => t.proposal_id === p.proposalId && t.temp_id === p.tempId);
+    if (record && records.labels.has(record.record_id)) {
+      out.set(p.ref, records.labels.get(record.record_id)!);
+      continue;
+    }
+    const ops = (stored.get(p.proposalId) ?? []).map((s) => s.effective);
+    const said = (language: SummaryLanguage) => tempLabels(ops, language, records).get(p.tempId);
+    const cs = said('cs');
+    const en = said('en');
+    if (cs !== undefined && en !== undefined) out.set(p.ref, { cs, en });
+  }
+}
+
+/**
  * Readable labels of existing records (Persons by primary Name, Events by type and date,
- * Places by name, Sources by title …) for the sentences shown in review and history.
+ * Places by name, Sources by title …) for the sentences shown in review and history, and of
+ * records earlier Proposals of an Import batch create.
  */
 export async function labelsFor(db: Db, ids: readonly string[]): Promise<SummaryContext & { labels: Labels }> {
   const labels: Labels = new Map();
-  const list = [...new Set(ids)];
+  await batchRefLabels(db, ids.filter(isBatchRef), labels);
+  const list = [...new Set(ids.filter((id) => !isBatchRef(id)))];
   if (list.length > 0) {
     await personLabels(db, list, labels);
     for (const n of await db.selectFrom('name').select(['id', 'as_found']).where('id', 'in', list).execute())

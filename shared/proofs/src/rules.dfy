@@ -50,7 +50,7 @@ function mayDo(role: string, action: string): bool
       if ((((((action == "review") || (action == "accept")) || (action == "reject")) || (action == "merge")) || (action == "undo")) || (action == "directEdit")) then
         mayDecide(role)
       else
-        (((action == "manageAccounts") || (action == "markFamilyRoots")) && (role == "owner"))
+        ((((action == "manageAccounts") || (action == "markFamilyRoots")) || (action == "acceptBatch")) && (role == "owner"))
 }
 
 lemma mayDo_ensures(role: string, action: string)
@@ -67,6 +67,7 @@ lemma mayDo_ensures(role: string, action: string)
   ensures ((role == "agent") ==> (action == "ownAccount") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "manageAccounts") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "markFamilyRoots") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "acceptBatch") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "decideSuggestions") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> mayDo(role, action) ==> mayDo("contributor", action))
   ensures ((action == "writeLeads") ==> (mayDo(role, action) == ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner"))))
@@ -74,6 +75,8 @@ lemma mayDo_ensures(role: string, action: string)
   ensures (((((action == "accept") || (action == "reject")) || (action == "merge")) || (action == "undo")) ==> (mayDo(role, action) == mayDecide(role)))
   ensures ((action == "manageAccounts") ==> (mayDo(role, action) == (role == "owner")))
   ensures ((action == "markFamilyRoots") ==> (mayDo(role, action) == (role == "owner")))
+  ensures ((action == "acceptBatch") ==> (mayDo(role, action) == (role == "owner")))
+  ensures ((role == "editor") ==> (action == "acceptBatch") ==> (!(mayDo(role, action)) && mayDo(role, "accept")))
   ensures (mayDo(role, action) ==> ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner")))
 {
 }

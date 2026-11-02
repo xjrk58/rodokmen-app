@@ -22,6 +22,10 @@ import { hex } from './text.js';
 /** @typedef {import('./types.js').RejectBody} RejectBody */
 /** @typedef {import('./types.js').AcceptBody} AcceptBody */
 /** @typedef {import('./types.js').UndoBody} UndoBody */
+/** @typedef {import('./types.js').BatchView} BatchView */
+/** @typedef {import('./types.js').BatchList} BatchList */
+/** @typedef {import('./types.js').AcceptBatchBody} AcceptBatchBody */
+/** @typedef {import('./types.js').AcceptBatchResult} AcceptBatchResult */
 
 export const API = '/api/';
 
@@ -250,6 +254,25 @@ export const myProposals = (signal) => api('proposals?mine=true&limit=100', { si
 
 /** @param {AbortSignal} [signal] @returns {Promise<ProposalList>} */
 export const reviewQueue = (signal) => api('review?limit=50', { signal });
+
+/** Import batches with their progress (review spec, "Batch view in the review queue"). @param {AbortSignal} [signal] @returns {Promise<BatchList>} */
+export const listBatches = (signal) => api('batches', { signal });
+
+/**
+ * A batch's Proposals in batch order, or a random sample of its pending ones.
+ * @param {string} id
+ * @param {{ sample: number } | { offset: number, limit: number }} q
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ProposalList>}
+ */
+export const batchProposals = (id, q, signal) =>
+  api(`batches/${encodeURIComponent(id)}/proposals?${'sample' in q ? `sample=${q.sample}` : `offset=${q.offset}&limit=${q.limit}`}`, { signal });
+
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<BatchView>} */
+export const getBatch = (id, signal) => api(`batches/${encodeURIComponent(id)}`, { signal });
+
+/** @param {string} id @param {AcceptBatchBody} body @returns {Promise<AcceptBatchResult>} */
+export const acceptBatch = (id, body) => api(`batches/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
 
 /** @param {string} id @param {AcceptBody} body @returns {Promise<ProposalView>} */
 export const acceptProposal = (id, body) => api(`proposals/${encodeURIComponent(id)}/accept`, { method: 'POST', body });

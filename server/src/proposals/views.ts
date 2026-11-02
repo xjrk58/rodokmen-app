@@ -17,6 +17,7 @@ import {
 import type { Db } from '../db/db.js';
 import type { Account, Proposal, Upload } from '../db/types.js';
 import { fieldOf, RECORD_TABLES } from './apply.js';
+import { blockedProposals, dependenciesOf } from './batch-state.js';
 import { idsIn, labelsFor } from './labels.js';
 import { snapshotsMany, type Snapshot } from './records.js';
 
@@ -152,6 +153,13 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
     db,
     rows.map((p) => p.id),
   );
+  const inBatches = rows.filter((p) => p.batch_id !== null).map((p) => p.id);
+  const dependsOn = await dependenciesOf(db, inBatches);
+  const blocked = await blockedProposals(db, { proposalIds: inBatches });
+  const batchIds = [...new Set(rows.flatMap((p) => (p.batch_id ? [p.batch_id] : [])))];
+  const batchNames = new Map(
+    batchIds.length ? (await db.selectFrom('import_batch').select(['id', 'name']).where('id', 'in', batchIds).execute()).map((b) => [b.id, b.name]) : [],
+  );
 
   return rows.map((p) => {
     const ops = stored.get(p.id) ?? [];
@@ -196,6 +204,9 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
       citations: citationPreviews(effective, support, labels),
       conflicts: conflicts.size,
       answersLeads: answered.get(p.id) ?? [],
+      batch: p.batch_id !== null && p.batch_position !== null ? { id: p.batch_id, name: batchNames.get(p.batch_id) ?? '', position: p.batch_position } : null,
+      dependsOn: dependsOn.get(p.id) ?? [],
+      blockedBy: blocked.get(p.id) ?? null,
     };
   });
 }

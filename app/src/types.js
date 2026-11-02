@@ -137,6 +137,10 @@
 /** @typedef {import('../../shared/src/schemas/submit.js').SubmitProposalBody} SubmitProposalBody */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalView} ProposalView */
 /** @typedef {import('../../shared/src/schemas/review.js').ProposalList} ProposalList */
+/** @typedef {import('../../shared/src/schemas/batches.js').BatchView} BatchView */
+/** @typedef {{ items: BatchView[] }} BatchList */
+/** @typedef {import('../../shared/src/schemas/batches.js').AcceptBatchBody} AcceptBatchBody */
+/** @typedef {import('../../shared/src/schemas/batches.js').AcceptBatchResult} AcceptBatchResult */
 /** @typedef {import('../../shared/src/schemas/review.js').OperationView} OperationView */
 /** @typedef {import('../../shared/src/schemas/review.js').ConflictView} ConflictView */
 /** @typedef {import('../../shared/src/schemas/review.js').CitationPreview} CitationPreview */

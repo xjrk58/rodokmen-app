@@ -102,6 +102,7 @@ export function me(role) {
       changeRoles: false,
       disableMembers: false,
       markFamilyRoots: false,
+      acceptBatch: false,
     },
     passkeyCount: 1,
     person: null,
@@ -234,6 +235,9 @@ export function conflictingProposal() {
     citations: [],
     conflicts: 1,
     answersLeads: [],
+    batch: null,
+    dependsOn: [],
+    blockedBy: null,
   };
 }
 

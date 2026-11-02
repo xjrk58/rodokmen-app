@@ -16,4 +16,5 @@ export * from './schemas/server-operations.js';
 export * from './schemas/proposal-summaries.js';
 export * from './schemas/review.js';
 export * from './schemas/leads.js';
+export * from './schemas/batches.js';
 export * from './relation.js';

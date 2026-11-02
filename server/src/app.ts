@@ -18,6 +18,7 @@ import { trackRoutes, transform, type RouteRecord } from './openapi.js';
 import { accountRoutes } from './routes/accounts.js';
 import { agentRoutes } from './routes/agents.js';
 import { authRoutes } from './routes/auth.js';
+import { batchRoutes } from './routes/batches.js';
 import { leadRoutes } from './routes/leads.js';
 import { pageRoutes } from './routes/pages.js';
 import { proposalRoutes } from './routes/proposals.js';
@@ -128,7 +129,9 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   const accountDeps: AccountDeps = { db, clock, mailer, publicOrigin: config.publicOrigin, session: { idleDays: config.sessionIdleDays } };
   await app.register(systemRoutes, { db, release: config.release });
   await app.register(treeRoutes, { db, clock, images });
-  await app.register(proposalRoutes, { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) });
+  const proposalDeps = { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg: string, err?: unknown) => app.log.error({ err }, msg) };
+  await app.register(proposalRoutes, proposalDeps);
+  await app.register(batchRoutes, proposalDeps);
   await app.register(leadRoutes, { db, clock });
   await app.register(accountRoutes, accountDeps);
   await app.register(agentRoutes, { db, clock });

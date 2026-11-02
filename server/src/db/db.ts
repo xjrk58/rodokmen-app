@@ -13,6 +13,7 @@ import * as m0009 from './migrations/0009_research_leads.js';
 import * as m0010 from './migrations/0010_name_languages.js';
 import * as m0011 from './migrations/0011_notes_and_labels.js';
 import * as m0012 from './migrations/0012_source_documents.js';
+import * as m0013 from './migrations/0013_import_batches.js';
 import { messageOf } from '../errors.js';
 import type { Database } from './types.js';
 
@@ -55,6 +56,7 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0010_name_languages': m0010,
   '0011_notes_and_labels': m0011,
   '0012_source_documents': m0012,
+  '0013_import_batches': m0013,
 };
 
 const provider: MigrationProvider = { getMigrations: async () => MIGRATIONS };

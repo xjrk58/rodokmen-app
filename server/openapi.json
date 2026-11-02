@@ -3545,6 +3545,10 @@
           "markFamilyRoots": {
             "type": "boolean",
             "description": "Mark and unmark Family roots (the Owner)"
+          },
+          "acceptBatch": {
+            "type": "boolean",
+            "description": "Accept a whole Import batch at once (the Owner)"
           }
         },
         "required": [
@@ -3555,7 +3559,8 @@
           "inviteMembers",
           "changeRoles",
           "disableMembers",
-          "markFamilyRoots"
+          "markFamilyRoots",
+          "acceptBatch"
         ]
       },
       "MeInput": {
@@ -6323,6 +6328,53 @@
               "$ref": "#/components/schemas/LeadRefInput"
             },
             "description": "The Research leads this finding answers; accepting marks them found"
+          },
+          "batch": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/IdInput"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "position"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Import batch and its place in batch order"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "Earlier Proposals of its Import batch it builds on; it is accepted only after them"
+          },
+          "blockedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it"
           }
         },
         "required": [
@@ -6341,7 +6393,10 @@
           "operations",
           "citations",
           "conflicts",
-          "answersLeads"
+          "answersLeads",
+          "batch",
+          "dependsOn",
+          "blockedBy"
         ]
       },
       "ProposalListInput": {
@@ -7955,6 +8010,444 @@
           "offset"
         ],
         "description": "Open suggested leads, shown apart from the leads until a Member accepts or dismisses them"
+      },
+      "CreateBatchBodyInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Named after the run, such as \"Vault import 2026-11-02\""
+          },
+          "vaultCommit": {
+            "default": null,
+            "description": "The commit of the Vault that was read",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{7,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "BatchCountsInput": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending and not blocked"
+          },
+          "blocked": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending, but building on a rejected Proposal"
+          },
+          "accepted": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "total",
+          "pending",
+          "blocked",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "BatchViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "name": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRefInput"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "vaultCommit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/BatchCountsInput"
+          },
+          "pendingChanges": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Changes to records in the pending Proposals, for the confirmation before accepting the batch"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "author",
+          "createdAt",
+          "vaultCommit",
+          "note",
+          "counts",
+          "pendingChanges"
+        ],
+        "description": "An Import batch with its progress"
+      },
+      "BatchListInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchViewInput"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AcceptBatchBodyInput": {
+        "type": "object",
+        "properties": {
+          "proposals": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "How many pending Proposals the confirmation stated; refused when the batch has changed since"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposals"
+        ]
+      },
+      "AcceptBatchResultInput": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "Accepted, in batch order"
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "message"
+              ]
+            },
+            "description": "Still pending: they could not be accepted"
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "blockedBy": {
+                  "$ref": "#/components/schemas/IdInput"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "blockedBy"
+              ]
+            },
+            "description": "Still pending: they build on a Proposal that was rejected or failed"
+          }
+        },
+        "required": [
+          "accepted",
+          "failed",
+          "blocked"
+        ]
+      },
+      "ImportMapEntryInput": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "default": null,
+            "description": "The record in the Tree, when known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "batchId"
+        ]
+      },
+      "PutImportMapBodyInput": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapEntryInput"
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ]
+      },
+      "ImportMapViewInput": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The record in the Tree: set by the importer, or resolved once the Proposal that creates it is accepted"
+          },
+          "proposalStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalStatusInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "batchId",
+          "recordId",
+          "proposalStatus"
+        ]
+      },
+      "ImportMapInput": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapViewInput"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "next"
+        ]
       },
       "Id": {
         "type": "string",
@@ -11564,6 +12057,10 @@
           "markFamilyRoots": {
             "type": "boolean",
             "description": "Mark and unmark Family roots (the Owner)"
+          },
+          "acceptBatch": {
+            "type": "boolean",
+            "description": "Accept a whole Import batch at once (the Owner)"
           }
         },
         "required": [
@@ -11574,7 +12071,8 @@
           "inviteMembers",
           "changeRoles",
           "disableMembers",
-          "markFamilyRoots"
+          "markFamilyRoots",
+          "acceptBatch"
         ],
         "additionalProperties": false
       },
@@ -14446,6 +14944,54 @@
               "$ref": "#/components/schemas/LeadRef"
             },
             "description": "The Research leads this finding answers; accepting marks them found"
+          },
+          "batch": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "position"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Import batch and its place in batch order"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Earlier Proposals of its Import batch it builds on; it is accepted only after them"
+          },
+          "blockedBy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it"
           }
         },
         "required": [
@@ -14464,7 +15010,10 @@
           "operations",
           "citations",
           "conflicts",
-          "answersLeads"
+          "answersLeads",
+          "batch",
+          "dependsOn",
+          "blockedBy"
         ],
         "additionalProperties": false
       },
@@ -16145,6 +16694,466 @@
         ],
         "additionalProperties": false,
         "description": "Open suggested leads, shown apart from the leads until a Member accepts or dismisses them"
+      },
+      "CreateBatchBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Named after the run, such as \"Vault import 2026-11-02\""
+          },
+          "vaultCommit": {
+            "default": null,
+            "description": "The commit of the Vault that was read",
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{7,64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "vaultCommit",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "BatchCounts": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending and not blocked"
+          },
+          "blocked": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending, but building on a rejected Proposal"
+          },
+          "accepted": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "total",
+          "pending",
+          "blocked",
+          "accepted",
+          "rejected"
+        ],
+        "additionalProperties": false
+      },
+      "BatchView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "name": {
+            "type": "string"
+          },
+          "author": {
+            "$ref": "#/components/schemas/AuthorRef"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "vaultCommit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "counts": {
+            "$ref": "#/components/schemas/BatchCounts"
+          },
+          "pendingChanges": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Changes to records in the pending Proposals, for the confirmation before accepting the batch"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "author",
+          "createdAt",
+          "vaultCommit",
+          "note",
+          "counts",
+          "pendingChanges"
+        ],
+        "additionalProperties": false,
+        "description": "An Import batch with its progress"
+      },
+      "BatchList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchView"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptBatchBody": {
+        "type": "object",
+        "properties": {
+          "proposals": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "How many pending Proposals the confirmation stated; refused when the batch has changed since"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "proposals",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "AcceptBatchResult": {
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Accepted, in batch order"
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "message"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Still pending: they could not be accepted"
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "position": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "blockedBy": {
+                  "$ref": "#/components/schemas/Id"
+                }
+              },
+              "required": [
+                "id",
+                "position",
+                "blockedBy"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Still pending: they build on a Proposal that was rejected or failed"
+          }
+        },
+        "required": [
+          "accepted",
+          "failed",
+          "blocked"
+        ],
+        "additionalProperties": false
+      },
+      "ImportMapEntry": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "default": null,
+            "description": "The record in the Tree, when known",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "noteHash",
+          "batchId",
+          "proposalId",
+          "tempId",
+          "recordId"
+        ],
+        "additionalProperties": false
+      },
+      "PutImportMapBody": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "minItems": 1,
+            "maxItems": 2000,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapEntry"
+            }
+          }
+        },
+        "required": [
+          "entries"
+        ],
+        "additionalProperties": false
+      },
+      "ImportMapView": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The Vault key: a note path such as people/jan-novak-1801.md, or a record derived from notes"
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "What the key stands for: note, person, event, family, citation …"
+          },
+          "noteHash": {
+            "default": null,
+            "description": "Hash of what the key was made from, to tell a changed note",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "proposalId": {
+            "default": null,
+            "description": "The Proposal that creates it",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tempId": {
+            "default": null,
+            "description": "Its temporary id in that Proposal",
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recordId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The record in the Tree: set by the importer, or resolved once the Proposal that creates it is accepted"
+          },
+          "proposalStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProposalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "noteHash",
+          "batchId",
+          "proposalId",
+          "tempId",
+          "recordId",
+          "proposalStatus"
+        ],
+        "additionalProperties": false
+      },
+      "ImportMap": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportMapView"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "next"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -17892,7 +18901,7 @@
     },
     "/api/review": {
       "get": {
-        "summary": "The review queue: pending Proposals, oldest first, with their changes compared with the current Tree (Editors only)",
+        "summary": "The review queue: pending Proposals outside Import batches, oldest first, with their changes compared with the current Tree (Editors only). Import batches are listed by GET /api/batches",
         "tags": [
           "Review"
         ],
@@ -18967,6 +19976,795 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches": {
+      "post": {
+        "summary": "Open an Import batch: the Proposals one run of the Vault importer submits together",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBatchBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Import batches with their progress, newest first: everyone's for Editors, your own otherwise",
+        "tags": [
+          "Import batches"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}": {
+      "get": {
+        "summary": "An Import batch with its progress: accepted, pending, blocked and rejected",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/proposals": {
+      "get": {
+        "summary": "The Proposals of an Import batch in batch order, or a random sample of its pending ones for spot-checking (Editors only)",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "sample",
+            "required": false,
+            "description": "Instead of batch order: this many pending Proposals chosen at random, for spot-checking"
+          },
+          {
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          },
+          {
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100000
+            },
+            "in": "query",
+            "name": "offset",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Submit a Proposal into your Import batch, after the ones before it. It may refer to records earlier Proposals of the batch create, as batch:<proposal id>/tmp:x",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitProposalBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/accept": {
+      "post": {
+        "summary": "Accept every pending Proposal of an Import batch in batch order (Owner only). Each is accepted on its own; those that fail, and those building on them, stay pending and are listed",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptBatchBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptBatchResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/uploads": {
+      "post": {
+        "summary": "Start an upload for a Proposal of your Import batch, as POST /api/uploads",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploadBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadTicket"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/uploads/{uploadId}/complete": {
+      "post": {
+        "summary": "Finish an upload for a Proposal of your Import batch, as POST /api/uploads/{id}/complete",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "uploadId",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/import-map": {
+      "get": {
+        "summary": "The Vault importer's map from Vault keys to what it submitted and the records in the Tree, by key",
+        "tags": [
+          "Import batches"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 400
+            },
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "description": "Keys after this one, for the next page"
+          },
+          {
+            "schema": {
+              "default": 5000,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5000
+            },
+            "in": "query",
+            "name": "limit",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportMap"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Record entries of the Vault importer's id map, by key, for your own Import batches",
+        "tags": [
+          "Import batches"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PutImportMapBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "stored": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "stored"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
                 }
               }
             }

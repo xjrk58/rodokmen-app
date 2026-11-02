@@ -9,6 +9,7 @@ export const PRECACHE = [
   'manifest.webmanifest',
   'src/api.js',
   'src/archive-lookup.js',
+  'src/batch-review.js',
   'src/cache.js',
   'src/data.js',
   'src/document-fields.js',
