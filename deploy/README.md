@@ -435,10 +435,11 @@ answers in a JSON schema).
 
 The reader benchmark (add-scan-reading task 1.2) compares Claude models with Transkribus on 10
 sample pages; `server/scripts/scan-benchmark/samples/README.md` says what the samples must be
-(invented or public domain, never Vault scans). From a checkout, with the key in the environment:
+(invented or public domain, never Vault scans, kept outside the repo). From a checkout, with the
+key in the environment:
 
 ```sh
-ANTHROPIC_API_KEY=... pnpm --filter @rodokmen/server bench:scan \
+ANTHROPIC_API_KEY=... pnpm --filter @rodokmen/server bench:scan --samples <samples dir> \
   --transkribus "Transkribus Kurrent=<dir>,Transkribus Latin/Kurrent=<dir>" --out /tmp/scan-benchmark
 ```
 

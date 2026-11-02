@@ -6,11 +6,12 @@
  * summary and a Markdown table for design.md.
  *
  *   ANTHROPIC_API_KEY=… pnpm --filter @rodokmen/server bench:scan \
- *     [--samples scripts/scan-benchmark/samples] [--models claude-opus-5-5,claude-sonnet-5-5] [--effort high] \
+ *     --samples <dir> [--models claude-opus-5-5,claude-sonnet-5-5] [--effort high] \
  *     [--transkribus "Transkribus Kurrent=DIR,Transkribus Latin/Kurrent=DIR"] [--out scan-benchmark-results] [--include-examples]
  *
- * The samples are invented or public-domain pages only, never scans of the Vault
- * (samples/README.md). Each Claude reading is one paid request to the Anthropic API.
+ * The samples are invented or public-domain pages only, never scans of the Vault, and they stay
+ * outside this repo (its guard refuses raster images outside app/ and test fixtures): pass their
+ * directory with --samples (samples/README.md). Each Claude reading is one paid request.
  */
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -29,15 +30,15 @@ export interface Sample {
   truth: SampleTruth;
 }
 
-const IMAGE = /^page\.(jpe?g|png|webp)$/i;
+const IMAGE = /^page\.(jpe?g|png|webp|svg)$/i;
 
-/** The samples of a directory: one sub-directory each, with page.(jpg|png|webp) and truth.json. */
+/** The samples of a directory: one sub-directory each, with page.(jpg|png|webp) and truth.json (page.svg for an invented example). */
 export async function loadSamples(dir: string, includeExamples = false): Promise<Sample[]> {
   const samples: Sample[] = [];
   for (const entry of (await readdir(dir, { withFileTypes: true })).filter((e) => e.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
     const files = await readdir(join(dir, entry.name));
     const image = files.find((f) => IMAGE.test(f));
-    if (!image || !files.includes('truth.json')) throw new Error(`${entry.name}: a sample needs page.jpg (or .png, .webp) and truth.json`);
+    if (!image || !files.includes('truth.json')) throw new Error(`${entry.name}: a sample needs page.jpg (or .png, .webp, .svg) and truth.json`);
     const json: unknown = JSON.parse(await readFile(join(dir, entry.name, 'truth.json'), 'utf8'));
     const truth = SampleTruth.parse(json);
     if (truth.example && !includeExamples) continue;
