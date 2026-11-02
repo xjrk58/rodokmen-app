@@ -149,7 +149,7 @@ export function cropForReading(load: () => Promise<Buffer | null>, crop: Crop): 
   return turns.run(async () => {
     const original = await load();
     if (!original) return null;
-    const meta = await sharp(original, { limitInputPixels: MAX_INPUT_PIXELS }).metadata();
+    const meta = await sharp(original).metadata();
     if (!meta.width || !meta.height) throw new Error('an image without dimensions');
     const rotated = (meta.orientation ?? 1) >= 5;
     const width = rotated ? meta.height : meta.width;
@@ -162,7 +162,7 @@ export function cropForReading(load: () => Promise<Buffer | null>, crop: Crop): 
       width: Math.max(1, Math.min(width - left, Math.round(crop.width * width))),
       height: Math.max(1, Math.min(height - top, Math.round(crop.height * height))),
     };
-    return sharp(original, { limitInputPixels: MAX_INPUT_PIXELS })
+    return sharp(original)
       .rotate()
       .extract(box)
       .resize({ width: DISPLAY_MAX_PIXELS, height: DISPLAY_MAX_PIXELS, fit: 'inside', withoutEnlargement: true })
