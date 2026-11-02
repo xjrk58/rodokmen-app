@@ -32,6 +32,12 @@ export function mayDecide(role: string): boolean {
 
 // ---------------------------------------------------------------- what a role may do
 
+/** The actions only the Owner takes: accounts, Family roots, accepting a whole Import batch, and the settings. */
+function isOwnerAction(action: string): boolean {
+  //@ verify
+  return action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch' || action === 'manageSettings';
+}
+
 /**
  * What a role may do (agent-access spec, "Read and propose only" and "Agents write Research
  * leads"). Every API route names its action (server/src/auth/plugin.ts asks this function for
@@ -47,13 +53,16 @@ export function mayDecide(role: string): boolean {
  * - `ownAccount`: your own sessions, passkeys and email settings;
  * - `manageAccounts`: Members, invitations, roles, Agents and their tokens;
  * - `markFamilyRoots`: mark and unmark Family roots (tree-model spec, "Family roots");
- * - `acceptBatch`: accept a whole Import batch at once (review spec, "Accept a whole Import batch").
+ * - `acceptBatch`: accept a whole Import batch at once (review spec, "Accept a whole Import batch");
+ * - `manageSettings`: the Tree's settings, such as the switch and daily limit of scan reading
+ *   (scan-reading spec, "The Owner switches it on").
  *
  * Agents read, propose and write Research leads, and nothing else: no change to the Tree but
  * through a Proposal. Members of every role read, propose, write leads, decide on suggested
  * leads and manage their own account; Editors and the Owner also decide on Proposals and edit
- * directly; only the Owner manages accounts, marks Family roots and accepts a whole Import
- * batch (an Editor accepts its Proposals one by one). An unknown role or action is refused.
+ * directly; only the Owner manages accounts, marks Family roots, accepts a whole Import batch
+ * (an Editor accepts its Proposals one by one) and changes the settings. An unknown role or
+ * action is refused.
  */
 export function mayDo(role: string, action: string): boolean {
   //@ verify
@@ -62,6 +71,7 @@ export function mayDo(role: string, action: string): boolean {
   //@ contract research-leads: Leads need no review
   //@ contract tree-model: Family roots
   //@ contract review: Accept a whole Import batch
+  //@ contract scan-reading: The Owner switches it on
   // An Agent token allows reading the Tree, submitting Proposals, and writing Research leads and their search records ...
   //@ ensures role === 'agent' && action === 'read' ==> \result
   //@ ensures role === 'agent' && action === 'propose' ==> \result
@@ -80,6 +90,7 @@ export function mayDo(role: string, action: string): boolean {
   //@ ensures role === 'agent' && action === 'manageAccounts' ==> !\result
   //@ ensures role === 'agent' && action === 'markFamilyRoots' ==> !\result
   //@ ensures role === 'agent' && action === 'acceptBatch' ==> !\result
+  //@ ensures role === 'agent' && action === 'manageSettings' ==> !\result
   // A suggested lead waits until a Member accepts or dismisses it; an Agent does neither.
   //@ ensures role === 'agent' && action === 'decideSuggestions' ==> !\result
   // An Agent is never allowed what a Contributor is refused.
@@ -97,6 +108,8 @@ export function mayDo(role: string, action: string): boolean {
   // Scenario "Editor cannot accept a batch": only the Owner accepts a whole Import batch; an Editor accepts its Proposals one by one.
   //@ ensures action === 'acceptBatch' ==> \result === (role === 'owner')
   //@ ensures role === 'editor' && action === 'acceptBatch' ==> !\result && mayDo(role, 'accept')
+  // Only the Owner switches scan reading on and sets its daily limit (scan-reading spec, "The Owner switches it on").
+  //@ ensures action === 'manageSettings' ==> \result === (role === 'owner')
   //@ ensures \result ==> role === 'agent' || role === 'contributor' || role === 'editor' || role === 'owner'
   if (role === 'agent') return action === 'read' || action === 'propose' || action === 'writeLeads';
   const member = role === 'contributor' || role === 'editor' || role === 'owner';
@@ -104,7 +117,7 @@ export function mayDo(role: string, action: string): boolean {
   if (action === 'review' || action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' || action === 'directEdit') {
     return mayDecide(role);
   }
-  if (action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch') return role === 'owner';
+  if (isOwnerAction(action)) return role === 'owner';
   return false;
 }
 

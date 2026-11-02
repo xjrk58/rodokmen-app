@@ -13,6 +13,7 @@ import {
   messageOf,
   myProposals,
   notificationSettings,
+  readingStatus,
   setNotificationSettings,
   submitProposal,
   uploadDocument,
@@ -36,8 +37,9 @@ import { onLanguageChange, t } from './i18n.js';
 import { leadStart } from './lead-parts.js';
 import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
-import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
+import { buildOperations, draftTitle, emptyForm, formProblems, HAND_KINDS, OPERATIONS_VERSION } from './proposal-build.js';
 import { batchEntries, renderBatch } from './batch-review.js';
+import { readingProposal, renderRead, showReading } from './reading-flow.js';
 import { formatDate, proposalCard, renderHistory, renderReview } from './review.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
@@ -52,9 +54,9 @@ const mb = (bytes) => `${(bytes / 1_048_576).toFixed(bytes < 10_485_760 ? 1 : 0)
 
 /**
  * @param {string | undefined} kind
- * @returns {kind is ProposeKind}
+ * @returns {kind is import('./proposal-build.js').HandKind}
  */
-const isKind = (kind) => KINDS.some((k) => k === kind);
+const isKind = (kind) => HAND_KINDS.some((k) => k === kind);
 
 /**
  * The existing Family of two Persons in the Tree, if there is one.
@@ -97,16 +99,17 @@ async function proposalBody(draft) {
     if (document) documents.push({ uploadId: photo.uploadId, title: photo.name.replace(/\.pdf$/i, '') || photo.name });
     else uploadIds.push(photo.uploadId);
   }
-  const family = await draftFamily(draft);
-  const operations = buildOperations(draft, { uploadIds, documents, family });
-  return {
+  /** @type {Omit<SubmitProposalBody, 'operations' | 'reader'>} */
+  const base = {
     formatVersion: OPERATIONS_VERSION,
     idempotencyKey: draft.idempotencyKey,
     note: draft.form.note?.trim() || null,
     direct: false,
-    operations,
     answersLeads: draft.lead ? [draft.lead.id] : [],
   };
+  // Drafted from a reading: the values still marked "read by AI" go with it.
+  if (draft.kind === 'reading') return { ...base, ...(await readingProposal(draft.form, uploadIds, familyOf)) };
+  return { ...base, operations: buildOperations(draft, { uploadIds, documents, family: await draftFamily(draft) }), reader: null };
 }
 
 /**
@@ -280,6 +283,7 @@ export class WorkPanel {
   async renderView(view, a, b, signal) {
     const body = this.els.body;
     if (view === 'propose') await this.renderPropose(a, b, signal);
+    else if (view === 'read') await renderRead(this, signal);
     else if (view === 'draft' && a) await this.renderDraft(a, signal);
     else if (view === 'drafts') await this.renderDrafts(signal);
     else if (!this.me) body.replaceChildren(this.signInPrompt());
@@ -322,7 +326,10 @@ export class WorkPanel {
    */
   async renderPropose(kind, personId, signal) {
     if (!isKind(kind)) {
-      this.els.body.replaceChildren(h('h2', {}, t('propose.title')), h('p', { class: 'muted' }, t('propose.intro')), kindChooser());
+      // "Read a scan" only while the Owner has switched scan reading on; the forms by hand always.
+      const reading = this.me ? await readingStatus(signal).catch(() => null) : null;
+      if (signal?.aborted) return;
+      this.els.body.replaceChildren(h('h2', {}, t('propose.title')), h('p', { class: 'muted' }, t('propose.intro')), kindChooser(reading));
       return;
     }
     const draft = newDraft(emptyForm(kind));
@@ -369,7 +376,7 @@ export class WorkPanel {
     } else if (draft.kind === 'death') {
       draft.form.person = first;
       draft.form.place = place;
-    } else {
+    } else if (draft.kind !== 'reading') {
       draft.form.person = first;
     }
     this.showForm(draft, false);
@@ -394,6 +401,7 @@ export class WorkPanel {
    * @param {boolean} stored
    */
   showForm(draft, stored) {
+    if (draft.kind === 'reading') return showReading(this, draft);
     const address = location.hash;
     let saved = stored;
     const save = async () => {

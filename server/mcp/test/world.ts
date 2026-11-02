@@ -5,6 +5,8 @@ import type { Account } from '../../src/db/types.js';
 import { createTestDatabase, type TestDatabase } from '../../test/db.js';
 import { createAgentWithToken, createMember, ensureOwner, freePort, signIn, TestClock, testConfig } from '../../test/helpers.js';
 import { OutboxMailer } from '../../src/mail/mailer.js';
+import type { Reader } from '../../src/readings/reader.js';
+import { MemoryImageStorage } from '../../src/storage/images.js';
 
 /**
  * The world of the MCP tests: the real API on a fresh copy of the fixture Tree, listening on a
@@ -22,18 +24,39 @@ export interface World {
   agent: Account;
   token: string;
   tokenId: string;
+  /** The image store, in memory, served at /test-storage/ of the API (presigned links point there). */
+  storage: MemoryImageStorage;
   /** Calls the API as the Owner or the Editor. */
   as: (who: 'owner' | 'editor', method: 'GET' | 'POST' | 'DELETE', url: string, payload?: object) => Promise<{ statusCode: number; json(): unknown }>;
 }
 
-export function useWorld(agentName = 'Register reader'): () => World {
+export function useWorld(agentName = 'Register reader', options: { reader?: Reader } = {}): () => World {
   let world: World | undefined;
   beforeAll(async () => {
     const t = await createTestDatabase();
     const port = await freePort();
     const apiUrl = `http://127.0.0.1:${port}`;
     const clock = new TestClock(new Date());
-    const app = await buildApp({ config: testConfig(t.url, { PUBLIC_ORIGIN: apiUrl }), db: t.db, mailer: new OutboxMailer(), clock });
+    const storage = new MemoryImageStorage(clock, `${apiUrl}/test-storage/`);
+    const app = await buildApp({
+      config: testConfig(t.url, { PUBLIC_ORIGIN: apiUrl }),
+      db: t.db,
+      mailer: new OutboxMailer(),
+      clock,
+      images: storage,
+      reader: options.reader ?? null,
+      // Stands in for the image store that presigned upload links point at.
+      extraRoutes: (scope) => {
+        scope.addContentTypeParser(['image/jpeg', 'image/png', 'image/webp'], { parseAs: 'buffer', bodyLimit: 30 * 1024 * 1024 }, (_req, body, done) =>
+          done(null, body),
+        );
+        scope.put('/test-storage/*', { config: { public: true }, schema: { hide: true } }, async (req, reply) => {
+          const key = new URL(req.url, apiUrl).pathname.replace('/test-storage/', '');
+          await storage.put(key, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.headers['content-type'] ?? 'application/octet-stream');
+          return reply.code(200).send();
+        });
+      },
+    });
     await app.listen({ host: '127.0.0.1', port });
     const owner = await ensureOwner(t.db);
     const editor = await createMember(t.db, 'editor', { displayName: 'Eva Editor' });
@@ -41,7 +64,7 @@ export function useWorld(agentName = 'Register reader'): () => World {
     const { agent, token, tokenId } = await createAgentWithToken(t.db, clock, agentName);
     const as: World['as'] = (who, method, url, payload) =>
       app.inject({ method, url, headers: { cookie: cookies[who], origin: apiUrl }, ...(payload ? { payload } : {}) });
-    world = { t, app, apiUrl, clock, owner, editor, agent, token, tokenId, as };
+    world = { t, app, apiUrl, clock, owner, editor, agent, token, tokenId, as, storage };
   }, 60_000);
   afterAll(async () => {
     await world?.app.close();

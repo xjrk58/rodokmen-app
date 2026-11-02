@@ -30,6 +30,7 @@ import type {
   UploadTable,
   VaultImportMapTable,
 } from './vault-import-types.js';
+import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
 
 export type { UploadTable } from './vault-import-types.js';
 
@@ -331,6 +332,8 @@ export interface ProposalTable {
   /** Its Import batch and place in batch order (add-vault-import). */
   batch_id: Generated<string | null>;
   batch_position: Generated<number | null>;
+  /** For a Proposal drafted from scan readings: ReaderInfo (the readings, and the values still marked "read by AI"). */
+  reader: NullableJson;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -437,9 +440,13 @@ export interface Database {
   lead_event: LeadEventTable;
   proposal_lead: ProposalLeadTable;
   lead_suggestion: LeadSuggestionTable;
+  scan_reading_setting: ScanReadingSettingTable;
+  reading: ReadingTable;
 }
 
 export type Proposal = Selectable<ProposalTable>;
 export type Upload = Selectable<UploadTable>;
+export type Reading = Selectable<ReadingTable>;
+export type { ReadingTable, ScanReadingSettingTable };
 
 export type Account = Selectable<AccountTable>;

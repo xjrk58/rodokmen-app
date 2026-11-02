@@ -5,6 +5,7 @@ import {
   isNewRef,
   isTempId,
   mayDecide,
+  ReaderInfo,
   type Operation,
   type AuthorRef,
   type CitationPreview,
@@ -174,6 +175,7 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
       batch: p.batch_id !== null && p.batch_position !== null ? { id: p.batch_id, name: batchNames.get(p.batch_id) ?? '', position: p.batch_position } : null,
       dependsOn: dependsOn.get(p.id) ?? [],
       blockedBy: blocked.get(p.id) ?? null,
+      reader: p.reader ? ReaderInfo.parse(p.reader) : null,
     };
   });
 }

@@ -144,6 +144,7 @@ export function member(role, o = {}) {
       disableMembers: role === 'owner',
       markFamilyRoots: role === 'owner',
       acceptBatch: role === 'owner',
+      manageSettings: role === 'owner',
     },
     passkeyCount: 1,
     person: o.person ? withRelations(summary(o.person), o.roots ?? []) : null,

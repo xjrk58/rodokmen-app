@@ -128,6 +128,11 @@ describe('migrations on an empty database', () => {
     expect(await migrateToLatest(db)).toEqual(later);
   });
 
+  it('scan reading starts switched off, with one settings row (scan-reading spec, "The Owner switches it on")', async () => {
+    expect(await db.selectFrom('scan_reading_setting').select(['enabled', 'daily_limit']).execute()).toEqual([{ enabled: false, daily_limit: 10 }]);
+    await expect(sql`insert into scan_reading_setting (id) values (false)`.execute(db)).rejects.toThrow(/check/);
+  });
+
   it('a change of the derived relation is no change of the Person: it bumps no version', async () => {
     const p = await db.transaction().execute(async (tx) => {
       const row = await tx.insertInto('person').values({ sex: 'male' }).returning(['id', 'version', 'relation']).executeTakeFirstOrThrow();

@@ -248,6 +248,9 @@ RESTIC_PASSWORD=wrong backup`); both alerts must arrive by email.
 | `IMAGES_BACKUP_KEY_ID`, `IMAGES_BACKUP_SECRET_KEY` | the Backup job's key, read only, in the same format; `scripts/storage-init.sh` creates it                      |
 | `GARAGE_RPC_SECRET`                                | 64 hex digits; Garage's internal secret                                                                        |
 | `SESSION_IDLE_DAYS`                                | optional; sessions end after this many days without use (default 90)                                           |
+| `ANTHROPIC_API_KEY`                                | optional; the Anthropic API key for scan reading ("Scan reading" below). Without it, it cannot be switched on  |
+| `RODOKMEN_SCAN_MODEL`                              | optional; the model that reads scans (default `claude-opus-5-5`)                                               |
+| `RODOKMEN_SCAN_EFFORT`                             | optional; how much effort the model spends on a reading: `low`, `medium`, `high` (default), `xhigh` or `max`   |
 
 Set by `docker-compose.yml`, not in `.env`: `NODE_ENV=production`, `HOST`, `PORT=3000`,
 `APP_DIR=/srv/app`, `TRUST_PROXY=true`, `PUBLIC_ORIGIN=https://$DOMAIN`, `DATABASE_URL`, the image
@@ -404,6 +407,38 @@ An assistant connects in one of two ways:
   `RODOKMEN_URL=https://<domain>` and `RODOKMEN_TOKEN=<token>`.
 
 The `mcp` service restarts with each deploy, so MCP connections drop for a moment then.
+
+## Scan reading
+
+Members can have a register page read by the server: it sends the page to Anthropic's API, gets
+back a transcription and the entries, and the Member checks them before anything is proposed
+(add-scan-reading, ADR 0011). It is **off** until the Owner switches it on, because the pages
+then leave our servers for Anthropic's (in the USA).
+
+1. Put an API key from the Anthropic Console into `/opt/rodokmen/.env` as `ANTHROPIC_API_KEY`,
+   and deploy. Only the API container reads it (through `env_file`); the MCP server, the browser
+   and the Backup never see it. The API container needs outbound HTTPS to `api.anthropic.com`.
+2. In the app, as the Owner: **Settings → Scan reading**. The switch says what is sent; set the
+   daily limit per Member (default 10) and switch it on. The same section lists the readings per
+   Member and day of the last 30 days. Switching it off stops new readings at once, and a reading
+   still in the queue then sends nothing.
+
+What is sent, and nothing else: the display copy of each page asked for (WebP, at most 2,000 pixels
+on its longest side) or the part the Member marked, never the original file, a portrait or an
+image that was not asked for; what the Member typed about the page (register, page, Place, years,
+note); and the given names and surnames the Tree has for that Place and Parish, of people who are
+not Living, to help recognise spellings. Archive viewer links are never fetched.
+
+Readings run one at a time in the API process. Each reading is a paid request to the API (the
+benchmark records the tokens a page takes); the daily limit keeps the total in check.
+`RODOKMEN_SCAN_MODEL` and `RODOKMEN_SCAN_EFFORT` change the model and its effort (a current Claude
+model that reads images and answers in a JSON schema).
+
+The reader benchmark (add-scan-reading task 1.2) compares Claude models with Transkribus on 10
+invented or public-domain sample pages, kept outside the repo, to choose `RODOKMEN_SCAN_MODEL`:
+[Run the reader benchmark](../docs/how-to/run-the-reader-benchmark.md). The Owner's steps are also
+in [Switch scan reading on](../docs/how-to/switch-on-scan-reading.md), and the routes, limits and
+what is sent in the [scan reading reference](../docs/reference/scan-reading.md).
 
 ## When an alert arrives
 

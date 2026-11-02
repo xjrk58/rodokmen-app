@@ -34,6 +34,7 @@ export const ACTIONS = [
   'manageAccounts',
   'markFamilyRoots',
   'acceptBatch',
+  'manageSettings',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -49,6 +50,7 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
     disableMembers: mayDo(role, 'manageAccounts'),
     markFamilyRoots: mayDo(role, 'markFamilyRoots'),
     acceptBatch: mayDo(role, 'acceptBatch'),
+    manageSettings: mayDo(role, 'manageSettings'),
   };
 }
 
@@ -63,6 +65,7 @@ export const Permissions = z
     disableMembers: z.boolean(),
     markFamilyRoots: z.boolean().describe('Mark and unmark Family roots (the Owner)'),
     acceptBatch: z.boolean().describe('Accept a whole Import batch at once (the Owner)'),
+    manageSettings: z.boolean().describe('Change the Tree’s settings, such as scan reading (the Owner)'),
   })
   .meta({ id: 'Permissions' });
 

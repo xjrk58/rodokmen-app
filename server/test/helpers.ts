@@ -8,6 +8,7 @@ import { loadConfig, type Config } from '../src/config.js';
 import type { Db } from '../src/db/db.js';
 import type { Account } from '../src/db/types.js';
 import { OutboxMailer } from '../src/mail/mailer.js';
+import type { Reader } from '../src/readings/reader.js';
 import type { ImageStorage } from '../src/storage/images.js';
 import type { Clock } from '../src/clock.js';
 import type { TestDatabase } from './db.js';
@@ -58,12 +59,21 @@ export async function makeApp(
     extraRoutes?: Parameters<typeof buildApp>[0]['extraRoutes'];
     clock?: TestClock;
     images?: (clock: TestClock) => ImageStorage;
+    reader?: Reader | null;
   } = {},
 ): Promise<TestApp> {
   const config = testConfig(t.url, options.config);
   const mailer = new OutboxMailer();
   const clock = options.clock ?? new TestClock();
-  const app = await buildApp({ config, db: t.db, mailer, clock, images: options.images?.(clock), extraRoutes: options.extraRoutes });
+  const app = await buildApp({
+    config,
+    db: t.db,
+    mailer,
+    clock,
+    images: options.images?.(clock),
+    extraRoutes: options.extraRoutes,
+    reader: options.reader === undefined ? null : options.reader,
+  });
   return { app, mailer, clock, config };
 }
 

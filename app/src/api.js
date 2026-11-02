@@ -347,6 +347,33 @@ export const acceptSuggestion = (id) => api(`lead-suggestions/${encodeURICompone
 
 /** @param {string} id @returns {Promise<import('./types.js').LeadSuggestion>} */
 export const dismissSuggestion = (id) => api(`lead-suggestions/${encodeURIComponent(id)}/dismiss`, { method: 'POST' });
+// ---------------------------------------------------------------- scan reading (only ever through our server)
+
+/**
+ * Whether scan reading is on, and the readings left today; null while it is off (the server answers 404).
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<import('./types.js').ReadingStatusView | null>}
+ */
+export async function readingStatus(signal) {
+  try {
+    return await api('readings/status', { signal });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+/** @param {import('./types.js').CreateReadingBody} body @returns {Promise<import('./types.js').ReadingView>} */
+export const requestReading = (body) => api('readings', { method: 'POST', body });
+
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<import('./types.js').ReadingView>} */
+export const getReading = (id, signal) => api(`readings/${encodeURIComponent(id)}`, { signal });
+
+/** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').ScanReadingSettings>} */
+export const scanReadingSettings = (signal) => api('settings/scan-reading', { signal });
+
+/** @param {import('./types.js').UpdateScanReadingBody} body @returns {Promise<import('./types.js').ScanReadingSettings>} */
+export const setScanReadingSettings = (body) => api('settings/scan-reading', { method: 'PUT', body });
 
 /** The URL of an upload's display copy. @param {string} uploadId */
 export const uploadUrl = (uploadId) => `${API}uploads/${encodeURIComponent(uploadId)}`;

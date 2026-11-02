@@ -7,6 +7,7 @@ import { LEAD_STATUSES } from '../leads.js';
 import { Id, Version } from './common.js';
 import { Operation, ProposalKind, ProposalStatus, RestorableTable } from './proposals.js';
 import { Confidence, ImageKind, UPLOAD_CONTENT_TYPES } from './tree.js';
+import { ReaderInfo } from './reading.js';
 
 const Sentence = z.object({ cs: z.string(), en: z.string() }).meta({ id: 'Sentence', description: 'The same sentence in Czech and English' });
 
@@ -100,6 +101,7 @@ export const ProposalView = z
     batch: z.object({ id: Id, name: z.string(), position: z.number().int() }).nullable().describe('The Import batch and its place in batch order'),
     dependsOn: z.array(Id).describe('Earlier Proposals of its Import batch it builds on; it is accepted only after them'),
     blockedBy: Id.nullable().describe('A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it'),
+    reader: ReaderInfo.nullable().describe('Drafted from scan readings: the values still marked "read by AI", by operation'),
   })
   .meta({ id: 'ProposalView' });
 

@@ -10,7 +10,8 @@ import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
 import { documentFields } from './document-fields.js';
 import { notesFields } from './notes-form.js';
-import { CONFIDENCES, formProblems, KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
+import { readKindCard } from './reading-start.js';
+import { CONFIDENCES, formProblems, HAND_KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
 /** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
@@ -19,12 +20,18 @@ import { CONFIDENCES, formProblems, KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind,
 /** @typedef {import('./proposal-build.js').CorrectionTarget} CorrectionTarget */
 /** @typedef {import('./types.js').PersonDetail} PersonDetail */
 
-/** The kind chooser at the top of "Propose". */
-export function kindChooser() {
+/**
+ * The kind chooser at the top of "Propose": "Read a scan" first while scan reading is on (null:
+ * it is off, and not offered), then the forms by hand, which are always there.
+ * @param {import('./types.js').ReadingStatusView | null} [reading]
+ */
+export function kindChooser(reading = null) {
+  const read = reading ? readKindCard(reading) : null;
   return h(
     'div',
     { class: 'kind-grid' },
-    ...KINDS.map((kind) =>
+    read,
+    ...HAND_KINDS.map((kind) =>
       h(
         'a',
         { class: 'kind-card', href: `#work/propose/${kind}`, 'data-testid': `kind-${kind}` },
@@ -394,6 +401,9 @@ function findingFields(draft) {
       return correctionFields(draft.form);
     case 'notes':
       return notesFields(draft.form);
+    case 'reading':
+      // A reading has its own check screen (reading-check.js).
+      return [];
   }
 }
 

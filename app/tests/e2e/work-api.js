@@ -103,6 +103,7 @@ export function me(role) {
       disableMembers: false,
       markFamilyRoots: false,
       acceptBatch: false,
+      manageSettings: false,
     },
     passkeyCount: 1,
     person: null,
@@ -238,6 +239,7 @@ export function conflictingProposal() {
     batch: null,
     dependsOn: [],
     blockedBy: null,
+    reader: null,
   };
 }
 

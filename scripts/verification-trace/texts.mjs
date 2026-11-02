@@ -31,11 +31,12 @@ export const KNOWN_ISSUES = [
 // What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
 export const SWAP_CHECK = [
   'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/gaps.ts,',
-  'shared/src/leads.ts, shared/src/living.ts, shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an',
-  'operand of `<`, `<=`, `>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where order',
-  'does not matter; the `!` index reads of relation.ts and gaps.ts compare two plain integers, emitted in their order;',
-  'gaps.ts and leads.ts have no optionals at all: unknown years and Sources are a flag and 0, or the empty string), and',
-  'the generated `.dfy.gen` was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
+  'shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/reading.ts, shared/src/relation.ts and',
+  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
+  '(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of relation.ts and gaps.ts',
+  'compare two plain integers, emitted in their order; gaps.ts, leads.ts, matching.ts and reading.ts have no optionals at',
+  'all: unknown years, houses, Places and Sources are a flag and 0, or the empty string), and the generated `.dfy.gen`',
+  'was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
 ];
 
 // Exactly what a proof covers where that is less than its requirement, written by hand: update it with the proof.
@@ -80,4 +81,31 @@ export const SCOPES = [
   two lemmas applied to its two searches, which no lemma composes); the Family links and Citations the server
   gathers (server/src/tree/relation.ts) and that it recomputes after every accepted change, which
   server/test/relation.test.ts tests against the fixture Tree.`,
+  `**The switch, the daily limit and what is sent** (\`mayRead\`, \`imagesToSend\`, shared/src/reading.ts; \`mayDo\`,
+  shared/src/rules.ts; scan-reading "The Owner switches it on", evidence-media "Images sent for reading"). Proved: with
+  the switch off nothing is read and no image is to be sent ("Switched off"); a Member with as many readings today as
+  the daily limit is refused ("Daily limit"), and below it one more is allowed; exactly the requested scans are to be
+  sent, in order, each as its marked crop or else its display copy, never the original ("Reading one page"); only the
+  Owner may change the settings (\`manageSettings\`). Not proved: that the server counts the readings of the day under a
+  lock and asks \`mayRead\` before it queues one, and \`imagesToSend\` again when the job starts
+  (server/src/readings/service.ts and jobs.ts); that it sends the bytes of exactly those copies, and refuses portraits
+  and others' uploads; that the switch states that scans go to Anthropic's API and the Owner sees the usage. The
+  tests in server/test/readings.test.ts inspect the outgoing requests for these.`,
+  `**The machine's reading is marked and modest** (\`capConfidence\`, \`stillReadByAi\`, shared/src/reading.ts).
+  Proved: a Citation the reader drafted has very low, low or normal confidence, a higher one becomes normal and a lower
+  one is kept, and one a person drafted keeps its confidence; a value is marked "read by AI" exactly while it comes from
+  the reader and the Member has neither confirmed nor changed it ("Member confirms"). Not proved: that the server
+  applies the cap to every new Citation of a Proposal that names a reading or has a read image
+  (server/src/readings/proposals.ts); that the app keeps the marks with this rule (app/src/reading-draft.js mirrors it,
+  and app/tests/unit/reading-draft.test.mjs checks the mirror against it); that the reader leaves illegible values empty
+  ("Faded house number"), which the reading schema checks and server/test/readings.test.ts tests.`,
+  `**Names are matched, not duplicated** (\`scoreCandidate\`, \`ranksAbove\`, \`isSuggested\`, shared/src/matching.ts).
+  Proved: the reasons of a candidate are computed from the read person and the candidate's facts alone, and the score
+  from the reasons; a candidate with the read name, House and a birth in the window scores above any candidate without
+  all three ("Known father"); only candidates whose name matches are suggested. Not proved: the folding of names into
+  variants and the birth window of a role (shared/src/name-variants.ts, tested in shared/test/reading.test.ts); the
+  candidate query that gathers the facts from the Tree (server/src/readings/candidates.ts, tested against the fixture
+  Tree in server/test/reading-proposals.test.ts); that a new Person is created only when the Member chooses so (the
+  app's check screen and the Agent's builder, shared/src/reading-proposal.ts, which refuses a read person without a
+  choice).`,
 ];

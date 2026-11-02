@@ -46,6 +46,7 @@ describe('what a role may do', () => {
       disableMembers: false,
       markFamilyRoots: false,
       acceptBatch: false,
+      manageSettings: false,
     });
     expect(permissionsFor('owner').inviteMembers).toBe(true);
     expect(permissionsFor('owner').markFamilyRoots).toBe(true);
@@ -54,6 +55,9 @@ describe('what a role may do', () => {
     expect(permissionsFor('owner').acceptBatch).toBe(true);
     expect(permissionsFor('editor').acceptBatch).toBe(false);
     expect(permissionsFor('editor').review).toBe(true);
+    // Only the Owner switches scan reading on (scan-reading spec, "The Owner switches it on").
+    expect(permissionsFor('owner').manageSettings).toBe(true);
+    expect(permissionsFor('editor').manageSettings).toBe(false);
   });
 });
 

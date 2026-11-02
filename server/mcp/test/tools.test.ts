@@ -55,16 +55,19 @@ describe('MCP tools on the fixture Tree', () => {
 
   it('offers reading, proposing and writing Research leads only: no tool accepts, rejects, merges, undoes, edits the Tree directly or decides on a suggested lead', async () => {
     const { tools } = await client.listTools();
-    const WRITES = ['add_search_record', 'close_lead', 'create_lead', 'submit_proposal', 'update_lead'];
+    const WRITES = ['add_search_record', 'close_lead', 'create_lead', 'propose_reading', 'read_scan', 'submit_proposal', 'update_lead'];
     expect(tools.map((t) => t.name).sort()).toEqual([
       'add_search_record',
       'close_lead',
       'create_lead',
       'get_ancestors',
       'get_descendants',
+      'get_reading',
       'get_record',
       'list_leads',
       'list_my_proposals',
+      'propose_reading',
+      'read_scan',
       'search_persons',
       'search_places',
       'search_sources',
@@ -75,6 +78,9 @@ describe('MCP tools on the fixture Tree', () => {
     expect(JSON.stringify(submit.inputSchema)).not.toContain('direct');
     for (const t of tools.filter((x) => !WRITES.includes(x.name))) expect(t.annotations?.readOnlyHint, t.name).toBe(true);
     for (const t of tools.filter((x) => WRITES.includes(x.name))) expect(t.annotations?.destructiveHint, t.name).toBe(false);
+    // The reading tools ask for a reading and submit Proposals; none decides on anything.
+    for (const name of ['read_scan', 'propose_reading'])
+      expect(JSON.stringify(tools.find((t) => t.name === name)!.inputSchema), name).not.toMatch(/"direct"|accept|merge/);
   });
 
   it('search_persons finds Jan Novák by a Name as found, without diacritics, and narrows by Place and years', async () => {

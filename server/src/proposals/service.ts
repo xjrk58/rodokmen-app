@@ -7,6 +7,7 @@ import {
   OPERATIONS_VERSION,
   type AcceptBody,
   type ProposalView,
+  type ReaderInfo,
   type SubmitProposalBody,
 } from '@rodokmen/shared';
 import type { Db } from '../db/db.js';
@@ -26,6 +27,7 @@ import { canReview, isAgent, proposalViews } from './views.js';
 import type { Snapshot } from './records.js';
 import { resolveConflicts } from './conflicts.js';
 import { checkBatchRefs, lockBatch, resolveBatchRefs, storeDependencies, storeTemps } from './batches.js';
+import { capped, readerDrafted } from '../readings/proposals.js';
 
 /** Writing Proposals: submit, accept (with corrections and conflict choices), reject and merge. */
 export interface ProposalDeps {
@@ -82,6 +84,7 @@ async function insertProposal(
     undoes?: string;
     answersLeads?: readonly string[];
     batch?: { id: string; position: number };
+    reader?: ReaderInfo | null;
   },
   ops: readonly Operation[],
 ): Promise<Created> {
@@ -97,6 +100,7 @@ async function insertProposal(
       undoes_proposal_id: fields.undoes ?? null,
       batch_id: fields.batch?.id ?? null,
       batch_position: fields.batch?.position ?? null,
+      reader: fields.reader ? JSON.stringify(fields.reader) : null,
     })
     .onConflict((oc) => oc.columns(['author_id', 'idempotency_key']).doNothing())
     .returningAll()
@@ -153,8 +157,10 @@ export async function submitProposal(
   if (body.direct && batchId !== null) throw new ApiProblem(400, 'invalid_proposal', 'A Proposal of an Import batch is reviewed, never a direct change.');
   if (body.direct && !mayDo(author.role, 'directEdit'))
     throw new ApiProblem(403, 'forbidden', 'Only Editors change the Tree directly. Submit a Proposal for review instead.');
-  const { operations, issues } = checkOperations(body.operations, { editor });
-  if (issues.length) throw issuesProblem(issues, author.language);
+  const checked = checkOperations(body.operations, { editor });
+  if (checked.issues.length) throw issuesProblem(checked.issues, author.language);
+  const drafted = await readerDrafted(deps.db, author, body.reader, checked.operations);
+  const operations = drafted ? checked.operations.map(capped) : checked.operations;
   const now = deps.clock.now();
   const result = await transaction(
     deps.db,
@@ -163,7 +169,7 @@ export async function submitProposal(
       // In an Import batch: the next place in batch order, and the earlier Proposals it builds on (review spec).
       const batch = batchId === null ? undefined : { id: batchId, position: (await lockBatch(tx, author, batchId)).next };
       const dependsOn = await checkBatchRefs(tx, operations, batch?.id ?? null, batch?.position ?? null);
-      const fields = { note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads, batch };
+      const fields = { note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads, batch, reader: body.reader };
       const created = await insertProposal(tx, now, author, { kind: body.direct ? 'direct' : 'contribution', ...fields }, operations);
       if (created.created && batch) await storeDependencies(tx, created.proposal.id, dependsOn);
       if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
@@ -450,6 +456,7 @@ export async function mergePersons(
     direct: true,
     operations: [op],
     answersLeads: [],
+    reader: null,
   });
   return view;
 }

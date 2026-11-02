@@ -27,9 +27,9 @@ AddElementTag("Deployment Node,Built", $bgColor="#ffffff", $borderColor="#888888
 AddElementTag("Deployment Node,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Container,Built,Browser", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
+AddElementTag("Software System,External,Built,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Infrastructure Node,Built", $bgColor="#ffffff", $borderColor="#888888", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
-AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 
 AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
 AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
@@ -95,7 +95,7 @@ Deployment_Node(Production.EUemailprovider, "EU email provider", $type="SMTP", $
 }
 
 Deployment_Node(Production.Anthropic, "Anthropic", $type="SaaS", $descr="Only when the Owner switches scan reading on.", $tags="Deployment Node,Planned", $link="") {
-  System(Production.Anthropic.AnthropicClaudeAPI_1, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+  System(Production.Anthropic.AnthropicClaudeAPI_1, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the entries it finds, in the reading schema.", $tags="Software System,External,Built,Planned", $link="")
 }
 
 Rel(Production.Phoneorcomputer.AppPWA_1, Production.Phoneorcomputer.Serviceworker_1, "Fetches the app, data and tiles through it", $techn="Service Worker API", $tags="Built", $link="")
@@ -123,8 +123,8 @@ Rel(Production.netcup.VPS.DockerCompose.backup.Backupjob_1, Production.SecondEUp
 Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
 Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.EUemailprovider.EUemailservice_1, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
 Rel(Production.netcup.VPS.DockerCompose.watchdog.Watchdog_1, Production.EUemailprovider.EUemailservice_1, "Sends alerts to the Owner", $techn="SMTP", $tags="Built", $link="")
-Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
-Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apiblue.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Built", $link="")
+Rel(Production.netcup.VPS.DockerCompose.apigreen.APIserver_1, Production.Anthropic.AnthropicClaudeAPI_1, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Built", $link="")
 Rel(Production.netcup.VPS.systemdtimer, Production.netcup.VPS.DockerCompose.backup.Backupjob_1, "Starts nightly", $techn="docker compose --profile jobs run", $tags="Built", $link="")
 
 SHOW_LEGEND(true)
