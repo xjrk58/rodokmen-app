@@ -23,7 +23,7 @@ Issues in this repo are written for agents; humans steer them with comments.
 
 For code quality, use a deterministic, reliable tool wherever one can do the job, and an agent only where judgement is needed. Tools give the same answer every time and cost no tokens.
 
-- Checks run as tools in CI: type checking, ESLint, Prettier, ShellCheck, the OpenAPI check, LemmaScript proofs and the trace check. Fix what they report with their own autofix where they have one.
+- Checks run as tools in CI: type checking, ESLint, Prettier, ShellCheck, the docs check, the OpenAPI check, LemmaScript proofs and the trace check. Fix what they report with their own autofix where they have one.
 - When a review by an agent finds a problem a tool could have caught, the fix includes that tool or rule (as a backlog change if it is not really small), so the same problem cannot come back.
 - Agent reviews are for what tools cannot judge: logic, design, and whether the code does what the spec says.
 
@@ -36,6 +36,15 @@ The Owner's research lives in a private Vault (ADR 0010). Its names must never r
 - **The denylist** is never committed. It lives at `~/.config/rodokmen/vault-denylist.txt`, or wherever `$RODOKMEN_DENYLIST` points. The Owner builds it from a Vault checkout with `node scripts/vault-guard.mjs --build-from-vault <path>` after a `git fetch`. It holds full names both ways round ("Given Surname", "Surname Given"), Places and document names, minus terms already in `origin/main`. Those are listed as comments in the file. `--include-surnames` adds surnames alone, which is off by default.
 - **Editing the denylist:** add your own terms under `# == manual ==` and terms that must never block under `# == never-block ==`. A rebuild keeps both sections and replaces only the generated ones. Matching ignores case, diacritics and punctuation, and also finds a name broken across lines.
 - **Without a denylist** the guard warns and passes, so contributors without the Vault aren't blocked. CI can't see the list, so it only tests the guard itself.
+
+## Docs
+
+The docs follow [Diátaxis](https://diataxis.fr), with [`docs/README.md`](docs/README.md) as the index.
+
+- **Every change updates the docs** in the right place: a tutorial when the first steps change, a how-to guide for a task someone does, reference for commands, settings, files and the API, and explanation for the reasons. A new page gets one line in the `docs/README.md` index. A change that makes something work, or stop working, also updates what [`README.md`](README.md) says works.
+- **Keep each page to its kind**: no reasons in a how-to guide, no steps in an explanation; link to the other page instead.
+- **Paths stay put** where CI, scripts or agents use them: `docs/verification.md`, `docs/architecture/`, `docs/adr/`, `GLOSSARY.md`, `AGENTS.md` and `openspec/`. The index links them.
+- `pnpm lint:docs` (part of `pnpm lint` and the lint workflow) fails on a broken relative link in any Markdown file, and on a page under `docs/` missing from the index.
 
 ## Conventions
 
