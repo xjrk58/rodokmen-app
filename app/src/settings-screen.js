@@ -1,12 +1,14 @@
 // Settings (family-view spec, "Owner settings in the app"): every Member's own language,
-// passkeys and sessions, and sign-out; for the Owner also the Family roots and the family:
-// invitations, roles, disabling and enabling Members, and the link from each Member to their
-// Person. Settings that later changes add (Agent accounts, scan reading) get their own section
-// here. Other Members see nothing about anyone else.
+// passkeys and sessions, and sign-out; for the Owner also the Family roots, the family
+// (invitations, roles, disabling and enabling Members, and the link from each Member to their
+// Person) and the Agents (src/settings-agents.js). Settings that later changes add (scan
+// reading) get their own section here. Other Members see nothing about anyone else.
 
 import * as API from './api.js';
 import { LANGUAGES, language, t } from './i18n.js';
 import { formatTime, PersonLine, useDebounced } from './screen-parts.js';
+import { AgentsSection } from './settings-agents.js';
+import { Status, useAction, useLoad } from './settings-parts.js';
 import { html, useEffect, useState } from './ui.js';
 import { APP_VERSION } from './version.js';
 import { registerPasskey } from './webauthn.js';
@@ -19,47 +21,6 @@ import { registerPasskey } from './webauthn.js';
 /** @typedef {{ me: Me, chooseLanguage: (lang: 'cs' | 'en') => Promise<void>, signOut: () => Promise<void>, refreshMe: () => Promise<void> }} SettingsProps */
 
 const ROLES = /** @type {const} */ (['contributor', 'editor', 'owner']);
-
-/**
- * Data for a section that loads once and on demand again.
- * @template T
- * @param {(signal: AbortSignal) => Promise<T>} load
- */
-function useLoad(load) {
-  const [state, setState] = useState(/** @type {{ data: T | null, error: unknown }} */ ({ data: null, error: null }));
-  const [round, setRound] = useState(0);
-  useEffect(() => {
-    const controller = new AbortController();
-    load(controller.signal).then(
-      (data) => !controller.signal.aborted && setState({ data, error: null }),
-      (/** @type {unknown} */ error) => !controller.signal.aborted && setState((s) => ({ ...s, error })),
-    );
-    return () => controller.abort();
-  }, [round]);
-  return { ...state, reload: () => setRound((r) => r + 1) };
-}
-
-/**
- * A status line for an action, and a runner that reports its failure there.
- * @returns {[string, boolean, (action: () => Promise<unknown>, done?: string) => Promise<void>]}
- */
-function useAction() {
-  const [status, setStatus] = useState({ text: '', error: false });
-  const run = async (/** @type {() => Promise<unknown>} */ action, done = '') => {
-    setStatus({ text: '', error: false });
-    try {
-      await action();
-      setStatus({ text: done, error: false });
-    } catch (error) {
-      setStatus({ text: error instanceof Error ? error.message : String(error), error: true });
-    }
-  };
-  return [status.text, status.error, run];
-}
-
-/** @param {{ text: string, error: boolean, testid?: string }} props */
-const Status = ({ text, error, testid }) =>
-  html`<p class=${`form-status${error ? ' error' : ''}`} role="status" data-testid=${testid ?? 'settings-status'}>${text}</p>`;
 
 /** @param {{ chooseLanguage: SettingsProps['chooseLanguage'] }} props */
 function LanguageSection({ chooseLanguage }) {
@@ -367,7 +328,7 @@ export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
     <${PasskeysSection} me=${me} refreshMe=${refreshMe} />
     <${SessionsSection} />
     ${me.permissions.markFamilyRoots ? html`<${FamilyRootsSection} refreshMe=${refreshMe} />` : null}
-    ${me.role === 'owner' ? html`<${FamilySection} me=${me} />` : null}
+    ${me.role === 'owner' ? html`<${FamilySection} me=${me} /><${AgentsSection} />` : null}
     <section class="card">
       <h2>${t('settings.about')}</h2>
       <p class="muted small">${t('settings.version', { version: APP_VERSION })}</p>

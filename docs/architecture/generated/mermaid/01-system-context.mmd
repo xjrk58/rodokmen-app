@@ -10,44 +10,47 @@ graph TB
     style 2 fill:#08427b,stroke:#052e56,color:#ffffff
     3["<div style='font-weight: bold'>Editor</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>A Member who reviews<br />Proposals and may change the<br />Tree directly.</div>"]
     style 3 fill:#08427b,stroke:#052e56,color:#ffffff
-    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles and<br />keeps the Backups.</div>"]
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles, marks<br />Family roots, issues Agent<br />tokens and keeps the Backups.</div>"]
     style 4 fill:#08427b,stroke:#052e56,color:#ffffff
-    49["<div style='font-weight: bold'>Archive portals</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Online parish-register<br />viewers of the archives that<br />hold the registers of the<br />Czech lands.</div>"]
-    style 49 fill:#8c8c8c,stroke:#616161,color:#ffffff
     5["<div style='font-weight: bold'>Agent</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>An AI assistant with its own<br />Owner-issued account that<br />contributes only through<br />Proposals.</div>"]
-    style 5 fill:#ffffff,stroke:#777777,color:#555555
-    59["<div style='font-weight: bold'>Historical map services</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Public services for<br />19th-century maps of the<br />Czech lands, run by several<br />providers.</div>"]
-    style 59 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    style 5 fill:#08427b,stroke:#052e56,color:#ffffff
+    52["<div style='font-weight: bold'>Archive portals</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Online parish-register<br />viewers of the archives that<br />hold the registers of the<br />Czech lands.</div>"]
+    style 52 fill:#8c8c8c,stroke:#616161,color:#ffffff
     6["<div style='font-weight: bold'>Rodokmen</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>A private, shared family Tree<br />for one extended family,<br />shown on a map of the Czech<br />lands; the map works for<br />anyone.</div>"]
     style 6 fill:#1168bd,stroke:#0b4884,color:#ffffff
-    65["<div style='font-weight: bold'>OpenStreetMap tiles</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Today's base map; used<br />without prefetching and with<br />attribution.</div>"]
-    style 65 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    66["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
-    style 66 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    67["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
-    style 67 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    68["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
-    style 68 fill:#ffffff,stroke:#777777,color:#555555
-    69["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
-    style 69 fill:#ffffff,stroke:#777777,color:#555555
-    70["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
+    62["<div style='font-weight: bold'>Archive portals abroad</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Register viewers outside the<br />Czech lands, named by each<br />Country pack's archive rules;<br />some charge for access.</div>"]
+    style 62 fill:#ffffff,stroke:#777777,color:#555555
+    63["<div style='font-weight: bold'>Historical map services</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Public services for<br />19th-century maps of the<br />Czech lands, run by several<br />providers.</div>"]
+    style 63 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    69["<div style='font-weight: bold'>OpenStreetMap tiles</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Today's base map; used<br />without prefetching and with<br />attribution.</div>"]
+    style 69 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    70["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
     style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    71["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
+    style 71 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    72["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
+    style 72 fill:#ffffff,stroke:#777777,color:#555555
+    73["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
+    style 73 fill:#ffffff,stroke:#777777,color:#555555
+    74["<div style='font-weight: bold'>GitHub</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Hosts the code, CI and<br />deploys, the image registry,<br />the map preview and the<br />private Export repo.</div>"]
+    style 74 fill:#8c8c8c,stroke:#616161,color:#ffffff
 
     1-- "<div>Searches places and finds<br />their archive and historical<br />maps</div><div style='font-size: 70%'>[Browser]</div>" -->6
-    2-. "<div>Reads the Tree; writes Drafts<br />and submits Proposals with<br />evidence</div><div style='font-size: 70%'>[Browser]</div>" .->6
-    3-. "<div>Reviews and accepts<br />Proposals, merges Persons and<br />undoes changes</div><div style='font-size: 70%'>[Browser]</div>" .->6
-    4-- "<div>Invites Members and assigns<br />roles; later imports the<br />Vault, manages Agents and<br />erases Living people</div><div style='font-size: 70%'>[HTTPS API]</div>" -->6
-    5-. "<div>Reads the Tree and submits<br />Proposals</div><div style='font-size: 70%'>[MCP or HTTPS API, Agent token]</div>" .->6
-    5-. "<div>Opens pull requests until<br />import day; afterwards uses<br />MCP</div><div style='font-size: 70%'>[Git]</div>" .->69
-    6-. "<div>Imports the Vault once, then<br />leaves it frozen</div><div style='font-size: 70%'>[Git checkout]</div>" .->69
-    6-- "<div>Links each place to the<br />register viewer of its<br />archive</div><div style='font-size: 70%'>[HTTPS link]</div>" -->49
-    6-. "<div>Sends uploaded scans for<br />reading, once the Owner<br />switches it on</div><div style='font-size: 70%'>[HTTPS]</div>" .->68
-    6-- "<div>Overlays military survey maps<br />and links to historical map<br />viewers</div><div style='font-size: 70%'>[WMS, HTTPS links]</div>" -->59
-    6-- "<div>Loads base map tiles</div><div style='font-size: 70%'>[HTTPS]</div>" -->65
-    6-- "<div>Sends invitations, sign-in<br />links, digests, outcomes and<br />alerts</div><div style='font-size: 70%'>[SMTP]</div>" -->66
-    6-- "<div>Stores nightly encrypted<br />Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->67
-    6-. "<div>Writes the nightly Export to<br />rodokmen-export</div><div style='font-size: 70%'>[Git over SSH]</div>" .->70
-    70-- "<div>Builds, tests and deploys<br />each release</div><div style='font-size: 70%'>[SSH, GHCR]</div>" -->6
-    70-- "<div>Restores the latest Backup<br />monthly to test it</div><div style='font-size: 70%'>[restic]</div>" -->67
+    2-- "<div>Reads the Tree; writes Drafts<br />and submits Proposals with<br />evidence</div><div style='font-size: 70%'>[Browser]</div>" -->6
+    3-- "<div>Reviews and accepts<br />Proposals, merges Persons and<br />undoes changes</div><div style='font-size: 70%'>[Browser]</div>" -->6
+    4-- "<div>Invites Members, assigns<br />roles, marks Family roots and<br />manages Agents; later imports<br />the Vault and erases Living<br />people</div><div style='font-size: 70%'>[Browser, HTTPS API]</div>" -->6
+    5-- "<div>Reads the Tree and submits<br />Proposals</div><div style='font-size: 70%'>[MCP or HTTPS API, Agent token]</div>" -->6
+    5-. "<div>Opens pull requests until<br />import day; afterwards uses<br />MCP</div><div style='font-size: 70%'>[Git]</div>" .->73
+    6-. "<div>Imports the Vault once, then<br />leaves it frozen</div><div style='font-size: 70%'>[Git checkout]</div>" .->73
+    6-- "<div>Links each place to the<br />register viewer of its<br />archive</div><div style='font-size: 70%'>[HTTPS link]</div>" -->52
+    6-. "<div>Links places outside the<br />Czech lands to their register<br />viewers</div><div style='font-size: 70%'>[HTTPS link]</div>" .->62
+    6-. "<div>Sends uploaded scans for<br />reading, once the Owner<br />switches it on</div><div style='font-size: 70%'>[HTTPS]</div>" .->72
+    6-- "<div>Overlays military survey maps<br />and links to historical map<br />viewers</div><div style='font-size: 70%'>[WMS, HTTPS links]</div>" -->63
+    6-- "<div>Loads base map tiles</div><div style='font-size: 70%'>[HTTPS]</div>" -->69
+    6-- "<div>Sends invitations, sign-in<br />links, digests, outcomes and<br />alerts</div><div style='font-size: 70%'>[SMTP]</div>" -->70
+    6-- "<div>Stores nightly encrypted<br />Backups</div><div style='font-size: 70%'>[restic over HTTPS]</div>" -->71
+    6-. "<div>Writes the nightly Export to<br />rodokmen-export</div><div style='font-size: 70%'>[Git over SSH]</div>" .->74
+    74-- "<div>Builds, tests and deploys<br />each release</div><div style='font-size: 70%'>[SSH, GHCR]</div>" -->6
+    74-- "<div>Restores the latest Backup<br />monthly to test it</div><div style='font-size: 70%'>[restic]</div>" -->71
 
   end

@@ -4,61 +4,68 @@ graph LR
   subgraph diagram ["API server: Proposals, review and history"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    66["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
-    style 66 fill:#8c8c8c,stroke:#616161,color:#ffffff
+    70["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
+    style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
 
     subgraph 6 ["Rodokmen"]
       style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
 
-      subgraph 25 ["API server"]
-        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+      subgraph 27 ["API server"]
+        style 27 fill:#ffffff,stroke:#2e6295,color:#2e6295
 
-        31["<div style='font-weight: bold'>Mailer</div><div style='font-size: 70%; margin-top: 0px'>[Component: nodemailer]</div><div style='font-size: 80%; margin-top:10px'>Writes each email in the<br />recipient's language and<br />sends it over SMTP.</div>"]
+        31["<div style='font-weight: bold'>Family roots and relation</div><div style='font-size: 70%; margin-top: 0px'>[Component: Proved rule in shared/, advisory lock]</div><div style='font-size: 80%; margin-top:10px'>Family roots the Owner marks,<br />and each Person's relation to<br />the family, recomputed in<br />every accepted change.</div>"]
         style 31 fill:#85bbf0,stroke:#5d82a8,color:#000000
-        32["<div style='font-weight: bold'>Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/proposals.ts]</div><div style='font-size: 80%; margin-top:10px'>Takes Proposals as typed<br />operations with base<br />versions; requires a<br />Citation; private until<br />accepted.</div>"]
-        style 32 fill:#85bbf0,stroke:#c25e00,color:#000000
-        33["<div style='font-weight: bold'>Review</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/review.ts]</div><div style='font-size: 80%; margin-top:10px'>Accepts or rejects a whole<br />Proposal in one transaction,<br />with corrections, conflicts<br />and merges.</div>"]
-        style 33 fill:#85bbf0,stroke:#c25e00,color:#000000
-        34["<div style='font-weight: bold'>History and undo</div><div style='font-size: 70%; margin-top: 0px'>[Component: Kysely]</div><div style='font-size: 80%; margin-top:10px'>Append-only log of every<br />change before and after,<br />record history, and undo of a<br />whole Proposal.</div>"]
-        style 34 fill:#85bbf0,stroke:#c25e00,color:#000000
-        35["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks each upload and<br />makes a 2,000-pixel WebP<br />copy.</div>"]
-        style 35 fill:#85bbf0,stroke:#c25e00,color:#000000
-        36["<div style='font-weight: bold'>Notifications and daily jobs</div><div style='font-size: 70%; margin-top: 0px'>[Component: In-process scheduler, Prague time]</div><div style='font-size: 80%; margin-top:10px'>Editors' digest at 18:00,<br />outcome emails, and deleting<br />images of rejected Proposals<br />after 30 days.</div>"]
-        style 36 fill:#85bbf0,stroke:#c25e00,color:#000000
+        34["<div style='font-weight: bold'>Mailer</div><div style='font-size: 70%; margin-top: 0px'>[Component: nodemailer]</div><div style='font-size: 80%; margin-top:10px'>Writes each email in the<br />recipient's language and<br />sends it over SMTP.</div>"]
+        style 34 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        35["<div style='font-weight: bold'>Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/proposals.ts]</div><div style='font-size: 80%; margin-top:10px'>Takes Proposals as typed<br />operations with base<br />versions; requires a<br />Citation; private until<br />accepted.</div>"]
+        style 35 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        36["<div style='font-weight: bold'>Review</div><div style='font-size: 70%; margin-top: 0px'>[Component: shared/src/schemas/review.ts]</div><div style='font-size: 80%; margin-top:10px'>Accepts or rejects a whole<br />Proposal in one transaction,<br />with corrections, conflicts<br />and merges.</div>"]
+        style 36 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        37["<div style='font-weight: bold'>History and undo</div><div style='font-size: 70%; margin-top: 0px'>[Component: Kysely]</div><div style='font-size: 80%; margin-top:10px'>Append-only log of every<br />change before and after,<br />record history, and undo of a<br />whole Proposal.</div>"]
+        style 37 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        38["<div style='font-weight: bold'>Evidence media</div><div style='font-size: 70%; margin-top: 0px'>[Component: sharp, S3 presigner]</div><div style='font-size: 80%; margin-top:10px'>Presigned upload and view<br />links; checks uploads one at<br />a time, keeps the checked<br />bytes and makes a 2,000-pixel<br />WebP copy.</div>"]
+        style 38 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        39["<div style='font-weight: bold'>Notifications and daily jobs</div><div style='font-size: 70%; margin-top: 0px'>[Component: In-process scheduler, Prague time]</div><div style='font-size: 80%; margin-top:10px'>Editors' digest at 18:00,<br />outcome emails, and deleting<br />images of rejected Proposals<br />after 30 days.</div>"]
+        style 39 fill:#85bbf0,stroke:#5d82a8,color:#000000
       end
 
       subgraph 7 ["App (PWA)"]
         style 7 fill:#ffffff,stroke:#2e6295,color:#2e6295
 
-        15["<div style='font-weight: bold'>Drafts list and my Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/work.js, api.js]</div><div style='font-size: 80%; margin-top:10px'>Submits Drafts once online<br />and shows each Proposal's<br />status and the Editor's note.</div>"]
-        style 15 fill:#85bbf0,stroke:#c25e00,color:#000000
-        16["<div style='font-weight: bold'>Review and history screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/review.js]</div><div style='font-size: 80%; margin-top:10px'>Review queue with conflicts<br />and corrections, merging,<br />record history and undo.</div>"]
-        style 16 fill:#85bbf0,stroke:#c25e00,color:#000000
+        16["<div style='font-weight: bold'>Drafts list and my Proposals</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/work.js, api.js]</div><div style='font-size: 80%; margin-top:10px'>Submits Drafts once online<br />and shows each Proposal's<br />status and the Editor's note.</div>"]
+        style 16 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        17["<div style='font-weight: bold'>Review and history screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/review.js]</div><div style='font-size: 80%; margin-top:10px'>Review queue with conflicts<br />and corrections, merging,<br />record history and undo;<br />Agent work is labelled.</div>"]
+        style 17 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        19["<div style='font-weight: bold'>Settings</div><div style='font-size: 70%; margin-top: 0px'>[Component: Preact with htm, vendored]</div><div style='font-size: 80%; margin-top:10px'>Each Member's language,<br />passkeys and sessions; for<br />the Owner invitations, roles,<br />Member–Person links and<br />Family roots.</div>"]
+        style 19 fill:#85bbf0,stroke:#5d82a8,color:#000000
       end
 
-      44[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Proposals and the<br />log of accepted changes; the<br />source of truth.</div>")]
-      style 44 fill:#438dd5,stroke:#2e6295,color:#ffffff
-      45[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
-      style 45 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      47[("<div style='font-weight: bold'>Database</div><div style='font-size: 70%; margin-top: 0px'>[Container: PostgreSQL 16 with PostGIS 3.4]</div><div style='font-size: 80%; margin-top:10px'>The Tree, accounts and<br />sessions, Agent tokens,<br />Proposals and the log of<br />accepted changes; the source<br />of truth.</div>")]
+      style 47 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      48[("<div style='font-weight: bold'>Image bucket</div><div style='font-size: 70%; margin-top: 0px'>[Container: Garage (S3-compatible), on the VPS]</div><div style='font-size: 80%; margin-top:10px'>Private page images, photos<br />and portraits: originals,<br />display copies, and pending/<br />uploads. Reached by browsers<br />only with presigned links at<br />files.<domain>.</div>")]
+      style 48 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 
-    15-. "<div>Gets an upload link per<br />photo, then completes it</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->35
-    15-. "<div>Submits with an idempotency<br />key; lists my Proposals</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->32
-    15-. "<div>Turns outcome emails on or<br />off</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->36
-    16-. "<div>Loads the queue; accepts,<br />rejects or merges</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->33
-    16-. "<div>Shows record history; undoes<br />a Proposal</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->34
-    31-- "<div>Sends from the Rodokmen<br />domain</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->66
-    32-. "<div>Stores pending Proposals and<br />their operations</div><div style='font-size: 70%'>[SQL]</div>" .->44
-    32-. "<div>Checks that the Proposal's<br />uploads are ready</div><div style='font-size: 70%'>[JS call]</div>" .->35
-    33-. "<div>Applies all operations in one<br />transaction</div><div style='font-size: 70%'>[SQL]</div>" .->44
-    33-. "<div>Logs each changed record</div><div style='font-size: 70%'>[JS call]</div>" .->34
-    33-. "<div>Moves accepted images out of<br />pending/</div><div style='font-size: 70%'>[JS call]</div>" .->35
-    33-. "<div>Sends the author the outcome</div><div style='font-size: 70%'>[JS call]</div>" .->36
-    34-. "<div>Appends to the log; reads it<br />for history and undo</div><div style='font-size: 70%'>[SQL]</div>" .->44
-    35-. "<div>Records uploads and their<br />checks</div><div style='font-size: 70%'>[SQL]</div>" .->44
-    35-. "<div>Presigns links; writes, moves<br />and deletes images</div><div style='font-size: 70%'>[S3 API]</div>" .->45
-    36-. "<div>Reads pending Proposals;<br />claims each daily job once</div><div style='font-size: 70%'>[SQL]</div>" .->44
-    36-. "<div>Sends the digest and outcome<br />emails</div><div style='font-size: 70%'>[JS call]</div>" .->31
-    36-. "<div>Deletes images of Proposals<br />rejected 30 days ago</div><div style='font-size: 70%'>[JS call]</div>" .->35
+    16-- "<div>Gets an upload link per<br />photo, then completes it</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->38
+    16-- "<div>Submits with an idempotency<br />key; lists my Proposals</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->35
+    16-- "<div>Turns outcome emails on or<br />off</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->39
+    17-- "<div>Loads the queue; accepts,<br />rejects or merges</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->36
+    17-- "<div>Shows record history; undoes<br />a Proposal</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->37
+    19-- "<div>Lists, marks and removes<br />Family roots</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->31
+    34-- "<div>Sends from the Rodokmen<br />domain</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->70
+    35-- "<div>Stores pending Proposals and<br />their operations</div><div style='font-size: 70%'>[SQL]</div>" -->47
+    35-- "<div>Checks that the Proposal's<br />uploads are ready</div><div style='font-size: 70%'>[JS call]</div>" -->38
+    36-- "<div>Applies all operations in one<br />transaction</div><div style='font-size: 70%'>[SQL]</div>" -->47
+    36-- "<div>Logs each changed record</div><div style='font-size: 70%'>[JS call]</div>" -->37
+    36-- "<div>Moves accepted images out of<br />pending/</div><div style='font-size: 70%'>[JS call]</div>" -->38
+    36-- "<div>Sends the author the outcome</div><div style='font-size: 70%'>[JS call]</div>" -->39
+    37-- "<div>Appends to the log; reads it<br />for history and undo</div><div style='font-size: 70%'>[SQL]</div>" -->47
+    38-- "<div>Records uploads and their<br />checks</div><div style='font-size: 70%'>[SQL]</div>" -->47
+    38-- "<div>Presigns links; stores the<br />checked bytes and display<br />copies; moves and deletes<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->48
+    39-- "<div>Reads pending Proposals;<br />claims each daily job once</div><div style='font-size: 70%'>[SQL]</div>" -->47
+    39-- "<div>Sends the digest and outcome<br />emails</div><div style='font-size: 70%'>[JS call]</div>" -->34
+    39-- "<div>Deletes images of Proposals<br />rejected 30 days ago</div><div style='font-size: 70%'>[JS call]</div>" -->38
+    36-- "<div>Recomputes every relation in<br />the same transaction</div><div style='font-size: 70%'>[JS call]</div>" -->31
+    31-- "<div>Stores Family roots and each<br />Person's relation</div><div style='font-size: 70%'>[SQL]</div>" -->47
 
   end

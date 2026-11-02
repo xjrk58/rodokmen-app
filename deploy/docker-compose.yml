@@ -1,7 +1,8 @@
 # Rodokmen on one VPS (design.md, "Hosting"): PostgreSQL with PostGIS, the API (which also
 # serves app/), Garage for page images, and Caddy for HTTPS. Two API slots, api-blue and
 # api-green, let a deploy start the new version next to the old one and switch only when it is
-# healthy (scripts/deploy.sh).
+# healthy (scripts/deploy.sh). Every request to the API passes through Caddy, which sends new ones
+# to the active slot only (caddy/Caddyfile).
 #
 # Memory: every service has a limit, and together they fit the 4 GB VPS with both API slots and
 # the nightly Backup running at once (README.md, "Memory").
@@ -61,10 +62,10 @@ x-api: &api
   mem_limit: 512m
   memswap_limit: 768m
   mem_reservation: 128m
+  # On SIGTERM the server answers its requests in flight and gives up after 15 s
+  # (server/src/shutdown.ts), before Docker's SIGKILL.
   stop_grace_period: 20s
-  networks:
-    rodokmen:
-      aliases: [api]
+  networks: [rodokmen]
 
 services:
   db:
@@ -166,16 +167,22 @@ services:
       # The folder, not the file: a deploy replaces the Caddyfile, and only a mounted folder shows
       # the new one to Caddy (deploy.sh reloads it).
       - ./caddy:/etc/caddy:ro
+      # Which API slot takes new requests, switched by deploy.sh (caddy/Caddyfile, snippet "api").
+      - ./state/api-slot:/srv/api-slot:ro
       - caddy_data:/data
       - caddy_config:/config
     # Uploads stream through to Garage; nothing is buffered here.
     mem_limit: 128m
     memswap_limit: 192m
-    networks: [rodokmen]
+    networks:
+      rodokmen:
+        # The API inside the network (http://api:3000), so that the MCP server's calls follow the
+        # same switch as everyone else's.
+        aliases: [api]
 
   # The MCP server (add-agent-access) at https://$DOMAIN/mcp, behind Caddy. A client of the API
-  # with each caller's Agent token: no .env, so no database password or other secret. Follows
-  # each release (scripts/deploy.sh).
+  # (through Caddy, at http://api:3000) with each caller's Agent token: no .env, so no database
+  # password or other secret. Follows each release (scripts/deploy.sh).
   mcp:
     image: ${MCP_IMAGE:-ghcr.io/xjrk58/rodokmen-app:main}
     restart: unless-stopped
