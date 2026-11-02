@@ -5569,7 +5569,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Later accepted Proposals that attach records to ones this undo would remove; undo those first, newest first"
+            "description": "Ids of later accepted Proposals that attach records to ones this undo would remove, newest first: undo those first (GET /api/proposals/{id} gives the author, date and changes of each). The single entry \"(records not in the log)\" means records added outside any logged Proposal are attached, so the undo cannot be done"
           }
         },
         "required": [
@@ -11611,7 +11611,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Later accepted Proposals that attach records to ones this undo would remove; undo those first, newest first"
+            "description": "Ids of later accepted Proposals that attach records to ones this undo would remove, newest first: undo those first (GET /api/proposals/{id} gives the author, date and changes of each). The single entry \"(records not in the log)\" means records added outside any logged Proposal are attached, so the undo cannot be done"
           }
         },
         "required": [

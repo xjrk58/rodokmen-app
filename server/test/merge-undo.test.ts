@@ -1,9 +1,10 @@
 import { EventDetail, FamilyDetail, History, PersonDetail, PersonSearchResult, ProposalView, UndoPreview } from '@rodokmen/shared';
+import { sql } from 'kysely';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { generateFixture } from '../src/fixture/generate.js';
 import type { TestDatabase } from './db.js';
-import { errorOf, idOf } from './helpers.js';
+import { errorOf, idOf, MINUTE } from './helpers.js';
 import { citation, useProposalTestbed } from './proposal-testbed.js';
 
 const L = generateFixture().landmarks;
@@ -11,10 +12,11 @@ const L = generateFixture().landmarks;
 describe('Merging Persons and undoing Proposals', () => {
   const { ready, call, submit, person, count } = useProposalTestbed();
   let t: TestDatabase;
+  let owner: Account;
   let editor: Account;
   let contributor: Account;
   let other: Account;
-  beforeAll(() => ({ t, editor, contributor, other } = ready()));
+  beforeAll(() => ({ t, owner, editor, contributor, other } = ready()));
 
   // ---------------------------------------------------------------- 2.4 merge
 
@@ -277,6 +279,115 @@ describe('Merging Persons and undoing Proposals', () => {
     expect(errorOf(accept).code).toBe('person_merged');
     expect((await call(editor, 'POST', `/api/proposals/${merge!.proposalId}/undo`, {})).statusCode).toBe(200);
     expect((await call(contributor, 'GET', `/api/persons/${merge!.gone}`)).statusCode).toBe(200);
+  });
+
+  it('after an undo the history still names the records it removed, from the log, in Czech and English (#74)', async () => {
+    // A minute between the changes, so the history is in the order they were made.
+    const later = () => ready().a.clock.advance(MINUTE);
+    const x = ProposalView.parse(
+      (
+        await submit(contributor, [
+          {
+            op: 'createPerson',
+            tempId: 'tmp:p',
+            sex: 'female',
+            name: { given: 'Kristýna', surname: 'Invented', type: 'birth', asFound: 'Christina Invented' },
+          },
+          { op: 'createEvent', tempId: 'tmp:e', type: 'baptism', date: '1829-03-02', placeId: L.kamennaLhota },
+          { op: 'addRole', eventId: 'tmp:e', personId: 'tmp:p', role: 'child' },
+          ...citation('K1'),
+          { op: 'attachCitation', citationId: 'tmp:citK1', eventId: 'tmp:e' },
+        ])
+      ).json(),
+    );
+    expect((await call(editor, 'POST', `/api/proposals/${x.id}/accept`, {})).statusCode).toBe(200);
+    later();
+    const kristyna = (await t.db.selectFrom('name').select('person_id').where('as_found', '=', 'Christina Invented').executeTakeFirstOrThrow()).person_id;
+    // The Owner marks her as a Family root; another Contributor adds her Latin Name with its own Citation.
+    expect((await call(owner, 'PUT', `/api/persons/${kristyna}/family-root`, { familyRoot: true })).statusCode).toBe(200);
+    later();
+    const y = ProposalView.parse(
+      (
+        await submit(other, [
+          ...citation('K2'),
+          {
+            op: 'addName',
+            tempId: 'tmp:n',
+            personId: kristyna,
+            baseVersion: (await person(kristyna)).version,
+            given: 'Christina',
+            surname: 'Inventa',
+            type: 'latin',
+            asFound: 'Christina Inventa',
+          },
+          { op: 'attachCitation', citationId: 'tmp:citK2', nameId: 'tmp:n' },
+        ])
+      ).json(),
+    );
+    expect((await call(editor, 'POST', `/api/proposals/${y.id}/accept`, {})).statusCode).toBe(200);
+    const root = (
+      await t.db
+        .selectFrom('log_change as c')
+        .innerJoin('log_entry as l', 'l.id', 'c.log_entry_id')
+        .select('l.proposal_id')
+        .where('c.record_table', '=', 'family_root')
+        .where(sql<boolean>`c.after @> ${JSON.stringify({ person_id: kristyna })}::jsonb`)
+        .executeTakeFirstOrThrow()
+    ).proposal_id;
+    const undo = async (m: Account, id: string) => {
+      later();
+      const res = await call(m, 'POST', `/api/proposals/${id}/undo`, {});
+      expect(res.statusCode, res.body).toBe(200);
+      return idOf(res);
+    };
+    const undoneY = await undo(editor, y.id);
+    const undoneRoot = await undo(owner, root);
+    const undoneX = await undo(editor, x.id);
+    expect((await call(contributor, 'GET', `/api/persons/${kristyna}`)).statusCode).toBe(404);
+
+    const history = History.parse((await call(other, 'GET', `/api/history/person/${kristyna}`)).json()).items;
+    expect(history.map((h) => h.proposalId)).toEqual([undoneX, undoneRoot, undoneY, y.id, root, x.id]);
+    const said = (id: string, language: 'cs' | 'en') => history.find((h) => h.proposalId === id)!.summaries.map((s) => s[language]);
+    expect(said(undoneY, 'en')).toEqual([
+      'removes the Citation “Invented register K2”, p. 17 for “Christina Inventa”',
+      'removes the Name “Christina Inventa”',
+      'removes the Citation “Invented register K2”, p. 17',
+      'removes the Source “Invented register K2”',
+    ]);
+    expect(said(undoneY, 'cs')).toEqual([
+      'odebírá citaci: „Invented register K2“, s. 17 – „Christina Inventa“',
+      'odebírá jméno: „Christina Inventa“',
+      'odebírá citaci: „Invented register K2“, s. 17',
+      'odebírá pramen: „Invented register K2“',
+    ]);
+    expect(said(undoneRoot, 'en')).toEqual(['removes Kristýna Invented (Family root)']);
+    expect(said(undoneRoot, 'cs')).toEqual(['odebírá označení: Kristýna Invented (kořen rodu)']);
+    expect(said(undoneX, 'en')).toEqual(
+      expect.arrayContaining([
+        'removes the Person Kristýna Invented',
+        'removes the Name “Christina Invented”',
+        'removes the baptism of 1829-03-02',
+        'removes the Role Kristýna Invented (child)',
+        'removes the Citation “Invented register K1”, p. 17 for the baptism of 1829-03-02',
+      ]),
+    );
+    expect(said(undoneX, 'cs')).toEqual(
+      expect.arrayContaining([
+        'odebírá osobu: Kristýna Invented',
+        'odebírá jméno: „Christina Invented“',
+        'odebírá událost: křest 1829-03-02',
+        'odebírá roli: Kristýna Invented (dítě)',
+        'odebírá citaci: „Invented register K1“, s. 17 – křest 1829-03-02',
+      ]),
+    );
+    // The entries before the undo still name her, though she is gone.
+    expect(said(y.id, 'en')).toContain('adds the Name “Christina Inventa” (Latin form) to Kristýna Invented');
+    expect(said(y.id, 'cs')).toContain('přidává jméno „Christina Inventa“ (latinská podoba) osobě: Kristýna Invented');
+    expect(said(root, 'en')).toEqual(['marks Kristýna Invented as a Family root']);
+    for (const h of history) {
+      expect(h.summaries.map((s) => s.en).join('\n')).not.toMatch(/record [0-9a-f]{6}/);
+      expect(h.summaries.map((s) => s.cs).join('\n')).not.toMatch(/záznam [0-9a-f]{6}/);
+    }
   });
 
   it('a field name from Object.prototype is a 400, not a crash', async () => {

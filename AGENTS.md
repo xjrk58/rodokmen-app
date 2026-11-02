@@ -35,6 +35,7 @@ The checks, in the order `pnpm check` runs them, and how to fix what they find:
 - **typecheck**: type errors in server/, shared/ and the app's JSDoc. Fix the types; narrow with a check, not a cast.
 - **ESLint**: promises nobody awaits, `any` and unchecked casts, and the shapes of past bugs: `request.url` in the sign-in hooks, `z.url()` without a protocol, a day from `toISOString()` in the app, Leaflet content as HTML, words GLOSSARY.md rejects, fixed waits in browser tests. Run `pnpm exec eslint --fix .`, then do what the message says. After fixing a recorded finding, `pnpm exec eslint --prune-suppressions .`.
 - **ShellCheck**: shell script mistakes. Follow the wiki page of the SC code.
+- **docs check**: a broken relative link in a Markdown file, or a page under `docs/` missing from the `docs/README.md` index. Fix the link, or add the page's line to the index.
 - **Prettier**: layout. Run `pnpm format`.
 - **knip**: unused files, exports, dependencies and class members. `pnpm knip --fix` removes unused exports and dependencies (check its changes); then delete what that leaves unused. An export only the proofs use gets `@public` in its JSDoc.
 - **dependency-cruiser**: imports across a boundary (app to server; sign-in, storage and ops to the Tree modules; shared to app or server) and circular imports. Move what both sides need into a module of its own, as `server/src/clock.ts`. After removing a recorded cycle, `pnpm depcruise:baseline`.
@@ -53,6 +54,15 @@ The Owner's research lives in a private Vault (ADR 0010). Its names must never r
 - **The denylist** is never committed. It lives at `~/.config/rodokmen/vault-denylist.txt`, or wherever `$RODOKMEN_DENYLIST` points. The Owner builds it from a Vault checkout with `node scripts/vault-guard.mjs --build-from-vault <path>` after a `git fetch`. It holds full names both ways round ("Given Surname", "Surname Given"), Places and document names, minus terms already in `origin/main`. Those are listed as comments in the file. `--include-surnames` adds surnames alone, which is off by default.
 - **Editing the denylist:** add your own terms under `# == manual ==` and terms that must never block under `# == never-block ==`. A rebuild keeps both sections and replaces only the generated ones. Matching ignores case, diacritics and punctuation, and also finds a name broken across lines.
 - **Without a denylist** the guard warns and passes, so contributors without the Vault aren't blocked. CI can't see the list, so it only tests the guard itself.
+
+## Docs
+
+The docs follow [Diátaxis](https://diataxis.fr), with [`docs/README.md`](docs/README.md) as the index.
+
+- **Every change updates the docs** in the right place: a tutorial when the first steps change, a how-to guide for a task someone does, reference for commands, settings, files and the API, and explanation for the reasons. A new page gets one line in the `docs/README.md` index. A change that makes something work, or stop working, also updates what [`README.md`](README.md) says works.
+- **Keep each page to its kind**: no reasons in a how-to guide, no steps in an explanation; link to the other page instead.
+- **Paths stay put** where CI, scripts or agents use them: `docs/verification.md`, `docs/architecture/`, `docs/adr/`, `GLOSSARY.md`, `AGENTS.md` and `openspec/`. The index links them.
+- `pnpm lint:docs` (part of `pnpm lint` and the lint workflow) fails on a broken relative link in any Markdown file, and on a page under `docs/` missing from the index.
 
 ## Conventions
 

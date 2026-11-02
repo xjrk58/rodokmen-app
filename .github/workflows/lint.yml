@@ -1,9 +1,10 @@
 # The code checks on every push and pull request, and before every deploy (deploy.yml): gitleaks
-# over the new commits, then `pnpm check` (scripts/check.mjs): types, ESLint, ShellCheck,
-# Prettier, knip, dependency-cruiser, jscpd, pnpm audit, the OpenAPI check and the proofs' trace
-# check. Run the same locally with `pnpm check` and `pnpm gitleaks`; AGENTS.md ("Tools before
-# agents") says how to fix what each reports. Known findings are recorded where the tool can only
-# shrink them: eslint-suppressions.json and .dependency-cruiser-known-violations.json.
+# over the new commits, then `pnpm check` (scripts/check.mjs): types, ESLint, ShellCheck, the docs
+# check (relative links in Markdown, and every docs/ page in the docs/README.md index), Prettier,
+# knip, dependency-cruiser, jscpd, pnpm audit, the OpenAPI check and the proofs' trace check. Run
+# the same locally with `pnpm check` and `pnpm gitleaks`; AGENTS.md ("Tools before agents") says
+# how to fix what each reports. Known findings are recorded where the tool can only shrink them:
+# eslint-suppressions.json and .dependency-cruiser-known-violations.json.
 name: lint
 
 on:

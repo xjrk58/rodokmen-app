@@ -1082,6 +1082,18 @@ img.thumb {
 .undo-box:not(:empty) {
   margin-top: 8px;
 }
+/* The later Proposals to undo first, newest first, each with its own Undo. */
+.undo-blockers {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.undo-blocker {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
 
 /* The family screens (add-family-view): the tree as the signed-in home, People, person pages,
    Settings and signing in, over the map; tabs at the bottom for a signed-in Member. */

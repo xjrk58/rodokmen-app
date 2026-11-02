@@ -9,6 +9,7 @@ export const CHECKS = [
   ['typecheck', 'pnpm', ['run', 'typecheck']],
   ['ESLint', 'pnpm', ['run', 'lint:js']],
   ['ShellCheck', 'pnpm', ['run', 'lint:sh']],
+  ['docs check', 'pnpm', ['run', 'lint:docs']],
   ['Prettier', 'pnpm', ['run', 'format:check']],
   ['knip', 'pnpm', ['run', 'knip']],
   ['dependency-cruiser', 'pnpm', ['run', 'depcruise']],
