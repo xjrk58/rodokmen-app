@@ -85,6 +85,9 @@ const examples: OperationInput[] = [
   { op: 'addLabel', personId: 'tmp:child', label: 'line/dvorak' },
   { op: 'removeLabel', personId: ids.anna, baseVersion: 1, label: 'emigrated' },
   { op: 'addDocument', sourceId: 'tmp:account', uploadId: ids.upload, originalUploadId: ids.upload2, title: 'Family chronicle, typescript of 1936' },
+  // What an undo says of the records it removes.
+  { op: 'restoreRecord', table: 'name', id: ids.name, baseVersion: 1, values: null },
+  { op: 'restoreRecord', table: 'event', id: ids.event, baseVersion: 2, values: null },
 ];
 
 describe('links in Sources', () => {

@@ -274,6 +274,9 @@ export const getBatch = (id, signal) => api(`batches/${encodeURIComponent(id)}`,
 /** @param {string} id @param {AcceptBatchBody} body @returns {Promise<AcceptBatchResult>} */
 export const acceptBatch = (id, body) => api(`batches/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
 
+/** @param {string} id @param {AbortSignal} [signal] @returns {Promise<ProposalView>} */
+export const getProposal = (id, signal) => api(`proposals/${encodeURIComponent(id)}`, { signal });
+
 /** @param {string} id @param {AcceptBody} body @returns {Promise<ProposalView>} */
 export const acceptProposal = (id, body) => api(`proposals/${encodeURIComponent(id)}/accept`, { method: 'POST', body });
 

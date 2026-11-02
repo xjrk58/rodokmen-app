@@ -18,7 +18,7 @@ import type {
   SourceType,
   UiLanguage,
 } from '@rodokmen/shared';
-import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
+import type { ColumnType, Generated, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 import type { LeadEventTable, LeadLinkTable, LeadSearchTable, LeadSuggestionTable, LeadTable, ProposalLeadTable } from './lead-types.js';
 import type {
@@ -443,4 +443,3 @@ export type Proposal = Selectable<ProposalTable>;
 export type Upload = Selectable<UploadTable>;
 
 export type Account = Selectable<AccountTable>;
-export type NewEvent = Insertable<EventTable>;

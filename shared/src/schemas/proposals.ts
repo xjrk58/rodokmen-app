@@ -24,7 +24,7 @@ import {
   AddDocument,
 } from './place-operations.js';
 import { Ref, TempId } from './refs.js';
-import { SERVER_OPERATIONS, SetFamilyRoot } from './server-operations.js';
+import { SetFamilyRoot } from './server-operations.js';
 import {
   ChildLinkType,
   Confidence,
@@ -339,8 +339,7 @@ export type OperationInput = z.input<typeof Operation>;
 export type OperationName = Operation['op'];
 export const OPERATION_NAMES: OperationName[] = Operation.options.map((o) => o.shape.op.value);
 
-/** Operations a Member may submit: all but the server's own (server-operations.ts). Merges are Editors' only. */
-export const SUBMITTABLE_OPERATIONS: readonly OperationName[] = OPERATION_NAMES.filter((n) => !SERVER_OPERATIONS.includes(n));
+/** Merges are Editors' only. */
 export const EDITOR_ONLY_OPERATIONS: readonly OperationName[] = ['mergePersons'];
 
 // ---------------------------------------------------------------- whole Proposals

@@ -1,0 +1,48 @@
+// knip (`pnpm knip`, part of `pnpm check`): unused files, exports, dependencies and class members
+// across the workspace. Entry points that knip's plugins find on their own (package.json scripts
+// and main, vitest and Playwright configs) are not repeated here.
+//
+// knip is pinned to 5.88.1, the last version that checks class members (#21, L16 and the app's
+// dead members): v6 dropped them with TypeScript's JavaScript API. It runs on the TypeScript 6 at
+// the workspace root, which typescript-eslint needs as well.
+{
+  "$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
+  "include": ["classMembers"],
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.mjs", "scripts/test/*.test.mjs"],
+      "project": ["scripts/**/*.mjs", "*.mjs"],
+    },
+    "app": {
+      // index.html loads app.js, sw-client.js registers sw.js, and types.d.ts declares modules for tsc.
+      "entry": ["app.js", "sw.js", "scripts/*.mjs", "scripts/types.d.ts", "tests/unit/*.test.mjs"],
+      "project": ["src/**/*.js", "scripts/**/*.{mjs,ts}", "tests/**/*.{js,mjs}"],
+      // Copied into app/vendor/ by scripts/vendor-preact.mjs, which finds them by folder; the app imports the copies.
+      "ignoreDependencies": ["preact", "htm"],
+      // Shell.onSignedIn is called through the Shell typedef in src/sign-in-screen.js, a structural
+      // type that knip's reference search does not link to the class.
+      "ignoreMembers": ["onSignedIn"],
+    },
+    "server": {
+      "project": ["src/**/*.ts", "test/**/*.ts", "*.ts"],
+      // The server and the MCP server import shared from source (the @rodokmen/source condition).
+      "paths": { "@rodokmen/shared": ["../shared/src/index.ts"] },
+    },
+    "server/mcp": {
+      // Run by docker-compose.yml's mcp service.
+      "entry": ["src/http-main.ts"],
+      "project": ["src/**/*.ts", "test/**/*.ts", "*.ts"],
+      "paths": { "@rodokmen/shared": ["../../shared/src/index.ts"] },
+    },
+    "shared": {
+      "project": ["src/**/*.ts", "test/**/*.ts", "*.ts"],
+      // shared's API is for this workspace only, so an export of src/index.ts that nobody uses is
+      // dead (#21, M11). Exports only the proofs use are tagged @public in the source.
+      "includeEntryExports": true,
+    },
+  },
+  // An export that its own file uses is not dead code, only wider than needed. Narrowing about
+  // 80 of them would touch most modules and break branches that start importing one; exports
+  // nobody uses at all still fail (#21, M11).
+  "ignoreExportsUsedInFile": true,
+}

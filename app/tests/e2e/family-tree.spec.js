@@ -3,9 +3,7 @@
 // Member's own Person and the marks.
 import { member, mockFamilyApi } from './family-api.js';
 import { P } from './family-data.js';
-import { expect, openApp, test } from './fixtures.js';
-
-const SHOTS = process.env.FAMILY_SCREENSHOTS;
+import { boxOf, expect, familyScreenshot, openApp, test } from './fixtures.js';
 
 /** @param {import('@playwright/test').Page} page @param {string} id */
 const box = (page, id) => page.locator(`[data-testid="tree-person"][data-person="${id}"]`);
@@ -21,7 +19,7 @@ test('opening the app: a signed-in Member sees the tree on their focus Person, a
   // Tabs: Tree, Map, People, Review (Editors) and Settings.
   for (const tab of ['tree', 'map', 'people', 'review', 'settings']) await expect(page.getByTestId(`tabbar-${tab}`)).toBeVisible();
   await expect(page.getByTestId('tabbar-tree')).toHaveAttribute('aria-current', 'page');
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/mock-tree-${test.info().project.name}.png` });
+  await familyScreenshot(page, 'mock-tree');
   await page.getByTestId('tabbar-map').click();
   await expect(page.locator('#map')).toBeVisible();
   await expect(page.getByTestId('tree')).toBeHidden();
@@ -53,12 +51,11 @@ test('second marriage: both partners beside the focus Person, each with their ow
   await mockFamilyApi(page, { me: member('contributor') });
   await page.goto(`./#person-${P.jan}`);
   await expect(page.getByTestId('tree')).toHaveAttribute('data-focus', P.jan);
-  const jan = await box(page, P.jan).boundingBox();
-  const first = await box(page, P.katerina).boundingBox();
-  const second = await box(page, P.ludmila).boundingBox();
-  const karel = await box(page, P.karel).boundingBox();
-  const antonin = await box(page, P.antonin).boundingBox();
-  if (!jan || !first || !second || !karel || !antonin) throw new Error('a box is missing');
+  const jan = await boxOf(box(page, P.jan));
+  const first = await boxOf(box(page, P.katerina));
+  const second = await boxOf(box(page, P.ludmila));
+  const karel = await boxOf(box(page, P.karel));
+  const antonin = await boxOf(box(page, P.antonin));
   // Both partners in the focus row, one on each side; each Family's children below it, on its side.
   expect(Math.abs(first.y - jan.y)).toBeLessThan(2);
   expect(Math.abs(second.y - jan.y)).toBeLessThan(2);
@@ -153,14 +150,13 @@ test('the tree pans with a drag and zooms with the wheel and the buttons', async
   await expect.poll(view).toBe(start);
 });
 
-test('shared link: the address names the focus, and another Member opening it sees the same focus', async ({ page, context }) => {
+test('shared link: the address names the focus, and another Member opening it sees the same focus', async ({ page, context, browser }) => {
   await mockFamilyApi(context, { me: member('contributor', { person: 23 }) });
   await page.goto(`./#person-${P.karel}`);
   await expect(page.getByTestId('tree')).toHaveAttribute('data-focus', P.karel);
   const address = page.url();
   // Another Member, on another device, with their own Person linked.
-  const other = await context.browser()?.newContext();
-  if (!other) throw new Error('no browser');
+  const other = await browser.newContext();
   await mockFamilyApi(other, { me: member('contributor', { person: 10 }) });
   const theirs = await other.newPage();
   await theirs.goto(address);

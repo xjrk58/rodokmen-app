@@ -3,7 +3,7 @@
  * against its schema, temporary ids defined once and before use with the right kind, base
  * versions present, who may use which operation, and the evidence rule.
  */
-import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
+import { satisfiesEvidenceRule } from '../rules.js';
 import { isPlaceOrNoteOperation, placeReferencesOf } from './place-operations.js';
 import { EDITOR_ONLY_OPERATIONS, Operation, OPERATION_NAMES, type OperationName, type SettableRecord } from './proposals.js';
 import { isNewRef, isTempId } from './refs.js';
@@ -118,11 +118,6 @@ export const EVIDENCE_MESSAGE = {
   en: 'A Proposal needs evidence: add the register entry, a document or a Family account as a Citation.',
   cs: 'Návrh potřebuje doklad: přidejte zápis z matriky, dokument nebo rodinné vyprávění jako citaci.',
 } as const;
-
-/** True when the operations carry at least one Citation (proposals spec, "Evidence is required"). */
-export function hasEvidence(ops: readonly Operation[]): boolean {
-  return ops.some((o) => isCitationOperation(o.op));
-}
 
 export interface ProposalCheck {
   operations: Operation[];

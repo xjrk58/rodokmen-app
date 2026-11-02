@@ -12,7 +12,7 @@ const Env = z
     HOST: z.string().default('127.0.0.1'),
     PORT: z.coerce.number().int().min(0).max(65535).default(3000),
     /** The one origin app and API are served from, e.g. https://rodokmen.example (ADR 0007). */
-    PUBLIC_ORIGIN: z.url().default('http://localhost:3000'),
+    PUBLIC_ORIGIN: z.url({ protocol: /^https?$/ }).default('http://localhost:3000'),
     DATABASE_URL: z.string().min(1).default('postgres://rodokmen:rodokmen@localhost:5432/rodokmen_dev'),
     /** Static files of the map app; served at / when the directory exists. */
     APP_DIR: z.string().optional(),
@@ -34,9 +34,9 @@ const Env = z
     ALERT_EMAIL: z.string().optional(),
 
     /** Where the server reaches the image store, e.g. http://garage:3900 on the Docker network. */
-    S3_ENDPOINT: z.url().optional(),
+    S3_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
     /** Where browsers reach it, if not at S3_ENDPOINT: the host image links are signed for (deploy/README.md, "Image links"). */
-    S3_PUBLIC_ENDPOINT: z.url().optional(),
+    S3_PUBLIC_ENDPOINT: z.url({ protocol: /^https?$/ }).optional(),
     S3_REGION: z.string().default('garage'),
     S3_BUCKET: z.string().optional(),
     S3_ACCESS_KEY_ID: z.string().optional(),
