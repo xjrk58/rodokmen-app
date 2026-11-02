@@ -4,6 +4,7 @@ import { expect, openApp, test } from './fixtures.js';
 
 test.describe('Czech browser', () => {
   test.use({ locale: 'cs-CZ', language: null });
+
   test('shows Czech labels', async ({ page }) => {
     await openApp(page);
     await expect(page.locator('html')).toHaveAttribute('lang', 'cs');
@@ -20,6 +21,7 @@ test.describe('Czech browser', () => {
 
 test.describe('English phone, first visit', () => {
   test.use({ locale: 'en-US', language: null });
+
   test('opens in Czech, and the language switch offers English', async ({ page }) => {
     await openApp(page);
     await expect(page.locator('html')).toHaveAttribute('lang', 'cs');
@@ -37,6 +39,7 @@ test.describe('English phone, first visit', () => {
 
 test.describe('Other browser language', () => {
   test.use({ locale: 'de-DE', language: null });
+
   test('opens in Czech too', async ({ page }) => {
     await openApp(page);
     await expect(page.locator('#search-input')).toHaveAttribute('placeholder', 'Najít obec');
@@ -45,6 +48,7 @@ test.describe('Other browser language', () => {
 
 test.describe('Choice remembered', () => {
   test.use({ locale: 'cs-CZ', language: null });
+
   test('a reader who switches to English gets English when opening the app again', async ({ page }) => {
     await openApp(page);
     await page.locator('#settings-button').click();
@@ -60,6 +64,7 @@ test.describe('Choice remembered', () => {
 
 test.describe('Language switch', () => {
   test.use({ locale: 'en-US' });
+
   test('switches to Czech and keeps the choice', async ({ page }) => {
     await openApp(page);
     await page.locator('#settings-button').click();
@@ -74,6 +79,7 @@ test.describe('Language switch', () => {
 
 test.describe('Two quick language changes', () => {
   test.use({ locale: 'en-US' });
+
   test('end in the language chosen last, even when the first one loads slower', async ({ page }) => {
     await openApp(page);
     /** @type {() => void} */

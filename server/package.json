@@ -41,7 +41,6 @@
     "@types/node": "^22.20.5",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.23.1",
-    "@types/smtp-server": "^3.5.13",
     "playwright": "1.63.0",
     "smtp-server": "^3.21.3",
     "tsx": "^4.23.15",

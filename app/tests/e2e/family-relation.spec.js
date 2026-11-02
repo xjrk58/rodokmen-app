@@ -6,9 +6,7 @@
 // everyone (the other family specs).
 import { member, mockFamilyApi, ROOTS, withRelations } from './family-api.js';
 import { ID, P, summary } from './family-data.js';
-import { expect, openApp, test } from './fixtures.js';
-
-const SHOTS = process.env.FAMILY_SCREENSHOTS;
+import { expect, familyScreenshot, openApp, test } from './fixtures.js';
 
 /** @param {import('@playwright/test').Page} page @param {string} id */
 const box = (page, id) => page.locator(`[data-testid="tree-person"][data-person="${id}"]`);
@@ -29,8 +27,7 @@ test('weak link: a Possible relative in view is marked as one, with the weak lin
   await expect(weak).toHaveCount(1);
   await expect(weak).toHaveAttribute('data-weak', 'true');
   expect(await weak.evaluate((el) => getComputedStyle(el).strokeDasharray)).not.toBe('none');
-  await page.waitForTimeout(500);
-  if (SHOTS) await page.screenshot({ path: `${SHOTS}/mock-tree-possible-${test.info().project.name}.png` });
+  await familyScreenshot(page, 'mock-tree-possible');
 });
 
 test('Unrelated people appear in the tree only when switched on', async ({ page }) => {

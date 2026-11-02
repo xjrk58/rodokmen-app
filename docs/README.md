@@ -29,6 +29,7 @@ Keeping the repo public-safe:
 Developing:
 
 - [Work on a change](how-to/work-on-a-change.md): from a GitHub issue with the `go` label, through OpenSpec, to a merged PR.
+- [Fix a failed check](how-to/fix-a-failed-check.md): find out why `pnpm check` failed, fix it, and prune the records of known findings.
 - [Run the proofs and regenerate the verification page](how-to/run-the-proofs.md): LemmaScript and Dafny, and `docs/verification.md`.
 - [Regenerate the C4 diagrams](how-to/regenerate-the-c4-diagrams.md): after changing the architecture model.
 - [Add or change archive data](how-to/change-archive-data.md): an archive, its districts or its portal, and the link check.
@@ -37,6 +38,7 @@ Developing:
 
 - [Configuration](reference/configuration.md): environment variables of the server, the MCP server, the production stack and the scripts.
 - [Commands](reference/cli.md): the server CLI, the workspace scripts and the repo's own scripts.
+- [Code checks](reference/checks.md): what `pnpm check` and gitleaks check, each tool's version and configuration, the records of known findings, and where CI runs them.
 - [The API](reference/api.md): where the OpenAPI description is, sign-in, errors and limits.
 - [MCP tools](reference/mcp-tools.md): what an assistant with an Agent token can call.
 - [Roles and actions](reference/roles-and-actions.md): what Agents, Contributors, Editors and the Owner may do.

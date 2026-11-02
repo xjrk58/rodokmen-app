@@ -408,7 +408,7 @@ export const SourceDetail = SourceSummary.safeExtend({
 }).meta({ id: 'SourceDetail' });
 
 export const ImageView = ImageMetadata.safeExtend({
-  url: z.url().describe('Presigned link to the image; expires within minutes'),
+  url: z.url({ protocol: /^https?$/ }).describe('Presigned link to the image; expires within minutes'),
   urlExpiresAt: z.iso.datetime(),
 }).meta({ id: 'ImageView' });
 

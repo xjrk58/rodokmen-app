@@ -316,7 +316,10 @@ export function isLogged(touches: readonly LoggedTouch[], r: RecordKey, undonePr
   return touches.some((t) => blocksUndo(t, r, undoneProposalId));
 }
 
-/** Whether the undo would leave this record behind, referring to a record it deletes. */
+/**
+ * Whether the undo would leave this record behind, referring to a record it deletes.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function isLeftBehind(deletions: readonly RecordKey[], dependencies: readonly Dependency[], r: RecordKey): boolean {
   //@ verify
   return dependencies.some((d) => leavesDependent(deletions, d) && sameRecord(d.dependent, r));
@@ -328,7 +331,10 @@ export function isBlocking(t: LoggedTouch, undoneProposalId: string, deletions: 
   return dependencies.some((d) => leavesDependent(deletions, d) && blocksUndo(t, d.dependent, undoneProposalId));
 }
 
-/** Whether a Proposal has a logged change that blocks the undo. */
+/**
+ * Whether a Proposal has a logged change that blocks the undo.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function isBlockingProposal(
   id: string,
   undoneProposalId: string,
@@ -340,7 +346,10 @@ export function isBlockingProposal(
   return touches.some((t) => t.proposalId === id && isBlocking(t, undoneProposalId, deletions, dependencies));
 }
 
-/** Whether the undo would leave behind a record that no standing Proposal logged. */
+/**
+ * Whether the undo would leave behind a record that no standing Proposal logged.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function leavesUnlogged(
   undoneProposalId: string,
   deletions: readonly RecordKey[],

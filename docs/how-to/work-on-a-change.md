@@ -46,11 +46,14 @@ Change the page in the right [Diátaxis](https://diataxis.fr) section of [`docs/
 ## 5. Run the checks
 
 ```sh
-pnpm lint            # ESLint, ShellCheck and the docs check
-pnpm format:check    # Prettier; pnpm format fixes it
-pnpm build && pnpm typecheck
+pnpm check           # types, ESLint, ShellCheck, docs, Prettier, knip, dependency-cruiser, jscpd, audit, OpenAPI, trace
+pnpm gitleaks        # secrets in your commits not yet on main
+pnpm build
 TEST_DATABASE_URL=postgres://rodokmen:rodokmen@localhost:5432/rodokmen_dev pnpm test
+pnpm test:scripts
 ```
+
+If a check fails, see [Fix a failed check](fix-a-failed-check.md).
 
 The tests need PostgreSQL 16 with PostGIS and a role that may create databases, such as the container from the [tutorial](../tutorials/first-proposal.md); each run creates and drops its own databases. The app's browser tests need Chromium for Playwright: `pnpm --filter @rodokmen/app exec playwright install chromium`.
 

@@ -8,9 +8,9 @@
  * written for, and the server refuses versions it does not know.
  */
 import { z } from 'zod';
-import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
+import { satisfiesEvidenceRule } from '../rules.js';
 import { EdtfDate, Id, IsoDay, Version, WebUrl } from './common.js';
-import { SERVER_OPERATIONS, serverOnly, SetFamilyRoot, type CheckOptions } from './server-operations.js';
+import { serverOnly, SetFamilyRoot, type CheckOptions } from './server-operations.js';
 import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RoleType, Sex, SourceType } from './tree.js';
 
 export const OPERATIONS_VERSION = 1;
@@ -280,8 +280,7 @@ export type OperationInput = z.input<typeof Operation>;
 export type OperationName = Operation['op'];
 export const OPERATION_NAMES: OperationName[] = Operation.options.map((o) => o.shape.op.value);
 
-/** Operations a Member may submit: all but the server's own (server-operations.ts). Merges are Editors' only. */
-export const SUBMITTABLE_OPERATIONS: readonly OperationName[] = OPERATION_NAMES.filter((n) => !SERVER_OPERATIONS.includes(n));
+/** Merges are Editors' only. */
 export const EDITOR_ONLY_OPERATIONS: readonly OperationName[] = ['mergePersons'];
 
 // ---------------------------------------------------------------- whole Proposals
@@ -390,11 +389,6 @@ export const EVIDENCE_MESSAGE = {
   en: 'A Proposal needs evidence: add the register entry, a document or a Family account as a Citation.',
   cs: 'Návrh potřebuje doklad: přidejte zápis z matriky, dokument nebo rodinné vyprávění jako citaci.',
 } as const;
-
-/** True when the operations carry at least one Citation (proposals spec, "Evidence is required"). */
-export function hasEvidence(ops: readonly Operation[]): boolean {
-  return ops.some((o) => isCitationOperation(o.op));
-}
 
 export interface ProposalCheck {
   operations: Operation[];
