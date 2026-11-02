@@ -20,6 +20,10 @@ A merge to `main` SHALL deploy automatically once all tests pass. A failed deplo
 - **WHEN** the new version fails its health check after deployment
 - **THEN** the previous version keeps serving requests and the Owner is alerted
 
+#### Scenario: Requests during a switch
+- **WHEN** a deploy switches from the previous version to the new one while requests arrive
+- **THEN** requests already running are answered by the previous version, new requests go to the new version only once it is healthy, and none fails
+
 ### Requirement: Nightly encrypted Backups
 The system SHALL take an encrypted Backup of the database and all images every night and store it with a second provider in the EU. It SHALL keep 30 daily and 12 monthly Backups.
 

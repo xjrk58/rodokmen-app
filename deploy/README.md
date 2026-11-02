@@ -307,8 +307,14 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
    alert;
 2. it starts the new image in the idle slot (`api-green` if `api-blue` serves, and back);
 3. the new container migrates the database and must pass its health check within 3 minutes;
-4. only then is the old slot stopped. Both slots answer to `api` for Caddy, so requests keep
-   flowing throughout;
+4. only then does Caddy send new requests to it: `deploy.sh` writes `state/api-slot/green` when
+   `api-green` takes over and removes it for `api-blue`, and Caddy looks for that file on every
+   request, so the switch needs no reload. `deploy.sh` then waits until Caddy has no request in
+   flight to the old slot (Caddy's admin API, at most 30 s) and stops it. On SIGTERM the server
+   stops accepting connections, answers what still reaches it, closes the database pool and
+   exits, within 15 s (`server/src/shutdown.ts`; Docker would kill it after 20 s). No request
+   fails on the way (#71). The MCP server reaches the API through Caddy as well
+   (`http://api:3000` inside the network), so its calls follow the same switch;
 5. if the health check fails, the new slot is removed, the old version keeps serving, the Owner
    gets an alert, and the workflow fails.
 
@@ -322,7 +328,7 @@ one it has; the deploy log says so.
 
 Rollback: run the `deploy` workflow by hand with `rollback` ticked, or on the VPS
 `./scripts/deploy.sh rollback`. State lives in `/opt/rodokmen/state/` (`active`, `previous`,
-`images.env`).
+`images.env`, and `api-slot/`, which Caddy reads).
 
 ## Backups and restoring
 
