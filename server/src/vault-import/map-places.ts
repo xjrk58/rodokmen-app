@@ -27,13 +27,14 @@ export interface MapContext {
   parishSeats: Map<string, string>;
 }
 
-const PLACE_TYPES: Record<string, 'village' | 'town' | 'hamlet' | 'other'> = {
-  obec: 'village',
-  vesnice: 'village',
-  město: 'town',
-  mesto: 'town',
-  osada: 'hamlet',
-};
+/** The Vault's words for a Place's kind, folded, and the Tree's type for each. */
+const PLACE_TYPES = new Map<string, 'village' | 'town' | 'hamlet' | 'other'>([
+  ['obec', 'village'],
+  ['vesnice', 'village'],
+  ['město', 'town'],
+  ['mesto', 'town'],
+  ['osada', 'hamlet'],
+]);
 const KNOWN = {
   place: ['type', 'name', 'kind', 'district', 'lat', 'lon', 'names', 'aliases'],
   parish: ['type', 'name', 'seat', 'aliases'],
@@ -93,7 +94,7 @@ function municipalityOf(ctx: MapContext, note: VaultNote) {
 /** A Place's kind, as the Tree's type; a kind it has no type for is reported. */
 function placeType(ctx: MapContext, note: VaultNote) {
   const kind = textOf(note.data.kind);
-  const type = PLACE_TYPES[foldForSearch(kind)];
+  const type = PLACE_TYPES.get(foldForSearch(kind));
   if (kind && !type) ctx.b.report('unmappedValue', note.path, `places.kind: ${kind}`);
   return type ?? 'other';
 }

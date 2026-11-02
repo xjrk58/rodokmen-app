@@ -57,6 +57,8 @@ export const RECORD_LABELS: Record<SummaryLanguage, Record<SettableRecord | Note
 };
 
 export const PLACE_TYPE_LABELS: Record<SummaryLanguage, Record<PlaceType, string>> = {
+  // eslint-disable-next-line id-denylist -- the keys are the stored PlaceType values (tree.ts), not names for a Place
   en: { village: 'village', town: 'town', hamlet: 'hamlet', other: 'place' },
+  // eslint-disable-next-line id-denylist -- the keys are the stored PlaceType values (tree.ts), not names for a Place
   cs: { village: 'vesnice', town: 'město', hamlet: 'osada', other: 'místo' },
 };

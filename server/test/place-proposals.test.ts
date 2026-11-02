@@ -21,7 +21,7 @@ import { citation, useProposalTestbed } from './proposal-testbed.js';
 describe('Place Proposals', () => {
   const { ready, call, submit } = useProposalTestbed();
 
-  const village: OperationInput[] = [
+  const placeOps: OperationInput[] = [
     ...citation('PL', { page: 'places/invented-village.md', confidence: 'low' }),
     { op: 'createPlace', tempId: 'tmp:place', type: 'village', location: { lat: 49.6, lon: 15.2 }, name: { name: 'Invented Ves', language: 'cs' } },
     { op: 'addPlaceName', placeId: 'tmp:place', name: 'Erfundendorf', language: 'de', period: { from: null, to: '1918' } },
@@ -43,7 +43,7 @@ describe('Place Proposals', () => {
 
   it('a Place with its names, a House with its numbers, its Parish and Estate is reviewed, accepted, shown and undone like any other', async () => {
     const { contributor, editor } = ready();
-    const res = await submit(contributor, village);
+    const res = await submit(contributor, placeOps);
     expect(res.statusCode, res.body).toBe(201);
     const view = ProposalView.parse(res.json());
     expect(view.operations.slice(2).map((o) => o.summary.en)).toEqual([
@@ -101,7 +101,7 @@ describe('Place Proposals', () => {
     const { editor } = ready();
     const res = await submit(
       editor,
-      village.map((o) => (o.op === 'createPlace' ? { ...o, name: { name: 'Second Invented Ves', language: 'cs' } } : o)),
+      placeOps.map((o) => (o.op === 'createPlace' ? { ...o, name: { name: 'Second Invented Ves', language: 'cs' } } : o)),
       {
         direct: true,
       },

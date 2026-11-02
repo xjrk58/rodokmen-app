@@ -129,7 +129,10 @@ export function anyFits(registers: readonly Register[], kind: string, located: b
   return registers.some((reg) => fits(reg, kind, located, from, to, parishIds));
 }
 
-/** Whether a list holds a suggestion of this kind for this subject and register, with these years. */
+/**
+ * Whether a list holds a suggestion of this kind for this subject and register, with these years.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function hasSuggestion(found: readonly GapSuggestion[], kind: string, subject: number, register: number, from: number, to: number): boolean {
   //@ verify
   return found.some((s) => s.kind === kind && s.subject === subject && s.register === register && s.from === from && s.to === to);
@@ -183,7 +186,10 @@ export function gapSuggestions(
   return out;
 }
 
-/** Whether a suggestion is a real gap of its kind, with a register that fits it (or none, when none fits). */
+/**
+ * Whether a suggestion is a real gap of its kind, with a register that fits it (or none, when none fits).
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function isRealGap(
   s: GapSuggestion,
   persons: readonly GapPerson[],

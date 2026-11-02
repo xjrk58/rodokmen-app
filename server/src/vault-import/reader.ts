@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
 import { promisify } from 'node:util';
 import { tryParseEdtf } from '@rodokmen/shared';
@@ -192,14 +192,4 @@ export async function readVault(root: string): Promise<Vault> {
     for (const a of aliases) if (typeof a === 'string' && !byId.has(a)) byId.set(a, n);
   }
   return { root, notes, byId, files, commit: await vaultCommit(root), issues };
-}
-
-/** Whether a file exists and is not empty. */
-export async function fileSize(path: string): Promise<number | null> {
-  try {
-    const s = await stat(path);
-    return s.isFile() ? s.size : null;
-  } catch {
-    return null;
-  }
 }

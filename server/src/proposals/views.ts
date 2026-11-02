@@ -5,7 +5,7 @@ import {
   isNewRef,
   isTempId,
   mayDecide,
-  Operation,
+  type Operation,
   type AuthorRef,
   type CitationPreview,
   type ConflictView,
@@ -21,6 +21,7 @@ import { fieldOf, RECORD_TABLES } from './apply.js';
 import { blockedProposals, dependenciesOf } from './batch-state.js';
 import { idsIn, labelsFor } from './labels.js';
 import { snapshotsMany, type Snapshot } from './records.js';
+import { loadOperationsOf } from './stored-operations.js';
 
 /**
  * Reading Proposals: their stored operations, conflicts with the current Tree, and the views
@@ -35,41 +36,6 @@ export function authorRef(a: Pick<Account, 'id' | 'display_name' | 'role'>): Aut
 }
 
 const iso = (d: Date | string | null): string | null => (d === null ? null : new Date(d).toISOString());
-
-// ---------------------------------------------------------------- stored operations
-
-export interface StoredOperation {
-  position: number;
-  original: Operation;
-  corrected: Operation | null;
-  correctedBy: string | null;
-  effective: Operation;
-}
-
-export async function loadOperations(db: Db, proposalId: string): Promise<StoredOperation[]> {
-  return (await loadOperationsOf(db, [proposalId])).get(proposalId) ?? [];
-}
-
-/** The operations of many Proposals in one query. */
-export async function loadOperationsOf(db: Db, proposalIds: readonly string[]): Promise<Map<string, StoredOperation[]>> {
-  const out = new Map<string, StoredOperation[]>();
-  if (proposalIds.length === 0) return out;
-  const rows = await db
-    .selectFrom('proposal_operation')
-    .selectAll()
-    .where('proposal_id', 'in', [...proposalIds])
-    .orderBy('proposal_id')
-    .orderBy('position')
-    .execute();
-  for (const r of rows) {
-    const original = Operation.parse(r.operation);
-    const corrected = r.corrected ? Operation.parse(r.corrected) : null;
-    const list = out.get(r.proposal_id) ?? [];
-    list.push({ position: r.position, original, corrected, correctedBy: r.corrected_by, effective: corrected ?? original });
-    out.set(r.proposal_id, list);
-  }
-  return out;
-}
 
 // ---------------------------------------------------------------- conflicts
 

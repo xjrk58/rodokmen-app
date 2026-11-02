@@ -4,7 +4,8 @@ import { ApiProblem } from '../auth/problem.js';
 import type { Db } from '../db/db.js';
 import type { Account, Proposal } from '../db/types.js';
 import { blockedProposals } from './batch-state.js';
-import { authorRef, loadOperationsOf } from './views.js';
+import { loadOperationsOf } from './stored-operations.js';
+import { authorRef } from './views.js';
 
 /**
  * Import batches (review spec, "Proposals in an Import batch build on each other"; add-vault-import

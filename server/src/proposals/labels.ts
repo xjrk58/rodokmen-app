@@ -13,6 +13,7 @@ import {
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import { displayName } from '../tree/summaries.js';
+import { loadOperationsOf } from './stored-operations.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -264,7 +265,6 @@ async function batchRefLabels(db: Db, refs: string[], out: Labels): Promise<void
     db,
     temps.map((t) => t.record_id),
   );
-  const { loadOperationsOf } = await import('./views.js');
   const stored = await loadOperationsOf(db, proposalIds);
   for (const p of parsed) {
     const record = temps.find((t) => t.proposal_id === p.proposalId && t.temp_id === p.tempId);

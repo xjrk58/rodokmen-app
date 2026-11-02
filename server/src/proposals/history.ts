@@ -21,7 +21,8 @@ import { idsIn, labelsFor } from './labels.js';
 import { dependentsOf, restorableColumns, snapshot, type Snapshot } from './records.js';
 import { markAnsweredLeads, reopenAnsweredLeads } from '../leads/service.js';
 import { acceptInTransaction, finishMoves, insertProposal, transaction, type ProposalDeps } from './service.js';
-import { authorRef, loadOperationsOf, proposalViews } from './views.js';
+import { loadOperationsOf } from './stored-operations.js';
+import { authorRef, proposalViews } from './views.js';
 
 // ---------------------------------------------------------------- record history
 

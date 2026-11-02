@@ -1,10 +1,11 @@
-// The review queue (Editors), Proposal cards (also for authors), the merge
-// tool, record history and undo. Phone-first: one card per Proposal, the
+// The review queue (Editors), Proposal cards (also for authors), record
+// history and undo. Phone-first: one card per Proposal, the
 // changes as sentences, conflicts with a choice per field, and one tap to accept.
 
-import { acceptProposal, getHistory, getProposal, mergePersons, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
+import { acceptProposal, getHistory, getProposal, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
 import { h } from './dom.js';
 import { language, t } from './i18n.js';
+import { mergeTool } from './merge-tool.js';
 import { personPicker } from './pickers.js';
 
 /** @typedef {import('./types.js').ProposalView} ProposalView */
@@ -15,7 +16,6 @@ import { personPicker } from './pickers.js';
 /** @typedef {import('./types.js').HistoryEntry} HistoryEntry */
 /** @typedef {import('./types.js').LaterEdit} LaterEdit */
 /** @typedef {import('./types.js').UndoBody} UndoBody */
-/** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
 /** @typedef {import('./i18n.js').Language} Language */
 
 /**
@@ -322,43 +322,6 @@ export async function renderReview(root, focusId, signal, batches) {
     mergeTool(reload),
   );
   if (focusId) root.querySelector(`[data-id="${focusId}"]`)?.scrollIntoView({ block: 'start' });
-}
-
-/** Merge two Persons into one (Editors, at any time). @param {() => void} onDone */
-function mergeTool(onDone) {
-  /** @type {PersonInput | null} */
-  let keep = null;
-  /** @type {PersonInput | null} */
-  let gone = null;
-  const status = h('p', { class: 'form-status', role: 'status' });
-  const button = h('button', { type: 'button', class: 'button', 'data-testid': 'merge' }, t('merge.button'));
-  const merge = async () => {
-    if (keep?.mode !== 'existing' || gone?.mode !== 'existing' || keep.id === gone.id) {
-      status.textContent = t('merge.pickTwo');
-      return;
-    }
-    button.disabled = true;
-    try {
-      await mergePersons(keep.id, { mergeId: gone.id, keepBaseVersion: keep.version, mergeBaseVersion: gone.version, note: null });
-      status.textContent = t('merge.done');
-      onDone();
-    } catch (error) {
-      status.textContent = messageOf(error);
-    } finally {
-      button.disabled = false;
-    }
-  };
-  button.addEventListener('click', () => void merge());
-  return h(
-    'details',
-    { class: 'card merge-tool' },
-    h('summary', {}, t('merge.title')),
-    h('p', { class: 'muted small' }, t('merge.help')),
-    personPicker({ value: null, label: t('merge.keep'), testid: 'merge-keep', allowNew: false, onChange: (v) => (keep = v) }),
-    personPicker({ value: null, label: t('merge.gone'), testid: 'merge-gone', allowNew: false, onChange: (v) => (gone = v) }),
-    status,
-    button,
-  );
 }
 
 /**
