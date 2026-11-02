@@ -42,3 +42,7 @@ The [tutorial](docs/tutorials/first-proposal.md) walks through this and your fir
 ## Documentation
 
 [`docs/`](docs/README.md) is organised along [Diátaxis](https://diataxis.fr): tutorials, how-to guides, reference and explanation. The words follow the [glossary](GLOSSARY.md), and the working rules are in [AGENTS.md](AGENTS.md).
+
+## Licence
+
+Rodokmen is free software under the [GNU Affero General Public License, version 3 or any later version](LICENSE) (`AGPL-3.0-or-later`). Anyone may run, change and share it; whoever runs a modified version as a network service must offer its source to the people who use it. Files from others, such as the map data in `app/data/` and the libraries in `app/vendor/`, keep their own licences: see [Licences](docs/reference/licences.md) and [`NOTICE`](NOTICE). Contributions are accepted under the same licence as the code (inbound = outbound). Why this licence: [ADR 0012](docs/adr/0012-license-the-code-under-agpl.md).

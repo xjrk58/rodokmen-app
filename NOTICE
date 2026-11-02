@@ -1,0 +1,34 @@
+Rodokmen
+Copyright (C) 2026 the Rodokmen contributors (see the Git history)
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at your
+option) any later version (SPDX: AGPL-3.0-or-later). The full text is in
+LICENSE.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public
+License for more details.
+
+Third-party material in this repo keeps its own licence:
+
+- app/data/districts.geojson, app/data/country.geojson:
+  District and country polygons: © ČÚZK, INSPIRE Administrative units
+  <https://services.cuzk.gov.cz/gml/inspire/au/epsg-4258/>, via
+  siwekm/czech-geojson <https://github.com/siwekm/czech-geojson>, both
+  under CC BY 4.0 <https://creativecommons.org/licenses/by/4.0/>. Named,
+  simplified and dissolved into the national border by Rodokmen. Provided
+  as is, without warranties.
+- app/data/municipalities.json:
+  Municipalities: 33bcdd/souradnice-mest
+  <https://github.com/33bcdd/souradnice-mest>, offered without warranty
+  and free to use; no licence stated.
+- app/vendor/leaflet/: Leaflet, BSD-2-Clause (its LICENSE file).
+- app/vendor/preact/: Preact, MIT (its LICENSE file).
+- app/vendor/htm/: htm, Apache-2.0 (its LICENSE file).
+- .claude/skills/openspec-*/, .claude/commands/opsx/: written by the
+  OpenSpec CLI, MIT, Copyright (c) 2024 OpenSpec Contributors.
+
+Sources, changes and credits in full: docs/reference/licences.md

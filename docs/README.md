@@ -50,6 +50,7 @@ Developing:
 - [Roles and actions](reference/roles-and-actions.md): what Agents, Contributors, Editors and the Owner may do.
 - [Research leads](reference/research-leads.md): the lead routes and fields, search records, suggested leads, the register coverage of a Source and when the gap finder runs.
 - [Map data files](reference/app-data.md): the files in `app/data/`.
+- [Licences](reference/licences.md): the licence of the code, and of each bundled data file and vendored library, with the credit each asks for.
 - [Vault denylist format](reference/vault-denylist.md): the private file the Vault-name guard reads, and the guard's options.
 - [Glossary](../GLOSSARY.md): the words we use, and the ones we avoid.
 - [Verification](verification.md): every proved rule and its requirement, and what the proofs assume (generated).
@@ -79,6 +80,7 @@ Decisions (ADRs), the choices that are hard to reverse:
 - [0009 Prove pure rules with LemmaScript](adr/0009-prove-pure-rules-with-lemmascript.md): pure rules are proved with Dafny and traced to their requirement.
 - [0010 Import the Vault once, freeze it, and Export elsewhere](adr/0010-import-the-vault-once-and-freeze-it.md): the Vault comes in once as reviewed Proposals, then stays a read-only archive.
 - [0011 Scan reading sends scans to Anthropic's API](adr/0011-scan-reading-sends-scans-to-anthropic.md): only while the Owner allows it, and always into something a person checks.
+- [0012 License the code under AGPL-3.0-or-later](adr/0012-license-the-code-under-agpl.md): no closed hosted forks; data and vendored libraries keep their own licences, and contributions come under the code's licence.
 
 Research:
 

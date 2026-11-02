@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Rodokmen map: archive lookup, place search and historical maps for the Czech lands, as a static PWA.",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "serve": "node scripts/serve.mjs",
     "build-data": "node scripts/build-data.mjs",
