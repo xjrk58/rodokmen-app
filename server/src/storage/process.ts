@@ -9,12 +9,12 @@ import { SerialQueue } from './serial-queue.js';
 export const DISPLAY_MAX_PIXELS = 2000;
 
 /**
- * The most pixels an upload may have, matched to the 25 MB limit: 8 per byte. A photo or scan
- * keeps at least one bit per pixel even at low JPEG quality, so real images within 25 MB fit
- * (200-megapixel phone photos too). A file that claims more, typically a small one that would
- * decode to a huge image, is refused from its header, before anything is decoded.
+ * The most pixels an upload may have: sharp's own default limit (`limitInputPixels`, 16,383 ×
+ * 16,383), which sharp applies when decoding. It is checked here first, from the file's header,
+ * so that a file claiming more, typically a small one that would decode to a huge image, is
+ * refused with a clear message before anything is decoded (issue #98).
  */
-export const MAX_INPUT_PIXELS = 200_000_000;
+export const SHARP_MAX_INPUT_PIXELS = 0x3fff * 0x3fff;
 
 // Memory on the 4 GB server (issue #39, deploy/README.md, "Memory"): libvips decodes with one
 // thread, and keeps only a small cache of operations, since each upload is decoded once.
@@ -57,14 +57,14 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 }
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
-export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most ${MAX_INPUT_PIXELS / 1_000_000} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
+export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
 export const HEIC_MESSAGE =
   'This HEIC photo could not be converted. On an iPhone, set Settings → Camera → Formats → Most Compatible, or share the photo as JPEG, then add it again.';
 
 /**
  * Checks an uploaded original and makes its display copy: JPEG, PNG, WebP or HEIC up to
- * 25 MB and MAX_INPUT_PIXELS. HEIC is converted here; when the image library cannot decode it,
- * the upload is refused with a message saying what to do. Size and type are checked at once;
+ * 25 MB and SHARP_MAX_INPUT_PIXELS. HEIC is converted here; when the image library cannot
+ * decode it, the upload is refused with a message saying what to do. Size and type are checked at once;
  * the decode waits for the images before it (one at a time).
  */
 export async function processImage(original: Buffer): Promise<ProcessedImage> {
@@ -105,9 +105,11 @@ function typeOf(original: Buffer): ImageType {
 async function displayCopy(original: Buffer, contentType: ImageType): Promise<ProcessedImage> {
   const heic = contentType === 'image/heic' || contentType === 'image/heif';
   try {
-    const image = sharp(original, { failOn: 'error', limitInputPixels: MAX_INPUT_PIXELS });
-    const meta = await image.metadata();
+    // The header alone, without sharp's limit, so a file over it is told apart from an unreadable one.
+    const meta = await sharp(original, { failOn: 'error', limitInputPixels: false }).metadata();
     if (!meta.width || !meta.height) throw new Error('no dimensions');
+    if (meta.width * meta.height > SHARP_MAX_INPUT_PIXELS) throw new ApiProblem(413, 'too_large', TOO_MANY_PIXELS_MESSAGE);
+    const image = sharp(original, { failOn: 'error' });
     const rotated = (meta.orientation ?? 1) >= 5;
     const display = await image
       .rotate()
@@ -123,8 +125,7 @@ async function displayCopy(original: Buffer, contentType: ImageType): Promise<Pr
       display,
     };
   } catch (error) {
-    // sharp reads the dimensions from the header and refuses before decoding.
-    if (/exceeds pixel limit/.test(messageOf(error))) throw new ApiProblem(413, 'too_large', TOO_MANY_PIXELS_MESSAGE);
+    if (error instanceof ApiProblem) throw error;
     if (heic) throw new ApiProblem(415, 'heic_unsupported', HEIC_MESSAGE);
     throw new ApiProblem(415, 'image_unreadable', `This image could not be read (${messageOf(error)}). Try another copy of it.`);
   }

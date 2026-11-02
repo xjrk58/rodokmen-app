@@ -93,8 +93,9 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   without service.
 - **Images** (`server/src/storage/process.ts`): sharp works with one thread and a small cache, and
   uploads are checked one at a time, from loading the original to making its display copy, so
-  uploads arriving together wait their turn instead of adding up. An image may have at most 200
-  million pixels (8 per byte of the 25 MB limit); a file claiming more is refused from its header.
+  uploads arriving together wait their turn instead of adding up. An image may have at most
+  sharp's own limit of 268,402,689 pixels (16,383 × 16,383, #98); a file claiming more is refused
+  from its header with a clear message.
   The API slots run with `MALLOC_ARENA_MAX=2`, which keeps their peaks with several large images
   15 to 20 % lower.
   Measured in one API slot: a 25 MB JPEG of 48 megapixels takes about 75 MB above idle, a
