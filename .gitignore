@@ -10,3 +10,5 @@ playwright-report/
 # LemmaScript regen state (lsc regen keeps these only while a merge is unfinished)
 *.dfy.base
 *.dfy.merged
+# The reader benchmark's default output (server/scripts/scan-benchmark/run.ts)
+scan-benchmark-results/

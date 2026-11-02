@@ -57,7 +57,8 @@ graph TB
     22-- "<div>Saves the reading as a Draft<br />to check</div><div style='font-size: 70%'>[JS call]</div>" -->15
     44-- "<div>Reads the display copy or<br />crop of the uploaded scan</div><div style='font-size: 70%'>[JS call]</div>" -->38
     44-- "<div>Sends the scan; gets a<br />transcription and entries in<br />the reading schema</div><div style='font-size: 70%'>[HTTPS, Anthropic API]</div>" -->72
-    44-. "<div>Suggests Research leads from<br />the scan</div><div style='font-size: 70%'>[JS call]</div>" .->43
+    44-- "<div>Suggests Research leads from<br />the scan, naming the<br />registers the Tree holds for<br />the Parish</div><div style='font-size: 70%'>[JS call]</div>" -->43
+    22-- "<div>Keeps a suggested lead as a<br />Research lead</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->43
     45-- "<div>Requests readings of uploaded<br />scans, and proposes what they<br />found (read_scan,<br />propose_reading)</div><div style='font-size: 70%'>[JSON/HTTP(S), Agent token]</div>" -->44
     43-. "<div>Stores leads and search<br />records; the gap finder<br />queries the Tree for gaps</div><div style='font-size: 70%'>[SQL]</div>" .->47
     45-. "<div>Lists, creates, updates and<br />closes Research leads</div><div style='font-size: 70%'>[JSON/HTTP(S), Agent token]</div>" .->43

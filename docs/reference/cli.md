@@ -72,18 +72,19 @@ Run from the repo root with `pnpm <script>`.
 
 Package scripts, with `pnpm --filter <package> <script>`:
 
-| Package            | Script                     | What it does                                                |
-| ------------------ | -------------------------- | ----------------------------------------------------------- |
-| `@rodokmen/server` | `dev`                      | the API on `HOST:PORT`, restarting on changes               |
-| `@rodokmen/server` | `cli`                      | the server CLI above                                        |
-| `@rodokmen/server` | `openapi`, `openapi:check` | `cli openapi write` and `cli openapi check`                 |
-| `@rodokmen/mcp`    | `stdio`, `http`            | the MCP server over stdio or HTTP, without a build          |
-| `@rodokmen/shared` | `verify:regen <file>`      | regenerates one file's Dafny (`lsc regen`)                  |
-| `@rodokmen/app`    | `serve`                    | serves `app/` on http://localhost:4173 (`--port`, `--base`) |
-| `@rodokmen/app`    | `build-data`               | rebuilds the map data in `app/data/` from its sources       |
-| `@rodokmen/app`    | `check-links`              | checks every portal URL in `app/data/archives.json`         |
-| `@rodokmen/app`    | `vendor`                   | copies Leaflet, Preact and htm into `app/vendor/`           |
-| `@rodokmen/app`    | `test:unit`, `test:e2e`    | the app's unit tests and Playwright tests                   |
+| Package            | Script                     | What it does                                                                                                                                     |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@rodokmen/server` | `dev`                      | the API on `HOST:PORT`, restarting on changes                                                                                                    |
+| `@rodokmen/server` | `cli`                      | the server CLI above                                                                                                                             |
+| `@rodokmen/server` | `openapi`, `openapi:check` | `cli openapi write` and `cli openapi check`                                                                                                      |
+| `@rodokmen/server` | `bench:scan`               | the scan reader benchmark; needs `ANTHROPIC_API_KEY` and makes paid requests ([run the reader benchmark](../how-to/run-the-reader-benchmark.md)) |
+| `@rodokmen/mcp`    | `stdio`, `http`            | the MCP server over stdio or HTTP, without a build                                                                                               |
+| `@rodokmen/shared` | `verify:regen <file>`      | regenerates one file's Dafny (`lsc regen`)                                                                                                       |
+| `@rodokmen/app`    | `serve`                    | serves `app/` on http://localhost:4173 (`--port`, `--base`)                                                                                      |
+| `@rodokmen/app`    | `build-data`               | rebuilds the map data in `app/data/` from its sources                                                                                            |
+| `@rodokmen/app`    | `check-links`              | checks every portal URL in `app/data/archives.json`                                                                                              |
+| `@rodokmen/app`    | `vendor`                   | copies Leaflet, Preact and htm into `app/vendor/`                                                                                                |
+| `@rodokmen/app`    | `test:unit`, `test:e2e`    | the app's unit tests and Playwright tests                                                                                                        |
 
 ## Other scripts
 

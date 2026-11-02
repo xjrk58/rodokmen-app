@@ -29,7 +29,6 @@ AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontC
 AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 
 AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
-AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
 AddRelTag("In progress", $textColor="#c25e00", $lineColor="#c25e00", $lineStyle = DottedLine())
 
 AddBoundaryTag("Container,Built,Browser", $bgColor="#ffffff", $borderColor="#2e6295", $fontColor="#2e6295", $shadowing="", $borderStyle="solid", $borderThickness="2")
@@ -69,7 +68,8 @@ Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Scanreader, "Asks for a read
 Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.AppPWA.Drafts, "Saves the reading as a Draft to check", $techn="JS call", $tags="Built", $link="")
 Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Evidencemedia, "Reads the display copy or crop of the uploaded scan", $techn="JS call", $tags="Built", $link="")
 Rel(Rodokmen.APIserver.Scanreader, AnthropicClaudeAPI, "Sends the scan; gets a transcription and entries in the reading schema", $techn="HTTPS, Anthropic API", $tags="Built", $link="")
-Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Researchleads, "Suggests Research leads from the scan", $techn="JS call", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Researchleads, "Suggests Research leads from the scan, naming the registers the Tree holds for the Parish", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Researchleads, "Keeps a suggested lead as a Research lead", $techn="JSON/HTTPS", $tags="Built", $link="")
 Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Scanreader, "Requests readings of uploaded scans, and proposes what they found (read_scan, propose_reading)", $techn="JSON/HTTP(S), Agent token", $tags="Built", $link="")
 Rel(Rodokmen.APIserver.Researchleads, Rodokmen.Database, "Stores leads and search records; the gap finder queries the Tree for gaps", $techn="SQL", $tags="In progress", $link="")
 Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Researchleads, "Lists, creates, updates and closes Research leads", $techn="JSON/HTTP(S), Agent token", $tags="In progress", $link="")

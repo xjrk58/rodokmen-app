@@ -36,4 +36,4 @@ This repo, by contrast, is public, along with its issues and pull requests. So i
 
 ## Where data goes outside
 
-The server, its database and the images run on one VPS in the EU, and the Backups go, encrypted, to a second EU provider. Email goes through an EU email service. The one planned exception is scan reading, which would send a scan to Anthropic's API to be read, so private family scans would leave our servers. It therefore stays off until the Owner switches it on, has a daily limit, and its result is always checked by a person (ADR 0011).
+The server, its database and the images run on one VPS in the EU, and the Backups go, encrypted, to a second EU provider. Email goes through an EU email service. The one exception is scan reading, which sends a scan to Anthropic's API in the USA to be read, so private family scans leave our servers. It therefore stays off until the Owner switches it on, sends only the display copy or a marked part and the names of people who are not Living, has a daily limit, and its result is always checked by a person (ADR 0011, [Scan reading](scan-reading.md)).

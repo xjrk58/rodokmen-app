@@ -423,28 +423,21 @@ then leave our servers for Anthropic's (in the USA).
    still in the queue then sends nothing.
 
 What is sent, and nothing else: the display copy of each page asked for (WebP, at most 2,000 pixels
-on its longest side) or the part the Member marked, never the original file, a portrait or another
-Citation's image; the Member's note about the page; and the given names and surnames the Tree has
-for that Place and Parish, of people who are not Living, to help recognise spellings. Archive
-viewer links are never fetched.
+on its longest side) or the part the Member marked, never the original file, a portrait or an
+image that was not asked for; what the Member typed about the page (register, page, Place, years,
+note); and the given names and surnames the Tree has for that Place and Parish, of people who are
+not Living, to help recognise spellings. Archive viewer links are never fetched.
 
 Readings run one at a time in the API process. Each reading is a paid request to the API (the
-benchmark below records the tokens a page takes); the daily limit keeps the total in check. `RODOKMEN_SCAN_MODEL` and
-`RODOKMEN_SCAN_EFFORT` change the model and its effort (a current Claude model that reads images and
-answers in a JSON schema).
+benchmark records the tokens a page takes); the daily limit keeps the total in check.
+`RODOKMEN_SCAN_MODEL` and `RODOKMEN_SCAN_EFFORT` change the model and its effort (a current Claude
+model that reads images and answers in a JSON schema).
 
 The reader benchmark (add-scan-reading task 1.2) compares Claude models with Transkribus on 10
-sample pages; `server/scripts/scan-benchmark/samples/README.md` says what the samples must be
-(invented or public domain, never Vault scans, kept outside the repo). From a checkout, with the
-key in the environment:
-
-```sh
-ANTHROPIC_API_KEY=... pnpm --filter @rodokmen/server bench:scan --samples <samples dir> \
-  --transkribus "Transkribus Kurrent=<dir>,Transkribus Latin/Kurrent=<dir>" --out /tmp/scan-benchmark
-```
-
-It writes each reading and a table (`summary.md`) of character error rate and of names, dates
-and house numbers read right, for `openspec/changes/add-scan-reading/design.md`.
+invented or public-domain sample pages, kept outside the repo, to choose `RODOKMEN_SCAN_MODEL`:
+[Run the reader benchmark](../docs/how-to/run-the-reader-benchmark.md). The Owner's steps are also
+in [Switch scan reading on](../docs/how-to/switch-on-scan-reading.md), and the routes, limits and
+what is sent in the [scan reading reference](../docs/reference/scan-reading.md).
 
 ## When an alert arrives
 

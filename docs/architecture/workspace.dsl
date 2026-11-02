@@ -8,8 +8,7 @@
  * Every element and relationship carries:
  *   - one status tag: "Built" (on main), "In progress" (branch feat/research-leads,
  *     add-research-leads), or "Planned" (a later OpenSpec change: add-vault-import beyond the
- *     Family roots and the relation, add-exports-and-erasure, add-country-packs; and what
- *     add-scan-reading leaves to add-research-leads);
+ *     Family roots and the relation, add-exports-and-erasure, add-country-packs);
  *   - property "openspec": "<change> / <capability>[, <capability>]", several changes joined by "; ";
  *   - property "adr": the ADRs it follows, where any apply;
  *   - property "code": where it lives in the repo, where it exists.
@@ -1523,10 +1522,14 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "adr" "0011"
             }
         }
-        scanReader -> researchLeads "Suggests Research leads from the scan" "JS call" "Planned" {
+        scanReader -> researchLeads "Suggests Research leads from the scan, naming the registers the Tree holds for the Parish" "JS call" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading; add-research-leads / research-leads"
-                "note" "The reading suggests leads already; keeping them as leads waits for add-research-leads"
+            }
+        }
+        scanReading -> researchLeads "Keeps a suggested lead as a Research lead" "JSON/HTTPS" "Built" {
+            properties {
+                "openspec" "add-scan-reading / scan-reading; add-research-leads / research-leads"
             }
         }
         mcp -> scanReader "Requests readings of uploaded scans, and proposes what they found (read_scan, propose_reading)" "JSON/HTTP(S), Agent token" "Built" {

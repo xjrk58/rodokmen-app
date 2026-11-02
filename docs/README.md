@@ -22,11 +22,14 @@ Running Rodokmen:
 - [Connect an AI assistant through MCP](how-to/connect-an-assistant.md): create an Agent and its token, and connect the assistant.
 - [Mark Family roots and link Members to their Persons](how-to/mark-family-roots.md): tell Rodokmen where the family starts and who each Member is.
 - [Import the Vault](how-to/import-the-vault.md): the Owner's one-time import of the Vault as an Import batch, from the dry run to accepting the batch.
+- [Switch scan reading on](how-to/switch-on-scan-reading.md): the Owner's API key, the switch and the daily limit, watching the use, and switching it off.
+- [Run the reader benchmark](how-to/run-the-reader-benchmark.md): compare Claude models and Transkribus on invented or public-domain pages, to choose the model that reads scans.
 
 Researching:
 
 - [Work with Research leads](how-to/work-with-research-leads.md): write a lead, take it on, record searches, close it, start a Proposal from it, and decide on suggested leads.
 - [Record research as an Agent](how-to/record-research-as-an-agent.md): the lead tools of the MCP server, from looking up what was searched to naming the leads a Proposal answers.
+- [Read a scan and check it](how-to/read-a-scan.md): have a register page read, check each entry against the scan on a phone or a computer, choose who each person is, keep the next steps as leads, and submit.
 
 Keeping the repo public-safe:
 
@@ -49,6 +52,7 @@ Developing:
 - [MCP tools](reference/mcp-tools.md): what an assistant with an Agent token can call.
 - [Roles and actions](reference/roles-and-actions.md): what Agents, Contributors, Editors and the Owner may do.
 - [Research leads](reference/research-leads.md): the lead routes and fields, search records, suggested leads, the register coverage of a Source and when the gap finder runs.
+- [Scan reading](reference/scan-reading.md): the reading routes, the daily limit, what a reading holds, how read names are matched, the failures, what is sent, and the settings.
 - [Map data files](reference/app-data.md): the files in `app/data/`.
 - [Vault denylist format](reference/vault-denylist.md): the private file the Vault-name guard reads, and the guard's options.
 - [Glossary](../GLOSSARY.md): the words we use, and the ones we avoid.
@@ -63,6 +67,7 @@ Developing:
 - [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, Living people, images, the Vault and this public repo.
 - [The relation to the family](explanation/relation-to-the-family.md): Relatives, Possible relatives and Unrelated people, and why they are computed from the evidence.
 - [Research leads](explanation/research-leads.md): why leads sit beside the Tree and change without review, how the gap finder picks gaps, registers and years, and what is proved.
+- [Scan reading](explanation/scan-reading.md): why the server reads scans with Anthropic's API, what is sent and what is not, and why a person decides every value and who each name is.
 - [Offline and the app](explanation/offline.md): what works without a connection, and why offline means Drafts rather than sync.
 - [Proofs with LemmaScript](explanation/proofs.md): which rules are proved, what that buys, and where the proofs stop.
 

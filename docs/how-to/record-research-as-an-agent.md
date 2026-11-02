@@ -20,6 +20,15 @@ After each look at a register, call `add_search_record` with the `leadId` and a 
 
 Record searches that found nothing as well. `searchedOn` defaults to today and `searchedBy` to you.
 
+## Have a page read
+
+While the Owner has switched scan reading on, an Agent can have the server read a register page instead of transcribing it itself ([MCP tools](../reference/mcp-tools.md#scan-reading)):
+
+1. Call `read_scan` with the page image (base64) and what you know: `context.sourceId` or `sourceTitle`, `page`, `placeId`, `years`. It answers when the reading is done, with the entries, the Persons each read name may be, and suggested leads. If it is still running, read it later with `get_reading`.
+2. Check every entry against the page. For each read person, pick an existing Person from the candidates (or `search_persons`), or `"new"`.
+3. Submit with `propose_reading`. Leave out entries you could not check with `skipEntries`.
+4. Record the search on its lead with `add_search_record`, and keep a suggested lead worth following up with `create_lead`.
+
 ## Close a lead
 
 - **Nothing found:** call `close_lead` with `status: "not_found"`, the `baseVersion` you read, an `outcome`, and the last `search` (with `found: false`). A lead closes as not found only with at least one search record; give the search here or record it first.
@@ -30,4 +39,4 @@ Record searches that found nothing as well. `searchedOn` defaults to today and `
 
 - **409, the lead was changed since you read it:** read it again with `get_record` and repeat the call with the new `version` as `baseVersion`.
 - **400 `search_needed`:** you tried to close a lead as not found without a search record; add one.
-- **429:** the Agent reached its hourly limit; the message says when to try again.
+- **429:** the Agent reached its hourly limit, or its scan readings of the day; the message says when to try again.

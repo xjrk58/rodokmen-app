@@ -49,8 +49,8 @@ These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each l
 - **One Citation per page:** a page's Citation carries its image and transcription and is attached to the Event of every entry read from it, since a Citation carries the image of its page (ADR 0002) and an upload becomes one image.
 - **Marks travel with the Proposal:** `reader: { readingIds, marks }` names, per operation, the fields still as read; the server stores and shows them, and caps the confidence of every new Citation of a Proposal that names a reading or has an image that was read.
 - **What goes out:** the display copy or a crop cut from the checked original (WebP, at most 2,000 pixels), the Member's context, and the names the Tree has for the Place and its Parishes, of people who are not Living. No dates, Houses or relations from the Tree.
-- **Leads:** suggestions are computed with each reading view and can be dismissed; keeping them as Research leads waits for add-research-leads (#16).
-- **Names in a language:** every read Name has its BCP 47 language (decision #64); until #17, `la` becomes the Latin form, `de` the German form and any other language `other`.
+- **Leads:** suggestions are computed with each reading view, from the hints and the entry itself, and name the registers the Tree holds for the Parish (a Source's register Parish, kinds and years) and the archive that holds its registers. The Member keeps one as a Research lead through the leads API (`POST /api/leads`, with the Persons they matched and the Place) or dismisses it; an Agent keeps one with `create_lead`. Nothing is saved until then.
+- **Names in a language:** every read Name keeps its BCP 47 language as the Name's language tag (decision #64, tree-model "Names carry a language tag"). The child of a baptism or birth entry gets the read name as a birth name, everyone else as type `other`; further forms on the page are added as type `other` with their own tags.
 
 ## Open Questions
 
