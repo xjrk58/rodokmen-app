@@ -19,6 +19,7 @@ import {
   ParishRecord,
   PlaceNameRecord,
   PlaceType,
+  RegisterCoverage,
   RoleType,
   Sex,
   SourceType,
@@ -396,6 +397,7 @@ export const SourceSummary = z
     reference: z.string().nullable(),
     url: z.string().nullable(),
     familyAccount: FamilyAccount.nullable(),
+    register: RegisterCoverage.nullable().describe('For a register book: its Parish, kinds and years'),
   })
   .meta({ id: 'SourceSummary' });
 

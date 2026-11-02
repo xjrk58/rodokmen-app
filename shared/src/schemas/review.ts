@@ -3,6 +3,7 @@
  * tree-history and evidence-media specs).
  */
 import { z } from 'zod';
+import { LEAD_STATUSES } from '../leads.js';
 import { Id, Version } from './common.js';
 import { Operation, ProposalKind, ProposalStatus, RestorableTable } from './proposals.js';
 import { Confidence, IMAGE_CONTENT_TYPES, ImageKind } from './tree.js';
@@ -10,6 +11,12 @@ import { Confidence, IMAGE_CONTENT_TYPES, ImageKind } from './tree.js';
 const Sentence = z.object({ cs: z.string(), en: z.string() }).meta({ id: 'Sentence', description: 'The same sentence in Czech and English' });
 
 export const AuthorRef = z.object({ id: Id, displayName: z.string(), isAgent: z.boolean().describe('True for an Agent account') }).meta({ id: 'AuthorRef' });
+
+export const LeadStatus = z.enum(LEAD_STATUSES).meta({ id: 'LeadStatus', description: 'open, in_progress (someone is working on it), found or not_found' });
+export type LeadStatus = z.infer<typeof LeadStatus>;
+
+/** A Research lead named by a Proposal (research-leads spec, "Findings link back to leads"). */
+export const LeadRef = z.object({ id: Id, question: z.string(), status: LeadStatus }).meta({ id: 'LeadRef' });
 
 export const FieldConflict = z.object({ field: z.string(), proposed: z.unknown(), current: z.unknown() }).meta({ id: 'FieldConflict' });
 
@@ -84,6 +91,7 @@ export const ProposalView = z
     operations: z.array(OperationView),
     citations: z.array(CitationPreview),
     conflicts: z.number().int().describe('Operations based on an older version of their record'),
+    answersLeads: z.array(LeadRef).describe('The Research leads this finding answers; accepting marks them found'),
   })
   .meta({ id: 'ProposalView' });
 

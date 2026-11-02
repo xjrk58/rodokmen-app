@@ -14,10 +14,17 @@ this page with `node scripts/verification-trace.mjs`.
 
 | Requirement | Specified in | Function | File | Assumed, not proved |
 |---|---|---|---|---|
+| agent-access: Agents write Research leads | openspec/changes/add-research-leads/specs/agent-access/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | agent-access: Rate limits | openspec/changes/add-agent-access/specs/agent-access/spec.md | `fixedWindow` | shared/src/rules.ts | see below |
 | agent-access: Read and propose only | openspec/changes/add-agent-access/specs/agent-access/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| exports: Living people are reduced in every Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportedPersonLinks` | shared/src/leads.ts | nothing beyond the trusted base |
 | proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
+| research-leads: Findings link back to leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `leadsOnAccept` | shared/src/leads.ts | nothing beyond the trusted base |
+| research-leads: Findings link back to leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `leadsOnUndo` | shared/src/leads.ts | nothing beyond the trusted base |
+| research-leads: Gap finder suggests leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `suggestGaps` | shared/src/gaps.ts | nothing beyond the trusted base |
+| research-leads: Leads need no review | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| research-leads: What was searched is recorded | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayHaveStatus` | shared/src/leads.ts | nothing beyond the trusted base |
 | review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Decide on the whole Proposal | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
@@ -62,6 +69,8 @@ A verified function's `requires` are proved wherever a verified function calls i
 Also proved, with no requirement of their own; the traced functions rely on their contracts.
 
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
+- shared/src/gaps.ts: `gapKey`, `maxInt`, `minInt`, `isBirthGap`, `isParentsGap`, `isMarriageGap`, `fits`, `anyFits`, `hasSuggestion`, `gapSuggestions`, `isRealGap`
+- shared/src/leads.ts: `isLeadStatus`, `isFoundBy`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
 - shared/src/rules.ts: `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
@@ -77,6 +86,28 @@ Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
 Where a proof covers less than its requirement, exactly what it does and does not prove.
 
+- **The gap finder** (`suggestGaps`, shared/src/gaps.ts; research-leads "Gap finder suggests leads"). Proved, for any
+  Persons, marriages, registers, decided keys and margin: every suggestion is a real gap of its kind (a Relative with no
+  birth or baptism Citation; a Relative with unknown parents and a known Parish and years; a Relative's marriage with
+  no Citation), with a register of the right kind, Parish and years that fits it, or with none when no register fits;
+  every key is the stable key of its kind, subject and Source; no dismissed or accepted key is suggested ("Dismissed
+  suggestion"); every gap with a fitting register and an undecided key is suggested with that register and the years
+  both cover ("Missing baptism": born about 1801, a register for 1784–1820, the years 1798–1804), and every gap with no
+  fitting register on its own. Not proved: the inputs the server gathers (server/src/leads/gaps.ts: who is a Relative,
+  which Events have Citations, the Parishes of the Place in the years, the years from EDTF dates, the registers' Parish,
+  kinds and years), the archive a suggestion names (its register's, else the archive lookup of the Place's
+  Municipality), that suggestions are recomputed nightly and after each accepted Proposal for the Persons it touched,
+  and that they are shown apart from the leads until a Member decides; server/test/gap-finder.test.ts tests those.
+- **Leads answered by a Proposal** (`leadsOnAccept`, `leadsOnUndo`, shared/src/leads.ts; research-leads "Findings link
+  back to leads"). Proved: accepting marks exactly the leads the Proposal names as found, linked to it, and leaves the
+  others as they were; undoing reopens exactly the leads it marked found that nobody closed otherwise since, and leaves
+  every other lead, one found by hand or through another Proposal included. Not proved: that the server applies them in
+  the transaction of every accept and undo and never on a rejection; server/test/leads.test.ts tests that.
+- **Leads in an Export** (`exportedPersonLinks`, shared/src/leads.ts; exports "Living people are reduced in every
+  Export"). Proved for one lead's links to Persons: no link to a Living person is kept, every other link is, and a lead
+  that concerned Living people only is left out. The Export itself is not built yet (add-exports-and-erasure); its entry
+  for leads is server/src/leads/export.ts, which marks who is Living with the proved Living rule and is tested in
+  server/test/leads.test.ts. Erasure is to use the same rule (`living` meaning the erased Person).
 - **The relation to the family** (`relationLevels`, shared/src/relation.ts; tree-model "Relation to the family is
   computed" and "Relation follows the evidence"). Proved, for any Persons, Family roots and links: both searches
   (`reachFrom`) stop (a round that reaches someone new leaves fewer unreached: a `decreases` added in relation.dfy);
@@ -135,8 +166,9 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   `hasProposal` in rules.ts), so that it is proved from the element at hand, and give `.dfy` hints (`var x :| …`)
   when a proof chains several.
 
-Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts,
-shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code
-or in a specification (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of
-relation.ts compare two plain integers, emitted in their order), and the generated `.dfy.gen` was read for it.
-Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.
+Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/gaps.ts,
+shared/src/leads.ts, shared/src/living.ts, shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an
+operand of `<`, `<=`, `>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where order
+does not matter; the `!` index reads of relation.ts and gaps.ts compare two plain integers, emitted in their order;
+gaps.ts and leads.ts have no optionals at all: unknown years and Sources are a flag and 0, or the empty string), and
+the generated `.dfy.gen` was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.

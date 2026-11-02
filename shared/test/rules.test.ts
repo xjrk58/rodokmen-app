@@ -10,12 +10,24 @@ describe('who may accept, reject or merge', () => {
 
 describe('what a role may do', () => {
   const allowed = (role: string) => ACTIONS.filter((action) => mayDo(role, action));
-  it('Agents read and propose, and nothing else', () => {
-    expect(allowed('agent')).toEqual(['read', 'propose']);
+  it('Agents read, propose and write Research leads, and nothing else', () => {
+    expect(allowed('agent')).toEqual(['read', 'propose', 'writeLeads']);
   });
-  it('Contributors also manage their own account; Editors also decide and edit directly; the Owner also manages accounts and marks Family roots', () => {
-    expect(allowed('contributor')).toEqual(['read', 'propose', 'ownAccount']);
-    expect(allowed('editor')).toEqual(['read', 'propose', 'review', 'accept', 'reject', 'merge', 'undo', 'directEdit', 'ownAccount']);
+  it('Contributors also decide on suggested leads and manage their own account; Editors also decide and edit directly; the Owner also manages accounts and marks Family roots', () => {
+    expect(allowed('contributor')).toEqual(['read', 'propose', 'writeLeads', 'decideSuggestions', 'ownAccount']);
+    expect(allowed('editor')).toEqual([
+      'read',
+      'propose',
+      'writeLeads',
+      'decideSuggestions',
+      'review',
+      'accept',
+      'reject',
+      'merge',
+      'undo',
+      'directEdit',
+      'ownAccount',
+    ]);
     expect(allowed('owner')).toEqual([...ACTIONS]);
   });
   it('an unknown role or action is refused', () => {
@@ -26,6 +38,8 @@ describe('what a role may do', () => {
   it('permissions follow the rule', () => {
     expect(permissionsFor('agent')).toEqual({
       propose: true,
+      writeLeads: true,
+      decideSuggestions: false,
       review: false,
       inviteMembers: false,
       changeRoles: false,

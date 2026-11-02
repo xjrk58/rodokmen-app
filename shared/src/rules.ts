@@ -33,31 +33,41 @@ export function mayDecide(role: string): boolean {
 // ---------------------------------------------------------------- what a role may do
 
 /**
- * What a role may do (agent-access spec, "Read and propose only"). Every API route names its
- * action (server/src/auth/plugin.ts asks this function for each request; that wiring is
- * tested, not proved):
+ * What a role may do (agent-access spec, "Read and propose only" and "Agents write Research
+ * leads"). Every API route names its action (server/src/auth/plugin.ts asks this function for
+ * each request; that wiring is tested, not proved):
  *
- * - `read`: read the Tree, your own Proposals, history and images;
+ * - `read`: read the Tree, your own Proposals, history, images, Research leads and suggested leads;
  * - `propose`: submit Proposals and upload their images;
+ * - `writeLeads`: create and edit Research leads and add search records (research-leads spec,
+ *   "Leads need no review": leads are plans, not facts, so they change without review);
+ * - `decideSuggestions`: accept or dismiss a lead the gap finder suggested (research-leads spec,
+ *   "Gap finder suggests leads": until a Member accepts or dismisses it);
  * - `review`: see the review queue; `accept`, `reject`, `merge`, `undo`; `directEdit`: change the Tree at once;
  * - `ownAccount`: your own sessions, passkeys and email settings;
  * - `manageAccounts`: Members, invitations, roles, Agents and their tokens;
  * - `markFamilyRoots`: mark and unmark Family roots (tree-model spec, "Family roots").
  *
- * Agents read and propose, and nothing else. Members of every role read, propose and manage
- * their own account; Editors and the Owner also decide on Proposals and edit directly; only the
- * Owner manages accounts and marks Family roots. An unknown role or action is refused.
+ * Agents read, propose and write Research leads, and nothing else: no change to the Tree but
+ * through a Proposal. Members of every role read, propose, write leads, decide on suggested
+ * leads and manage their own account; Editors and the Owner also decide on Proposals and edit
+ * directly; only the Owner manages accounts and marks Family roots. An unknown role or action
+ * is refused.
  */
 export function mayDo(role: string, action: string): boolean {
   //@ verify
   //@ contract agent-access: Read and propose only
+  //@ contract agent-access: Agents write Research leads
+  //@ contract research-leads: Leads need no review
   //@ contract tree-model: Family roots
-  // An Agent token allows reading the Tree and submitting Proposals ...
+  // An Agent token allows reading the Tree, submitting Proposals, and writing Research leads and their search records ...
   //@ ensures role === 'agent' && action === 'read' ==> \result
   //@ ensures role === 'agent' && action === 'propose' ==> \result
+  //@ ensures role === 'agent' && action === 'writeLeads' ==> \result
   // ... and nothing else.
-  //@ ensures role === 'agent' && \result ==> action === 'read' || action === 'propose'
+  //@ ensures role === 'agent' && \result ==> action === 'read' || action === 'propose' || action === 'writeLeads'
   // Scenario "Agent tries to accept its own Proposal": refused, as are rejecting, merging, undoing, direct edits and account management.
+  // Writing leads changes none of that (agent-access spec, "Agents write Research leads"): no direct change to the Tree.
   //@ ensures role === 'agent' && action === 'accept' ==> !\result
   //@ ensures role === 'agent' && action === 'reject' ==> !\result
   //@ ensures role === 'agent' && action === 'merge' ==> !\result
@@ -67,8 +77,14 @@ export function mayDo(role: string, action: string): boolean {
   //@ ensures role === 'agent' && action === 'ownAccount' ==> !\result
   //@ ensures role === 'agent' && action === 'manageAccounts' ==> !\result
   //@ ensures role === 'agent' && action === 'markFamilyRoots' ==> !\result
+  // A suggested lead waits until a Member accepts or dismisses it; an Agent does neither.
+  //@ ensures role === 'agent' && action === 'decideSuggestions' ==> !\result
   // An Agent is never allowed what a Contributor is refused.
   //@ ensures role === 'agent' && \result ==> mayDo('contributor', action)
+  // Scenario "Contributor adds a lead": every Member and every Agent writes leads directly, without review.
+  //@ ensures action === 'writeLeads' ==> \result === (role === 'agent' || role === 'contributor' || role === 'editor' || role === 'owner')
+  // Every Member, and only a Member, accepts or dismisses a suggested lead.
+  //@ ensures action === 'decideSuggestions' ==> \result === (role === 'contributor' || role === 'editor' || role === 'owner')
   // Deciding on Proposals is exactly the review rule (review spec, "Contributors never accept or merge").
   //@ ensures action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' ==> \result === mayDecide(role)
   // Only the Owner manages accounts; a role or action not listed is refused.
@@ -76,9 +92,9 @@ export function mayDo(role: string, action: string): boolean {
   // Only the Owner marks Family roots (tree-model spec, "Family roots").
   //@ ensures action === 'markFamilyRoots' ==> \result === (role === 'owner')
   //@ ensures \result ==> role === 'agent' || role === 'contributor' || role === 'editor' || role === 'owner'
-  if (role === 'agent') return action === 'read' || action === 'propose';
+  if (role === 'agent') return action === 'read' || action === 'propose' || action === 'writeLeads';
   const member = role === 'contributor' || role === 'editor' || role === 'owner';
-  if (action === 'read' || action === 'propose' || action === 'ownAccount') return member;
+  if (action === 'read' || action === 'propose' || action === 'ownAccount' || action === 'writeLeads' || action === 'decideSuggestions') return member;
   if (action === 'review' || action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' || action === 'directEdit') {
     return mayDecide(role);
   }

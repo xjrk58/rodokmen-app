@@ -201,6 +201,29 @@ export const FamilyAccount = z
   })
   .meta({ id: 'FamilyAccount' });
 
+export const RegisterKind = z
+  .enum(['birth', 'marriage', 'death'])
+  .meta({ id: 'RegisterKind', description: 'Births (and baptisms), marriages or deaths (and burials): the N, O and Z of a matrika' });
+
+/** A year as a register or a search covers it. */
+export const Year = z.number().int().min(1).max(9999);
+
+/**
+ * What a register book covers (research-leads spec, "Gap finder suggests leads"): the Parish whose
+ * register it is, its kinds of entries, and its years (open where unknown). The gap finder names
+ * a register whose Parish, kind and years fit a gap.
+ */
+export const RegisterCoverage = z
+  .object({
+    parishId: Id.describe('The Parish that kept the register'),
+    kinds: z.array(RegisterKind).min(1).max(3).describe('Which entries it holds'),
+    from: Year.nullable().describe('First year it covers; null when unknown'),
+    to: Year.nullable().describe('Last year it covers; null when unknown'),
+  })
+  .refine((r) => r.from === null || r.to === null || r.from <= r.to, { message: 'the years end before they start', path: ['to'] })
+  .refine((r) => new Set(r.kinds).size === r.kinds.length, { message: 'name each kind once', path: ['kinds'] })
+  .meta({ id: 'RegisterCoverage' });
+
 export const SourceRecord = z
   .object({
     id: Id,
@@ -211,11 +234,13 @@ export const SourceRecord = z
     reference: text(200).nullable().describe('Call number or signature (signatura)'),
     url: WebUrl.nullable(),
     familyAccount: FamilyAccount.nullable(),
+    register: RegisterCoverage.nullable().default(null).describe('For a register book: its Parish, kinds and years'),
   })
   .refine((s) => (s.type === 'family_account') === (s.familyAccount !== null), {
     message: 'a Family account Source records who gave the account and when; other Sources do not',
     path: ['familyAccount'],
   })
+  .refine((s) => s.register === null || s.type === 'parish_register', { message: 'only a parish register covers a Parish', path: ['register'] })
   .meta({ id: 'SourceRecord' });
 
 export const Confidence = z
@@ -287,6 +312,8 @@ export type PlaceEstateRecord = z.infer<typeof PlaceEstateRecord>;
 export type SourceType = z.infer<typeof SourceType>;
 export type FamilyAccount = z.infer<typeof FamilyAccount>;
 export type SourceRecord = z.infer<typeof SourceRecord>;
+export type RegisterKind = z.infer<typeof RegisterKind>;
+export type RegisterCoverage = z.infer<typeof RegisterCoverage>;
 export type Confidence = z.infer<typeof Confidence>;
 export type CitationRecord = z.infer<typeof CitationRecord>;
 export type ImageKind = z.infer<typeof ImageKind>;

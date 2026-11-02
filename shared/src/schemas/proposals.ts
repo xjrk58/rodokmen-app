@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
 import { EdtfDate, Id, IsoDay, Version, WebUrl } from './common.js';
 import { SERVER_OPERATIONS, serverOnly, SetFamilyRoot, type CheckOptions } from './server-operations.js';
-import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RoleType, Sex, SourceType } from './tree.js';
+import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RegisterCoverage, RoleType, Sex, SourceType } from './tree.js';
 
 export const OPERATIONS_VERSION = 1;
 
@@ -119,11 +119,13 @@ export const CreateSource = z
     reference: text(200).nullable().default(null),
     url: WebUrl.nullable().default(null),
     familyAccount: FamilyAccount.nullable().default(null),
+    register: RegisterCoverage.nullable().default(null).describe('For a register book: its Parish, kinds and years'),
   })
   .refine((s) => (s.type === 'family_account') === (s.familyAccount !== null), {
     message: 'a Family account Source records who gave the account and when; other Sources do not',
     path: ['familyAccount'],
   })
+  .refine((s) => s.register === null || s.type === 'parish_register', { message: 'only a parish register covers a Parish', path: ['register'] })
   .meta({ id: 'CreateSource' });
 
 export const CreateCitation = z
@@ -178,7 +180,13 @@ export const SETTABLE_FIELDS = {
   },
   role: { role: RoleType, roleDetail: text(200).nullable() },
   childLink: { linkType: ChildLinkType },
-  source: { title: nonEmpty(400), repository: text(400).nullable(), reference: text(200).nullable(), url: WebUrl.nullable() },
+  source: {
+    title: nonEmpty(400),
+    repository: text(400).nullable(),
+    reference: text(200).nullable(),
+    url: WebUrl.nullable(),
+    register: RegisterCoverage.nullable(),
+  },
   citation: { page: text(200).nullable(), transcription: nonEmpty(20_000), readOn: IsoDay, confidence: Confidence, note: text(4000).nullable() },
 } as const;
 
@@ -292,20 +300,6 @@ export const ProposalKind = z
   .enum(['contribution', 'direct', 'undo'])
   .meta({ id: 'ProposalKind', description: "Submitted for review, an Editor's direct change, or an undo" });
 export type ProposalKind = z.infer<typeof ProposalKind>;
-
-export const SubmitProposalBody = z
-  .object({
-    formatVersion: z.literal(OPERATIONS_VERSION).describe('Version of the operation set the Proposal was written for'),
-    idempotencyKey: z
-      .string()
-      .regex(/^[A-Za-z0-9_-]{8,100}$/)
-      .describe('One key per Draft: a retried submit returns the same Proposal'),
-    note: text(4000).nullable().default(null).describe("What the finding is, in the author's words"),
-    direct: z.boolean().default(false).describe('Editors only: accept at once (a direct change)'),
-    operations: z.array(z.unknown()).min(1).max(300),
-  })
-  .meta({ id: 'SubmitProposalBody' });
-export type SubmitProposalBody = z.infer<typeof SubmitProposalBody>;
 
 export interface ProposalIssue {
   code: 'invalid_operation' | 'unknown_operation' | 'not_allowed' | 'temp_id' | 'evidence_missing';

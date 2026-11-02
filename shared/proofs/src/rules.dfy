@@ -41,10 +41,10 @@ lemma mayDecide_ensures(role: string)
 function mayDo(role: string, action: string): bool
 {
   if (role == "agent") then
-    ((action == "read") || (action == "propose"))
+    (((action == "read") || (action == "propose")) || (action == "writeLeads"))
   else
     var member := (((role == "contributor") || (role == "editor")) || (role == "owner"));
-    if (((action == "read") || (action == "propose")) || (action == "ownAccount")) then
+    if (((((action == "read") || (action == "propose")) || (action == "ownAccount")) || (action == "writeLeads")) || (action == "decideSuggestions")) then
       member
     else
       if ((((((action == "review") || (action == "accept")) || (action == "reject")) || (action == "merge")) || (action == "undo")) || (action == "directEdit")) then
@@ -56,7 +56,8 @@ function mayDo(role: string, action: string): bool
 lemma mayDo_ensures(role: string, action: string)
   ensures ((role == "agent") ==> (action == "read") ==> mayDo(role, action))
   ensures ((role == "agent") ==> (action == "propose") ==> mayDo(role, action))
-  ensures ((role == "agent") ==> mayDo(role, action) ==> ((action == "read") || (action == "propose")))
+  ensures ((role == "agent") ==> (action == "writeLeads") ==> mayDo(role, action))
+  ensures ((role == "agent") ==> mayDo(role, action) ==> (((action == "read") || (action == "propose")) || (action == "writeLeads")))
   ensures ((role == "agent") ==> (action == "accept") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "reject") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "merge") ==> !(mayDo(role, action)))
@@ -66,7 +67,10 @@ lemma mayDo_ensures(role: string, action: string)
   ensures ((role == "agent") ==> (action == "ownAccount") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "manageAccounts") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "markFamilyRoots") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "decideSuggestions") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> mayDo(role, action) ==> mayDo("contributor", action))
+  ensures ((action == "writeLeads") ==> (mayDo(role, action) == ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner"))))
+  ensures ((action == "decideSuggestions") ==> (mayDo(role, action) == (((role == "contributor") || (role == "editor")) || (role == "owner"))))
   ensures (((((action == "accept") || (action == "reject")) || (action == "merge")) || (action == "undo")) ==> (mayDo(role, action) == mayDecide(role)))
   ensures ((action == "manageAccounts") ==> (mayDo(role, action) == (role == "owner")))
   ensures ((action == "markFamilyRoots") ==> (mayDo(role, action) == (role == "owner")))

@@ -15,7 +15,7 @@ export const MEMBER_ROLE_RANK = { contributor: 0, editor: 1, owner: 2 } as const
 /** The role of any account: a Member's, or `agent` for an Agent the Owner created (agent-access spec). */
 export const AccountRole = z
   .enum(['contributor', 'editor', 'owner', 'agent'])
-  .meta({ id: 'AccountRole', description: 'A Member role, or agent for an Agent account (read and propose only)' });
+  .meta({ id: 'AccountRole', description: 'A Member role, or agent for an Agent account (read, propose and write Research leads only)' });
 
 /**
  * What an API route does, as the role-and-action rule `mayDo` (shared/src/rules.ts) sees it.
@@ -24,6 +24,8 @@ export const AccountRole = z
 export const ACTIONS = [
   'read',
   'propose',
+  'writeLeads',
+  'decideSuggestions',
   'review',
   'accept',
   'reject',
@@ -40,6 +42,8 @@ export type Action = (typeof ACTIONS)[number];
 export function permissionsFor(role: z.infer<typeof AccountRole>) {
   return {
     propose: mayDo(role, 'propose'),
+    writeLeads: mayDo(role, 'writeLeads'),
+    decideSuggestions: mayDo(role, 'decideSuggestions'),
     review: mayDecide(role),
     inviteMembers: mayDo(role, 'manageAccounts'),
     changeRoles: mayDo(role, 'manageAccounts'),
@@ -51,6 +55,8 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
 export const Permissions = z
   .object({
     propose: z.boolean(),
+    writeLeads: z.boolean().describe('Write Research leads and search records (Members and Agents)'),
+    decideSuggestions: z.boolean().describe('Accept or dismiss a suggested lead (Members)'),
     review: z.boolean(),
     inviteMembers: z.boolean(),
     changeRoles: z.boolean(),
