@@ -195,3 +195,101 @@ describe('jscpd', () => {
     assert.match(long.stdout, /app\/src\/first-picker\.js/);
   });
 });
+
+// ---------------------------------------------------------------- pnpm audit (scripts/audit.mjs)
+
+describe('pnpm audit', () => {
+  /** An advisory as `pnpm audit --json` reports it. */
+  const advisory = (id, name, severity, path) => ({
+    id,
+    module_name: name,
+    severity,
+    title: `${name} is unsafe`,
+    url: `https://github.com/advisories/GHSA-${id}`,
+    vulnerable_versions: '<2.0.0',
+    patched_versions: '>=2.0.0',
+    findings: [{ version: '1.0.0', paths: [path] }],
+  });
+
+  /**
+   * Runs scripts/audit.mjs with fake `pnpm` and `gh` first on PATH: pnpm answers with the given
+   * advisories, gh with the given open issues, and both log their calls.
+   */
+  function runAudit(t, { prod, dev = [], open = [], args = [] }) {
+    const dir = mkdtempSync(join(tmpdir(), 'audit-'));
+    t.after(() => rmSync(dir, { recursive: true, force: true }));
+    const log = join(dir, 'calls.log');
+    const report = (list) => JSON.stringify({ advisories: Object.fromEntries(list.map((a) => [a.id, a])), metadata: {} });
+    writeFileSync(join(dir, 'prod.json'), report(prod));
+    writeFileSync(join(dir, 'all.json'), report([...prod, ...dev]));
+    writeFileSync(join(dir, 'open.json'), JSON.stringify(open));
+    const fake = (name, body) => {
+      writeFileSync(join(dir, name), `#!/usr/bin/env node\nconst fs = require('node:fs');\nconst args = process.argv.slice(2);\n${body}\n`, { mode: 0o755 });
+    };
+    fake(
+      'pnpm',
+      `process.stdout.write(fs.readFileSync(${JSON.stringify(dir)} + (args.includes('--prod') ? '/prod.json' : '/all.json')));\nprocess.exitCode = 1;`,
+    );
+    fake(
+      'gh',
+      `fs.appendFileSync(${JSON.stringify(log)}, JSON.stringify({ args, input: args.includes('-') ? fs.readFileSync(0, 'utf8') : undefined }) + '\\n');\nif (args[1] === 'list') process.stdout.write(fs.readFileSync(${JSON.stringify(dir)} + '/open.json'));`,
+    );
+    const run = spawnSync(process.execPath, [join(ROOT, 'scripts/audit.mjs'), ...args], {
+      encoding: 'utf8',
+      env: { ...process.env, PATH: `${dir}:${process.env.PATH}` },
+    });
+    const calls = existsSync(log)
+      ? readFileSync(log, 'utf8')
+          .trim()
+          .split('\n')
+          .map((l) => JSON.parse(l))
+      : [];
+    return { ...run, calls };
+  }
+
+  test('a high advisory in a production dependency fails, and the weekly run opens an issue', (t) => {
+    const run = runAudit(t, { prod: [advisory(1, 'sharp', 'high', 'server>sharp')], args: ['--issue'] });
+    assert.equal(run.status, 1);
+    assert.deepEqual(
+      run.calls.map((c) => c.args.slice(0, 2)),
+      [
+        ['issue', 'list'],
+        ['issue', 'create'],
+      ],
+    );
+    const create = run.calls[1];
+    assert.ok(create.args.includes('pnpm audit: high or critical advisories in production dependencies'));
+    assert.ok(create.args.includes('bug'));
+    assert.match(create.input, /\*\*high\*\* sharp <2\.0\.0 \(fixed in >=2\.0\.0\), production/);
+    assert.match(create.input, /via server>sharp/);
+  });
+
+  test('while that issue is open, the weekly run comments on it instead of opening another', (t) => {
+    const open = [{ number: 77, title: 'pnpm audit: high or critical advisories in production dependencies' }];
+    const run = runAudit(t, { prod: [advisory(1, 'sharp', 'critical', 'server>sharp')], open, args: ['--issue'] });
+    assert.equal(run.status, 1);
+    assert.deepEqual(run.calls[1].args.slice(0, 3), ['issue', 'comment', '77']);
+    assert.match(run.calls[1].input, /^Still failing/);
+  });
+
+  test('a dry run looks for the open issue but only prints what it would open', (t) => {
+    const run = runAudit(t, { prod: [advisory(1, 'sharp', 'high', 'server>sharp')], args: ['--issue', '--dry-run'] });
+    assert.equal(run.status, 1);
+    assert.deepEqual(
+      run.calls.map((c) => c.args[1]),
+      ['list'],
+    );
+    assert.match(run.stdout, /\[dry run\] gh issue create --title "pnpm audit: high or critical advisories in production dependencies" --label bug/);
+  });
+
+  test('moderate production and high development-only advisories are listed but pass', (t) => {
+    const run = runAudit(t, {
+      prod: [advisory(2, 'glob', 'moderate', 'server>@fastify/static>glob')],
+      dev: [advisory(3, 'minimatch', 'high', '.>eslint>minimatch')],
+      args: ['--issue'],
+    });
+    assert.equal(run.status, 0, run.stderr);
+    assert.deepEqual(run.calls, []);
+    assert.match(run.stdout, /\*\*high\*\* minimatch .* development only/);
+  });
+});
