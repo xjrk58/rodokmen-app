@@ -19,6 +19,41 @@ import tseslint from 'typescript-eslint';
 const root = import.meta.dirname;
 const unusedVars = { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_', ignoreRestSiblings: true };
 
+// Code shapes that caused real bugs (#21). Each message names the bug and the safe way instead;
+// scripts/test/quality-checks.test.mjs proves each one still fires on the original code.
+// `no-restricted-syntax` takes one list per file, so a block for some files repeats the wider ones.
+const restricted = {
+  zodUrl: {
+    // A Source link accepted `javascript:` and `data:` (#21, P2).
+    selector: "CallExpression[callee.object.name='z'][callee.property.name='url']:not(:has(Property[key.name='protocol']))",
+    message: 'z.url() accepts any scheme, javascript: and data: too. Use WebUrl (shared/src/schemas/common.ts) or z.url({ protocol: /^https?$/ }).',
+  },
+  rawRequestUrl: {
+    // Sign-in was decided by `request.url`, so `/%61pi/…` reached /api without a session (#21, H1).
+    selector:
+      "MemberExpression[property.name=/^(url|originalUrl)$/][object.name=/^(request|req|raw)$/], MemberExpression[property.name='url'][object.property.name='raw']",
+    message: 'Decide sign-in by the route the router matched (request.routeOptions.url and .config), never the raw URL: encoded paths walk around it.',
+  },
+  utcDay: {
+    // A Citation's `readOn` was the UTC day, which is yesterday in Czechia until 1 or 2 a.m. (#21, P2).
+    selector: "CallExpression[callee.property.name=/^(slice|substring|substr|split)$/][callee.object.callee.property.name='toISOString']",
+    message: "toISOString() gives the UTC day, not the Member's: use today() from src/proposal-build.js, or getFullYear/getMonth/getDate.",
+  },
+  leafletHtml: {
+    // Leaflet puts string content of tooltips and popups in as HTML; text from the Tree must go in as a node.
+    selector:
+      'CallExpression[callee.property.name=/^(bindTooltip|bindPopup|setTooltipContent|setPopupContent|setContent)$/][arguments.0.type=/^(TemplateLiteral|Literal|BinaryExpression)$/]',
+    message: 'Leaflet treats a string as HTML: pass an element with text (h() from src/dom.js) instead.',
+  },
+};
+
+// Words GLOSSARY.md rejects that have no other meaning in this code, as exact identifiers
+// (`town` for a Place, #21 L23). Words with other meanings (record, tag, root, account) stay allowed.
+const glossaryRejects = [
+  ...['town', 'towns', 'Town', 'village', 'villages', 'Village', 'obec', 'farnost', 'manor', 'dominion', 'herrschaft', 'commune'],
+  ...['moderator', 'superuser', 'proband'],
+];
+
 /** For every file with type information: TypeScript, and app/ JavaScript with JSDoc types. */
 const typedRules = {
   // node:test's test() and describe() return promises that the runner awaits itself.
@@ -65,6 +100,7 @@ export default defineConfig(
       'max-lines': ['error', { max: 400, skipBlankLines: true, skipComments: true }],
       complexity: ['error', 20],
       'max-depth': ['error', 4],
+      'id-denylist': ['error', ...glossaryRejects],
     },
   },
 
@@ -82,8 +118,11 @@ export default defineConfig(
       '@typescript-eslint/no-import-type-side-effects': 'error',
       // `x as T` that narrows without a check: validate with Zod or a type guard instead.
       '@typescript-eslint/no-unsafe-type-assertion': 'error',
+      'no-restricted-syntax': ['error', restricted.zodUrl],
     },
   },
+  // The sign-in hooks.
+  { files: ['server/src/auth/**/*.ts'], rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, restricted.rawRequestUrl] } },
 
   // The MCP server is a client of the public API (add-agent-access design): it may not reach the
   // database or the server's code, so it can offer nothing the Agent token may not do there.
@@ -118,17 +157,7 @@ export default defineConfig(
   {
     files: ['app/app.js', 'app/src/**/*.js'],
     languageOptions: { globals: globals.browser },
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          // Leaflet puts string content of tooltips and popups in as HTML; text from the Tree must go in as a node.
-          selector:
-            'CallExpression[callee.property.name=/^(bindTooltip|bindPopup|setTooltipContent|setPopupContent|setContent)$/][arguments.0.type=/^(TemplateLiteral|Literal|BinaryExpression)$/]',
-          message: 'Leaflet treats a string as HTML: pass an element with text (h() from src/dom.js) instead.',
-        },
-      ],
-    },
+    rules: { 'no-restricted-syntax': ['error', restricted.leafletHtml, restricted.utcDay] },
   },
   { files: ['app/sw.js'], languageOptions: { globals: globals.serviceworker } },
   // Node scripts and tests; Playwright's page.evaluate callbacks run in the browser.
