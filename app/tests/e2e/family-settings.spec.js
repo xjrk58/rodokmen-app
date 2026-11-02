@@ -62,8 +62,9 @@ test("Contributor's settings: their own language, sessions and passkeys, and not
   await expect(page.getByTestId('session').first()).toContainText('This device');
   await expect(page.getByTestId('passkey')).toHaveCount(1);
   await expect(page.getByTestId('settings-family')).toHaveCount(0);
+  await expect(page.getByTestId('settings-agents')).toHaveCount(0);
   await expect(page.getByText('Members', { exact: true })).toHaveCount(0);
-  expect(calls.some((c) => c.startsWith('GET members') || c.startsWith('GET invitations'))).toBe(false);
+  expect(calls.some((c) => c.startsWith('GET members') || c.startsWith('GET invitations') || c.startsWith('GET agents'))).toBe(false);
 });
 
 test('a Member ends a session on another device', async ({ page }) => {
@@ -122,6 +123,7 @@ test('inviting a cousin: the Owner enters an email and language, and sees the in
     extra: {
       'GET members': () => ({ json: { items: [{ ...memberView(900, 'Eliska', 'owner') }] } }),
       'GET invitations': () => ({ json: { items: invitations } }),
+      'GET agents': () => ({ json: { items: [] } }),
       'POST invitations': (_m, _u, body) => {
         sent.push(body);
         const b = /** @type {{ email: string, language: 'cs' | 'en' }} */ (body);
@@ -158,6 +160,7 @@ test('the Owner changes a role, disables and enables a Member, and links a Membe
     extra: {
       'GET members': () => ({ json: { items: [memberView(900, 'Eliska', 'owner'), karel] } }),
       'GET invitations': () => ({ json: { items: [] } }),
+      'GET agents': () => ({ json: { items: [] } }),
       [`PUT members/${ID(901)}/role`]: (_m, _u, body) => {
         karel.role = /** @type {{ role: 'editor' }} */ (body).role;
         actions.push(`role ${karel.role}`);

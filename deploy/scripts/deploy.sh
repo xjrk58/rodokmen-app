@@ -4,10 +4,11 @@
 #   scripts/deploy.sh <image>     start <image> in the idle slot, switch when healthy
 #   scripts/deploy.sh rollback    start the previously active image again, the same way
 #
-# The new version starts next to the running one (both answer to "api" for Caddy). Only when
-# its health check passes is the old slot stopped. If it fails, the new slot is removed, the
-# old version keeps serving, the Owner gets an alert, and the script exits non-zero so CI
-# shows the failed deploy.
+# The new version starts next to the running one. Only when its health check passes does Caddy
+# send new requests to it (the switch), and once the requests still running on the old slot are
+# answered, the old slot is stopped; no request fails on the way (#71). If the health check fails,
+# the new slot is removed, the old version keeps serving, the Owner gets an alert, and the script
+# exits non-zero so CI shows the failed deploy.
 #
 # Migrations run when the new version starts, while the old one still serves: each release's
 # migrations must keep working with the previous release (add, don't rename or drop, in one go).
@@ -16,8 +17,11 @@ cd "$(dirname "$0")/.."
 
 STATE=state
 IMAGES="$STATE/images.env"
-mkdir -p "$STATE"
+SLOT_DIR="$STATE/api-slot"
+mkdir -p "$STATE" "$SLOT_DIR"
 touch "$IMAGES"
+# How long the old slot may take to answer the requests Caddy still forwards to it.
+DRAIN_SECONDS=${DRAIN_SECONDS:-30}
 
 compose() { docker compose --env-file .env --env-file "$IMAGES" "$@"; }
 log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*"; }
@@ -30,6 +34,34 @@ case "$active" in
 esac
 
 image_of() { grep -E "^API_IMAGE_${1^^}=" "$IMAGES" | tail -1 | cut -d= -f2- || true; }
+
+# Points Caddy's new requests at api-$1 (caddy/Caddyfile, snippet "api"): api-green while
+# state/api-slot/green exists, otherwise api-blue. Caddy checks on every request; nothing reloads.
+route_to() {
+  if [ "$1" = green ]; then : > "$SLOT_DIR/green"; else rm -f "$SLOT_DIR/green"; fi
+}
+
+# The number of requests Caddy is forwarding to api-$1 right now, from its admin API; nothing if
+# that cannot be read. 127.0.0.1, not localhost: for localhost busybox wget tries ::1 first, where
+# Caddy does not listen.
+in_flight() {
+  compose exec -T caddy wget -qO- http://127.0.0.1:2019/reverse_proxy/upstreams 2>/dev/null |
+    grep -o "\"address\":\"api-$1:3000\",\"num_requests\":[0-9]*" | grep -o '[0-9]*$'
+}
+
+# Waits until Caddy forwards nothing more to api-$1, at most DRAIN_SECONDS.
+drain() {
+  local slot=$1 n='' i
+  for ((i = 0; i < DRAIN_SECONDS * 4; i++)); do
+    n=$(in_flight "$slot" || true)
+    if [ "$n" = 0 ]; then
+      log "api-$slot has no request in flight through Caddy; stopping it"
+      return 0
+    fi
+    sleep 0.25
+  done
+  log "api-$slot: ${n:-an unknown number of} requests still in flight through Caddy after ${DRAIN_SECONDS}s; stopping it anyway"
+}
 
 set_var() {
   local key=$1 value=$2 tmp
@@ -55,6 +87,9 @@ fi
 
 log "deploying $target into api-$idle (active: $active)"
 docker pull "$target"
+# Until the switch below, Caddy sends new requests to the serving slot (the first deploy's goes to
+# blue); this also sets the file up where an older deploy.sh left none.
+if [ "$active" = none ]; then route_to "$idle"; else route_to "$active"; fi
 # The database, the image store and Caddy are started if they are not running yet (first
 # deploy, reboot). Then both take the configuration this deploy copied; caddy/ and garage/ are
 # mounted as folders, so the containers see the new files. Caddy reloads its Caddyfile (if the new
@@ -78,10 +113,16 @@ set_var "API_IMAGE_${idle^^}" "$target"
 
 if compose up -d --no-deps --wait --wait-timeout 180 "api-$idle"; then
   log "api-$idle is healthy; switching"
+  route_to "$idle"
   previous=$( [ "$active" != none ] && image_of "$active" || true)
   echo "$idle" > "$STATE/active"
   [ -n "$previous" ] && echo "$previous" > "$STATE/previous"
-  if [ "$active" != none ]; then compose stop "api-$active"; fi
+  if [ "$active" != none ]; then
+    # Requests already on their way to the old slot finish there; then it stops, and on SIGTERM
+    # answers whatever else still reaches it before it exits (server/src/shutdown.ts).
+    drain "$active"
+    compose stop "api-$active"
+  fi
   set_var WATCHDOG_IMAGE "$target"
   set_var MCP_IMAGE "$target"
   compose up -d --no-deps watchdog mcp

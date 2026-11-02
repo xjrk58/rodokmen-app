@@ -1,46 +1,59 @@
 graph TB
   linkStyle default fill:#ffffff
 
-  subgraph diagram ["App (PWA): sign-in, Tree home and family screens"]
+  subgraph diagram ["App (PWA): sign-in, Tree home, family screens and Settings"]
     style diagram fill:#ffffff,stroke:#ffffff
+
+    4["<div style='font-weight: bold'>Owner</div><div style='font-size: 70%; margin-top: 0px'>[Person]</div><div style='font-size: 80%; margin-top:10px'>The one Member who invites<br />Members, assigns roles, marks<br />Family roots, issues Agent<br />tokens and keeps the Backups.</div>"]
+    style 4 fill:#08427b,stroke:#052e56,color:#ffffff
 
     subgraph 6 ["Rodokmen"]
       style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
 
-      subgraph 25 ["API server"]
-        style 25 fill:#ffffff,stroke:#2e6295,color:#2e6295
+      subgraph 27 ["API server"]
+        style 27 fill:#ffffff,stroke:#2e6295,color:#2e6295
 
-        27["<div style='font-weight: bold'>Accounts and sign-in</div><div style='font-size: 70%; margin-top: 0px'>[Component: @simplewebauthn/server]</div><div style='font-size: 80%; margin-top:10px'>Invitations, passkeys,<br />emailed links, sessions and<br />roles; checks the session on<br />every request.</div>"]
-        style 27 fill:#85bbf0,stroke:#5d82a8,color:#000000
-        28["<div style='font-weight: bold'>Tree read API</div><div style='font-size: 70%; margin-top: 0px'>[Component: Recursive SQL, PostGIS]</div><div style='font-size: 80%; margin-top:10px'>Person search across Names,<br />records, ancestors and<br />descendants, and Events for a<br />map area and years.</div>"]
-        style 28 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        29["<div style='font-weight: bold'>Accounts and sign-in</div><div style='font-size: 70%; margin-top: 0px'>[Component: @simplewebauthn/server]</div><div style='font-size: 80%; margin-top:10px'>Invitations, passkeys,<br />emailed links, sessions and<br />roles; the Member's own<br />Person and language; checks<br />the session or Agent token<br />and the action on every<br />request.</div>"]
+        style 29 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        30["<div style='font-weight: bold'>Tree read API</div><div style='font-size: 70%; margin-top: 0px'>[Component: Recursive SQL, PostGIS]</div><div style='font-size: 80%; margin-top:10px'>Person search across Names<br />with the relation filter,<br />records, ancestors,<br />descendants and the<br />hourglass, and Events for a<br />map area, years or a Place.</div>"]
+        style 30 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        31["<div style='font-weight: bold'>Family roots and relation</div><div style='font-size: 70%; margin-top: 0px'>[Component: Proved rule in shared/, advisory lock]</div><div style='font-size: 80%; margin-top:10px'>Family roots the Owner marks,<br />and each Person's relation to<br />the family, recomputed in<br />every accepted change.</div>"]
+        style 31 fill:#85bbf0,stroke:#5d82a8,color:#000000
       end
 
       subgraph 7 ["App (PWA)"]
         style 7 fill:#ffffff,stroke:#2e6295,color:#2e6295
 
-        12["<div style='font-weight: bold'>Sign-in pages</div><div style='font-size: 70%; margin-top: 0px'>[Component: server/public/auth]</div><div style='font-size: 80%; margin-top:10px'>Accept an invitation,<br />register a passkey, or use an<br />emailed link; served at<br />/auth/.</div>"]
-        style 12 fill:#85bbf0,stroke:#5d82a8,color:#000000
-        13["<div style='font-weight: bold'>Proposal forms</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/propose-form.js, pickers.js]</div><div style='font-size: 80%; margin-top:10px'>Phone-first forms that turn<br />one finding into typed<br />operations with a Citation<br />and photos.</div>"]
-        style 13 fill:#85bbf0,stroke:#c25e00,color:#000000
-        17["<div style='font-weight: bold'>Tree home and family screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: Preact with htm, vendored]</div><div style='font-size: 80%; margin-top:10px'>Members' home: an hourglass<br />around a focus Person they<br />can change; search, person<br />pages, sign-in.</div>"]
-        style 17 fill:#ffffff,stroke:#777777,color:#555555
-        18["<div style='font-weight: bold'>Family map layers</div><div style='font-size: 70%; margin-top: 0px'>[Component: Leaflet layers, marker clustering]</div><div style='font-size: 80%; margin-top:10px'>Event pins, the year slider,<br />a Person's life path, and<br />Family here on the place<br />sheet.</div>"]
-        style 18 fill:#ffffff,stroke:#777777,color:#555555
-        8["<div style='font-weight: bold'>Map and place sheet</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/map.js, place-sheet.js, i18n.js]</div><div style='font-size: 80%; margin-top:10px'>Map with archive regions and<br />the place sheet; the home for<br />visitors, a tab for Members.</div>"]
+        13["<div style='font-weight: bold'>Sign-in screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/sign-in-screen.js, webauthn.js]</div><div style='font-size: 80%; margin-top:10px'>Accepts an invitation and<br />registers a passkey; signs in<br />with a passkey or an emailed<br />link. Emails link here.</div>"]
+        style 13 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        14["<div style='font-weight: bold'>Proposal forms</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/propose-form.js, pickers.js]</div><div style='font-size: 80%; margin-top:10px'>Phone-first forms that turn<br />one finding into typed<br />operations with a Citation<br />and photos.</div>"]
+        style 14 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        17["<div style='font-weight: bold'>Review and history screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/review.js]</div><div style='font-size: 80%; margin-top:10px'>Review queue with conflicts<br />and corrections, merging,<br />record history and undo;<br />Agent work is labelled.</div>"]
+        style 17 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        18["<div style='font-weight: bold'>Tree home and family screens</div><div style='font-size: 70%; margin-top: 0px'>[Component: Preact with htm, vendored]</div><div style='font-size: 80%; margin-top:10px'>Members' home: an hourglass<br />around a focus Person they<br />can change; People search and<br />person pages; Possible<br />relatives marked, Unrelated<br />people hidden.</div>"]
+        style 18 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        19["<div style='font-weight: bold'>Settings</div><div style='font-size: 70%; margin-top: 0px'>[Component: Preact with htm, vendored]</div><div style='font-size: 80%; margin-top:10px'>Each Member's language,<br />passkeys and sessions; for<br />the Owner invitations, roles,<br />Member–Person links and<br />Family roots.</div>"]
+        style 19 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        20["<div style='font-weight: bold'>Family map layers</div><div style='font-size: 70%; margin-top: 0px'>[Component: Leaflet layers, app/src/pins.js]</div><div style='font-size: 80%; margin-top:10px'>Family pins grouped at low<br />zoom, the year range with<br />decade play, a Person's life<br />path, and Family here on the<br />place sheet.</div>"]
+        style 20 fill:#85bbf0,stroke:#5d82a8,color:#000000
+        8["<div style='font-weight: bold'>Map and place sheet</div><div style='font-size: 70%; margin-top: 0px'>[Component: app/src/map.js, place-sheet.js, i18n.js]</div><div style='font-size: 80%; margin-top:10px'>Map with archive regions and<br />the place sheet; the home for<br />visitors, a tab for Members.<br />Czech unless the reader<br />chooses English.</div>"]
         style 8 fill:#85bbf0,stroke:#5d82a8,color:#000000
       end
 
-      22[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted; later also<br />the last-loaded Tree records.</div>")]
-      style 22 fill:#438dd5,stroke:#c25e00,color:#ffffff
+      24[("<div style='font-weight: bold'>On-device store</div><div style='font-size: 70%; margin-top: 0px'>[Container: IndexedDB]</div><div style='font-size: 80%; margin-top:10px'>Drafts with their photos<br />until submitted, and up to<br />400 last-loaded Tree records;<br />emptied on sign-out.</div>")]
+      style 24 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 
-    12-- "<div>Accepts invitations,<br />registers passkeys, verifies<br />emailed links</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->27
-    17-. "<div>Signs in with a passkey or an<br />emailed link</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->27
-    17-. "<div>Reads Persons, Families,<br />pedigrees and descendants</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->28
-    17-. "<div>Caches loaded records with<br />their time</div><div style='font-size: 70%'>[IndexedDB]</div>" .->22
-    17-. "<div>Opens Propose a change</div><div style='font-size: 70%'>[JS call]</div>" .->13
-    18-. "<div>Reads Events in the map area<br />and year range</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" .->28
-    18-. "<div>Adds family layers for<br />signed-in Members</div><div style='font-size: 70%'>[Leaflet layers]</div>" .->8
+    13-- "<div>Accepts invitations,<br />registers passkeys, signs in<br />with a passkey or an emailed<br />link</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->29
+    18-- "<div>Reads who is signed in, their<br />own Person and the Family<br />roots</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->29
+    18-- "<div>Searches Persons; reads<br />person pages, Citations and<br />the hourglass</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->30
+    18-- "<div>Caches loaded records with<br />their time; empties them on<br />sign-out</div><div style='font-size: 70%'>[IndexedDB]</div>" -->24
+    18-- "<div>Opens Propose a change on a<br />Person</div><div style='font-size: 70%'>[JS call]</div>" -->14
+    18-- "<div>Opens a Person's history</div><div style='font-size: 70%'>[JS call]</div>" -->17
+    19-- "<div>Invites, assigns roles, links<br />Members to Persons; own<br />language, passkeys and<br />sessions</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->29
+    19-- "<div>Lists, marks and removes<br />Family roots</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->31
+    4-- "<div>Invites Members, assigns<br />roles, links Members to<br />Persons, marks Family roots</div><div style='font-size: 70%'>[Browser]</div>" -->19
+    20-- "<div>Reads Events in the map area<br />and years, and Events of a<br />Place</div><div style='font-size: 70%'>[JSON/HTTPS]</div>" -->30
+    20-- "<div>Adds family layers for<br />signed-in Members</div><div style='font-size: 70%'>[Leaflet layers]</div>" -->8
 
   end
