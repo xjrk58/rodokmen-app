@@ -5,6 +5,7 @@ import {
   isTempId,
   mayDecide,
   Operation,
+  ReaderInfo,
   type AuthorRef,
   type CitationPreview,
   type ConflictView,
@@ -190,6 +191,7 @@ export async function proposalViews(db: Db, rows: Proposal[]): Promise<ProposalV
       operations,
       citations: citationPreviews(effective, support, labels),
       conflicts: conflicts.size,
+      reader: p.reader ? ReaderInfo.parse(p.reader) : null,
     };
   });
 }

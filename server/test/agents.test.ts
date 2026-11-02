@@ -66,7 +66,15 @@ describe('Agent accounts belong to the Owner', () => {
     // An Agent is an account without email, and the token works at once.
     const me = Me.parse((await withToken(token.token, '/api/me')).json());
     expect(me).toMatchObject({ id: agent.id, role: 'agent', email: null, displayName: 'Register reader' });
-    expect(me.permissions).toEqual({ propose: true, review: false, inviteMembers: false, changeRoles: false, disableMembers: false, markFamilyRoots: false });
+    expect(me.permissions).toEqual({
+      propose: true,
+      review: false,
+      inviteMembers: false,
+      changeRoles: false,
+      disableMembers: false,
+      markFamilyRoots: false,
+      manageSettings: false,
+    });
     expect((await withToken(token.token)).statusCode).toBe(200);
   });
 

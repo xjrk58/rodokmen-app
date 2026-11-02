@@ -1,0 +1,20 @@
+{
+  "id": "msg_recorded_invented_page",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-opus-5-5",
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"pages\":[{\"page\":0,\"transcription\":\"Die 20. Junii baptizatus est Thomas, filius legitimus Petri Wesely coloni N. [faded] et Barbarae. Patrinus Jacobus Hajek. Baptizavit Franciscus Kral cooperator.\",\"languages\":[\"la\"]}],\"entries\":[{\"page\":0,\"type\":\"baptism\",\"typeDetail\":null,\"date\":\"20 June 1830\",\"dateAsWritten\":\"20. Junii\",\"house\":null,\"place\":\"Kamenna Lhota\",\"transcription\":\"Die 20. Junii baptizatus est Thomas, filius legitimus Petri Wesely coloni N. [faded] et Barbarae. Patrinus Jacobus Hajek. Baptizavit Franciscus Kral cooperator.\",\"persons\":[{\"key\":\"p11\",\"role\":\"child\",\"roleDetail\":null,\"sex\":\"male\",\"names\":[{\"given\":\"Thomas\",\"surname\":\"\",\"asWritten\":\"Thomas\",\"language\":\"la\"}],\"description\":\"filius legitimus\",\"house\":null,\"residence\":null},{\"key\":\"p12\",\"role\":\"father\",\"roleDetail\":null,\"sex\":\"male\",\"names\":[{\"given\":\"Petrus\",\"surname\":\"Wesely\",\"asWritten\":\"Petri Wesely\",\"language\":\"la\"}],\"description\":\"colonus\",\"house\":null,\"residence\":null},{\"key\":\"p13\",\"role\":\"mother\",\"roleDetail\":null,\"sex\":\"female\",\"names\":[{\"given\":\"Barbara\",\"surname\":\"\",\"asWritten\":\"Barbarae\",\"language\":\"la\"}],\"description\":null,\"house\":null,\"residence\":null},{\"key\":\"p14\",\"role\":\"godparent\",\"roleDetail\":null,\"sex\":\"male\",\"names\":[{\"given\":\"Jacobus\",\"surname\":\"Hajek\",\"asWritten\":\"Jacobus Hajek\",\"language\":\"la\"}],\"description\":null,\"house\":null,\"residence\":null},{\"key\":\"p15\",\"role\":\"priest\",\"roleDetail\":null,\"sex\":\"male\",\"names\":[{\"given\":\"Franciscus\",\"surname\":\"Kral\",\"asWritten\":\"Franciscus Kral cooperator\",\"language\":\"la\"}],\"description\":\"cooperator\",\"house\":null,\"residence\":null}],\"illegible\":[{\"field\":\"house\",\"note\":\"the house number is faded\"}],\"hints\":[]}],\"note\":\"The right margin is faded.\"}"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 3812,
+    "output_tokens": 2944,
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 1106
+  }
+}

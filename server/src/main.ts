@@ -25,6 +25,11 @@ async function main() {
     logger: { level: config.env === 'production' ? 'info' : 'debug', redact: ['req.headers.cookie', 'req.headers.authorization', 'res.headers["set-cookie"]'] },
   });
   if (applied.length) app.log.info({ applied }, 'migrations applied');
+  // Readings left in the queue by the previous process run now, one at a time.
+  const resumed = await app.readingJobs.resume();
+  if (resumed) app.log.info({ resumed }, 'scan readings queued again');
+  // A reading left running by a process that stopped during a deploy is taken over once stale.
+  const sweep = setInterval(() => void app.readingJobs.resume().catch((err: unknown) => app.log.error({ err }, 'could not requeue readings')), 10 * 60_000);
   if (config.env === 'production' && !config.s3.configured) app.log.warn('object storage is not configured; image links will not work');
 
   // Daily jobs (Editor digest at 18:00 Prague time, deleting images of rejected Proposals).
@@ -39,6 +44,7 @@ async function main() {
 
   const shutdown = async (signal: string) => {
     app.log.info({ signal }, 'shutting down');
+    clearInterval(sweep);
     await stopJobs();
     await app.close();
     await db.destroy();

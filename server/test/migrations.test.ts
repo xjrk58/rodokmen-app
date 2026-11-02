@@ -108,7 +108,7 @@ describe('migrations on an empty database', () => {
     );
   });
 
-  it('the Proposals, fold, Agent, Member-Person and family relation migrations can be rolled back and applied again', async () => {
+  it('the Proposals, fold, Agent, Member-Person, family relation and scan reading migrations can be rolled back and applied again', async () => {
     const migrator = new Migrator({
       db,
       provider: { getMigrations: async () => MIGRATIONS },
@@ -118,6 +118,7 @@ describe('migrations on an empty database', () => {
     const down = await migrator.migrateTo('0003_accounts');
     expect(down.error).toBeUndefined();
     expect(down.results?.map((r) => [r.migrationName, r.status])).toEqual([
+      ['0009_scan_reading', 'Success'],
       ['0008_family_relation', 'Success'],
       ['0007_member_person', 'Success'],
       ['0006_agents', 'Success'],
@@ -129,7 +130,19 @@ describe('migrations on an empty database', () => {
       const p = await tx.insertInto('person').values({ sex: 'female' }).returning('id').executeTakeFirstOrThrow();
       await tx.insertInto('name').values({ person_id: p.id, given: 'Dana', surname: 'Invented', type: 'birth', as_found: 'Dana', is_primary: true }).execute();
     });
-    expect(await migrateToLatest(db)).toEqual(['0004_proposals', '0005_fold_spaces', '0006_agents', '0007_member_person', '0008_family_relation']);
+    expect(await migrateToLatest(db)).toEqual([
+      '0004_proposals',
+      '0005_fold_spaces',
+      '0006_agents',
+      '0007_member_person',
+      '0008_family_relation',
+      '0009_scan_reading',
+    ]);
+  });
+
+  it('scan reading starts switched off, with one settings row (scan-reading spec, "The Owner switches it on")', async () => {
+    expect(await db.selectFrom('scan_reading_setting').select(['enabled', 'daily_limit']).execute()).toEqual([{ enabled: false, daily_limit: 10 }]);
+    await expect(sql`insert into scan_reading_setting (id) values (false)`.execute(db)).rejects.toThrow(/check/);
   });
 
   it('a change of the derived relation is no change of the Person: it bumps no version', async () => {

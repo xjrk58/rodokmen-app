@@ -1,6 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/server';
-import { Operation, OPERATIONS_VERSION, ProposalStatus, RELATIONS } from '@rodokmen/shared';
+import {
+  Operation,
+  OPERATIONS_VERSION,
+  ProposalStatus,
+  ReadingContext,
+  ReadingCrop,
+  ReadingView,
+  readingOperations,
+  RELATIONS,
+  unchosenPersons,
+} from '@rodokmen/shared';
 import { z } from 'zod';
 import { ApiCallError, type Api } from './api.js';
 
@@ -16,7 +26,8 @@ export const SERVER_INFO = { name: 'rodokmen', version: '0.1.0' };
 const INSTRUCTIONS = `Rodokmen is a private family tree of the Czech lands. You act as an Agent: you may read the Tree and submit Proposals, nothing else.
 A Proposal bundles everything one finding changes (for example a baptism entry: the child, the Event, the Roles, and the Citation of the register page), and needs at least one Citation as evidence. Editors review every Proposal; it changes the Tree only when accepted.
 Search before you propose, and refer to existing Persons, Places and Sources by id instead of creating duplicates. Dates are EDTF (1801-03-12, 1801~, 1801/1803).
-Your Agent is limited to 60 Proposals and 1,000 other requests per hour; a refused request says when to try again.`;
+Your Agent is limited to 60 Proposals and 1,000 other requests per hour; a refused request says when to try again.
+When the Owner has switched scan reading on, read_scan has the server read register scans (sent to Anthropic's API) into entries; check them, choose for every read person an existing Person or "new", and propose_reading submits them, marked "read by AI".`;
 
 const Id = z.uuid();
 const Paging = {
@@ -56,6 +67,20 @@ async function call(fn: () => Promise<unknown>) {
 }
 
 const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
+
+/** How long read_scan waits for a reading, and how often it looks. */
+export const READING_WAIT_MS = 5 * 60_000;
+export const READING_POLL_MS = 2_000;
+
+/** The reading once it is done or failed; still queued or running after READING_WAIT_MS, as it is then. */
+async function waitForReading(api: Api, id: string, waitMs = READING_WAIT_MS, pollMs = READING_POLL_MS): Promise<unknown> {
+  const until = Date.now() + waitMs;
+  for (;;) {
+    const view = ReadingView.parse(await api.get(`/api/readings/${id}`));
+    if (view.status === 'done' || view.status === 'failed' || Date.now() >= until) return view;
+    await new Promise((resolve) => setTimeout(resolve, pollMs));
+  }
+}
 
 export function createRodokmenServer(api: Api): McpServer {
   const server = new McpServer(SERVER_INFO, { instructions: INSTRUCTIONS });
@@ -168,6 +193,110 @@ export function createRodokmenServer(api: Api): McpServer {
     },
     async ({ note, operations, idempotencyKey }) =>
       call(() => api.post('/api/proposals', { formatVersion: OPERATIONS_VERSION, idempotencyKey: idempotencyKey ?? `mcp-${randomUUID()}`, note, operations })),
+  );
+
+  server.registerTool(
+    'read_scan',
+    {
+      title: 'Read a register scan',
+      description:
+        'Have the server read scans of register pages into entries (scan reading: only while the Owner has switched it on, and within a daily limit). Give the images (base64) or the upload ids of scans already uploaded, and what you know of them. The scans, or the crops you mark, are sent to Anthropic’s API; archive viewer links are never fetched: download the image and give it here. Waits for the reading (a few minutes at most) and answers with the transcription, the entries with their persons, the existing Persons each read name may be (with the reasons) and suggested Research leads. Then call propose_reading.',
+      inputSchema: z.object({
+        images: z
+          .array(
+            z.object({
+              data: z.string().min(1).describe('The image file, base64'),
+              contentType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']),
+            }),
+          )
+          .max(5)
+          .optional()
+          .describe('Scans to upload and read, in page order'),
+        uploadIds: z.array(Id).max(5).optional().describe('Scans already uploaded, in page order (after the images)'),
+        crops: z.array(ReadingCrop).max(5).optional().describe('Parts to read instead of whole scans, by upload id'),
+        context: ReadingContext.partial().optional().describe('What you know: the register Source, page, Place, years, a note, the viewer link'),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    },
+    async ({ images, uploadIds, crops, context }) =>
+      call(async () => {
+        const uploaded: string[] = [];
+        for (const image of images ?? []) uploaded.push(await api.upload(Buffer.from(image.data, 'base64'), image.contentType));
+        const ids = [...uploaded, ...(uploadIds ?? [])];
+        if (ids.length === 0) throw new ApiCallError(400, 'no_scan', 'Give at least one image or upload id to read.');
+        const asked = ReadingView.parse(await api.post('/api/readings', { uploadIds: ids, crops: crops ?? [], context: context ?? {} }));
+        return waitForReading(api, asked.id);
+      }),
+  );
+
+  server.registerTool(
+    'get_reading',
+    {
+      title: 'Read a reading',
+      description:
+        'A scan reading by id, as read_scan answers it: queued, running, failed (with why) or done with its entries, match candidates and suggested leads.',
+      inputSchema: z.object({ readingId: Id }),
+      annotations: readOnly,
+    },
+    async ({ readingId }) => call(() => api.get(`/api/readings/${readingId}`)),
+  );
+
+  server.registerTool(
+    'propose_reading',
+    {
+      title: 'Propose what a reading found',
+      description:
+        'Submit a finished reading as a Proposal for review: for every read person (by key: p1, p2, …) give the id of the existing Person it is, or "new" to create one; nobody is created without your choice. The Proposal adds the Events with their Roles, the new Persons and Families, and one Citation per page with its image. Every value stays marked "read by AI", and the Citations have at most normal confidence. Leave out entries you could not check with skipEntries.',
+      inputSchema: z.object({
+        readingId: Id,
+        persons: z.record(z.string(), z.union([Id, z.literal('new')])).describe('For each read person key: an existing Person id, or "new"'),
+        source: z
+          .union([
+            z.object({ sourceId: Id.describe('An existing Source (search_sources)') }),
+            z.object({
+              title: z.string().min(1).max(400),
+              repository: z.string().max(400).optional(),
+              reference: z.string().max(200).optional(),
+            }),
+          ])
+          .describe('The register: an existing Source, or a new one'),
+        page: z.string().max(200).optional().describe('Page or frame; the reading’s own when left out'),
+        skipEntries: z.array(z.number().int().min(0)).max(30).optional().describe('Indexes of entries to leave out'),
+        note: z.string().min(1).max(4000).describe('What the finding is, for the reviewing Editor'),
+        idempotencyKey: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{8,100}$/)
+          .optional(),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async ({ readingId, persons, source, page, skipEntries, note, idempotencyKey }) =>
+      call(async () => {
+        const reading = ReadingView.parse(await api.get(`/api/readings/${readingId}`));
+        if (reading.status !== 'done' || !reading.result)
+          throw new ApiCallError(409, 'not_read', `The reading is ${reading.status}; propose it once it is done.`);
+        const missing = unchosenPersons(reading.result, persons, skipEntries ?? []);
+        if (missing.length) throw new ApiCallError(400, 'choose_persons', `Choose an existing Person or "new" for ${missing.join(', ')}.`);
+        const { operations, marks } = readingOperations({
+          result: reading.result,
+          uploadIds: reading.uploadIds,
+          houses: reading.houses,
+          persons,
+          source,
+          page: page ?? reading.context.page,
+          placeId: reading.context.placeId,
+          readOn: new Date().toISOString().slice(0, 10),
+          link: reading.context.link,
+          skip: skipEntries ?? [],
+        });
+        return api.post('/api/proposals', {
+          formatVersion: OPERATIONS_VERSION,
+          idempotencyKey: idempotencyKey ?? `mcp-${randomUUID()}`,
+          note,
+          operations,
+          reader: { readingIds: [readingId], marks },
+        });
+      }),
   );
 
   server.registerTool(

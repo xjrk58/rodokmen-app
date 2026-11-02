@@ -20,6 +20,9 @@ import { agentRoutes } from './routes/agents.js';
 import { authRoutes } from './routes/auth.js';
 import { pageRoutes } from './routes/pages.js';
 import { proposalRoutes } from './routes/proposals.js';
+import { readingRoutes } from './routes/readings.js';
+import { ReadingJobs } from './readings/jobs.js';
+import { configuredReader, type Reader } from './readings/reader.js';
 import { systemRoutes } from './routes/system.js';
 import { treeRoutes } from './routes/tree.js';
 import { createImageStorage, type ImageStorage } from './storage/images.js';
@@ -32,6 +35,11 @@ export interface AppDeps {
   mailer: Mailer;
   clock?: Clock;
   images?: ImageStorage;
+  /**
+   * The scan reader: by default the Anthropic API when ANTHROPIC_API_KEY is set, else none
+   * (scan reading cannot be switched on). Tests pass one with recorded answers.
+   */
+  reader?: Reader | null;
   logger?: FastifyServerOptions['logger'];
   /** Test hook: extra routes registered after the real ones. */
   extraRoutes?: (app: FastifyInstance) => void | Promise<void>;
@@ -39,19 +47,24 @@ export interface AppDeps {
 
 export interface RodokmenApp extends FastifyInstance {
   routeRecords: RouteRecord[];
+  /** The scan reading queue: `resume()` after start, `idle()` in tests. */
+  readingJobs: ReadingJobs;
 }
 
 export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   const { config, db, mailer } = deps;
   const clock = deps.clock ?? systemClock;
   const images = deps.images ?? createImageStorage(config.s3, clock);
+  const reader = deps.reader === undefined ? configuredReader(config.scanReading) : deps.reader;
 
   const fastify = Fastify({
     logger: deps.logger ?? false,
     trustProxy: config.trustProxy,
     bodyLimit: 1024 * 1024,
   });
-  const app: RodokmenApp = Object.assign(fastify, { routeRecords: trackRoutes(fastify) });
+  const readingJobs = new ReadingJobs({ db, clock, images, reader, log: (msg, err) => fastify.log.error({ err }, msg) });
+  const app: RodokmenApp = Object.assign(fastify, { routeRecords: trackRoutes(fastify), readingJobs });
+  app.addHook('onClose', async () => readingJobs.close());
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -85,9 +98,17 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiProblem) {
-      return reply
-        .code(error.statusCode)
-        .send({ statusCode: error.statusCode, error: HTTP_ERROR_NAMES[error.statusCode] ?? 'Error', message: error.message, code: error.code });
+      if (error.statusCode === 429 && error.extra.retryAt) {
+        const wait = Math.ceil((new Date(error.extra.retryAt).getTime() - clock.now().getTime()) / 1000);
+        reply.header('retry-after', String(Math.max(1, wait)));
+      }
+      return reply.code(error.statusCode).send({
+        ...error.extra,
+        statusCode: error.statusCode,
+        error: HTTP_ERROR_NAMES[error.statusCode] ?? 'Error',
+        message: error.message,
+        code: error.code,
+      });
     }
     if (hasZodFastifySchemaValidationErrors(error)) {
       return reply.code(400).send({ statusCode: 400, error: 'Bad Request', message: error.message, code: 'validation' });
@@ -116,6 +137,15 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   await app.register(systemRoutes, { db, release: config.release });
   await app.register(treeRoutes, { db, clock, images });
   await app.register(proposalRoutes, { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg, err) => app.log.error({ err }, msg) });
+  await app.register(readingRoutes, {
+    db,
+    clock,
+    images,
+    reader,
+    jobs: readingJobs,
+    model: config.scanReading.model,
+    log: (msg, err) => app.log.error({ err }, msg),
+  });
   await app.register(accountRoutes, accountDeps);
   await app.register(agentRoutes, { db, clock });
   await app.register(authRoutes, {

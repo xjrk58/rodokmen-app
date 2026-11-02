@@ -81,7 +81,14 @@ async function proposalBody(draft) {
   }
   const family = await draftFamily(draft);
   const operations = buildOperations(draft, { uploadIds, family });
-  return { formatVersion: OPERATIONS_VERSION, idempotencyKey: draft.idempotencyKey, note: draft.form.note?.trim() || null, direct: false, operations };
+  return {
+    formatVersion: OPERATIONS_VERSION,
+    idempotencyKey: draft.idempotencyKey,
+    note: draft.form.note?.trim() || null,
+    direct: false,
+    operations,
+    reader: null,
+  };
 }
 
 /**

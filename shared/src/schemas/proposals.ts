@@ -293,20 +293,6 @@ export const ProposalKind = z
   .meta({ id: 'ProposalKind', description: "Submitted for review, an Editor's direct change, or an undo" });
 export type ProposalKind = z.infer<typeof ProposalKind>;
 
-export const SubmitProposalBody = z
-  .object({
-    formatVersion: z.literal(OPERATIONS_VERSION).describe('Version of the operation set the Proposal was written for'),
-    idempotencyKey: z
-      .string()
-      .regex(/^[A-Za-z0-9_-]{8,100}$/)
-      .describe('One key per Draft: a retried submit returns the same Proposal'),
-    note: text(4000).nullable().default(null).describe("What the finding is, in the author's words"),
-    direct: z.boolean().default(false).describe('Editors only: accept at once (a direct change)'),
-    operations: z.array(z.unknown()).min(1).max(300),
-  })
-  .meta({ id: 'SubmitProposalBody' });
-export type SubmitProposalBody = z.infer<typeof SubmitProposalBody>;
-
 export interface ProposalIssue {
   code: 'invalid_operation' | 'unknown_operation' | 'not_allowed' | 'temp_id' | 'evidence_missing';
   message: string;

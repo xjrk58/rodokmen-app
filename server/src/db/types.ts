@@ -20,6 +20,7 @@ import type {
 } from '@rodokmen/shared';
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
+import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -304,6 +305,8 @@ export interface ProposalTable {
   decision_note: string | null;
   undoes_proposal_id: string | null;
   undone_by_proposal_id: string | null;
+  /** For a Proposal drafted from scan readings: ReaderInfo (the readings, and the values still marked "read by AI"). */
+  reader: NullableJson;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -421,10 +424,14 @@ export interface Database {
   upload: UploadTable;
   job_run: JobRunTable;
   job_delivery: JobDeliveryTable;
+  scan_reading_setting: ScanReadingSettingTable;
+  reading: ReadingTable;
 }
 
 export type Proposal = Selectable<ProposalTable>;
 export type Upload = Selectable<UploadTable>;
+export type Reading = Selectable<ReadingTable>;
+export type { ReadingTable, ScanReadingSettingTable };
 
 export type Account = Selectable<AccountTable>;
 export type NewEvent = Insertable<EventTable>;

@@ -16,11 +16,20 @@ this page with `node scripts/verification-trace.mjs`.
 |---|---|---|---|---|
 | agent-access: Rate limits | openspec/changes/add-agent-access/specs/agent-access/spec.md | `fixedWindow` | shared/src/rules.ts | see below |
 | agent-access: Read and propose only | openspec/changes/add-agent-access/specs/agent-access/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| evidence-media: Images sent for reading | openspec/changes/add-scan-reading/specs/evidence-media/spec.md | `imagesToSend` | shared/src/reading.ts | nothing beyond the trusted base |
+| evidence-media: Images sent for reading | openspec/changes/add-scan-reading/specs/evidence-media/spec.md | `mayRead` | shared/src/reading.ts | nothing beyond the trusted base |
 | proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Decide on the whole Proposal | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
+| scan-reading: Names are matched, not duplicated | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `ranksAbove` | shared/src/matching.ts | nothing beyond the trusted base |
+| scan-reading: Names are matched, not duplicated | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `scoreCandidate` | shared/src/matching.ts | nothing beyond the trusted base |
+| scan-reading: The machine's reading is marked and modest | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `capConfidence` | shared/src/reading.ts | nothing beyond the trusted base |
+| scan-reading: The machine's reading is marked and modest | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `stillReadByAi` | shared/src/reading.ts | nothing beyond the trusted base |
+| scan-reading: The Owner switches it on | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `imagesToSend` | shared/src/reading.ts | nothing beyond the trusted base |
+| scan-reading: The Owner switches it on | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `mayRead` | shared/src/reading.ts | nothing beyond the trusted base |
+| scan-reading: The Owner switches it on | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | tree-history: Undo a whole Proposal | openspec/changes/add-proposals-and-review/specs/tree-history/spec.md | `undoBlockers` | shared/src/rules.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `compareByEarliest` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `dayDate` | shared/src/edtf.ts | see below |
@@ -62,6 +71,8 @@ A verified function's `requires` are proved wherever a verified function calls i
 Also proved, with no requirement of their own; the traced functions rely on their contracts.
 
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
+- shared/src/matching.ts: `sharesOne`, `nameMatches`, `houseMatches`, `yearsMatch`, `placeMatches`, `matchReasons`, `scoreOf`, `fullMatch`, `isSuggested`
+- shared/src/reading.ts: `copyToSend`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
 - shared/src/rules.ts: `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
@@ -95,6 +106,33 @@ Where a proof covers less than its requirement, exactly what it does and does no
   two lemmas applied to its two searches, which no lemma composes); the Family links and Citations the server
   gathers (server/src/tree/relation.ts) and that it recomputes after every accepted change, which
   server/test/relation.test.ts tests against the fixture Tree.
+- **The switch, the daily limit and what is sent** (`mayRead`, `imagesToSend`, shared/src/reading.ts; `mayDo`,
+  shared/src/rules.ts; scan-reading "The Owner switches it on", evidence-media "Images sent for reading"). Proved: with
+  the switch off nothing is read and no image is to be sent ("Switched off"); a Member with as many readings today as
+  the daily limit is refused ("Daily limit"), and below it one more is allowed; exactly the requested scans are to be
+  sent, in order, each as its marked crop or else its display copy, never the original ("Reading one page"); only the
+  Owner may change the settings (`manageSettings`). Not proved: that the server counts the readings of the day under a
+  lock and asks `mayRead` before it queues one, and `imagesToSend` again when the job starts
+  (server/src/readings/service.ts and jobs.ts); that it sends the bytes of exactly those copies, and refuses portraits
+  and others' uploads; that the switch states that scans go to Anthropic's API and the Owner sees the usage. The
+  tests in server/test/readings.test.ts inspect the outgoing requests for these.
+- **The machine's reading is marked and modest** (`capConfidence`, `stillReadByAi`, shared/src/reading.ts).
+  Proved: a Citation the reader drafted has very low, low or normal confidence, a higher one becomes normal and a lower
+  one is kept, and one a person drafted keeps its confidence; a value is marked "read by AI" exactly while it comes from
+  the reader and the Member has neither confirmed nor changed it ("Member confirms"). Not proved: that the server
+  applies the cap to every new Citation of a Proposal that names a reading or has a read image
+  (server/src/readings/proposals.ts); that the app keeps the marks with this rule (app/src/reading-draft.js mirrors it,
+  and app/tests/unit/reading-draft.test.mjs checks the mirror against it); that the reader leaves illegible values empty
+  ("Faded house number"), which the reading schema checks and server/test/readings.test.ts tests.
+- **Names are matched, not duplicated** (`scoreCandidate`, `ranksAbove`, `isSuggested`, shared/src/matching.ts).
+  Proved: the reasons of a candidate are computed from the read person and the candidate's facts alone, and the score
+  from the reasons; a candidate with the read name, House and a birth in the window scores above any candidate without
+  all three ("Known father"); only candidates whose name matches are suggested. Not proved: the folding of names into
+  variants and the birth window of a role (shared/src/name-variants.ts, tested in shared/test/reading.test.ts); the
+  candidate query that gathers the facts from the Tree (server/src/readings/candidates.ts, tested against the fixture
+  Tree in server/test/reading-proposals.test.ts); that a new Person is created only when the Member chooses so (the
+  app's check screen and the Agent's builder, shared/src/reading-proposal.ts, which refuses a read person without a
+  choice).
 
 ## Trusted base
 
@@ -136,7 +174,9 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   when a proof chains several.
 
 Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/living.ts,
-shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code
-or in a specification (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of
-relation.ts compare two plain integers, emitted in their order), and the generated `.dfy.gen` was read for it.
+shared/src/relation.ts, shared/src/rules.ts, shared/src/reading.ts and shared/src/matching.ts, no narrowed optional is
+an operand of `<`, `<=`, `>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where
+order does not matter; the `!` index reads of relation.ts compare two plain integers, emitted in their order;
+reading.ts and matching.ts have no optionals: an unknown house or Place is an empty text, an unknown birth year a
+`hasBirth` flag), and the generated `.dfy.gen` was read for it.
 Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.
