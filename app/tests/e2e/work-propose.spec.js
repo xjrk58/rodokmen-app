@@ -86,7 +86,7 @@ test("switching the Person to correct while the first one loads shows the second
   slow.open();
   await annaDone;
   // A later round trip, as above.
-  await page.getByTestId('source-mode-existing').check({ force: true });
+  await page.getByTestId('source-mode-existing').check();
   await page.getByTestId('source-search').fill('Invented');
   await expect(page.getByTestId('source-results').getByRole('button')).toHaveCount(1);
   await expect(targets).toContainText('Barbora Králová');

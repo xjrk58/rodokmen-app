@@ -47,6 +47,8 @@ test('one generation: with the range 1820–1850 only pins with Events in those 
 });
 
 test('the play control steps through the decades, and stops when tapped again', async ({ page }) => {
+  // The page's timers run on a clock the test can move on, so "no further step" needs no waiting.
+  await page.clock.install();
   await familyMap(page, 11, 49.6, 15.9);
   await page.getByTestId('year-play').click();
   await expect(page.getByTestId('year-range')).toHaveText('1600–1609');
@@ -54,7 +56,8 @@ test('the play control steps through the decades, and stops when tapped again', 
   await page.getByTestId('year-play').click();
   await expect(page.getByTestId('year-play')).toHaveAttribute('aria-pressed', 'false');
   const stopped = await page.getByTestId('year-range').textContent();
-  await page.waitForTimeout(1500);
+  // Longer than a step of the play (1.2 s): had it not stopped, the range would move on.
+  await page.clock.runFor(1500);
   await expect(page.getByTestId('year-range')).toHaveText(stopped ?? '');
 });
 
@@ -100,10 +103,20 @@ test('a line from abroad: a family pin in another country shows the family Event
   await expect(sheet.getByTestId('open-scans')).toHaveCount(0);
 });
 
-test('a Place name with markup in it shows as text on the life path', async ({ page }) => {
+/**
+ * Antonín's details with the Place of his first Event renamed.
+ * @param {string} name
+ */
+function antoninWithPlaceNamed(name) {
   const antonin = detail(16);
   const place = antonin.events[0].event.place;
-  if (place) place.name = '<img src=x data-injected>';
+  if (!place) throw new Error('the first Event in the invented Tree has no Place');
+  place.name = name;
+  return antonin;
+}
+
+test('a Place name with markup in it shows as text on the life path', async ({ page }) => {
+  const antonin = antoninWithPlaceNamed('<img src=x data-injected>');
   await mockFamilyApi(page, { me: member('contributor'), extra: { [`GET persons/${P.antonin}`]: () => ({ json: antonin }) } });
   await page.goto(`./#life/${P.antonin}`);
   await expect(page.locator('.life-label').first()).toHaveText('1. <img src=x data-injected> 1840');

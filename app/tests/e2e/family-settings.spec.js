@@ -93,6 +93,7 @@ test("the language chosen in Settings applies on this device and to the Member's
 
 test.describe("Member's setting", () => {
   test.use({ language: null, locale: 'cs-CZ' });
+
   test('a signed-in Member whose account language is English gets English on a new device', async ({ page }) => {
     await mockFamilyApi(page, { me: member('contributor', { person: 10, language: 'en' }) });
     await page.goto('./');

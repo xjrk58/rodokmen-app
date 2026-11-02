@@ -80,4 +80,11 @@ export function guard(app: FastifyInstance) {
     assert.equal((await findings(bug, 'app/src/', '.js', 'id-denylist')).length, 2);
     assert.deepEqual(await findings(bug.replaceAll('town', 'placeName'), 'app/src/', '.js', 'id-denylist'), []);
   });
+
+  test('browser tests may not wait a fixed time (L18)', async () => {
+    const app = `import { test } from '@playwright/test';\ntest('stops', async ({ page }) => {\n  await page.goto('./');\n  await page.waitForTimeout(1500);\n});\n`;
+    assert.equal((await findings(app, 'app/tests/e2e/', '.spec.js', 'playwright/no-wait-for-timeout')).length, 1);
+    const server = `import { chromium } from 'playwright';\nimport { it } from 'vitest';\nit('shows', async () => {\n  const page = await (await chromium.launch()).newPage();\n  await page.waitForTimeout(700);\n});\n`;
+    assert.equal((await findings(server, 'server/test/', '.e2e.test.ts', 'playwright/no-wait-for-timeout')).length, 1);
+  });
 });

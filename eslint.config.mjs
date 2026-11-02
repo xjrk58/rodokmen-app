@@ -12,6 +12,7 @@
 import comments from '@eslint-community/eslint-plugin-eslint-comments/configs';
 import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
+import playwright from 'eslint-plugin-playwright';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -164,6 +165,37 @@ export default defineConfig(
   {
     files: ['app/scripts/**/*.mjs', 'app/tests/**/*.{js,mjs}', 'app/playwright.config.js'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+
+  // ---------------------------------------------------------------- browser tests (Playwright)
+  // A fixed wait passes or fails by timing, not by the page (#21, L18); an assertion that cannot
+  // fail proves nothing. The app's tests use @playwright/test.
+  {
+    files: ['app/tests/e2e/**/*.js'],
+    extends: [playwright.configs['flat/recommended']],
+    rules: {
+      'playwright/no-wait-for-timeout': 'error',
+      // `test.skip(condition, reason)` runs a test only where it can run (touch on the phone, CDP in Chromium).
+      'playwright/no-skipped-test': ['warn', { allowConditional: true }],
+    },
+  },
+  // The server's browser tests drive Playwright from vitest, so only the rules on the page API
+  // apply; vitest's describe, it and expect are not Playwright's.
+  {
+    files: ['server/test/**/*.e2e.test.ts'],
+    plugins: { playwright },
+    rules: {
+      'playwright/no-wait-for-timeout': 'error',
+      'playwright/no-wait-for-selector': 'error',
+      'playwright/no-wait-for-navigation': 'error',
+      'playwright/no-networkidle': 'error',
+      'playwright/no-element-handle': 'error',
+      'playwright/no-eval': 'error',
+      'playwright/no-force-option': 'error',
+      'playwright/no-page-pause': 'error',
+      'playwright/no-unused-locators': 'error',
+      'playwright/no-useless-await': 'error',
+    },
   },
 
   // ---------------------------------------------------------------- JavaScript without type information
