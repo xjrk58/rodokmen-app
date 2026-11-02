@@ -8,7 +8,8 @@
  * Every element and relationship carries:
  *   - one status tag: "Built" (on main), "In progress" (branch feat/research-leads,
  *     add-research-leads), or "Planned" (a later OpenSpec change: add-vault-import beyond the
- *     Family roots and the relation, add-scan-reading, add-exports-and-erasure, add-country-packs);
+ *     Family roots and the relation, add-exports-and-erasure, add-country-packs; and what
+ *     add-scan-reading leaves to add-research-leads);
  *   - property "openspec": "<change> / <capability>[, <capability>]", several changes joined by "; ";
  *   - property "adr": the ADRs it follows, where any apply;
  *   - property "code": where it lives in the repo, where it exists.
@@ -194,8 +195,8 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                             "openspec" "add-research-leads / research-leads"
                         }
                     }
-                    scanReading = component "Scan reading" "Uploads an archive scan, shows its reading, and saves it as a Draft for the Member to check." "app/ (planned)" {
-                        tags "Planned"
+                    scanReading = component "Scan reading" "Uploads a scan (or a marked crop of it), keeps the reading as a Draft, and shows it beside the scan to check: values marked read by AI, match candidates linked with one tap." "app/src/reading-start.js, reading-check.js, reading-draft.js" {
+                        tags "Built"
                         properties {
                             "openspec" "add-scan-reading / scan-reading"
                             "adr" "0002, 0003, 0011"
@@ -376,8 +377,8 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                         "note" "Created by Members, Agents and the gap finder without review; they are not Tree records"
                     }
                 }
-                scanReader = component "Scan reader" "Sends a scan a Member uploaded to the Claude API; returns a transcription, facts and leads." "Anthropic API client, off until the Owner switches it on" {
-                    tags "Planned"
+                scanReader = component "Scan reader" "Queues readings, sends the display copy or marked crop of a scan to the Claude API with structured output, checks the answer against the reading schema, and suggests matches and leads." "server/src/readings, Anthropic TypeScript SDK; off until the Owner switches it on" {
+                    tags "Built"
                     properties {
                         "openspec" "add-scan-reading / scan-reading"
                         "adr" "0002, 0003, 0011"
@@ -587,8 +588,8 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
             }
         }
 
-        claude = softwareSystem "Anthropic Claude API" "Reads scan images: returns a transcription and the facts it finds." {
-            tags "External" "Planned"
+        claude = softwareSystem "Anthropic Claude API" "Reads scan images: returns a transcription and the entries it finds, in the reading schema." {
+            tags "External" "Built"
             properties {
                 "openspec" "add-scan-reading / scan-reading"
                 "adr" "0011"
@@ -698,7 +699,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-country-packs / archive-lookup"
             }
         }
-        rodokmen -> claude "Sends uploaded scans for reading, once the Owner switches it on" "HTTPS" "Planned" {
+        rodokmen -> claude "Sends uploaded scans for reading, once the Owner switches it on" "HTTPS" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
                 "adr" "0011"
@@ -998,7 +999,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-tree-backend / member-accounts, operations"
             }
         }
-        api -> claude "Sends uploaded scans for reading" "HTTPS, API key" "Planned" {
+        api -> claude "Sends uploaded scans for reading" "HTTPS, API key" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
             }
@@ -1494,29 +1495,29 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "openspec" "add-research-leads / research-leads"
             }
         }
-        scanReading -> media "Uploads the scan" "JSON/HTTPS" "Planned" {
+        scanReading -> media "Uploads the scan" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
                 "adr" "0002"
             }
         }
-        scanReading -> scanReader "Asks for a reading of the scan" "JSON/HTTPS" "Planned" {
+        scanReading -> scanReader "Asks for a reading of the scan, and reads it back" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
             }
         }
-        scanReading -> drafts "Saves the reading as a Draft to check" "JS call" "Planned" {
+        scanReading -> drafts "Saves the reading as a Draft to check" "JS call" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
                 "adr" "0003"
             }
         }
-        scanReader -> media "Reads the uploaded scan" "JS call" "Planned" {
+        scanReader -> media "Reads the display copy or crop of the uploaded scan" "JS call" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
             }
         }
-        scanReader -> claude "Sends the scan; gets a transcription and extracted facts" "HTTPS, Anthropic API" "Planned" {
+        scanReader -> claude "Sends the scan; gets a transcription and entries in the reading schema" "HTTPS, Anthropic API" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
                 "adr" "0011"
@@ -1525,6 +1526,13 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
         scanReader -> researchLeads "Suggests Research leads from the scan" "JS call" "Planned" {
             properties {
                 "openspec" "add-scan-reading / scan-reading; add-research-leads / research-leads"
+                "note" "The reading suggests leads already; keeping them as leads waits for add-research-leads"
+            }
+        }
+        mcp -> scanReader "Requests readings of uploaded scans, and proposes what they found (read_scan, propose_reading)" "JSON/HTTP(S), Agent token" "Built" {
+            properties {
+                "openspec" "add-scan-reading / scan-reading"
+                "adr" "0011"
             }
         }
         researchLeads -> db "Stores leads and search records; the gap finder queries the Tree for gaps" "SQL" "In progress" {
@@ -1538,7 +1546,7 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                 "note" "add-research-leads changes the agent-access spec so that Agents may write leads and search records"
             }
         }
-        owner -> scanReader "Switches scan reading on or off" "JSON/HTTPS" "Planned" {
+        owner -> scanReader "Switches scan reading on or off, sets the daily limit, sees the readings made" "JSON/HTTPS" "Built" {
             properties {
                 "openspec" "add-scan-reading / scan-reading"
             }

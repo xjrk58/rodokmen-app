@@ -39,7 +39,7 @@ System(Historicalmapservices, "Historical map services", $descr="Public services
 System(OpenStreetMaptiles, "OpenStreetMap tiles", $descr="Today's base map; used without prefetching and with attribution.", $tags="Software System,External,Built", $link="")
 System(EUemailservice, "EU email service", $descr="Transactional email provider in the EU, sending from the Rodokmen domain.", $tags="Software System,External,Built", $link="")
 System(Backupstorage, "Backup storage", $descr="Object storage at a second EU provider, holding the encrypted Backups.", $tags="Software System,External,Built", $link="")
-System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the entries it finds, in the reading schema.", $tags="Software System,External,Built", $link="")
 System(Vault, "Vault", $descr="The Owner's Markdown notes in the private rodokmen-data repo, about 4,100 people with scans; frozen after the import.", $tags="Software System,External,Planned", $link="")
 System(GitHub, "GitHub", $descr="Hosts the code, CI and deploys, the image registry, the map preview and the private Export repo.", $tags="Software System,External,Built", $link="")
 
@@ -52,7 +52,7 @@ Rel(Agent, Vault, "Opens pull requests until import day; afterwards uses MCP", $
 Rel(Rodokmen, Vault, "Imports the Vault once, then leaves it frozen", $techn="Git checkout", $tags="Planned", $link="")
 Rel(Rodokmen, Archiveportals, "Links each place to the register viewer of its archive", $techn="HTTPS link", $tags="Built", $link="")
 Rel(Rodokmen, Archiveportalsabroad, "Links places outside the Czech lands to their register viewers", $techn="HTTPS link", $tags="Planned", $link="")
-Rel(Rodokmen, AnthropicClaudeAPI, "Sends uploaded scans for reading, once the Owner switches it on", $techn="HTTPS", $tags="Planned", $link="")
+Rel(Rodokmen, AnthropicClaudeAPI, "Sends uploaded scans for reading, once the Owner switches it on", $techn="HTTPS", $tags="Built", $link="")
 Rel(Rodokmen, Historicalmapservices, "Overlays military survey maps and links to historical map viewers", $techn="WMS, HTTPS links", $tags="Built", $link="")
 Rel(Rodokmen, OpenStreetMaptiles, "Loads base map tiles", $techn="HTTPS", $tags="Built", $link="")
 Rel(Rodokmen, EUemailservice, "Sends invitations, sign-in links, digests, outcomes and alerts", $techn="SMTP", $tags="Built", $link="")

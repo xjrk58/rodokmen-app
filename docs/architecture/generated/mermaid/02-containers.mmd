@@ -22,8 +22,8 @@ graph TB
     style 69 fill:#8c8c8c,stroke:#616161,color:#ffffff
     70["<div style='font-weight: bold'>EU email service</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Transactional email provider<br />in the EU, sending from the<br />Rodokmen domain.</div>"]
     style 70 fill:#8c8c8c,stroke:#616161,color:#ffffff
-    72["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the facts<br />it finds.</div>"]
-    style 72 fill:#ffffff,stroke:#777777,color:#555555
+    72["<div style='font-weight: bold'>Anthropic Claude API</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Reads scan images: returns a<br />transcription and the entries<br />it finds, in the reading<br />schema.</div>"]
+    style 72 fill:#8c8c8c,stroke:#616161,color:#ffffff
 
     subgraph 6 ["Rodokmen"]
       style 6 fill:#ffffff,stroke:#0b4884,color:#0b4884
@@ -76,7 +76,7 @@ graph TB
     27-- "<div>Presigns view links for<br />images</div><div style='font-size: 70%'>[S3 API]</div>" -->48
     27-- "<div>Checks uploads, writes<br />display copies, moves and<br />deletes images</div><div style='font-size: 70%'>[S3 API]</div>" -->48
     27-- "<div>Sends invitations and sign-in<br />links</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->70
-    27-. "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" .->72
+    27-- "<div>Sends uploaded scans for<br />reading</div><div style='font-size: 70%'>[HTTPS, API key]</div>" -->72
     27-- "<div>Sends the Editors' digest and<br />outcome emails</div><div style='font-size: 70%'>[SMTP, STARTTLS]</div>" -->70
 
   end

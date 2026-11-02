@@ -21,13 +21,12 @@ skinparam {
 
 !include ../../legend.puml
 
+AddElementTag("Software System,External,Built", $bgColor="#8c8c8c", $borderColor="#616161", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Component,In progress", $bgColor="#85bbf0", $borderColor="#c25e00", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="dotted", $borderThickness="6")
 AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
-AddElementTag("Component,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Component,Built", $bgColor="#85bbf0", $borderColor="#5d82a8", $fontColor="#000000", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
-AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 
 AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
 AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
@@ -38,21 +37,21 @@ AddBoundaryTag("Container,Built", $bgColor="#ffffff", $borderColor="#2e6295", $f
 
 Person(Owner, "Owner", $descr="The one Member who invites Members, assigns roles, marks Family roots, issues Agent tokens and keeps the Backups.", $tags="Person,Built", $link="")
 
-System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the entries it finds, in the reading schema.", $tags="Software System,External,Built", $link="")
 
 System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
   Container_Boundary("Rodokmen.APIserver_boundary", "API server", $tags="Container,Built") {
     Component(Rodokmen.APIserver.Review, "Review", $techn="shared/src/schemas/review.ts", $descr="Accepts or rejects a whole Proposal in one transaction, with corrections, conflicts and merges.", $tags="Component,Built", $link="")
     Component(Rodokmen.APIserver.Evidencemedia, "Evidence media", $techn="sharp, S3 presigner", $descr="Presigned upload and view links; checks uploads one at a time, keeps the checked bytes and makes a 2,000-pixel WebP copy.", $tags="Component,Built", $link="")
     Component(Rodokmen.APIserver.Researchleads, "Research leads", $techn="Rule-based gap finder (branch feat/research-leads)", $descr="Suggested next research steps: question, where to look, status, what was searched; no review.", $tags="Component,In progress", $link="")
-    Component(Rodokmen.APIserver.Scanreader, "Scan reader", $techn="Anthropic API client, off until the Owner switches it on", $descr="Sends a scan a Member uploaded to the Claude API; returns a transcription, facts and leads.", $tags="Component,Planned", $link="")
+    Component(Rodokmen.APIserver.Scanreader, "Scan reader", $techn="server/src/readings, Anthropic TypeScript SDK; off until the Owner switches it on", $descr="Queues readings, sends the display copy or marked crop of a scan to the Claude API with structured output, checks the answer against the reading schema, and suggests matches and leads.", $tags="Component,Built", $link="")
   }
 
   Container_Boundary("Rodokmen.AppPWA_boundary", "App (PWA)", $tags="Container,Built,Browser") {
     Component(Rodokmen.AppPWA.Proposalforms, "Proposal forms", $techn="app/src/propose-form.js, pickers.js", $descr="Phone-first forms that turn one finding into typed operations with a Citation and photos.", $tags="Component,Built", $link="")
     Component(Rodokmen.AppPWA.Drafts, "Drafts", $techn="app/src/drafts.js", $descr="Keeps Drafts and their photos on the device until the Member submits them.", $tags="Component,Built", $link="")
     Component(Rodokmen.AppPWA.Researchleadscreens, "Research lead screens", $techn="app/ (branch feat/research-leads)", $descr="Lists open Research leads; Members add one, record what they searched, or start a Proposal from it.", $tags="Component,In progress", $link="")
-    Component(Rodokmen.AppPWA.Scanreading, "Scan reading", $techn="app/ (planned)", $descr="Uploads an archive scan, shows its reading, and saves it as a Draft for the Member to check.", $tags="Component,Planned", $link="")
+    Component(Rodokmen.AppPWA.Scanreading, "Scan reading", $techn="app/src/reading-start.js, reading-check.js, reading-draft.js", $descr="Uploads a scan (or a marked crop of it), keeps the reading as a Draft, and shows it beside the scan to check: values marked read by AI, match candidates linked with one tap.", $tags="Component,Built", $link="")
   }
 
   ContainerDb(Rodokmen.Ondevicestore, "On-device store", $techn="IndexedDB", $descr="Drafts with their photos until submitted, and up to 400 last-loaded Tree records; emptied on sign-out.", $tags="Container,Built,Data store", $link="")
@@ -65,15 +64,16 @@ Rel(Rodokmen.AppPWA.Drafts, Rodokmen.Ondevicestore, "Keeps Drafts and photos as 
 Rel(Rodokmen.AppPWA.Researchleadscreens, Rodokmen.APIserver.Researchleads, "Lists, adds, updates and closes Research leads", $techn="JSON/HTTPS", $tags="In progress", $link="")
 Rel(Rodokmen.AppPWA.Researchleadscreens, Rodokmen.AppPWA.Proposalforms, "Starts a Proposal from a lead", $techn="JS call", $tags="In progress", $link="")
 Rel(Rodokmen.APIserver.Review, Rodokmen.APIserver.Researchleads, "Marks the leads a Proposal answers as found; reopens them on undo", $techn="JS call", $tags="In progress", $link="")
-Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Evidencemedia, "Uploads the scan", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Scanreader, "Asks for a reading of the scan", $techn="JSON/HTTPS", $tags="Planned", $link="")
-Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.AppPWA.Drafts, "Saves the reading as a Draft to check", $techn="JS call", $tags="Planned", $link="")
-Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Evidencemedia, "Reads the uploaded scan", $techn="JS call", $tags="Planned", $link="")
-Rel(Rodokmen.APIserver.Scanreader, AnthropicClaudeAPI, "Sends the scan; gets a transcription and extracted facts", $techn="HTTPS, Anthropic API", $tags="Planned", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Evidencemedia, "Uploads the scan", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.APIserver.Scanreader, "Asks for a reading of the scan, and reads it back", $techn="JSON/HTTPS", $tags="Built", $link="")
+Rel(Rodokmen.AppPWA.Scanreading, Rodokmen.AppPWA.Drafts, "Saves the reading as a Draft to check", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Evidencemedia, "Reads the display copy or crop of the uploaded scan", $techn="JS call", $tags="Built", $link="")
+Rel(Rodokmen.APIserver.Scanreader, AnthropicClaudeAPI, "Sends the scan; gets a transcription and entries in the reading schema", $techn="HTTPS, Anthropic API", $tags="Built", $link="")
 Rel(Rodokmen.APIserver.Scanreader, Rodokmen.APIserver.Researchleads, "Suggests Research leads from the scan", $techn="JS call", $tags="Planned", $link="")
+Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Scanreader, "Requests readings of uploaded scans, and proposes what they found (read_scan, propose_reading)", $techn="JSON/HTTP(S), Agent token", $tags="Built", $link="")
 Rel(Rodokmen.APIserver.Researchleads, Rodokmen.Database, "Stores leads and search records; the gap finder queries the Tree for gaps", $techn="SQL", $tags="In progress", $link="")
 Rel(Rodokmen.MCPserver, Rodokmen.APIserver.Researchleads, "Lists, creates, updates and closes Research leads", $techn="JSON/HTTP(S), Agent token", $tags="In progress", $link="")
-Rel(Owner, Rodokmen.APIserver.Scanreader, "Switches scan reading on or off", $techn="JSON/HTTPS", $tags="Planned", $link="")
+Rel(Owner, Rodokmen.APIserver.Scanreader, "Switches scan reading on or off, sets the daily limit, sees the readings made", $techn="JSON/HTTPS", $tags="Built", $link="")
 
 SHOW_LEGEND(true)
 hide stereotypes

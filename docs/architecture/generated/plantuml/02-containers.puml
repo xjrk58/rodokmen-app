@@ -25,10 +25,8 @@ AddElementTag("Container,Built,Browser", $bgColor="#438dd5", $borderColor="#2e62
 AddElementTag("Container,Built", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Container,Built,Data store", $bgColor="#438dd5", $borderColor="#2e6295", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
 AddElementTag("Person,Built", $bgColor="#08427b", $borderColor="#052e56", $fontColor="#ffffff", $sprite="", $shadowing="", $borderStyle="solid", $borderThickness="2")
-AddElementTag("Software System,External,Planned", $bgColor="#ffffff", $borderColor="#777777", $fontColor="#555555", $sprite="", $shadowing="", $borderStyle="dashed", $borderThickness="2")
 
 AddRelTag("Built", $textColor="#555555", $lineColor="#555555", $lineStyle = "")
-AddRelTag("Planned", $textColor="#8a8a8a", $lineColor="#8a8a8a", $lineStyle = DashedLine())
 
 AddBoundaryTag("Software System,Built", $bgColor="#ffffff", $borderColor="#0b4884", $fontColor="#0b4884", $shadowing="", $borderStyle="solid", $borderThickness="2")
 
@@ -41,7 +39,7 @@ System(Archiveportals, "Archive portals", $descr="Online parish-register viewers
 System(Historicalmapservices, "Historical map services", $descr="Public services for 19th-century maps of the Czech lands, run by several providers.", $tags="Software System,External,Built", $link="")
 System(OpenStreetMaptiles, "OpenStreetMap tiles", $descr="Today's base map; used without prefetching and with attribution.", $tags="Software System,External,Built", $link="")
 System(EUemailservice, "EU email service", $descr="Transactional email provider in the EU, sending from the Rodokmen domain.", $tags="Software System,External,Built", $link="")
-System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the facts it finds.", $tags="Software System,External,Planned", $link="")
+System(AnthropicClaudeAPI, "Anthropic Claude API", $descr="Reads scan images: returns a transcription and the entries it finds, in the reading schema.", $tags="Software System,External,Built", $link="")
 
 System_Boundary("Rodokmen_boundary", "Rodokmen", $tags="Software System,Built") {
   AddBoundaryTag("In the browser", $borderColor="#999999", $fontColor="#999999", $borderStyle="dashed")
@@ -82,7 +80,7 @@ Rel(Rodokmen.APIserver, Rodokmen.Database, "Stores Proposals; applies accepted o
 Rel(Rodokmen.APIserver, Rodokmen.Imagebucket, "Presigns view links for images", $techn="S3 API", $tags="Built", $link="")
 Rel(Rodokmen.APIserver, Rodokmen.Imagebucket, "Checks uploads, writes display copies, moves and deletes images", $techn="S3 API", $tags="Built", $link="")
 Rel(Rodokmen.APIserver, EUemailservice, "Sends invitations and sign-in links", $techn="SMTP, STARTTLS", $tags="Built", $link="")
-Rel(Rodokmen.APIserver, AnthropicClaudeAPI, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Planned", $link="")
+Rel(Rodokmen.APIserver, AnthropicClaudeAPI, "Sends uploaded scans for reading", $techn="HTTPS, API key", $tags="Built", $link="")
 Rel(Rodokmen.APIserver, EUemailservice, "Sends the Editors' digest and outcome emails", $techn="SMTP, STARTTLS", $tags="Built", $link="")
 
 SHOW_LEGEND(true)

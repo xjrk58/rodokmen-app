@@ -4,48 +4,48 @@ graph LR
   subgraph diagram ["Deployment: delivery, Export, Agents and Vault import"]
     style diagram fill:#ffffff,stroke:#ffffff
 
-    subgraph 251 ["Assistant's machine"]
-      style 251 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 252 ["Assistant's machine"]
+      style 252 fill:#ffffff,stroke:#888888,color:#000000
 
-      252["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK v2; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API with<br />the Agent's token, without<br />database access.</div>"]
-      style 252 fill:#438dd5,stroke:#2e6295,color:#ffffff
+      253["<div style='font-weight: bold'>MCP server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript, MCP SDK v2; stdio or streamable HTTP]</div><div style='font-size: 80%; margin-top:10px'>Lets AI assistants search the<br />Tree and submit Proposals; a<br />thin client of the API with<br />the Agent's token, without<br />database access.</div>"]
+      style 253 fill:#438dd5,stroke:#2e6295,color:#ffffff
     end
 
-    subgraph 253 ["Owner's computer"]
-      style 253 fill:#ffffff,stroke:#777777,color:#555555
-
-      254["<div style='font-weight: bold'>Vault importer</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22 CLI in server/, Agent token]</div><div style='font-size: 80%; margin-top:10px'>Reads the Vault once and<br />submits one Proposal per<br />Source note as an import<br />batch; can be re-run.</div>"]
+    subgraph 254 ["Owner's computer"]
       style 254 fill:#ffffff,stroke:#777777,color:#555555
+
+      255["<div style='font-weight: bold'>Vault importer</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22 CLI in server/, Agent token]</div><div style='font-size: 80%; margin-top:10px'>Reads the Vault once and<br />submits one Proposal per<br />Source note as an import<br />batch; can be re-run.</div>"]
+      style 255 fill:#ffffff,stroke:#777777,color:#555555
     end
 
-    subgraph 255 ["netcup"]
-      style 255 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 256 ["netcup"]
+      style 256 fill:#ffffff,stroke:#888888,color:#000000
 
-      subgraph 256 ["VPS"]
-        style 256 fill:#ffffff,stroke:#888888,color:#000000
+      subgraph 257 ["VPS"]
+        style 257 fill:#ffffff,stroke:#888888,color:#000000
 
-        subgraph 258 ["Docker Compose"]
-          style 258 fill:#ffffff,stroke:#888888,color:#000000
+        subgraph 259 ["Docker Compose"]
+          style 259 fill:#ffffff,stroke:#888888,color:#000000
 
-          subgraph 266 ["api-blue"]
-            style 266 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 267 ["api-blue"]
+            style 267 fill:#ffffff,stroke:#888888,color:#000000
 
-            267["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app with its<br />Content-Security-Policy, and<br />the JSON API; runs the daily<br />jobs.</div>"]
-            style 267 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            268["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app with its<br />Content-Security-Policy, and<br />the JSON API; runs the daily<br />jobs.</div>"]
+            style 268 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 273 ["api-green"]
-            style 273 fill:#ffffff,stroke:#888888,color:#000000
+          subgraph 274 ["api-green"]
+            style 274 fill:#ffffff,stroke:#888888,color:#000000
 
-            274["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app with its<br />Content-Security-Policy, and<br />the JSON API; runs the daily<br />jobs.</div>"]
-            style 274 fill:#438dd5,stroke:#2e6295,color:#ffffff
+            275["<div style='font-weight: bold'>API server</div><div style='font-size: 70%; margin-top: 0px'>[Container: TypeScript on Node 22, Fastify, Zod, Kysely]</div><div style='font-size: 80%; margin-top:10px'>Serves the app with its<br />Content-Security-Policy, and<br />the JSON API; runs the daily<br />jobs.</div>"]
+            style 275 fill:#438dd5,stroke:#2e6295,color:#ffffff
           end
 
-          subgraph 303 ["export"]
-            style 303 fill:#ffffff,stroke:#777777,color:#555555
-
-            304["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
+          subgraph 304 ["export"]
             style 304 fill:#ffffff,stroke:#777777,color:#555555
+
+            305["<div style='font-weight: bold'>Export job</div><div style='font-size: 70%; margin-top: 0px'>[Container: Node 22, git with a deploy key]</div><div style='font-size: 80%; margin-top:10px'>Every night writes the<br />one-way Export: Markdown<br />notes and a GEDCOM file,<br />Living people reduced.</div>"]
+            style 305 fill:#ffffff,stroke:#777777,color:#555555
           end
 
         end
@@ -54,38 +54,38 @@ graph LR
 
     end
 
-    subgraph 306 ["Second EU provider"]
-      style 306 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 307 ["Second EU provider"]
+      style 307 fill:#ffffff,stroke:#888888,color:#000000
 
-      307["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
-      style 307 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      308["<div style='font-weight: bold'>Backup storage</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>Object storage at a second EU<br />provider, holding the<br />encrypted Backups.</div>"]
+      style 308 fill:#8c8c8c,stroke:#616161,color:#ffffff
     end
 
-    subgraph 320 ["GitHub"]
-      style 320 fill:#ffffff,stroke:#888888,color:#000000
+    subgraph 321 ["GitHub"]
+      style 321 fill:#ffffff,stroke:#888888,color:#000000
 
-      321["<div style='font-weight: bold'>GitHub Actions</div><div style='font-size: 70%; margin-top: 0px'>[Container: Workflows in .github/workflows/]</div><div style='font-size: 80%; margin-top:10px'>Tests, repo guard, image<br />builds, deploys, the monthly<br />restore test and the weekly<br />portal check.</div>"]
-      style 321 fill:#8c8c8c,stroke:#616161,color:#ffffff
-      326["<div style='font-weight: bold'>GitHub Container Registry</div><div style='font-size: 70%; margin-top: 0px'>[Container: ghcr.io/<owner>/rodokmen-app]</div><div style='font-size: 80%; margin-top:10px'>API images tagged by commit.</div>"]
-      style 326 fill:#8c8c8c,stroke:#616161,color:#ffffff
-      328["<div style='font-weight: bold'>GitHub Pages</div><div style='font-size: 70%; margin-top: 0px'>[Container: Static hosting]</div><div style='font-size: 80%; margin-top:10px'>Preview of the map only, at<br />https://<owner>.github.io/rodokmen-app/.</div>"]
-      style 328 fill:#8c8c8c,stroke:#616161,color:#ffffff
-      330["<div style='font-weight: bold'>rodokmen-export repo</div><div style='font-size: 70%; margin-top: 0px'>[Container: Git: Markdown notes, family.ged]</div><div style='font-size: 80%; margin-top:10px'>Private repo with the nightly<br />one-way Export; nobody edits<br />it by hand.</div>"]
-      style 330 fill:#ffffff,stroke:#777777,color:#555555
-      332["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
-      style 332 fill:#ffffff,stroke:#777777,color:#555555
+      322["<div style='font-weight: bold'>GitHub Actions</div><div style='font-size: 70%; margin-top: 0px'>[Container: Workflows in .github/workflows/]</div><div style='font-size: 80%; margin-top:10px'>Tests, repo guard, image<br />builds, deploys, the monthly<br />restore test and the weekly<br />portal check.</div>"]
+      style 322 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      327["<div style='font-weight: bold'>GitHub Container Registry</div><div style='font-size: 70%; margin-top: 0px'>[Container: ghcr.io/<owner>/rodokmen-app]</div><div style='font-size: 80%; margin-top:10px'>API images tagged by commit.</div>"]
+      style 327 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      329["<div style='font-weight: bold'>GitHub Pages</div><div style='font-size: 70%; margin-top: 0px'>[Container: Static hosting]</div><div style='font-size: 80%; margin-top:10px'>Preview of the map only, at<br />https://<owner>.github.io/rodokmen-app/.</div>"]
+      style 329 fill:#8c8c8c,stroke:#616161,color:#ffffff
+      331["<div style='font-weight: bold'>rodokmen-export repo</div><div style='font-size: 70%; margin-top: 0px'>[Container: Git: Markdown notes, family.ged]</div><div style='font-size: 80%; margin-top:10px'>Private repo with the nightly<br />one-way Export; nobody edits<br />it by hand.</div>"]
+      style 331 fill:#ffffff,stroke:#777777,color:#555555
+      333["<div style='font-weight: bold'>Vault</div><div style='font-size: 70%; margin-top: 0px'>[Software System]</div><div style='font-size: 80%; margin-top:10px'>The Owner's Markdown notes in<br />the private rodokmen-data<br />repo, about 4,100 people with<br />scans; frozen after the<br />import.</div>"]
+      style 333 fill:#ffffff,stroke:#777777,color:#555555
     end
 
-    252-- "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTP(S)]</div>" -->267
-    254-. "<div>Submits an import batch of<br />Proposals</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->267
-    252-- "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTP(S)]</div>" -->274
-    254-. "<div>Submits an import batch of<br />Proposals</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->274
-    321-- "<div>Deploys to the idle slot,<br />switches when healthy</div><div style='font-size: 70%'>[SSH, deploy.sh]</div>" -->267
-    321-- "<div>Deploys to the idle slot,<br />switches when healthy</div><div style='font-size: 70%'>[SSH, deploy.sh]</div>" -->274
-    321-- "<div>Restores the latest Backup<br />monthly and checks record and<br />image counts</div><div style='font-size: 70%'>[restic]</div>" -->307
-    321-- "<div>Pushes the API image</div><div style='font-size: 70%'>[OCI]</div>" -->326
-    321-- "<div>Publishes app/ on every push<br />to main</div><div style='font-size: 70%'>[Pages deploy]</div>" -->328
-    304-. "<div>Commits changed notes and<br />family.ged; one fresh commit<br />after an erasure</div><div style='font-size: 70%'>[Git over SSH, deploy key]</div>" .->330
-    254-. "<div>Reads notes, scans and PDFs</div><div style='font-size: 70%'>[Git checkout]</div>" .->332
+    253-- "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTP(S)]</div>" -->268
+    255-. "<div>Submits an import batch of<br />Proposals</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->268
+    253-- "<div>Calls the API with the<br />Agent's token</div><div style='font-size: 70%'>[JSON/HTTP(S)]</div>" -->275
+    255-. "<div>Submits an import batch of<br />Proposals</div><div style='font-size: 70%'>[JSON/HTTPS, Agent token]</div>" .->275
+    322-- "<div>Deploys to the idle slot,<br />switches when healthy</div><div style='font-size: 70%'>[SSH, deploy.sh]</div>" -->268
+    322-- "<div>Deploys to the idle slot,<br />switches when healthy</div><div style='font-size: 70%'>[SSH, deploy.sh]</div>" -->275
+    322-- "<div>Restores the latest Backup<br />monthly and checks record and<br />image counts</div><div style='font-size: 70%'>[restic]</div>" -->308
+    322-- "<div>Pushes the API image</div><div style='font-size: 70%'>[OCI]</div>" -->327
+    322-- "<div>Publishes app/ on every push<br />to main</div><div style='font-size: 70%'>[Pages deploy]</div>" -->329
+    305-. "<div>Commits changed notes and<br />family.ged; one fresh commit<br />after an erasure</div><div style='font-size: 70%'>[Git over SSH, deploy key]</div>" .->331
+    255-. "<div>Reads notes, scans and PDFs</div><div style='font-size: 70%'>[Git checkout]</div>" .->333
 
   end
