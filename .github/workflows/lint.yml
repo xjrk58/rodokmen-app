@@ -1,5 +1,6 @@
 # Lint and formatting on every push and pull request: ESLint with type information (server,
-# shared, app), ShellCheck for the shell scripts, and Prettier. Existing ESLint findings are
+# shared, app), ShellCheck for the shell scripts, the docs check (relative links in Markdown, and
+# every docs/ page in the docs/README.md index), and Prettier. Existing ESLint findings are
 # recorded in eslint-suppressions.json and files not yet formatted in .prettierignore; anything
 # new fails. Run the same locally with `pnpm lint` and `pnpm format:check`.
 name: lint
@@ -32,5 +33,7 @@ jobs:
         run: pnpm run lint:js
       - name: ShellCheck
         run: pnpm run lint:sh
+      - name: Docs links and index
+        run: pnpm run lint:docs
       - name: Prettier
         run: pnpm run format:check
