@@ -145,3 +145,31 @@ describe('knip', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------- dependency-cruiser (.dependency-cruiser.cjs)
+
+describe('dependency-cruiser', () => {
+  test('refuses app → server and sign-in → Tree imports (M5), and a baseline entry that no longer occurs', (t) => {
+    const dir = copyOfRepo(t);
+    change(
+      dir,
+      'app/src/api.js',
+      "import { hex } from './text.js';",
+      "import { hex } from './text.js';\nimport { systemClock } from '../../server/src/clock.js';",
+    );
+    // M5: the Clock sat in a Tree module that sign-in, storage and ops imported.
+    change(dir, 'server/src/auth/sessions.ts', "import type { Clock } from '../clock.js';", "import type { Clock } from '../tree/persons.js';");
+    // A known cycle fixed (db.ts → types.ts → records.ts → db.ts): its baseline entry is stale now.
+    change(dir, 'server/src/db/types.ts', "import type { Snapshot } from '../proposals/records.js';\n", '');
+    const run = spawnSync('pnpm', ['-s', 'depcruise'], { cwd: dir, encoding: 'utf8' });
+    assert.notEqual(run.status, 0);
+    assert.match(run.stdout, /error app-not-server: app\/src\/api\.js → server\/src\/clock\.ts/);
+    assert.match(run.stdout, /error support-not-tree: server\/src\/auth\/sessions\.ts → server\/src\/tree\/persons\.ts/);
+    assert.match(run.stdout, /1 stale known violations in the baseline/);
+    // The stale entry alone fails too, so the baseline only shrinks.
+    for (const file of ['app/src/api.js', 'server/src/auth/sessions.ts']) cpSync(join(ROOT, file), join(dir, file));
+    const stale = spawnSync('pnpm', ['-s', 'depcruise'], { cwd: dir, encoding: 'utf8' });
+    assert.notEqual(stale.status, 0);
+    assert.doesNotMatch(stale.stdout, /error (app-not-server|support-not-tree)/);
+  });
+});
