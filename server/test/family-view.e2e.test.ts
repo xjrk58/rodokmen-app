@@ -124,8 +124,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
     const greatGrandparents = parentsOf(own).flatMap(parentsOf).flatMap(parentsOf);
     expect(greatGrandparents.length).toBeGreaterThan(0);
     for (const id of [...greatGrandparents, L.proband]) expect(await page.locator(`[data-testid="tree-person"][data-person="${id}"]`).count(), id).toBe(1);
-    await page.waitForTimeout(700);
-    if (SHOTS) await page.screenshot({ path: `${SHOTS}/family-tree.png` });
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/family-tree.png`, animations: 'disabled' });
   }, 60_000);
 
   it('second marriage on the fixture: Jan Novák with both wives beside him, each with their own children below', async () => {
@@ -181,8 +180,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
     expect(await own.getByTestId('role').textContent()).toBe('Child');
     expect(await own.getByTestId('confidence').first().textContent()).toMatch(/^confidence: /);
     expect(await page.getByTestId('family-as-partner').count()).toBe(2);
-    await page.waitForTimeout(300);
-    if (SHOTS) await page.screenshot({ path: `${SHOTS}/person-page.png` });
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/person-page.png`, animations: 'disabled' });
     // The Citation opens with its transcription and its page image.
     await own.getByTestId('citation').first().getByRole('button').click();
     await own.getByTestId('citation-detail').locator('blockquote').waitFor();
@@ -302,8 +300,7 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       expect(await page.locator('.tree-lines .line.weak').count()).toBeGreaterThan(0);
       // Living people are marked too, wherever the tree shows one.
       for (const living of await page.locator('[data-testid="tree-person"].living').all()) expect(await living.textContent()).toMatch(/living/);
-      await page.waitForTimeout(700);
-      if (size === 'phone' && SHOTS) await page.screenshot({ path: `${SHOTS}/tree-relation.png` });
+      if (size === 'phone' && SHOTS) await page.screenshot({ path: `${SHOTS}/tree-relation.png`, animations: 'disabled' });
       // The Owner's person page with its Family root button, under the same policy.
       const owners = await phoneAs(owner, size);
       await owners.goto(`${origin}/#people/${chosen}`);

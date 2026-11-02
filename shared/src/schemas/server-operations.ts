@@ -17,9 +17,6 @@ export const SetFamilyRoot = z
   })
   .meta({ id: 'SetFamilyRoot', description: 'The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root' });
 
-/** Operations only the server writes. */
-export const SERVER_OPERATIONS: readonly OperationName[] = ['restoreRecord', 'setFamilyRoot'];
-
 /** Who submits the operations that checkOperations (proposals.ts) checks. */
 export interface CheckOptions {
   editor: boolean;

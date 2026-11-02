@@ -75,6 +75,27 @@ export async function openApp(page, view) {
 }
 
 /**
+ * The box of an element that must be on screen; fails the test when it has none.
+ * @param {import('@playwright/test').Locator} locator
+ */
+export async function boxOf(locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`${String(locator)} is not on screen`);
+  return box;
+}
+
+/**
+ * Saves a screenshot as <name>-<project>.png into the folder FAMILY_SCREENSHOTS names, when it
+ * is set (pictures for the docs and PRs). Animations are run to their end, not waited for.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} name
+ */
+export async function familyScreenshot(page, name) {
+  const folder = process.env.FAMILY_SCREENSHOTS;
+  if (folder) await page.screenshot({ path: `${folder}/${name}-${test.info().project.name}.png`, animations: 'disabled' });
+}
+
+/**
  * Opens the app centred on a point and taps the map centre, which is that point.
  * @param {import('@playwright/test').Page} page
  * @param {number} lat

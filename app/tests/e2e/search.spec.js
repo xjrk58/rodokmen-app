@@ -5,6 +5,15 @@ import { expect, openApp, test } from './fixtures.js';
 
 test.use({ locale: 'en-US' });
 
+/**
+ * The map view as [zoom, lat, lon], which the app mirrors in the URL as #map=zoom/lat/lon once any animation ends.
+ * @param {import('@playwright/test').Page} page
+ */
+async function mapView(page) {
+  const match = (await page.evaluate(() => location.hash)).match(/^#map=([\d.]+)\/([\d.]+)\/([\d.]+)$/);
+  return match ? match.slice(1).map(Number) : [];
+}
+
 test('"zdar" finds Žďár nad Sázavou', async ({ page }) => {
   await openApp(page);
   await page.locator('#search-input').fill('zdar');
@@ -71,13 +80,8 @@ test('choosing a result centres the map on it and opens its place sheet', async 
   await expect(page.locator('[data-testid="district"]')).toHaveText('District Blansko');
   await expect(page.locator('[data-testid="archive"]')).toHaveText('MZA Brno');
   await expect(page.locator('#search-results-box')).toBeHidden();
-  // The map view is mirrored in the URL as #map=zoom/lat/lon once any animation ends.
-  const view = async () => {
-    const match = (await page.evaluate(() => location.hash)).match(/^#map=([\d.]+)\/([\d.]+)\/([\d.]+)$/);
-    return match ? match.slice(1).map(Number) : [];
-  };
-  await expect.poll(async () => (await view())[0]).toBeGreaterThanOrEqual(12);
-  const [, lat, lon] = await view();
+  await expect.poll(async () => (await mapView(page))[0]).toBeGreaterThanOrEqual(12);
+  const [, lat, lon] = await mapView(page);
   expect(lat).toBeCloseTo(target.lat, 3);
   expect(lon).toBeCloseTo(target.lon, 3);
   await expect(page.locator('path.place-marker')).toHaveCount(1);

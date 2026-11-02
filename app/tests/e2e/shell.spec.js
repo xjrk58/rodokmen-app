@@ -1,6 +1,6 @@
 // Task 1.1 and map-view: the full-screen map of the Czech Republic, with
 // boundaries that draw without tiles.
-import { expect, openApp, test } from './fixtures.js';
+import { boxOf, expect, openApp, test } from './fixtures.js';
 
 test('opens on the whole Czech Republic with district and national borders', async ({ page }) => {
   /** @type {string[]} */
@@ -14,10 +14,8 @@ test('opens on the whole Czech Republic with district and national borders', asy
   await expect(page.locator('path.district-boundary')).toHaveCount(77);
   const border = page.locator('path.national-border');
   await expect(border).toHaveCount(1);
-  const box = await border.boundingBox();
+  const box = await boxOf(border);
   const viewport = /** @type {{ width: number, height: number }} */ (page.viewportSize());
-  expect(box).not.toBeNull();
-  if (!box) return;
   // The whole country is on screen and fills most of the width.
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.y).toBeGreaterThanOrEqual(0);
