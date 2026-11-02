@@ -12,6 +12,7 @@ context: |
   Scan reading sends scans to the Anthropic API only when the Owner switches it on (ADR 0011).
   For signed-in Members the app's home screen is the tree around a Focus Person; the map is a tab, and the home screen for visitors who aren't signed in.
   The private rodokmen-data repo is the Owner's earlier Vault: imported once (add-vault-import), then a read-only archive (ADR 0010).
+  The docs follow Diátaxis (docs/README.md is the index); every change updates them in the right section (AGENTS.md, "Docs").
   Pure rules are proved with LemmaScript and traced to their requirement with `//@ contract <capability>: <Requirement>` (ADR 0009, docs/verification.md).
 
 rules:
@@ -22,3 +23,4 @@ rules:
   tasks:
     - Every task names how it is verified.
     - "For each rule under \"Rules proved with LemmaScript\" in design.md, include a task to prove it with `lsc check`, its ensures stating the requirement's scenarios and a `//@ contract <capability>: <Requirement>` line per requirement; verify with `pnpm verify` and `pnpm verify:trace`, and by a deliberate bug that makes `lsc check` fail."
+    - "Include a docs task (AGENTS.md, \"Docs\"): name the Diátaxis section (tutorials, how-to, reference or explanation) and each page under docs/ it adds or changes, the docs/README.md index line for a new page, and README.md when what works changes; verify with `pnpm lint:docs`."
