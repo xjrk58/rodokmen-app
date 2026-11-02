@@ -2,6 +2,14 @@
 
 Tasks 1.3, 1.4 and 1.5 were built under #15 (add-family-view's Family roots, Family-root fallback and Possible relatives needed them), ahead of the rest of this change; the importer stays with #17.
 
+## 0. Names with language tags
+
+The Owner's decision on #64: a Name carries a BCP 47 language tag instead of one type per language. Built before the importer, which tags the Vault's name variants.
+
+- [ ] 0.1 Plan the requirement "Names carry a language tag" in `specs/tree-model/spec.md`; verify `openspec validate add-vault-import --strict`
+- [ ] 0.2 Migrate the Names: `latin` becomes type `other` with `la`, `german` type `other` with `de`, every other Name keeps its type without a tag; the stored Proposal operations follow, and an undo of an older Proposal restores the new form; verify the names-recorded-before scenario with a migration test
+- [ ] 0.3 Carry the tag through the Zod schemas, the Proposal operations and their sentences, the app's Name form and person page, search, the MCP tools, the OpenAPI description and the fixture Tree; verify the Latin-form, Polish-form, language-not-known and not-a-tag scenarios
+
 ## 1. Model additions
 
 - [ ] 1.1 Add research notes to every Tree record and a `setNotes` operation; verify the open-question scenario and that notes appear in history
@@ -13,6 +21,7 @@ Tasks 1.3, 1.4 and 1.5 were built under #15 (add-family-view's Family roots, Fam
 - [x] 1.5 Prove the relation rule with `lsc check` and add its `//@ contract tree-model: Relation to the family is computed`; verify `lsc check` passes and `docs/verification.md` lists it
   - Note: built under #15. `relationLevels` carries the contracts "Relation to the family is computed" and "Relation follows the evidence", with the scenarios as ensures; the full search is proved, including termination, closure and a certificate of how each Person was reached, plus the lemmas `ReachedIsLeast` and `EvidenceOnlyAdds` in `shared/proofs/src/relation.dfy`. `pnpm verify` passes and `docs/verification.md` lists it, with its exact scope (what is and is not proved). Mutations checked: treating low confidence as confirming fails `isConfirming` and the weak-link ensures of `relationLevels`; letting the Relatives' search follow weak links fails its certificate.
 - [ ] 1.6 Add PDF documents on Sources (upload kind, 50 MB limit, expiring links, never exported); verify the family-chronicle and not-a-PDF scenarios
+- [ ] 1.7 Add Proposal operations for Places with their names, Houses with their numbers, Parishes, Estates and the periods that link them to Places, so that the importer can submit them first, as the vault-import spec asks; verify a Place Proposal is accepted, shown and undone like any other
 
 ## 2. Batches in review
 

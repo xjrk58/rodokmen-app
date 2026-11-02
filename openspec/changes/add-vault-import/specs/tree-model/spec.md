@@ -2,12 +2,39 @@
 
 ## ADDED Requirements
 
+### Requirement: Names carry a language tag
+Each Name SHALL carry its type (birth, married, nickname or other) and, as a separate field, the language it is written in as a BCP 47 tag such as `cs`, `la`, `de` or `pl`, or no tag when the language is not known. There SHALL be no type per language: this replaces the Latin form and German form types of "Persons have Names" (`add-tree-backend`).
+
+#### Scenario: Latin form at baptism
+- **WHEN** a child with the primary Name "Jan Novák" was baptised as "Joannes Nowak"
+- **THEN** the Latin spelling is kept as another Name with the tag `la`, the primary Name has the tag `cs`, and a search for "joannes" finds him
+
+#### Scenario: Polish form without a new type
+- **WHEN** a Member records the Polish spelling "Jan Nowak" of a Name
+- **THEN** it is a Name of its type with the tag `pl`, and no new type is needed
+
+#### Scenario: Language not known
+- **WHEN** a Name is recorded and its language is not clear from the record
+- **THEN** it is kept without a language tag
+
+#### Scenario: Names recorded before the tags
+- **WHEN** the Tree holds Names of the types "Latin form" and "German form" from before this change
+- **THEN** they become Names of the type "other" with the tag `la` or `de`, their Proposals and history read the same way, and every other Name keeps its type without a tag
+
+#### Scenario: Not a language tag
+- **WHEN** a Name is proposed with the language "Latin" instead of a tag
+- **THEN** the Proposal is refused, naming the language field
+
 ### Requirement: Research notes on records
-Every Person, Family, Event, Place, House, Parish, Estate and Source SHALL be able to hold research notes in Markdown, changed through Proposals like any other field.
+Every Person, Family, Event, Place, House, Parish, Estate and Source SHALL be able to hold research notes in Markdown, changed through Proposals like any other field. Research notes and Labels state no fact about the family, so a Proposal that changes only them SHALL need no Citation.
 
 #### Scenario: Open question kept
 - **WHEN** a Member records "baptism not found 1801–1803, check the neighbouring parish" on a Person
 - **THEN** the note is shown on the person page and appears in the Person's history
+
+#### Scenario: A note needs no evidence
+- **WHEN** a Contributor proposes only a research note and a Label for a Person
+- **THEN** the Proposal is accepted for review without a Citation
 
 ### Requirement: Labels on Persons
 A Person SHALL be able to carry any number of Labels. Labels SHALL be matched ignoring case and diacritics.

@@ -17,6 +17,9 @@ The Vault follows the draft spec's vault format: YAML frontmatter, `[[id]]` link
 
 ## Decisions
 
+### Names carry a language tag (decided on #64)
+A Name has a type (birth, married, nickname, other) and a BCP 47 language tag (`cs`, `la`, `de`, `pl` …) or none, in the column `name.language`. The per-language types go: migration `0010_name_languages` turns `latin` into type `other` with `la` and `german` into `other` with `de`, and rewrites the stored Proposal operations the same way, so pending and decided Proposals still read. The log stays append-only: an undo that restores an older snapshot converts its legacy type as it writes it back. Tags are checked against the BCP 47 shape (language, optional script, region and variants, in their canonical case), not against a list, so `add-country-packs` needs no new type for Polish or Russian. Scan reading (`add-scan-reading`) maps its reading languages to tags once this lands.
+
 ### Importer is an API client, not a database script
 `server/src/vault-import/` holds a reader, a mapper and a submitter. It runs as `node dist/cli.js vault-import --vault <path> [--dry-run]` with `RODOKMEN_URL` and an Agent token. Everything goes through the same validation, evidence rule, log and review as any Agent Proposal. A direct database import was rejected (Q45): it would bypass review and provenance.
 
@@ -30,7 +33,7 @@ The Vault follows the draft spec's vault format: YAML frontmatter, `[[id]]` link
 | `registers/<id>` (archive, signature, kind, years, url) | Source (register book) with archive and URL |
 | `sources/<id>` (register, page, url, scans, body) | Citation of that Source (page, transcription, images) |
 | `sources/<id>` with `kind` family-document, family-memory, gravestone, web | Source of that kind (Family account for memory and documents) plus its Citation |
-| `people/<id>` name, variants, sex | Person, primary Name, one Name per variant (type from the spelling: Latin, German or other) |
+| `people/<id>` name, variants, sex | Person, primary Name (tag `cs`), one Name per variant of type other, tagged `la` or `de` from the spelling or left untagged |
 | birth, baptism, death, burial, marriages, residences | Events with Roles (child, father and mother from `father`/`mother`; partners from `marriages`) |
 | `father` / `mother` | child link to a Family, the birth Family of that pair, created once per pair |
 | `confidence` | confidence of the Citations that Person's facts cite (lowest wins when Persons disagree) |
