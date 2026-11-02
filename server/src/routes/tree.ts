@@ -1,6 +1,7 @@
 import {
   ApiError,
   CitationDetail,
+  DocumentLinkQuery,
   EstateDetail,
   EventDetail,
   FamilyDetail,
@@ -240,6 +241,31 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
       response: { 200: CitationDetail, ...detail },
     },
     handler: async (req) => found(await getCitation(deps, req.params.id), 'Citation'),
+  });
+
+  app.get('/api/documents/:id', {
+    schema: {
+      tags: ['Sources'],
+      summary:
+        "Redirects to an expiring link to a Source's PDF document, or with original=true the DOC it was converted from (Members and Agents only; never in an Export)",
+      params: IdParams,
+      querystring: DocumentLinkQuery,
+      response: { 302: z.null().describe('Location: presigned link, valid 5 minutes'), ...detail },
+    },
+    handler: async (req, reply) => {
+      const doc = found(
+        (await deps.db
+          .selectFrom('source_document')
+          .select(['storage_key', 'content_type', 'original_key', 'original_content_type'])
+          .where('id', '=', req.params.id)
+          .executeTakeFirst()) ?? null,
+        'document',
+      );
+      const original = req.query.original === 'true';
+      if (original && (!doc.original_key || !doc.original_content_type)) throw new ApiProblem(404, 'not_found', 'This document has no original file.');
+      const link = original ? await deps.images.link(doc.original_key!, doc.original_content_type!) : await deps.images.link(doc.storage_key, doc.content_type);
+      return reply.header('cache-control', 'no-store').redirect(link.url, 302);
+    },
   });
 
   app.get('/api/images/:id', {

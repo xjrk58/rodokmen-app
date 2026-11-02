@@ -77,6 +77,7 @@ export async function loadFixture(db: Kysely<Database>, model: FixtureModel = ge
             given: n.given,
             surname: n.surname,
             type: n.type,
+            language: n.language,
             as_found: n.asFound,
             is_primary: n.primary,
             sort_order: n.primary ? 0 : start + i + 1,

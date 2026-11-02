@@ -143,6 +143,7 @@ export function member(role, o = {}) {
       changeRoles: role === 'owner',
       disableMembers: role === 'owner',
       markFamilyRoots: role === 'owner',
+      acceptBatch: role === 'owner',
     },
     passkeyCount: 1,
     person: o.person ? withRelations(summary(o.person), o.roots ?? []) : null,
@@ -247,6 +248,7 @@ function citation(id) {
       familyAccount: null,
       register: null,
     },
+    documents: [],
     events: [],
     names: [],
     images: [

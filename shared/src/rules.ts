@@ -46,13 +46,14 @@ export function mayDecide(role: string): boolean {
  * - `review`: see the review queue; `accept`, `reject`, `merge`, `undo`; `directEdit`: change the Tree at once;
  * - `ownAccount`: your own sessions, passkeys and email settings;
  * - `manageAccounts`: Members, invitations, roles, Agents and their tokens;
- * - `markFamilyRoots`: mark and unmark Family roots (tree-model spec, "Family roots").
+ * - `markFamilyRoots`: mark and unmark Family roots (tree-model spec, "Family roots");
+ * - `acceptBatch`: accept a whole Import batch at once (review spec, "Accept a whole Import batch").
  *
  * Agents read, propose and write Research leads, and nothing else: no change to the Tree but
  * through a Proposal. Members of every role read, propose, write leads, decide on suggested
  * leads and manage their own account; Editors and the Owner also decide on Proposals and edit
- * directly; only the Owner manages accounts and marks Family roots. An unknown role or action
- * is refused.
+ * directly; only the Owner manages accounts, marks Family roots and accepts a whole Import
+ * batch (an Editor accepts its Proposals one by one). An unknown role or action is refused.
  */
 export function mayDo(role: string, action: string): boolean {
   //@ verify
@@ -60,6 +61,7 @@ export function mayDo(role: string, action: string): boolean {
   //@ contract agent-access: Agents write Research leads
   //@ contract research-leads: Leads need no review
   //@ contract tree-model: Family roots
+  //@ contract review: Accept a whole Import batch
   // An Agent token allows reading the Tree, submitting Proposals, and writing Research leads and their search records ...
   //@ ensures role === 'agent' && action === 'read' ==> \result
   //@ ensures role === 'agent' && action === 'propose' ==> \result
@@ -77,6 +79,7 @@ export function mayDo(role: string, action: string): boolean {
   //@ ensures role === 'agent' && action === 'ownAccount' ==> !\result
   //@ ensures role === 'agent' && action === 'manageAccounts' ==> !\result
   //@ ensures role === 'agent' && action === 'markFamilyRoots' ==> !\result
+  //@ ensures role === 'agent' && action === 'acceptBatch' ==> !\result
   // A suggested lead waits until a Member accepts or dismisses it; an Agent does neither.
   //@ ensures role === 'agent' && action === 'decideSuggestions' ==> !\result
   // An Agent is never allowed what a Contributor is refused.
@@ -91,6 +94,9 @@ export function mayDo(role: string, action: string): boolean {
   //@ ensures action === 'manageAccounts' ==> \result === (role === 'owner')
   // Only the Owner marks Family roots (tree-model spec, "Family roots").
   //@ ensures action === 'markFamilyRoots' ==> \result === (role === 'owner')
+  // Scenario "Editor cannot accept a batch": only the Owner accepts a whole Import batch; an Editor accepts its Proposals one by one.
+  //@ ensures action === 'acceptBatch' ==> \result === (role === 'owner')
+  //@ ensures role === 'editor' && action === 'acceptBatch' ==> !\result && mayDo(role, 'accept')
   //@ ensures \result ==> role === 'agent' || role === 'contributor' || role === 'editor' || role === 'owner'
   if (role === 'agent') return action === 'read' || action === 'propose' || action === 'writeLeads';
   const member = role === 'contributor' || role === 'editor' || role === 'owner';
@@ -98,7 +104,7 @@ export function mayDo(role: string, action: string): boolean {
   if (action === 'review' || action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' || action === 'directEdit') {
     return mayDecide(role);
   }
-  if (action === 'manageAccounts' || action === 'markFamilyRoots') return role === 'owner';
+  if (action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch') return role === 'owner';
   return false;
 }
 
@@ -153,27 +159,35 @@ export function isCitationOperation(op: string): boolean {
   return op === 'createCitation' || op === 'attachCitation';
 }
 
-/** Operations that change no facts and so need no evidence: merges, the server's undo steps, and marking Family roots. */
+/**
+ * Operations that change no facts and so need no evidence: merges, the server's undo steps,
+ * marking Family roots, and research notes and Labels, which state no fact about the family
+ * (tree-model spec, "Research notes on records").
+ */
 export function isFactFreeOperation(op: string): boolean {
   //@ verify
-  return op === 'mergePersons' || op === 'restoreRecord' || op === 'setFamilyRoot';
+  return op === 'mergePersons' || op === 'restoreRecord' || op === 'setFamilyRoot' || op === 'setNotes' || op === 'addLabel' || op === 'removeLabel';
 }
 
 /**
  * The evidence rule (proposals spec, "Evidence is required"): a Proposal includes at least one
  * Citation, created or attached. A Citation of a Family account Source is a Citation like any
- * other, so it counts. Proposals made only of merges and undo steps change no facts and are
- * exempt. An empty Proposal has no evidence.
+ * other, so it counts. Proposals made only of merges, undo steps, Family roots, research notes
+ * and Labels change no facts and are exempt (tree-model spec, "Research notes on records"). An
+ * empty Proposal has no evidence.
  */
 export function satisfiesEvidenceRule(ops: readonly string[]): boolean {
   //@ verify
   //@ contract proposals: Evidence is required
+  //@ contract tree-model: Research notes on records
   // A Citation, created or attached, is evidence (one of a Family account Source like any other).
   //@ ensures exists(i: nat, i < ops.length && isCitationOperation(ops[i])) ==> \result
   // Scenario "Missing evidence": a Proposal that changes facts and has no Citation is refused.
   //@ ensures forall(i: nat, i < ops.length ==> !isCitationOperation(ops[i])) && exists(i: nat, i < ops.length && !isFactFreeOperation(ops[i])) ==> !\result
   // Merges and undo steps alone change no facts; an empty Proposal has no evidence.
   //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> isFactFreeOperation(ops[i])) ==> \result
+  // Scenario "A note needs no evidence": research notes and Labels alone need no Citation.
+  //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i] === 'setNotes' || ops[i] === 'addLabel' || ops[i] === 'removeLabel') ==> \result
   //@ ensures ops.length === 0 ==> !\result
   if (ops.length === 0) return false;
   let factFree = true;

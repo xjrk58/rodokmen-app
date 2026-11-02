@@ -2,16 +2,12 @@
  * Readable sentences for Proposal operations, in Czech and English, as shown in review and
  * history ("adds godparent Anna Králová to the baptism (1801-03-12)").
  */
-import type { UiLanguage } from './common.js';
-import type { Operation, SettableRecord } from './proposals.js';
+import { describePlaceOrNote } from './place-summaries.js';
+import type { Operation } from './proposals.js';
+import { quote, RECORD_LABELS, type Op, type Say, type SummaryContext, type SummaryLanguage } from './summary-parts.js';
 import type { ChildLinkType, Confidence, EventType, ImageKind, NameType, RoleType } from './tree.js';
 
-export type SummaryLanguage = UiLanguage;
-
-/** Labels of the records operations refer to, such as a Person's name or "the baptism (1801-03-12)". */
-export interface SummaryContext {
-  label(ref: string, language: SummaryLanguage): string;
-}
+export type { SummaryContext, SummaryLanguage } from './summary-parts.js';
 
 export const EVENT_TYPE_LABELS: Record<SummaryLanguage, Record<EventType, string>> = {
   en: {
@@ -64,9 +60,25 @@ export const ROLE_LABELS: Record<SummaryLanguage, Record<RoleType, string>> = {
 };
 
 const NAME_TYPE_LABELS: Record<SummaryLanguage, Record<NameType, string>> = {
-  en: { birth: 'birth name', married: 'married name', latin: 'Latin form', german: 'German form', nickname: 'nickname', other: 'other form' },
-  cs: { birth: 'rodné jméno', married: 'jméno po sňatku', latin: 'latinská podoba', german: 'německá podoba', nickname: 'přezdívka', other: 'jiná podoba' },
+  en: { birth: 'birth name', married: 'married name', nickname: 'nickname', other: 'other form' },
+  cs: { birth: 'rodné jméno', married: 'jméno po sňatku', nickname: 'přezdívka', other: 'jiná podoba' },
 };
+
+/** Names of the languages Names are most often written in; any other tag is shown as it is. */
+const LANGUAGE_NAMES: Record<SummaryLanguage, Record<string, string>> = {
+  en: { cs: 'Czech', la: 'Latin', de: 'German', pl: 'Polish', sk: 'Slovak', ru: 'Russian', uk: 'Ukrainian', hu: 'Hungarian', en: 'English' },
+  cs: { cs: 'česky', la: 'latinsky', de: 'německy', pl: 'polsky', sk: 'slovensky', ru: 'rusky', uk: 'ukrajinsky', hu: 'maďarsky', en: 'anglicky' },
+};
+
+/** The language of a Name in words ("Latin", "latinsky"), or its tag when it has no common name. */
+export function languageName(tag: string, language: SummaryLanguage): string {
+  const names = LANGUAGE_NAMES[language];
+  return Object.hasOwn(names, tag) ? names[tag]! : tag;
+}
+
+/** A Name's type and language, as "other form, Latin". */
+const nameKind = (n: { type: NameType; language: string | null }, language: SummaryLanguage) =>
+  n.language ? `${NAME_TYPE_LABELS[language][n.type]}, ${languageName(n.language, language)}` : NAME_TYPE_LABELS[language][n.type];
 
 const LINK_TYPE_LABELS: Record<SummaryLanguage, Record<ChildLinkType, string>> = {
   en: { birth: 'birth child', adoptive: 'adoptive child', foster: 'foster child', step: 'stepchild' },
@@ -76,11 +88,6 @@ const LINK_TYPE_LABELS: Record<SummaryLanguage, Record<ChildLinkType, string>> =
 const CONFIDENCE_LABELS: Record<SummaryLanguage, Record<Confidence, string>> = {
   en: { very_low: 'very low', low: 'low', normal: 'normal', high: 'high', very_high: 'very high' },
   cs: { very_low: 'velmi nízká', low: 'nízká', normal: 'běžná', high: 'vysoká', very_high: 'velmi vysoká' },
-};
-
-const RECORD_LABELS: Record<SummaryLanguage, Record<SettableRecord, string>> = {
-  en: { person: 'Person', name: 'Name', event: 'Event', role: 'Role', childLink: 'child link', source: 'Source', citation: 'Citation' },
-  cs: { person: 'osoba', name: 'jméno', event: 'událost', role: 'role', childLink: 'vazba dítěte', source: 'pramen', citation: 'citace' },
 };
 
 const KIND_LABELS: Record<SummaryLanguage, Record<ImageKind, string>> = {
@@ -96,6 +103,7 @@ export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
     surname: 'surname',
     type: 'type',
     asFound: 'spelling as found',
+    language: 'language',
     typeDetail: 'kind',
     date: 'date',
     placeId: 'Place',
@@ -113,6 +121,11 @@ export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
     readOn: 'read on',
     confidence: 'confidence',
     note: 'note',
+    notes: 'research notes',
+    municipality: 'Municipality',
+    name: 'name',
+    seatPlaceId: 'seat',
+    register: 'register coverage',
   },
   cs: {
     sex: 'pohlaví',
@@ -120,6 +133,7 @@ export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
     surname: 'příjmení',
     type: 'druh',
     asFound: 'zápis v prameni',
+    language: 'jazyk',
     typeDetail: 'upřesnění',
     date: 'datum',
     placeId: 'místo',
@@ -137,10 +151,14 @@ export const FIELD_LABELS: Record<SummaryLanguage, Record<string, string>> = {
     readOn: 'přečteno',
     confidence: 'věrohodnost',
     note: 'poznámka',
+    notes: 'badatelské poznámky',
+    municipality: 'obec',
+    name: 'název',
+    seatPlaceId: 'sídlo',
+    register: 'rozsah matriky',
   },
 };
 
-const quote = (s: string, language: SummaryLanguage) => (language === 'cs' ? `„${s}“` : `“${s}”`);
 const nameOf = (n: { given: string; surname: string }) => `${n.given} ${n.surname}`.trim();
 
 function fieldValue(value: unknown, language: SummaryLanguage, ctx: SummaryContext): string {
@@ -150,22 +168,13 @@ function fieldValue(value: unknown, language: SummaryLanguage, ctx: SummaryConte
   return quote(shown, language);
 }
 
-type Op<K extends Operation['op']> = Extract<Operation, { op: K }>;
-/** What every sentence needs: the label of a referenced record, and the language. */
-interface Say {
-  L: (ref: string) => string;
-  cs: boolean;
-  language: SummaryLanguage;
-  ctx: SummaryContext;
-}
-
 const typeOf = (op: { type: EventType; typeDetail: string | null }, language: SummaryLanguage) =>
   op.type === 'other' && op.typeDetail ? op.typeDetail : EVENT_TYPE_LABELS[language][op.type];
 
 function addName(op: Op<'addName'>, { L, cs, language }: Say): string {
   return cs
-    ? `přidává jméno ${quote(op.asFound, language)} (${NAME_TYPE_LABELS.cs[op.type]}) osobě: ${L(op.personId)}`
-    : `adds the Name ${quote(op.asFound, language)} (${NAME_TYPE_LABELS.en[op.type]}) to ${L(op.personId)}`;
+    ? `přidává jméno ${quote(op.asFound, language)} (${nameKind(op, 'cs')}) osobě: ${L(op.personId)}`
+    : `adds the Name ${quote(op.asFound, language)} (${nameKind(op, 'en')}) to ${L(op.personId)}`;
 }
 
 function addRole(op: Op<'addRole'>, { L, cs, language }: Say): string {
@@ -279,6 +288,8 @@ export function describeOperation(op: Operation, ctx: SummaryContext, language: 
       return restoreRecord(op, say);
     case 'setFamilyRoot':
       return setFamilyRoot(op, say);
+    default:
+      return describePlaceOrNote(op, say);
   }
 }
 
@@ -301,6 +312,15 @@ function tempLabel(op: Operation, language: SummaryLanguage, ctx: SummaryContext
       return quote(op.title, language);
     case 'createCitation':
       return op.page ? `${ctx.label(op.sourceId, language)}, ${language === 'cs' ? 's.' : 'p.'} ${op.page}` : ctx.label(op.sourceId, language);
+    case 'createPlace':
+      return op.name.name;
+    case 'createHouse': {
+      const numbers = op.numbers.map((n) => n.number).join('/');
+      return `${ctx.label(op.placeId, language)} ${language === 'cs' ? 'čp.' : 'No.'} ${numbers || '?'}`;
+    }
+    case 'createParish':
+    case 'createEstate':
+      return op.name;
     default:
       return null;
   }

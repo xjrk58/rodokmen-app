@@ -114,7 +114,16 @@ describe('the gap finder', () => {
       { op: 'createPerson', tempId: 'tmp:p', sex: 'male', name: { given: 'Matouš', surname: 'Invented', type: 'birth', asFound: 'Matthaeus Invented' } },
       { op: 'createEvent', tempId: 'tmp:b', type: 'birth', date: '1801~', placeId: L.kamennaLhota },
       { op: 'addRole', eventId: 'tmp:b', personId: 'tmp:p', role: 'child' },
-      { op: 'addName', tempId: 'tmp:n', personId: 'tmp:p', given: 'Matthias', surname: 'Invented', type: 'latin', asFound: 'Matthias Invented' },
+      {
+        op: 'addName',
+        tempId: 'tmp:n',
+        personId: 'tmp:p',
+        given: 'Matthias',
+        surname: 'Invented',
+        type: 'other',
+        language: 'la',
+        asFound: 'Matthias Invented',
+      },
       ...evidence('m', ids.births!),
       { op: 'attachCitation', citationId: 'tmp:cm', nameId: 'tmp:n' },
     ]);
@@ -154,7 +163,16 @@ describe('the gap finder', () => {
     expect((await suggestions(`?personId=${ids.matous}`)).map((s) => s.id)).not.toContain(ours!.id);
     // An accepted Proposal that touches him, then the nightly run: still not back.
     await direct([
-      { op: 'addName', personId: ids.matous!, baseVersion: 1, given: 'Matthäus', surname: 'Invented', type: 'german', asFound: 'Matthäus Invented' },
+      {
+        op: 'addName',
+        personId: ids.matous!,
+        baseVersion: 1,
+        given: 'Matthäus',
+        surname: 'Invented',
+        type: 'other',
+        language: 'de',
+        asFound: 'Matthäus Invented',
+      },
       ...evidence('m2', ids.births!),
     ]);
     const deps: JobDeps = {

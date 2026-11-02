@@ -25,6 +25,7 @@ this page with `node scripts/verification-trace.mjs`.
 | research-leads: Gap finder suggests leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `suggestGaps` | shared/src/gaps.ts | nothing beyond the trusted base |
 | research-leads: Leads need no review | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | research-leads: What was searched is recorded | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayHaveStatus` | shared/src/leads.ts | nothing beyond the trusted base |
+| review: Accept a whole Import batch | openspec/changes/add-vault-import/specs/review/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Decide on the whole Proposal | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
@@ -39,6 +40,7 @@ this page with `node scripts/verification-trace.mjs`.
 | tree-model: Living people are computed | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `isLivingOn` | shared/src/living.ts | see below |
 | tree-model: Relation follows the evidence | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
 | tree-model: Relation to the family is computed | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
+| tree-model: Research notes on records | openspec/changes/add-vault-import/specs/tree-model/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 
 ## Assumed, not proved
 

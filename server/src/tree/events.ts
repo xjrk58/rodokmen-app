@@ -32,8 +32,10 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
   const citations = await citationSummariesFor(db, 'event', [id]);
   const placeId = summary.place?.id ?? null;
   const dated = summary.date !== null;
+  const { notes } = await db.selectFrom('event').select('notes').where('id', '=', id).executeTakeFirstOrThrow();
   return {
     ...summary,
+    notes,
     roles: roles.map((r) => ({ id: r.id, version: r.version, role: r.role, roleDetail: r.role_detail, person: persons.get(r.person_id)! })),
     citations: citations.get(id) ?? [],
     parishes: placeId && dated ? await parishesAt(db, placeId, summary.earliest, summary.latest) : [],
@@ -42,7 +44,7 @@ export async function getEvent({ db, clock }: TreeDeps, id: string): Promise<Eve
 }
 
 export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<FamilyDetail | null> {
-  const f = await db.selectFrom('family').select(['id', 'version', 'partner1_id', 'partner2_id']).where('id', '=', id).executeTakeFirst();
+  const f = await db.selectFrom('family').select(['id', 'version', 'partner1_id', 'partner2_id', 'notes']).where('id', '=', id).executeTakeFirst();
   if (!f) return null;
   const children = await db
     .selectFrom('family_child')
@@ -87,6 +89,7 @@ export async function getFamily({ db, clock }: TreeDeps, id: string): Promise<Fa
     ],
     children: children.map((c) => ({ linkId: c.id, linkVersion: c.version, linkType: c.link_type, person: persons.get(c.child_id)! })),
     events,
+    notes: f.notes,
   };
 }
 

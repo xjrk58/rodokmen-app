@@ -10,7 +10,7 @@
 /** @typedef {import('./types.js').Confidence} Confidence */
 /** @typedef {import('./types.js').RoleType} RoleType */
 
-export const KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction']);
+export const KINDS = /** @type {const} */ (['baptism', 'marriage', 'death', 'name', 'correction', 'notes']);
 /** @typedef {typeof KINDS[number]} ProposeKind */
 export const OPERATIONS_VERSION = 1;
 
@@ -47,13 +47,24 @@ export const OPERATIONS_VERSION = 1;
  */
 /** @typedef {FormBase & EventFields & { partner1: PersonInput | null, partner2: PersonInput | null, witnesses: (PersonInput | null)[] }} MarriageForm */
 /** @typedef {FormBase & EventFields & { eventType: 'death' | 'burial', person: PersonInput | null }} DeathForm */
-/** @typedef {FormBase & { person: PersonInput | null, given: string, surname: string, type: NameType, asFound: string }} NameForm */
+/**
+ * A new Name: its type and, apart, the language it is written in (a BCP 47 tag, or '' when not known).
+ * Drafts written before Names carried a language tag may still hold the type 'latin' or 'german'.
+ * @typedef {FormBase & { person: PersonInput | null, given: string, surname: string, type: NameType | 'latin' | 'german', language?: string, asFound: string }} NameForm
+ */
 /**
  * The Name or Event a correction changes, with its values when it was picked.
  * @typedef {{ record: 'name' | 'event', id: string, version: number, label: string, current: Record<string, string> }} CorrectionTarget
  */
 /** @typedef {FormBase & { person: PersonInput | null, target: CorrectionTarget | null, set: Record<string, string> }} CorrectionForm */
-/** @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm }} FormByKind */
+/**
+ * Research notes and Labels of a Person (tree-model spec, "Research notes on records", "Labels on
+ * Persons"). `base` is the Person as loaded when picked: its version, notes and Labels, so that
+ * only what the Member changed is proposed.
+ * @typedef {FormBase & { person: PersonInput | null, notes: string, labels: string[],
+ *   base: { version: number, notes: string, labels: string[] } | null }} NotesForm
+ */
+/** @typedef {{ baptism: BaptismForm, marriage: MarriageForm, death: DeathForm, name: NameForm, correction: CorrectionForm, notes: NotesForm }} FormByKind */
 /**
  * A kind of finding with its form, as a Draft holds them.
  * @typedef {{ [K in ProposeKind]: { kind: K, form: FormByKind[K] } }[ProposeKind]} KindForm
@@ -62,6 +73,7 @@ export const OPERATIONS_VERSION = 1;
 /**
  * @typedef {object} BuildContext
  * @property {string[]} uploadIds uploaded photos of the Draft
+ * @property {{ uploadId: string, title: string }[]} [documents] uploaded PDF documents of the Draft, for its Source
  * @property {{ id: string, version: number } | null} [family] the existing Family of both parents (or partners)
  */
 
@@ -71,7 +83,9 @@ export const NEW_SOURCE_TYPES = ['parish_register', 'census', 'land_book', 'othe
 /** @type {readonly Confidence[]} */
 export const CONFIDENCES = ['very_low', 'low', 'normal', 'high', 'very_high'];
 /** @type {readonly NameType[]} */
-export const NAME_TYPES = ['latin', 'german', 'married', 'nickname', 'birth', 'other'];
+export const NAME_TYPES = ['other', 'birth', 'married', 'nickname'];
+/** Languages offered for a Name, as BCP 47 tags; '' is "not known" (tree-model spec, "Names carry a language tag"). */
+export const NAME_LANGUAGES = ['la', 'de', 'cs', 'pl', 'sk', 'ru', ''];
 /** @type {readonly Sex[]} */
 export const SEXES = ['unknown', 'female', 'male'];
 
@@ -152,10 +166,32 @@ export function emptyForm(kind) {
     case 'death':
       return { kind, form: { ...base, eventType: 'death', date: '', place: null, person: null } };
     case 'name':
-      return { kind, form: { ...base, person: null, given: '', surname: '', type: 'latin', asFound: '' } };
+      return { kind, form: { ...base, person: null, given: '', surname: '', type: 'other', language: 'la', asFound: '' } };
     case 'correction':
       return { kind, form: { ...base, person: null, target: null, set: {} } };
+    case 'notes':
+      return { kind, form: { ...base, person: null, notes: '', labels: [], base: null } };
   }
+}
+
+/** A Label as the server compares it: ignoring case, diacritics and outer spaces. @param {string} label */
+export const foldLabel = (label) => label.trim().normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/**
+ * The Labels added and taken off, compared ignoring case and diacritics.
+ * @param {NotesForm} form
+ */
+export function labelChanges(form) {
+  const before = form.base?.labels ?? [];
+  const has = (/** @type {string[]} */ list, /** @type {string} */ l) => list.some((x) => foldLabel(x) === foldLabel(l));
+  const after = form.labels.map(clean).filter((l, i, all) => l !== '' && all.findIndex((x) => foldLabel(x) === foldLabel(l)) === i);
+  return { added: after.filter((l) => !has(before, l)), removed: before.filter((l) => !has(after, l)) };
+}
+
+/** Whether a notes form changes anything. @param {NotesForm} form */
+function notesChanged(form) {
+  const { added, removed } = labelChanges(form);
+  return clean(form.notes) !== clean(form.base?.notes) || added.length > 0 || removed.length > 0;
 }
 
 /**
@@ -174,6 +210,16 @@ export function personLabel(p) {
 }
 
 /**
+ * What a correction is missing: a record and a change, and never an empty spelling as found.
+ * @param {CorrectionForm} form
+ * @returns {string[]}
+ */
+function correctionProblems({ target, set }) {
+  if (!target || Object.keys(set ?? {}).length === 0) return ['propose.needCorrection'];
+  return target.record === 'name' && set.asFound !== undefined && clean(set.asFound) === '' ? ['propose.needAsFound'] : [];
+}
+
+/**
  * What a form of its kind is missing, as i18n keys.
  * @param {KindForm} draft
  * @returns {string[]}
@@ -186,15 +232,12 @@ function kindProblems(draft) {
       return isPerson(draft.form.partner1) && isPerson(draft.form.partner2) ? [] : ['propose.needPartners'];
     case 'death':
       return isPerson(draft.form.person) ? [] : ['propose.needPerson'];
-    case 'name': {
-      const f = draft.form;
-      return f.person?.mode === 'existing' && (clean(f.given) !== '' || clean(f.surname) !== '') ? [] : ['propose.needName'];
-    }
-    case 'correction': {
-      const { target, set } = draft.form;
-      if (!target || Object.keys(set ?? {}).length === 0) return ['propose.needCorrection'];
-      return target.record === 'name' && set.asFound !== undefined && clean(set.asFound) === '' ? ['propose.needAsFound'] : [];
-    }
+    case 'name':
+      return draft.form.person?.mode === 'existing' && (clean(draft.form.given) !== '' || clean(draft.form.surname) !== '') ? [] : ['propose.needName'];
+    case 'correction':
+      return correctionProblems(draft.form);
+    case 'notes':
+      return draft.form.person?.mode === 'existing' && draft.form.base && notesChanged(draft.form) ? [] : ['propose.needNotes'];
   }
 }
 
@@ -211,6 +254,8 @@ function hasSource(c) {
  * @returns {string[]}
  */
 export function formProblems(draft) {
+  // Notes and Labels state no fact: they need no Citation (tree-model spec, "Research notes on records").
+  if (draft.kind === 'notes') return kindProblems(draft);
   const c = draft.form.citation ?? { sourceMode: 'new' };
   return [...kindProblems(draft), ...(hasSource(c) && clean(c.transcription) !== '' ? [] : ['propose.needEvidence'])];
 }
@@ -298,8 +343,9 @@ class Builder {
    * The Citation, with its Source when new, and the Draft's photos. Returns the Citation's id.
    * @param {CitationForm} c
    * @param {string[]} uploadIds
+   * @param {{ uploadId: string, title: string }[]} [documents] PDF documents for the Source
    */
-  citation(c, uploadIds) {
+  citation(c, uploadIds, documents = []) {
     const sourceId = this.source(c);
     const citationId = this.temp('citation');
     this.ops.push({
@@ -314,6 +360,7 @@ class Builder {
     const type = sourceTypeOf(c);
     const kind = type && PAGED_SOURCES.has(type) ? 'page' : 'photo';
     for (const uploadId of uploadIds) this.ops.push({ op: 'addImage', uploadId, kind, citationId });
+    for (const d of documents) this.ops.push({ op: 'addDocument', sourceId, uploadId: d.uploadId, title: d.title });
     return citationId;
   }
 
@@ -325,7 +372,7 @@ class Builder {
    * @param {number} [baseVersion] of the target, when it is in the Tree already
    */
   cite(c, ctx, target, baseVersion) {
-    const citationId = this.citation(c ?? { sourceMode: 'new' }, ctx.uploadIds);
+    const citationId = this.citation(c ?? { sourceMode: 'new' }, ctx.uploadIds, ctx.documents);
     this.ops.push({ op: 'attachCitation', citationId, ...target, ...(baseVersion === undefined ? {} : { baseVersion }) });
   }
 }
@@ -384,6 +431,18 @@ function buildDeath(b, form, ctx) {
 }
 
 /**
+ * A Name form's type and language tag. A Draft from before the tags says 'latin' or 'german':
+ * those are forms of type other in Latin or German now.
+ * @param {NameForm} form
+ * @returns {{ type: NameType, language: string | null }}
+ */
+export function nameKind(form) {
+  if (form.type === 'latin') return { type: 'other', language: 'la' };
+  if (form.type === 'german') return { type: 'other', language: 'de' };
+  return { type: form.type || 'other', language: clean(form.language) || null };
+}
+
+/**
  * @param {Builder} b
  * @param {NameForm} form
  * @param {BuildContext} ctx
@@ -392,6 +451,7 @@ function buildName(b, form, ctx) {
   const person = present(form.person, 'Person');
   if (person.mode !== 'existing') throw new Error('A new Name is for a Person in the Tree');
   const nameId = b.temp('name');
+  const { type, language } = nameKind(form);
   b.ops.push({
     op: 'addName',
     tempId: nameId,
@@ -399,7 +459,8 @@ function buildName(b, form, ctx) {
     baseVersion: person.version,
     given: clean(form.given),
     surname: clean(form.surname),
-    type: form.type || 'other',
+    type,
+    language,
     asFound: clean(form.asFound) || `${clean(form.given)} ${clean(form.surname)}`.trim(),
   });
   b.cite(form.citation, ctx, { nameId });
@@ -418,6 +479,22 @@ function buildCorrection(b, form, ctx) {
   for (const [field, value] of Object.entries(form.set ?? {})) set[field] = target.record === 'event' && value.trim() === '' ? null : value;
   b.ops.push({ op: 'setField', record: target.record, id: target.id, baseVersion: target.version, set });
   b.cite(form.citation, ctx, target.record === 'event' ? { eventId: target.id } : { nameId: target.id }, target.version);
+}
+
+/**
+ * Research notes and Labels: what changed against the Person as loaded.
+ * @param {Builder} b
+ * @param {NotesForm} form
+ */
+function buildNotes(b, form) {
+  const person = present(form.person, 'Person');
+  const base = present(form.base, 'Person as loaded');
+  if (person.mode !== 'existing') throw new Error('Notes are for a Person in the Tree');
+  if (clean(form.notes) !== clean(base.notes))
+    b.ops.push({ op: 'setNotes', record: 'person', id: person.id, baseVersion: base.version, notes: clean(form.notes) === '' ? null : form.notes.trim() });
+  const { added, removed } = labelChanges(form);
+  for (const label of removed) b.ops.push({ op: 'removeLabel', personId: person.id, baseVersion: base.version, label });
+  for (const label of added) b.ops.push({ op: 'addLabel', personId: person.id, baseVersion: base.version, label });
 }
 
 /**
@@ -443,6 +520,9 @@ export function buildOperations(draft, ctx) {
       break;
     case 'correction':
       buildCorrection(b, draft.form, ctx);
+      break;
+    case 'notes':
+      buildNotes(b, draft.form);
       break;
   }
   return b.ops;

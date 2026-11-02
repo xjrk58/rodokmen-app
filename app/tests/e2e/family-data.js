@@ -316,23 +316,21 @@ export function detail(n) {
     id: ID(n),
     version: 1,
     sex,
-    living: s.living,
-    relation: s.relation,
-    familyRoot: s.familyRoot,
-    names: [
-      { id: ID(1000 + n), version: 1, personId: ID(n), given, surname, type: 'birth', asFound: `${given} ${surname}`, primary: true, citations: [] },
-      ...others.map((asFound, i) => ({
-        id: ID(1100 + n * 10 + i),
-        version: 1,
-        personId: ID(n),
-        given: asFound.split(' ')[0],
-        surname: asFound.split(' ').slice(1).join(' '),
-        type: /** @type {import('../../src/types.js').NameType} */ (i === 0 ? 'latin' : 'german'),
-        asFound,
-        primary: false,
-        citations: citations(401),
-      })),
-    ],
+    ...(({ living, relation, familyRoot }) => ({ living, relation, familyRoot }))(s),
+    labels: [],
+    notes: null,
+    names: [`${given} ${surname}`, ...others].map((asFound, i) => ({
+      id: ID(i === 0 ? 1000 + n : 1100 + n * 10 + i - 1),
+      version: 1,
+      personId: ID(n),
+      given: i === 0 ? given : asFound.split(' ')[0],
+      surname: i === 0 ? surname : asFound.split(' ').slice(1).join(' '),
+      type: /** @type {import('../../src/types.js').NameType} */ (i === 0 ? 'birth' : 'other'),
+      language: ['cs', 'la', 'de'][i] ?? null,
+      asFound,
+      primary: i === 0,
+      citations: i === 0 ? [] : citations(401),
+    })),
     events: EVENTS.filter((e) => e[5].some(([p]) => p === n)).map((e) => {
       const role = /** @type {RoleType} */ (e[5].find(([p]) => p === n)?.[1]);
       return { roleId: ID(2000 + e[0] * 10 + n), role, roleDetail: null, event: eventSummary(e), citations: citations(e[0]) };

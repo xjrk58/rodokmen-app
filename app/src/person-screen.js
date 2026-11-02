@@ -7,7 +7,7 @@
 
 import { getCitation, getPerson, setFamilyRoot } from './api.js';
 import { lifeYears } from './hourglass-layout.js';
-import { t } from './i18n.js';
+import { has, t } from './i18n.js';
 import { PersonLeads } from './leads-screen.js';
 import { lifeAddress, personAddress, treeAddress } from './routes.js';
 import { AsOf, ErrorLine, errorText, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
@@ -52,6 +52,19 @@ function Citation({ citation, cache }) {
                 : null
             }
             ${d && !d.images.length ? html`<p class="muted small">${t('person.noImages')}</p>` : null}
+            ${
+              d?.documents.length
+                ? html`<ul class="documents" aria-label=${t('documents.title')}>
+                    ${d.documents.map(
+                      (doc) =>
+                        html`<li key=${doc.id}>
+                          <a href=${doc.url} target="_blank" rel="noopener noreferrer" data-testid="citation-document">${doc.title}</a>
+                          ${doc.original ? html` · <a href=${doc.original.url} target="_blank" rel="noopener noreferrer">${t('documents.original')}</a>` : null}
+                        </li>`,
+                    )}
+                  </ul>`
+                : null
+            }
           </div>`
         : null
     }
@@ -92,6 +105,9 @@ function Events({ person, cache }) {
   </ol>`;
 }
 
+/** The language of a Name in words, or its tag when the app has no name for it. @param {string} tag */
+const languageLabel = (tag) => (has(`language.${tag}`) ? t(`language.${tag}`) : tag);
+
 /** @param {{ person: PersonDetail, cache: boolean }} props */
 function Names({ person, cache }) {
   return html`<ul class="names">
@@ -99,7 +115,9 @@ function Names({ person, cache }) {
       (n) =>
         html`<li key=${n.id} data-testid="person-name">
           <span class="name-as-found">${n.asFound}</span>
-          <span class="muted small"> · ${t(`nameType.${n.type}`)}${n.primary ? ` · ${t('person.primaryName')}` : ''}</span>
+          <span class="muted small" data-testid="name-kind">
+            · ${t(`nameType.${n.type}`)}${n.language ? ` · ${languageLabel(n.language)}` : ''}${n.primary ? ` · ${t('person.primaryName')}` : ''}</span
+          >
           ${n.citations.length ? html`<${Citations} citations=${n.citations} cache=${cache} />` : null}
         </li>`,
     )}
@@ -195,11 +213,19 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     </header>
     <${AsOf} asOf=${loaded.asOf} />
     <${ErrorLine} error=${loaded.asOf ? null : loaded.error} />
+    ${
+      person.labels.length
+        ? html`<ul class="chips" data-testid="person-labels" aria-label=${t('person.labels')}>
+            ${person.labels.map((l) => html`<li class="chip" data-testid="person-label" key=${l}>${l}</li>`)}
+          </ul>`
+        : null
+    }
     <nav class="person-actions">
       <a class="button primary" href=${treeAddress(person.id)} data-testid="show-in-tree">${t('people.showInTree')}</a>
       <a class="button" href=${lifeAddress(person.id)} data-testid="life-path">${t('person.lifePath')}</a>
       <a class="button" href=${`#work/propose/correction/${person.id}`} data-testid="propose-change">${t('person.propose')}</a>
       <a class="button" href=${`#work/history/person/${person.id}`} data-testid="history">${t('person.history')}</a>
+      <a class="button" href=${`#work/propose/notes/${person.id}`} data-testid="edit-notes">${t('person.editNotes')}</a>
       ${
         me?.permissions.markFamilyRoots
           ? html`<${FamilyRootButton}
@@ -212,6 +238,12 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
           : null
       }
     </nav>
+    ${
+      person.notes
+        ? html`<h2>${t('person.notes')}</h2>
+            <div class="research-notes" data-testid="person-notes">${person.notes}</div>`
+        : null
+    }
     <h2>${t('person.names')}</h2>
     <${Names} person=${person} cache=${cache} />
     <h2>${t('person.events')}</h2>

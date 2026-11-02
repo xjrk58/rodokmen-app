@@ -68,7 +68,16 @@ describe('Proposals, review and history', () => {
     const jan = await person(L.janNovak);
     const res = await submit(contributor, [
       ...citation('P'),
-      { op: 'addName', personId: L.janNovak, baseVersion: jan.version, given: 'Johannes', surname: 'Nowack', type: 'german', asFound: 'Johannes Nowack' },
+      {
+        op: 'addName',
+        personId: L.janNovak,
+        baseVersion: jan.version,
+        given: 'Johannes',
+        surname: 'Nowack',
+        type: 'other',
+        language: 'de',
+        asFound: 'Johannes Nowack',
+      },
     ]);
     expect(res.statusCode).toBe(201);
     const after = await person(L.janNovak, other);
@@ -117,7 +126,7 @@ describe('Proposals, review and history', () => {
 
   it('a rule checked at commit (one primary Name) also rolls everything back', async () => {
     const jan = await person(L.janNovak);
-    const latin = jan.names.find((n) => n.type === 'latin')!;
+    const latin = jan.names.find((n) => n.language === 'la')!;
     // The database refuses a Name with neither given name nor surname only at the end.
     const res = await submit(
       editor,
@@ -136,13 +145,13 @@ describe('Proposals, review and history', () => {
 
   it("an Editor's typo fix is visible at once and appears in the record's history under the Editor's name", async () => {
     const jan = await person(L.janNovak);
-    const german = jan.names.find((n) => n.type === 'german')!;
+    const german = jan.names.find((n) => n.language === 'de')!;
     const res = await submit(
       editor,
       [
         { op: 'setField', record: 'name', id: german.id, baseVersion: german.version, set: { asFound: 'Johann Nowack' } },
         // The register entry that shows the spelling (the Citation of Jan's Latin Name).
-        { op: 'attachCitation', citationId: jan.names.find((n) => n.type === 'latin')!.citations[0]!.id, nameId: german.id, baseVersion: german.version },
+        { op: 'attachCitation', citationId: jan.names.find((n) => n.language === 'la')!.citations[0]!.id, nameId: german.id, baseVersion: german.version },
       ],
       { direct: true },
     );

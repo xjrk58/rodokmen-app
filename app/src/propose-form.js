@@ -8,7 +8,9 @@ import { guarded, h, showError } from './dom.js';
 import { draftPhotos, deletePhoto, savePhoto, newKey } from './drafts.js';
 import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
-import { CONFIDENCES, formProblems, KINDS, NAME_TYPES, NEW_SOURCE_TYPES } from './proposal-build.js';
+import { documentFields } from './document-fields.js';
+import { notesFields } from './notes-form.js';
+import { CONFIDENCES, formProblems, KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
 
 /** @typedef {import('./drafts.js').Draft} Draft */
 /** @typedef {import('./proposal-build.js').PersonInput} PersonInput */
@@ -216,7 +218,7 @@ function correctionFields(form) {
 function photoFields(draft, ensureSaved, report) {
   const photos = h('div', { class: 'photos', 'data-testid': 'photos' });
   const renderPhotos = async () => {
-    const list = await draftPhotos(draft.id);
+    const list = (await draftPhotos(draft.id)).filter((p) => p.kind !== 'document');
     photos.replaceChildren(
       ...list.map((p) => {
         const remove = h('button', { type: 'button', class: 'icon-button small', 'aria-label': t('photos.remove') }, '×');
@@ -323,6 +325,7 @@ function citationFields(draft, ensureSaved, report) {
     ),
     field(t('citation.readOn'), textInput(c, 'readOn', { type: 'date', 'data-testid': 'read-on' })),
     ...photoFields(draft, ensureSaved, report),
+    ...documentFields(draft, ensureSaved, report),
   );
 }
 
@@ -369,6 +372,9 @@ function findingFields(draft) {
     }
     case 'name': {
       const form = draft.form;
+      // A Draft from before the language tags: shown in the new form, stored so on the next save.
+      Object.assign(form, nameKind(form));
+      form.language = form.language ?? '';
       return [
         personPicker({ value: form.person, label: t('propose.whichPerson'), testid: 'person', allowNew: false, onChange: (v) => (form.person = v) }),
         field(t('picker.given'), textInput(form, 'given', { 'data-testid': 'name-given' })),
@@ -378,10 +384,16 @@ function findingFields(draft) {
           t('field.type'),
           select(form, 'type', NAME_TYPES, (v) => t(`nameType.${v}`), { 'data-testid': 'name-type' }),
         ),
+        field(
+          t('field.language'),
+          select(form, 'language', NAME_LANGUAGES, (v) => t(`language.${v || 'none'}`), { 'data-testid': 'name-language' }),
+        ),
       ];
     }
     case 'correction':
       return correctionFields(draft.form);
+    case 'notes':
+      return notesFields(draft.form);
   }
 }
 
@@ -415,7 +427,8 @@ export function proposeForm(draft, actions) {
     draft.lead ? h('p', { class: 'note small', 'data-testid': 'answers-lead' }, t('propose.answersLead', { question: draft.lead.question })) : null,
     notice,
     h('section', { class: 'form-section' }, ...findingFields(draft)),
-    citationFields(draft, actions.save, report),
+    // Notes and Labels state no fact, so they need no Citation (tree-model spec, "Research notes on records").
+    draft.kind === 'notes' ? null : citationFields(draft, actions.save, report),
     h('section', { class: 'form-section' }, field(t('propose.note'), note)),
     status,
     h('div', { class: 'form-actions' }, saveButton, submitButton),

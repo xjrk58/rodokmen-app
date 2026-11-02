@@ -69,6 +69,18 @@ export async function searchPersons({ db, clock }: TreeDeps, q: PersonSearchQuer
   // PersonSearchQuery checked that the filter names at least one relation.
   const relations = parseRelationFilter(q.relation);
   if (relations) query = query.where('p.relation', 'in', relations);
+  // Every Label asked for, each matched ignoring case and diacritics (tree-read-api spec, "Filter by Label").
+  for (const label of new Set(q.label ?? [])) {
+    query = query.where((eb) =>
+      eb.exists(
+        eb
+          .selectFrom('person_label as l')
+          .select(sql`1`.as('x'))
+          .whereRef('l.person_id', '=', 'p.id')
+          .where('l.folded', '=', sql<string>`rdk_fold(trim(${label}))`),
+      ),
+    );
+  }
 
   let rows: Array<{ id: string; matched: string | null }>;
   if (tokens.length > 0) {
@@ -168,8 +180,9 @@ export const IMAGE_COLUMNS = [
 
 export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetail | null> {
   const { db, clock } = deps;
-  const person = await db.selectFrom('person').select(['id', 'version', 'sex']).where('id', '=', id).executeTakeFirst();
+  const person = await db.selectFrom('person').select(['id', 'version', 'sex', 'notes']).where('id', '=', id).executeTakeFirst();
   if (!person) return null;
+  const labels = await db.selectFrom('person_label').select('label').where('person_id', '=', id).orderBy('created_at').orderBy('id').execute();
 
   const names = await db.selectFrom('name').selectAll().where('person_id', '=', id).orderBy('is_primary', 'desc').orderBy('sort_order').orderBy('id').execute();
   const nameCitations = await citationSummariesFor(
@@ -238,6 +251,8 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
     living: summaries.get(id)!.living,
     relation: summaries.get(id)!.relation,
     familyRoot: summaries.get(id)!.familyRoot,
+    labels: labels.map((l) => l.label),
+    notes: person.notes,
     names: names.map((n) => ({
       id: n.id,
       version: n.version,
@@ -245,6 +260,7 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
       given: n.given,
       surname: n.surname,
       type: n.type,
+      language: n.language,
       asFound: n.as_found,
       primary: n.is_primary,
       citations: nameCitations.get(n.id) ?? [],

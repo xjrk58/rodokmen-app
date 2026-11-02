@@ -10,6 +10,7 @@
 - [ ] 2.1 Write the Markdown Export (layout, frontmatter, stable slugs, `[[links]]`); verify a fixture Export opens in Obsidian with working links and that slugs stay stable after a Name correction
 - [ ] 2.2 Write the GEDCOM 5.5.1 writer using the same reduction; verify the living-grandchild scenario and that the file passes a GEDCOM validator and imports into Gramps
 - [ ] 2.3 Verify that neither writer emits images or image links, with a test over a fixture holding page images
+  - Note (from add-vault-import, task 1.6): Sources now hold PDF documents (`source_document`, served through `/api/documents/:id`). They follow the image rules (evidence-media spec, "Documents on Sources"): leave them and their links out of both writers, and include them in this test.
 - [ ] 2.4 Prove the Export view of a record with `lsc check`, with `//@ contract exports: No images in any Export`; verify with `pnpm verify` and `pnpm verify:trace`, and that keeping an image link makes `lsc check` fail
 
 ## 3. Nightly Export and download

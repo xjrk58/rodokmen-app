@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { LEAD_STATUSES } from '../leads.js';
 import { Id, Version } from './common.js';
 import { Operation, ProposalKind, ProposalStatus, RestorableTable } from './proposals.js';
-import { Confidence, IMAGE_CONTENT_TYPES, ImageKind } from './tree.js';
+import { Confidence, ImageKind, UPLOAD_CONTENT_TYPES } from './tree.js';
 
 const Sentence = z.object({ cs: z.string(), en: z.string() }).meta({ id: 'Sentence', description: 'The same sentence in Czech and English' });
 
@@ -49,15 +49,20 @@ export const OperationView = z
 export const UploadStatus = z.enum(['waiting', 'ready', 'deleted']).meta({ id: 'UploadStatus' });
 export type UploadStatus = z.infer<typeof UploadStatus>;
 
+export const UploadKind = z
+  .enum(['image', 'document'])
+  .meta({ id: 'UploadKind', description: 'An image, or a document (PDF, or the DOC a PDF was converted from)' });
+
 export const UploadView = z
   .object({
     id: Id,
     status: UploadStatus,
-    contentType: z.enum(IMAGE_CONTENT_TYPES),
+    kind: UploadKind,
+    contentType: z.enum(UPLOAD_CONTENT_TYPES),
     byteSize: z.number().int(),
     width: z.number().int().nullable(),
     height: z.number().int().nullable(),
-    url: z.string().describe('Display copy (WebP); redirects to an expiring link'),
+    url: z.string().describe('Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link'),
     fullUrl: z.string().describe('The original file; redirects to an expiring link'),
   })
   .meta({ id: 'UploadView' });
@@ -70,7 +75,7 @@ export const CitationPreview = z
     page: z.string().nullable(),
     transcription: z.string().nullable(),
     confidence: Confidence.nullable(),
-    images: z.array(UploadView.safeExtend({ kind: ImageKind })),
+    images: z.array(UploadView.omit({ kind: true }).safeExtend({ kind: ImageKind.describe('Page image, photo or portrait') })),
   })
   .meta({ id: 'CitationPreview' });
 
@@ -92,6 +97,9 @@ export const ProposalView = z
     citations: z.array(CitationPreview),
     conflicts: z.number().int().describe('Operations based on an older version of their record'),
     answersLeads: z.array(LeadRef).describe('The Research leads this finding answers; accepting marks them found'),
+    batch: z.object({ id: Id, name: z.string(), position: z.number().int() }).nullable().describe('The Import batch and its place in batch order'),
+    dependsOn: z.array(Id).describe('Earlier Proposals of its Import batch it builds on; it is accepted only after them'),
+    blockedBy: Id.nullable().describe('A rejected Proposal it builds on, directly or through others: it waits until an Editor rejects or corrects it'),
   })
   .meta({ id: 'ProposalView' });
 
@@ -169,7 +177,9 @@ export const UndoBody = z
   })
   .meta({ id: 'UndoBody' });
 
-export const HistoryKind = z.enum(['person', 'name', 'family', 'event', 'source', 'citation']).meta({ id: 'HistoryKind' });
+export const HistoryKind = z
+  .enum(['person', 'name', 'family', 'event', 'source', 'citation', 'place', 'house', 'parish', 'estate'])
+  .meta({ id: 'HistoryKind' });
 
 export const HistoryEntry = z
   .object({
@@ -194,7 +204,9 @@ export const History = z.object({ items: z.array(HistoryEntry) }).meta({ id: 'Hi
 
 export const CreateUploadBody = z
   .object({
-    contentType: z.enum(IMAGE_CONTENT_TYPES),
+    contentType: z
+      .enum(UPLOAD_CONTENT_TYPES)
+      .describe('An image type, or application/pdf for a document (application/msword only for the original of a converted PDF)'),
     byteSize: z.number().int().positive(),
     sha256: z.string().regex(/^[0-9a-f]{64}$/),
   })

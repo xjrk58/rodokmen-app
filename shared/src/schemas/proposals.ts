@@ -8,31 +8,51 @@
  * written for, and the server refuses versions it does not know.
  */
 import { z } from 'zod';
-import { isCitationOperation, satisfiesEvidenceRule } from '../rules.js';
-import { EdtfDate, Id, IsoDay, Version, WebUrl } from './common.js';
-import { SERVER_OPERATIONS, serverOnly, SetFamilyRoot, type CheckOptions } from './server-operations.js';
-import { ChildLinkType, Confidence, EventType, FamilyAccount, ImageKind, NameType, RegisterCoverage, RoleType, Sex, SourceType } from './tree.js';
+import { EdtfDate, Id, IsoDay, LanguageTag, Version, WebUrl } from './common.js';
+import {
+  AddHouseNumber,
+  AddLabel,
+  AddPlaceName,
+  CreateEstate,
+  CreateHouse,
+  CreateParish,
+  CreatePlace,
+  LinkPlaceEstate,
+  LinkPlaceParish,
+  RemoveLabel,
+  SetNotes,
+  AddDocument,
+} from './place-operations.js';
+import { Ref, TempId } from './refs.js';
+import { SERVER_OPERATIONS, SetFamilyRoot } from './server-operations.js';
+import {
+  ChildLinkType,
+  Confidence,
+  EventType,
+  FamilyAccount,
+  ImageKind,
+  MunicipalityLink,
+  NameType,
+  PlaceType,
+  RegisterCoverage,
+  RoleType,
+  Sex,
+  SourceType,
+} from './tree.js';
+
+export * from './refs.js';
+export * from './place-operations.js';
 
 export const OPERATIONS_VERSION = 1;
 
 const text = (max: number) => z.string().max(max);
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
 
-/** A record created earlier in the same Proposal. */
-export const TempId = z
-  .string()
-  .regex(/^tmp:[A-Za-z0-9_-]{1,40}$/, 'a temporary id looks like tmp:child')
-  .meta({ id: 'TempId', description: 'Temporary id of a record created earlier in the same Proposal, such as tmp:child' });
-
-/** An existing record (its id) or one created in the same Proposal (its temporary id). */
-export const Ref = z.union([Id, TempId]).meta({ id: 'Ref' });
-
-export const isTempId = (ref: string): boolean => ref.startsWith('tmp:');
-
 const NameFields = {
   given: text(200),
   surname: text(200),
   type: NameType,
+  language: LanguageTag.nullable().default(null).describe('The language the Name is written in (BCP 47, such as la or de); null when not known'),
   asFound: nonEmpty(400).describe('The spelling exactly as found in the Source'),
 };
 
@@ -70,8 +90,8 @@ export const CreateEvent = z
     type: EventType,
     typeDetail: text(200).nullable().default(null),
     date: EdtfDate.nullable(),
-    placeId: Id.nullable().default(null),
-    houseId: Id.nullable().default(null),
+    placeId: Ref.nullable().default(null).describe('A Place of the Tree, or one created earlier in the same Proposal or Import batch'),
+    houseId: Ref.nullable().default(null).describe('A House of the Tree, or one created earlier in the same Proposal or Import batch'),
     description: text(4000).nullable().default(null),
   })
   .refine((e) => e.placeId === null || e.houseId === null, { message: 'give either a Place or a House, not both', path: ['houseId'] })
@@ -109,6 +129,9 @@ export const LinkChild = z
   })
   .meta({ id: 'LinkChild' });
 
+/** A register's coverage as an operation gives it: its Parish may be created earlier in the same Proposal or Import batch. */
+const RegisterInput = RegisterCoverage.safeExtend({ parishId: Ref.describe('The Parish that kept the register') });
+
 export const CreateSource = z
   .object({
     op: z.literal('createSource'),
@@ -119,7 +142,7 @@ export const CreateSource = z
     reference: text(200).nullable().default(null),
     url: WebUrl.nullable().default(null),
     familyAccount: FamilyAccount.nullable().default(null),
-    register: RegisterCoverage.nullable().default(null).describe('For a register book: its Parish, kinds and years'),
+    register: RegisterInput.nullable().default(null).describe('For a register book: its Parish, kinds and years'),
   })
   .refine((s) => (s.type === 'family_account') === (s.familyAccount !== null), {
     message: 'a Family account Source records who gave the account and when; other Sources do not',
@@ -169,7 +192,7 @@ export const AddImage = z
 /** Fields an operation may set on an existing record, by record kind. */
 export const SETTABLE_FIELDS = {
   person: { sex: Sex },
-  name: { given: text(200), surname: text(200), type: NameType, asFound: nonEmpty(400) },
+  name: { given: text(200), surname: text(200), type: NameType, language: LanguageTag.nullable(), asFound: nonEmpty(400) },
   event: {
     type: EventType,
     typeDetail: text(200).nullable(),
@@ -188,9 +211,15 @@ export const SETTABLE_FIELDS = {
     register: RegisterCoverage.nullable(),
   },
   citation: { page: text(200).nullable(), transcription: nonEmpty(20_000), readOn: IsoDay, confidence: Confidence, note: text(4000).nullable() },
+  place: { type: PlaceType, municipality: MunicipalityLink.nullable() },
+  house: { note: text(4000).nullable() },
+  parish: { name: nonEmpty(200), seatPlaceId: Id.nullable() },
+  estate: { name: nonEmpty(200) },
 } as const;
 
-export const SettableRecord = z.enum(['person', 'name', 'event', 'role', 'childLink', 'source', 'citation']).meta({ id: 'SettableRecord' });
+export const SettableRecord = z
+  .enum(['person', 'name', 'event', 'role', 'childLink', 'source', 'citation', 'place', 'house', 'parish', 'estate'])
+  .meta({ id: 'SettableRecord' });
 export type SettableRecord = z.infer<typeof SettableRecord>;
 
 export const SetField = z
@@ -244,6 +273,16 @@ export const RESTORABLE_TABLES = [
   'image',
   'image_person',
   'family_root',
+  'place',
+  'place_name',
+  'house',
+  'house_number',
+  'parish',
+  'place_parish',
+  'estate',
+  'place_estate',
+  'person_label',
+  'source_document',
 ] as const;
 export const RestorableTable = z.enum(RESTORABLE_TABLES).meta({ id: 'RestorableTable' });
 export type RestorableTable = z.infer<typeof RestorableTable>;
@@ -280,6 +319,18 @@ export const Operation = z
     MergePersons,
     RestoreRecord,
     SetFamilyRoot,
+    CreatePlace,
+    AddPlaceName,
+    CreateHouse,
+    AddHouseNumber,
+    CreateParish,
+    CreateEstate,
+    LinkPlaceParish,
+    LinkPlaceEstate,
+    SetNotes,
+    AddLabel,
+    RemoveLabel,
+    AddDocument,
   ])
   .meta({ id: 'Operation' });
 
@@ -300,169 +351,3 @@ export const ProposalKind = z
   .enum(['contribution', 'direct', 'undo'])
   .meta({ id: 'ProposalKind', description: "Submitted for review, an Editor's direct change, or an undo" });
 export type ProposalKind = z.infer<typeof ProposalKind>;
-
-export interface ProposalIssue {
-  code: 'invalid_operation' | 'unknown_operation' | 'not_allowed' | 'temp_id' | 'evidence_missing';
-  message: string;
-  /** Index of the operation, when the issue is about one. */
-  position?: number;
-  path?: Array<string | number>;
-}
-
-type TempKind = 'person' | 'name' | 'event' | 'family' | 'source' | 'citation' | 'image';
-const CREATES: Partial<Record<OperationName, TempKind>> = {
-  createPerson: 'person',
-  addName: 'name',
-  createEvent: 'event',
-  createFamily: 'family',
-  createSource: 'source',
-  createCitation: 'citation',
-  addImage: 'image',
-};
-
-/** References each operation makes, with the kind of record each must be. */
-function referencesOf(op: Operation): Array<{ ref: string; kind: TempKind; path: string }> {
-  switch (op.op) {
-    case 'addName':
-      return [{ ref: op.personId, kind: 'person', path: 'personId' }];
-    case 'addRole':
-      return [
-        { ref: op.eventId, kind: 'event', path: 'eventId' },
-        { ref: op.personId, kind: 'person', path: 'personId' },
-      ];
-    case 'createFamily':
-      return [
-        ...(op.partner1Id ? [{ ref: op.partner1Id, kind: 'person' as const, path: 'partner1Id' }] : []),
-        ...(op.partner2Id ? [{ ref: op.partner2Id, kind: 'person' as const, path: 'partner2Id' }] : []),
-      ];
-    case 'linkChild':
-      return [
-        { ref: op.familyId, kind: 'family', path: 'familyId' },
-        { ref: op.childId, kind: 'person', path: 'childId' },
-      ];
-    case 'createCitation':
-      return [{ ref: op.sourceId, kind: 'source', path: 'sourceId' }];
-    case 'attachCitation':
-      return [
-        { ref: op.citationId, kind: 'citation', path: 'citationId' },
-        ...(op.eventId ? [{ ref: op.eventId, kind: 'event' as const, path: 'eventId' }] : []),
-        ...(op.nameId ? [{ ref: op.nameId, kind: 'name' as const, path: 'nameId' }] : []),
-      ];
-    case 'addImage':
-      return [
-        ...(op.citationId ? [{ ref: op.citationId, kind: 'citation' as const, path: 'citationId' }] : []),
-        ...op.personIds.map((p, i) => ({ ref: p, kind: 'person' as const, path: `personIds.${i}` })),
-      ];
-    default:
-      return [];
-  }
-}
-
-/** The existing record an operation changes and must name a base version for, if any. */
-export function baseTargetOf(
-  op: Operation,
-): { record: 'person' | 'event' | 'family' | 'name' | SettableRecord; id: string; baseVersion: number | undefined; path: string } | null {
-  switch (op.op) {
-    case 'addName':
-      return isTempId(op.personId) ? null : { record: 'person', id: op.personId, baseVersion: op.baseVersion, path: 'baseVersion' };
-    case 'addRole':
-      return isTempId(op.eventId) ? null : { record: 'event', id: op.eventId, baseVersion: op.baseVersion, path: 'baseVersion' };
-    case 'linkChild':
-      return isTempId(op.familyId) ? null : { record: 'family', id: op.familyId, baseVersion: op.baseVersion, path: 'baseVersion' };
-    case 'attachCitation': {
-      const target = op.eventId ?? op.nameId!;
-      return isTempId(target) ? null : { record: op.eventId ? 'event' : 'name', id: target, baseVersion: op.baseVersion, path: 'baseVersion' };
-    }
-    case 'setField':
-      return { record: op.record, id: op.id, baseVersion: op.baseVersion, path: 'baseVersion' };
-    default:
-      return null;
-  }
-}
-
-export const EVIDENCE_MESSAGE = {
-  en: 'A Proposal needs evidence: add the register entry, a document or a Family account as a Citation.',
-  cs: 'Návrh potřebuje doklad: přidejte zápis z matriky, dokument nebo rodinné vyprávění jako citaci.',
-} as const;
-
-/** True when the operations carry at least one Citation (proposals spec, "Evidence is required"). */
-export function hasEvidence(ops: readonly Operation[]): boolean {
-  return ops.some((o) => isCitationOperation(o.op));
-}
-
-export interface ProposalCheck {
-  operations: Operation[];
-  issues: ProposalIssue[];
-}
-
-const opNameOf = (value: unknown): unknown => (typeof value === 'object' && value !== null && 'op' in value ? value.op : undefined);
-const tempIdOf = (op: Operation): string | undefined => ('tempId' in op ? op.tempId : undefined);
-
-/** One parsed operation in context: who may use it, and its temporary ids (recorded in `temps`). */
-function checkOne(op: Operation, position: number, options: CheckOptions, temps: Map<string, TempKind>): ProposalIssue[] {
-  const refused = serverOnly(op.op, options);
-  if (refused) return [{ code: 'not_allowed', position, message: `operation ${position + 1}: ${refused}` }];
-  if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor)
-    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` }];
-  const issues: ProposalIssue[] = [];
-  for (const r of referencesOf(op)) {
-    if (!isTempId(r.ref)) continue;
-    const kind = temps.get(r.ref);
-    if (kind === undefined)
-      issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is not created before it is used` });
-    else if (kind !== r.kind)
-      issues.push({ code: 'temp_id', position, path: [r.path], message: `operation ${position + 1}: ${r.ref} is a ${kind}, not a ${r.kind}` });
-  }
-  if (op.op === 'setField' && Object.keys(op.set).length === 0)
-    issues.push({ code: 'invalid_operation', position, path: ['set'], message: `operation ${position + 1} (setField): set at least one field` });
-  const target = baseTargetOf(op);
-  if (target && target.baseVersion === undefined)
-    issues.push({
-      code: 'invalid_operation',
-      position,
-      path: [target.path],
-      message: `operation ${position + 1} (${op.op}): name the version of the ${target.record} you saw (baseVersion)`,
-    });
-  const creates = CREATES[op.op];
-  const tempId = tempIdOf(op);
-  if (creates && tempId) {
-    if (temps.has(tempId)) issues.push({ code: 'temp_id', position, path: ['tempId'], message: `operation ${position + 1}: ${tempId} is created twice` });
-    temps.set(tempId, creates);
-  }
-  return issues;
-}
-
-/**
- * Parses and checks a whole list of operations: each against its schema, temporary ids
- * defined once and before use with the right kind, base versions present, who may use
- * which operation, and the evidence rule (satisfiesEvidenceRule in rules.ts).
- */
-export function checkOperations(raw: readonly unknown[], options: CheckOptions): ProposalCheck {
-  const issues: ProposalIssue[] = [];
-  const operations: Operation[] = [];
-  const temps = new Map<string, TempKind>();
-  raw.forEach((value, position) => {
-    const name = opNameOf(value);
-    if (typeof name !== 'string' || !(OPERATION_NAMES as string[]).includes(name)) {
-      issues.push({ code: 'unknown_operation', position, message: `operation ${position + 1}: unknown operation ${JSON.stringify(name ?? null)}` });
-      return;
-    }
-    const parsed = Operation.safeParse(value);
-    if (!parsed.success) {
-      for (const i of parsed.error.issues)
-        issues.push({
-          code: 'invalid_operation',
-          position,
-          path: issuePath(i.path),
-          message: `operation ${position + 1} (${name}) ${i.path.join('.')}: ${i.message}`,
-        });
-      return;
-    }
-    const found = checkOne(parsed.data, position, options, temps);
-    issues.push(...found);
-    if (found.some((i) => i.code === 'not_allowed')) return;
-    operations.push(parsed.data);
-  });
-  if (issues.length === 0 && !satisfiesEvidenceRule(operations.map((o) => o.op))) issues.push({ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en });
-  return { operations, issues };
-}

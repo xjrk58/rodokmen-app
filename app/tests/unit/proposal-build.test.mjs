@@ -2,7 +2,7 @@
 // tests/unit/proposal-contract.test.mjs checks the same operations against shared/.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildOperations, draftTitle, emptyForm, formProblems } from '../../src/proposal-build.js';
+import { buildOperations, draftTitle, emptyForm, formProblems, labelChanges } from '../../src/proposal-build.js';
 
 /** @typedef {import('../../src/types.js').OperationInput} OperationInput */
 /** @typedef {import('../../src/proposal-build.js').PersonInput} PersonInput */
@@ -163,7 +163,7 @@ test('a missing Citation is refused before submitting', () => {
 
 test('a new Name and a correction cite the record they change', () => {
   const name = buildOperations(
-    { kind: 'name', form: { person: anna, given: 'Anna', surname: 'Kralowa', type: 'german', asFound: 'Anna Kralowa', citation, note: '' } },
+    { kind: 'name', form: { person: anna, given: 'Anna', surname: 'Kralowa', type: 'other', language: 'de', asFound: 'Anna Kralowa', citation, note: '' } },
     { uploadIds: [] },
   );
   const added = at(name, 0, 'addName');
@@ -174,7 +174,8 @@ test('a new Name and a correction cite the record they change', () => {
     baseVersion: 1,
     given: 'Anna',
     surname: 'Kralowa',
-    type: 'german',
+    type: 'other',
+    language: 'de',
     asFound: 'Anna Kralowa',
   });
   assert.deepEqual(name.at(-1), { op: 'attachCitation', citationId: at(name, -2, 'createCitation').tempId, nameId: added.tempId });
@@ -253,4 +254,34 @@ test('a Name correction keeps the spelling as found: emptied, it is refused, nev
     { uploadIds: [] },
   );
   assert.deepEqual(only(cleared, 'setField').set, { description: null });
+});
+
+test('notes and Labels: only what changed is proposed, Labels compared ignoring case and diacritics, and no Citation is asked for', () => {
+  /** @type {import('../../src/proposal-build.js').NotesForm} */
+  const form = {
+    ...emptyForm('notes').form,
+    person: anna,
+    notes: '  Baptism not found 1801–1803, check the neighbouring parish.  ',
+    labels: ['Line/Novák', 'emigrated', 'EMIGRATED', ' '],
+    base: { version: 4, notes: '', labels: ['line/novak', 'old'] },
+  };
+  assert.deepEqual(labelChanges(form), { added: ['emigrated'], removed: ['old'] });
+  assert.deepEqual(formProblems({ kind: 'notes', form }), []);
+  assert.deepEqual(buildOperations({ kind: 'notes', form }, { uploadIds: [] }), [
+    { op: 'setNotes', record: 'person', id: anna.id, baseVersion: 4, notes: 'Baptism not found 1801–1803, check the neighbouring parish.' },
+    { op: 'removeLabel', personId: anna.id, baseVersion: 4, label: 'old' },
+    { op: 'addLabel', personId: anna.id, baseVersion: 4, label: 'emigrated' },
+  ]);
+  // Nothing changed, or no Person picked yet: nothing to propose.
+  const same = { ...form, notes: '', labels: ['LINE/NOVAK', 'old'] };
+  assert.deepEqual(formProblems({ kind: 'notes', form: same }), ['propose.needNotes']);
+  assert.deepEqual(formProblems(emptyForm('notes')), ['propose.needNotes']);
+  // Emptied notes are taken away.
+  assert.deepEqual(
+    buildOperations(
+      { kind: 'notes', form: { ...form, notes: ' ', labels: ['line/novak', 'old'], base: { version: 4, notes: 'x', labels: ['line/novak', 'old'] } } },
+      { uploadIds: [] },
+    ),
+    [{ op: 'setNotes', record: 'person', id: anna.id, baseVersion: 4, notes: null }],
+  );
 });

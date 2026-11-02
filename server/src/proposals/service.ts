@@ -21,8 +21,10 @@ import { recomputeRelations } from '../tree/relation.js';
 import { refreshSuggestions } from '../leads/gaps.js';
 import { touchedPersons } from '../leads/touched.js';
 import { checkAnsweredLeads, markAnsweredLeads, storeAnsweredLeads } from '../leads/service.js';
-import { snapshot } from './records.js';
-import { canReview, findConflicts, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
+import { canReview, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
+import type { Snapshot } from './records.js';
+import { resolveConflicts } from './conflicts.js';
+import { checkBatchRefs, lockBatch, resolveBatchRefs, storeDependencies, storeTemps } from './batches.js';
 
 /** Writing Proposals: submit, accept (with corrections and conflict choices), reject and merge. */
 export interface ProposalDeps {
@@ -72,7 +74,14 @@ async function insertProposal(
   tx: Db,
   now: Date,
   author: Account,
-  fields: { kind: Proposal['kind']; note: string | null; idempotencyKey: string; undoes?: string; answersLeads?: readonly string[] },
+  fields: {
+    kind: Proposal['kind'];
+    note: string | null;
+    idempotencyKey: string;
+    undoes?: string;
+    answersLeads?: readonly string[];
+    batch?: { id: string; position: number };
+  },
   ops: readonly Operation[],
 ): Promise<Created> {
   const inserted = await tx
@@ -85,6 +94,8 @@ async function insertProposal(
       idempotency_key: fields.idempotencyKey,
       submitted_at: now,
       undoes_proposal_id: fields.undoes ?? null,
+      batch_id: fields.batch?.id ?? null,
+      batch_position: fields.batch?.position ?? null,
     })
     .onConflict((oc) => oc.columns(['author_id', 'idempotency_key']).doNothing())
     .returningAll()
@@ -103,7 +114,11 @@ async function insertProposal(
     .values(ops.map((op, position) => ({ proposal_id: inserted.id, position, op: op.op, operation: JSON.stringify(op), ...targetColumns(op) })))
     .execute();
   await storeAnsweredLeads(tx, inserted.id, fields.answersLeads ?? []);
-  const uploadIds = ops.flatMap((o) => (o.op === 'addImage' ? [o.uploadId] : []));
+  const uploadIds = ops.flatMap((o) => {
+    if (o.op === 'addImage') return [o.uploadId];
+    if (o.op === 'addDocument') return o.originalUploadId ? [o.uploadId, o.originalUploadId] : [o.uploadId];
+    return [];
+  });
   for (const uploadId of uploadIds) {
     const r = await tx
       .updateTable('upload')
@@ -117,7 +132,7 @@ async function insertProposal(
       throw new ApiProblem(
         409,
         'upload_unusable',
-        'An image of this Proposal is not uploaded yet, is not yours, or belongs to another Proposal. Upload it again.',
+        'An image or document of this Proposal is not uploaded yet, is not yours, or belongs to another Proposal. Upload it again.',
       );
   }
   return { proposal: inserted, created: true };
@@ -127,8 +142,14 @@ async function insertProposal(
  * Submits a Proposal (proposals spec). An Editor's direct change is a Proposal created and
  * accepted in the same transaction, so it is logged exactly like any accepted Proposal.
  */
-export async function submitProposal(deps: ProposalDeps, author: Account, body: SubmitProposalBody): Promise<{ view: ProposalView; created: boolean }> {
+export async function submitProposal(
+  deps: ProposalDeps,
+  author: Account,
+  body: SubmitProposalBody,
+  batchId: string | null = null,
+): Promise<{ view: ProposalView; created: boolean }> {
   const editor = canReview(author);
+  if (body.direct && batchId !== null) throw new ApiProblem(400, 'invalid_proposal', 'A Proposal of an Import batch is reviewed, never a direct change.');
   if (body.direct && !mayDo(author.role, 'directEdit'))
     throw new ApiProblem(403, 'forbidden', 'Only Editors change the Tree directly. Submit a Proposal for review instead.');
   const { operations, issues } = checkOperations(body.operations, { editor });
@@ -138,13 +159,12 @@ export async function submitProposal(deps: ProposalDeps, author: Account, body: 
     deps.db,
     async (tx) => {
       await checkAnsweredLeads(tx, body.answersLeads);
-      const created = await insertProposal(
-        tx,
-        now,
-        author,
-        { kind: body.direct ? 'direct' : 'contribution', note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads },
-        operations,
-      );
+      // In an Import batch: the next place in batch order, and the earlier Proposals it builds on (review spec).
+      const batch = batchId === null ? undefined : { id: batchId, position: (await lockBatch(tx, author, batchId)).next };
+      const dependsOn = await checkBatchRefs(tx, operations, batch?.id ?? null, batch?.position ?? null);
+      const fields = { note: body.note, idempotencyKey: body.idempotencyKey, answersLeads: body.answersLeads, batch };
+      const created = await insertProposal(tx, now, author, { kind: body.direct ? 'direct' : 'contribution', ...fields }, operations);
+      if (created.created && batch) await storeDependencies(tx, created.proposal.id, dependsOn);
       if (!created.created || !body.direct) return { ...created, moves: [] as UploadMove[] };
       const accepted = await acceptInTransaction(tx, deps, created.proposal, author, { note: null, corrections: [], resolutions: [] });
       return { proposal: accepted.proposal, created: true, moves: accepted.moves };
@@ -167,8 +187,10 @@ async function transaction<T extends { moves?: UploadMove[] }>(db: Db, fn: (tx: 
       const out = await fn(tx);
       for (const m of out.moves ?? []) {
         for (const kind of ['original', 'display'] as const) {
-          await deps.images.copy(m.from[kind], m.to[kind]);
-          copied.push(m.to[kind]);
+          const [from, to] = [m.from[kind], m.to[kind]];
+          if (from === undefined || to === undefined) continue; // a document has no display copy
+          await deps.images.copy(from, to);
+          copied.push(to);
         }
       }
       return out;
@@ -185,7 +207,7 @@ async function transaction<T extends { moves?: UploadMove[] }>(db: Db, fn: (tx: 
  */
 async function finishMoves(deps: ProposalDeps, moves: readonly UploadMove[]): Promise<void> {
   for (const m of moves) {
-    for (const key of new Set([m.from.original, m.from.display, uploadKeys(m.uploadId).link])) {
+    for (const key of new Set([m.from.original, m.from.display ?? m.from.original, uploadKeys(m.uploadId).link])) {
       await deps.images.delete(key).catch((e) => deps.log?.('could not delete a pending image', e));
     }
   }
@@ -227,57 +249,6 @@ function applyCorrections(
   return { effective, corrected };
 }
 
-/** The same operation based on another version of its record, for those that name one. */
-function withBaseVersion(op: Operation, baseVersion: number): Operation | null {
-  switch (op.op) {
-    case 'addName':
-    case 'addRole':
-    case 'linkChild':
-    case 'attachCitation':
-    case 'setField':
-      return { ...op, baseVersion };
-    default:
-      return null;
-  }
-}
-
-/** One conflict resolved by the Editor's choice: the operation to apply instead, or null to leave it. */
-async function resolved(tx: Db, op: Operation, choice: AcceptBody['resolutions'][number], currentVersion: number | null): Promise<Operation | null> {
-  if (op.op === 'setField') {
-    const missing = Object.keys(op.set).filter((f) => !(f in choice.fields));
-    if (missing.length) throw new ApiProblem(409, 'conflict', `Operation ${choice.position + 1}: choose a value for ${missing.join(', ')}.`);
-    const set = Object.fromEntries(Object.entries(op.set).filter(([f]) => choice.fields[f] === 'proposal'));
-    return { ...op, set, baseVersion: currentVersion ?? op.baseVersion };
-  }
-  if (op.op === 'mergePersons') {
-    const keep = await snapshot(tx, 'person', op.keepId);
-    const gone = await snapshot(tx, 'person', op.mergeId);
-    return { ...op, keepBaseVersion: keep?.version ?? op.keepBaseVersion, mergeBaseVersion: gone?.version ?? op.mergeBaseVersion };
-  }
-  return currentVersion === null ? null : withBaseVersion(op, currentVersion);
-}
-
-/** Conflicts: the Editor chooses per field; each choice is stored as an Editor correction. */
-async function resolveConflicts(tx: Db, effective: Operation[], corrected: Map<number, Operation>, resolutions: AcceptBody['resolutions']): Promise<void> {
-  const conflicts = await findConflicts(tx, effective);
-  for (const r of resolutions) {
-    const conflict = conflicts.get(r.position);
-    const op = effective[r.position];
-    if (!conflict || !op) continue;
-    const next = await resolved(tx, op, r, conflict.currentVersion);
-    if (!next) continue;
-    effective[r.position] = next;
-    corrected.set(r.position, next);
-    conflicts.delete(r.position);
-  }
-  const [first] = conflicts.entries();
-  if (first) {
-    const [position, c] = first;
-    const what = c.currentVersion === null ? 'no longer exists' : 'was changed since the Proposal was written';
-    throw new ApiProblem(409, 'conflict', `Operation ${position + 1}: ${c.label.en} ${what}. Choose per field before accepting.`);
-  }
-}
-
 /** The log entry of an accepted Proposal, with every changed record before and after. */
 async function writeLog(tx: Db, proposal: Proposal, editor: Account, now: Date, applied: ApplyResult): Promise<void> {
   const entry = await tx
@@ -317,17 +288,30 @@ async function followUploads(tx: Db, applied: ApplyResult, now: Date): Promise<v
   for (const m of applied.uploads) {
     await tx
       .updateTable('upload')
-      .set({ image_id: m.imageId, storage_key: m.to.original, display_key: m.to.display, orphaned_at: null })
+      .set({
+        image_id: m.imageId ?? null,
+        document_id: m.documentId ?? null,
+        storage_key: m.to.original,
+        ...(m.to.display ? { display_key: m.to.display } : {}),
+        orphaned_at: null,
+      })
       .where('id', '=', m.uploadId)
       .execute();
   }
-  for (const c of applied.changes.list().filter((x) => x.table === 'image')) {
-    const removed = c.after === null ? c.before?.storage_key : undefined;
-    const restored = c.before === null && !applied.uploads.some((m) => m.imageId === c.id) ? c.after?.storage_key : undefined;
-    if (typeof removed === 'string') {
+  const moved = new Set(applied.uploads.flatMap((m) => [m.imageId, m.documentId]));
+  for (const c of applied.changes.list().filter((x) => x.table === 'image' || x.table === 'source_document')) {
+    const keys = (snap: Snapshot | null) => [snap?.storage_key, snap?.original_key].filter((k): k is string => typeof k === 'string');
+    const link = c.table === 'image' ? { image_id: c.id } : { document_id: c.id };
+    for (const removed of c.after === null ? keys(c.before) : []) {
       await tx.updateTable('upload').set({ orphaned_at: now }).where('storage_key', '=', removed).execute();
-    } else if (typeof restored === 'string') {
-      await tx.updateTable('upload').set({ image_id: c.id, orphaned_at: null }).where('storage_key', '=', restored).where('status', '!=', 'deleted').execute();
+    }
+    for (const restored of c.before === null && !moved.has(c.id) ? keys(c.after) : []) {
+      await tx
+        .updateTable('upload')
+        .set({ ...link, orphaned_at: null })
+        .where('storage_key', '=', restored)
+        .where('status', '!=', 'deleted')
+        .execute();
     }
   }
 }
@@ -348,9 +332,14 @@ async function acceptInTransaction(
   proposal: Proposal,
   editor: Account,
   body: AcceptBody,
+  /** Accepting a whole Import batch: the relation and the gap finder wait for the end of the batch, which gets the Persons touched. */
+  batchTouched?: Set<string>,
 ): Promise<{ proposal: Proposal; moves: UploadMove[] }> {
   const now = deps.clock.now();
-  const { effective, corrected } = applyCorrections(await loadOperations(tx, proposal.id), body, proposal, editor);
+  const corrections = applyCorrections(await loadOperations(tx, proposal.id), body, proposal, editor);
+  const { corrected } = corrections;
+  // A batch Proposal's references to earlier ones of its batch become their records (review spec, "Out of order").
+  const effective = proposal.batch_id === null ? corrections.effective : await resolveBatchRefs(tx, proposal, corrections.effective);
   await resolveConflicts(tx, effective, corrected, body.resolutions);
   for (const [position, op] of corrected) {
     await tx
@@ -363,11 +352,16 @@ async function acceptInTransaction(
   const applied = await applyOperations(tx, effective, { proposalId: proposal.id, authorId: proposal.author_id });
   await writeLog(tx, proposal, editor, now, applied);
   await followUploads(tx, applied, now);
-  const relation = affectsRelation(applied) ? await recomputeRelations(tx) : { changedIds: [] };
+  await storeTemps(tx, proposal, applied.temps);
   // The leads this finding answers are found (research-leads spec, "Findings link back to leads"); an undo reopens them (history.ts).
   if (proposal.kind !== 'undo') await markAnsweredLeads(tx, proposal.id, editor.id, now);
-  // The gap finder looks again at whom the change touched (research-leads spec, "Gap finder suggests leads").
-  await refreshSuggestions(tx, now, { personIds: [...(await touchedPersons(tx, applied.changes.list())), ...relation.changedIds] });
+  const touched = await touchedPersons(tx, applied.changes.list());
+  if (batchTouched) for (const id of touched) batchTouched.add(id);
+  else {
+    const relation = affectsRelation(applied) ? await recomputeRelations(tx) : { changedIds: [] };
+    // The gap finder looks again at whom the change touched (research-leads spec, "Gap finder suggests leads").
+    await refreshSuggestions(tx, now, { personIds: [...touched, ...relation.changedIds] });
+  }
   const updated = await tx
     .updateTable('proposal')
     .set({ status: 'accepted', decided_at: now, decided_by: editor.id, decision_note: body.note })
@@ -459,4 +453,4 @@ export async function mergePersons(
   return view;
 }
 
-export { insertProposal, acceptInTransaction, transaction, finishMoves };
+export { insertProposal, acceptInTransaction, transaction, finishMoves, lockPending };

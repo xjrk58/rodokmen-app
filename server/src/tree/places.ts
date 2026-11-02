@@ -94,7 +94,7 @@ async function housesOf(db: Db, where: { placeId?: string; houseIds?: string[] }
 }
 
 export async function getPlace(db: Db, id: string): Promise<PlaceDetail | null> {
-  const row = await basePlaceQuery(db).where('p.id', '=', id).executeTakeFirst();
+  const row = await basePlaceQuery(db).select('p.notes').where('p.id', '=', id).executeTakeFirst();
   if (!row) return null;
   const names = await db.selectFrom('place_name').selectAll().where('place_id', '=', id).orderBy('is_primary', 'desc').orderBy('valid_from').execute();
   const parishes = await db
@@ -135,6 +135,7 @@ export async function getPlace(db: Db, id: string): Promise<PlaceDetail | null> 
       estate: { id: e.id, version: e.version, name: e.name },
     })),
     houses: await housesOf(db, { placeId: id }),
+    notes: row.notes,
   };
 }
 
@@ -166,7 +167,8 @@ export async function getHouse(db: Db, id: string): Promise<HouseDetail | null> 
     .where('house_id', '=', id)
     .execute();
   events.sort((a, b) => compareEarliestDays(a.date_earliest, b.date_earliest) || a.id.localeCompare(b.id));
-  return { ...house, place, events: await summarizeEvents(db, events) };
+  const { notes } = await db.selectFrom('house').select('notes').where('id', '=', id).executeTakeFirstOrThrow();
+  return { ...house, place, events: await summarizeEvents(db, events), notes };
 }
 
 /** Parishes a Place belonged to during a date range (an Event's earliest..latest). */
@@ -210,13 +212,20 @@ async function linkedPlaces(db: Db, table: 'place_parish' | 'place_estate', colu
 }
 
 export async function getParish(db: Db, id: string): Promise<ParishDetail | null> {
-  const p = await db.selectFrom('parish').select(['id', 'version', 'name', 'seat_place_id']).where('id', '=', id).executeTakeFirst();
+  const p = await db.selectFrom('parish').select(['id', 'version', 'name', 'seat_place_id', 'notes']).where('id', '=', id).executeTakeFirst();
   if (!p) return null;
-  return { id: p.id, version: p.version, name: p.name, seatPlaceId: p.seat_place_id, places: await linkedPlaces(db, 'place_parish', 'parish_id', id) };
+  return {
+    id: p.id,
+    version: p.version,
+    name: p.name,
+    seatPlaceId: p.seat_place_id,
+    places: await linkedPlaces(db, 'place_parish', 'parish_id', id),
+    notes: p.notes,
+  };
 }
 
 export async function getEstate(db: Db, id: string): Promise<EstateDetail | null> {
-  const e = await db.selectFrom('estate').select(['id', 'version', 'name']).where('id', '=', id).executeTakeFirst();
+  const e = await db.selectFrom('estate').select(['id', 'version', 'name', 'notes']).where('id', '=', id).executeTakeFirst();
   if (!e) return null;
-  return { id: e.id, version: e.version, name: e.name, places: await linkedPlaces(db, 'place_estate', 'estate_id', id) };
+  return { id: e.id, version: e.version, name: e.name, places: await linkedPlaces(db, 'place_estate', 'estate_id', id), notes: e.notes };
 }

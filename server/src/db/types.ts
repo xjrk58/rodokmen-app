@@ -17,11 +17,21 @@ import type {
   Sex,
   SourceType,
   UiLanguage,
-  UploadStatus,
 } from '@rodokmen/shared';
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 import type { LeadEventTable, LeadLinkTable, LeadSearchTable, LeadSuggestionTable, LeadTable, ProposalLeadTable } from './lead-types.js';
+import type {
+  ImportBatchTable,
+  PersonLabelTable,
+  ProposalDependencyTable,
+  ProposalTempTable,
+  SourceDocumentTable,
+  UploadTable,
+  VaultImportMapTable,
+} from './vault-import-types.js';
+
+export type { UploadTable } from './vault-import-types.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -37,6 +47,11 @@ interface RecordColumns {
   updated_at: Generated<Date>;
 }
 
+/** Research notes in Markdown (tree-model spec, "Research notes on records"); set through setNotes. */
+interface NotesColumn {
+  notes: ColumnType<string | null, string | null | undefined, string | null>;
+}
+
 interface PeriodColumns {
   period_from: string | null;
   period_to: string | null;
@@ -44,7 +59,7 @@ interface PeriodColumns {
   valid_to: Generated<Day>;
 }
 
-export interface PersonTable extends RecordColumns {
+export interface PersonTable extends RecordColumns, NotesColumn {
   sex: Generated<Sex>;
   /** Set when the Person was merged into another; the record stays as a redirect. */
   merged_into_id: ColumnType<string | null, string | null | undefined, string | null>;
@@ -62,13 +77,15 @@ export interface NameTable extends RecordColumns {
   given: Generated<string>;
   surname: Generated<string>;
   type: NameType;
+  /** BCP 47 tag of the language the Name is written in; null when not known. */
+  language: ColumnType<string | null, string | null | undefined, string | null>;
   as_found: string;
   is_primary: Generated<boolean>;
   sort_order: Generated<number>;
   search_text: ColumnType<string, never, never>;
 }
 
-export interface FamilyTable extends RecordColumns {
+export interface FamilyTable extends RecordColumns, NotesColumn {
   partner1_id: string | null;
   partner2_id: string | null;
 }
@@ -80,7 +97,7 @@ export interface FamilyChildTable extends RecordColumns {
   sort_order: Generated<number>;
 }
 
-export interface PlaceTable extends RecordColumns {
+export interface PlaceTable extends RecordColumns, NotesColumn {
   type: Generated<PlaceType>;
   location: Geography | null;
   municipality_code: string | null;
@@ -95,7 +112,7 @@ export interface PlaceNameTable extends RecordColumns, PeriodColumns {
   search_text: ColumnType<string, never, never>;
 }
 
-export interface HouseTable extends RecordColumns {
+export interface HouseTable extends RecordColumns, NotesColumn {
   place_id: string;
   location: Geography | null;
   note: string | null;
@@ -106,7 +123,7 @@ export interface HouseNumberTable extends RecordColumns, PeriodColumns {
   number: string;
 }
 
-export interface ParishTable extends RecordColumns {
+export interface ParishTable extends RecordColumns, NotesColumn {
   name: string;
   seat_place_id: string | null;
 }
@@ -116,7 +133,7 @@ export interface PlaceParishTable extends RecordColumns, PeriodColumns {
   parish_id: string;
 }
 
-export interface EstateTable extends RecordColumns {
+export interface EstateTable extends RecordColumns, NotesColumn {
   name: string;
 }
 
@@ -125,7 +142,7 @@ export interface PlaceEstateTable extends RecordColumns, PeriodColumns {
   estate_id: string;
 }
 
-export interface EventTable extends RecordColumns {
+export interface EventTable extends RecordColumns, NotesColumn {
   type: EventType;
   type_detail: string | null;
   date: string | null;
@@ -144,7 +161,7 @@ export interface EventRoleTable extends RecordColumns {
   sort_order: Generated<number>;
 }
 
-export interface SourceTable extends RecordColumns {
+export interface SourceTable extends RecordColumns, NotesColumn {
   type: SourceType;
   title: string;
   repository: string | null;
@@ -286,7 +303,7 @@ export interface AgentTokenTable {
 
 export interface AgentRateWindowTable {
   account_id: string;
-  kind: 'proposal' | 'read';
+  kind: 'proposal' | 'read' | 'batch';
   window_start: Timestamp;
   count: number;
 }
@@ -311,6 +328,9 @@ export interface ProposalTable {
   decision_note: string | null;
   undoes_proposal_id: string | null;
   undone_by_proposal_id: string | null;
+  /** Its Import batch and place in batch order (add-vault-import). */
+  batch_id: Generated<string | null>;
+  batch_position: Generated<number | null>;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -349,29 +369,6 @@ export interface LogChangeTable {
   after: SnapshotJson;
 }
 
-export interface UploadTable {
-  id: Generated<string>;
-  version: Generated<number>;
-  author_id: string;
-  status: Generated<UploadStatus>;
-  storage_key: string;
-  display_key: string;
-  declared_type: ImageTable['content_type'];
-  declared_size: number;
-  declared_sha256: string;
-  content_type: ImageTable['content_type'] | null;
-  byte_size: number | null;
-  sha256: string | null;
-  width: number | null;
-  height: number | null;
-  proposal_id: string | null;
-  image_id: string | null;
-  orphaned_at: Timestamp | null;
-  deleted_at: Timestamp | null;
-  created_at: CreatedAt;
-  updated_at: Generated<Date>;
-}
-
 export interface JobRunTable {
   job: string;
   day: string;
@@ -395,6 +392,12 @@ export interface Database {
   person: PersonTable;
   family_root: FamilyRootTable;
   name: NameTable;
+  person_label: PersonLabelTable;
+  source_document: SourceDocumentTable;
+  import_batch: ImportBatchTable;
+  proposal_dependency: ProposalDependencyTable;
+  proposal_temp: ProposalTempTable;
+  vault_import_map: VaultImportMapTable;
   family: FamilyTable;
   family_child: FamilyChildTable;
   place: PlaceTable;
