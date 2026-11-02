@@ -18,7 +18,7 @@ import type {
   UiLanguage,
   UploadStatus,
 } from '@rodokmen/shared';
-import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
+import type { ColumnType, Generated, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
 
@@ -434,4 +434,3 @@ export type Reading = Selectable<ReadingTable>;
 export type { ReadingTable, ScanReadingSettingTable };
 
 export type Account = Selectable<AccountTable>;
-export type NewEvent = Insertable<EventTable>;

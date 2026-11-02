@@ -252,6 +252,8 @@
   "history.choice.keep": "keep",
   "history.confirmUndo": "Undo",
   "history.blocked": "This cannot be undone on its own: later accepted Proposals ({count}) build on its records. Undo those first, newest first.",
+  "history.blockedUnlogged": "This cannot be undone: records that are not in the history (added outside any Proposal) build on its records.",
+  "history.undoFirst": "Undo this one first",
   "tabs.label": "Main sections",
   "tabs.tree": "Tree",
   "tabs.map": "Map",

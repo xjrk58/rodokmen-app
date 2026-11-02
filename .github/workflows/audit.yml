@@ -1,0 +1,43 @@
+# Weekly pnpm audit (#21). Advisories appear without code changes, so besides every push and pull
+# request (`pnpm check` in lint.yml), the audit runs on a schedule. A high or critical advisory in
+# a production dependency fails the run and opens an issue, or comments on the one still open
+# (scripts/audit.mjs). Run it by hand from the Actions tab; "dry run" looks for the open issue but
+# only prints what it would open.
+name: audit
+
+on:
+  schedule:
+    - cron: '23 5 * * 1' # Mondays, 05:23 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the issue instead of opening it
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      # pnpm audit reads the lockfile; nothing needs installing.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: pnpm audit, with an issue on failure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            node scripts/audit.mjs --issue --dry-run
+          else
+            node scripts/audit.mjs --issue
+          fi

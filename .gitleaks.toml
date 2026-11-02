@@ -1,0 +1,13 @@
+# gitleaks (scripts/gitleaks.mjs): secrets in commits fail. The rules are gitleaks' own; this file
+# only lists what is known not to be a secret, each entry with its reason. #36 extends the rules
+# locally with the private Vault denylist, which never reaches this file or CI.
+title = "Rodokmen"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Invented Garage key ID in the deploy script's test, which runs deploy.sh against a fake docker"
+condition = "AND"
+paths = ['''^deploy/scripts/deploy\.test\.sh$''']
+regexes = ['''GK0123456789abcdef01234567''']
