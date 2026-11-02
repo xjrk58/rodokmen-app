@@ -2,6 +2,7 @@ import {
   baseTargetOf,
   describeOperations,
   detectConflict,
+  isNewRef,
   isTempId,
   mayDecide,
   Operation,
@@ -261,8 +262,8 @@ interface CitationSupport {
 /** Uploads, Sources and Citations the operations refer to, three queries for any number of Proposals. */
 async function citationSupport(db: Db, ops: readonly Operation[]): Promise<CitationSupport> {
   const uploadIds = ops.flatMap((o) => (o.op === 'addImage' ? [o.uploadId] : []));
-  const sourceIds = ops.flatMap((o) => (o.op === 'createCitation' && !isTempId(o.sourceId) ? [o.sourceId] : []));
-  const citationIds = ops.flatMap((o) => (o.op === 'attachCitation' && !isTempId(o.citationId) ? [o.citationId] : []));
+  const sourceIds = ops.flatMap((o) => (o.op === 'createCitation' && !isNewRef(o.sourceId) ? [o.sourceId] : []));
+  const citationIds = ops.flatMap((o) => (o.op === 'attachCitation' && !isNewRef(o.citationId) ? [o.citationId] : []));
   return {
     uploads: new Map(uploadIds.length ? (await db.selectFrom('upload').selectAll().where('id', 'in', uploadIds).execute()).map((u) => [u.id, u]) : []),
     sources: new Map(
@@ -324,7 +325,7 @@ function citationPreviews(ops: readonly Operation[], support: CitationSupport, l
     if (o.op === 'createCitation') {
       seen.add(o.tempId);
       out.push(created(o));
-    } else if (o.op === 'attachCitation' && !isTempId(o.citationId) && !seen.has(o.citationId)) {
+    } else if (o.op === 'attachCitation' && !isNewRef(o.citationId) && !seen.has(o.citationId)) {
       seen.add(o.citationId);
       out.push(existing(o.citationId));
     }

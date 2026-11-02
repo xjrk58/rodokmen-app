@@ -42,18 +42,27 @@ The Owner's decision on #64: a Name carries a BCP 47 language tag instead of one
 
 ## 3. Importer
 
-- [ ] 3.1 Create an invented fixture Vault in `server/test/fixtures/vault/` covering every note type including `plans/` and `log/`, a broken link, a bad date, an unknown folder, scans, a PDF and a DOC; verify the fixture contains no real names by the repo guard
-- [ ] 3.2 Write the reader (frontmatter, `[[links]]`, EDTF check, unknown folders); verify the unknown-folder and broken-link scenarios
-- [ ] 3.3 Write the mapper per the design table, including the Vault provenance Source, confidence carry-over and tag rules; verify the baptism-entry, fact-from-body, probable-Person, line-tag and transcription scenarios
-- [ ] 3.3a Map `plans/` to open Research leads and `log/` searches to search records; verify the negative-search-in-a-log scenario
-- [ ] 3.4 Write the dry run report (counts, planned Proposals, unmapped fields, broken links, bad dates, unreadable files, Living and relation differences); verify the nothing-submitted and Vault-says-Living scenarios
-- [ ] 3.5 Write the submitter: Agent token, uploads, DOC to PDF with LibreOffice, one Import batch per run; verify the family-document and batch-in-the-queue scenarios against a test server
-- [ ] 3.6 Keep the id map with note hashes and submit only new or changed notes on a re-run; verify the second-run scenario
-- [ ] 3.7 Document the import procedure in `server/src/vault-import/README.md`; verify a fresh run of the fixture Vault following only the README works
+- [x] 3.1 Create an invented fixture Vault in `server/test/fixtures/vault/` covering every note type including `plans/` and `log/`, a broken link, a bad date, an unknown folder, scans, a PDF and a DOC; verify the fixture contains no real names by the repo guard
+  - Note: invented Persons, Places, registers, entries, a family document (PDF and a DOC made with LibreOffice), a plan and a log, `data/`, a broken father link, a date that is not EDTF, an unreadable and a missing scan. `server/test/vault-import-readme.test.ts` runs `scripts/vault-guard.mjs --text -` over its notes (the pre-commit hook checks every line too).
+- [x] 3.2 Write the reader (frontmatter, `[[links]]`, EDTF check, unknown folders); verify the unknown-folder and broken-link scenarios
+  - Note: `server/src/vault-import/reader.ts` reads the note folders and `attachments/`, the Vault's commit, and aliases; `data/` and unknown folders are skipped and reported. Verified in `server/test/vault-import.test.ts` (unknown folder, broken link).
+- [x] 3.3 Write the mapper per the design table, including the Vault provenance Source, confidence carry-over and tag rules; verify the baptism-entry, fact-from-body, probable-Person, line-tag and transcription scenarios
+  - Note: `mapper.ts`, `map-places.ts`, `map-sources.ts`, `map-people.ts`, with the decisions in the design under "As built: mapping details" (Parish-located Events at the Parish seat, seat Places created from Parish notes, registers' Places linked to their Parish, Name languages from the spelling). Verified in `server/test/vault-import.test.ts`.
+- [x] 3.3a Map `plans/` to open Research leads and `log/` searches to search records; verify the negative-search-in-a-log scenario
+  - Note: `map-leads.ts`; the leads are created on the run after the batch is accepted (design, "Research leads after acceptance"). Verified in `server/test/vault-import.test.ts` ("negative search in a log").
+- [x] 3.4 Write the dry run report (counts, planned Proposals, unmapped fields, broken links, bad dates, unreadable files, Living and relation differences); verify the nothing-submitted and Vault-says-Living scenarios
+  - Note: `report.ts`; the dry run sends no write request. The report names Vault notes, so the command writes it where the Owner says (outside any repository). Verified in `server/test/vault-import.test.ts`.
+- [x] 3.5 Write the submitter: Agent token, uploads, DOC to PDF with LibreOffice, one Import batch per run; verify the family-document and batch-in-the-queue scenarios against a test server
+  - Note: `run.ts` and `client.ts`, through `POST /api/batches`, `POST /api/batches/:id/uploads` and `…/proposals` with the batch's own limit; the command is `node dist/cli.js vault-import` (`command.ts`). Verified against the real server in `server/test/vault-import.test.ts`, and the conversion with LibreOffice in `server/test/vault-import-readme.test.ts` where `soffice` is installed.
+- [x] 3.6 Keep the id map with note hashes and submit only new or changed notes on a re-run; verify the second-run scenario
+  - Note: the map holds every key with its Proposal and temporary id, and the hash of what it was made from. A new note is submitted and nothing is created twice; a changed note's new facts come in as new keys, and the note is listed in the report under "Changed notes" (updates of changed values by `setField` were not built: the Vault is frozen after import day; see the design). Verified in `server/test/vault-import.test.ts` ("second run after edits").
+- [x] 3.7 Document the import procedure in `server/src/vault-import/README.md`; verify a fresh run of the fixture Vault following only the README works
+  - Note: a how-to for the Owner (no `docs/README.md` on main, so beside the code). `server/test/vault-import-readme.test.ts` follows its steps through the command and its environment: dry run, import, accepting the batch, and the run that creates the leads.
 
 ## 4. Import day
 
 - [ ] 4.1 Owner marks Family roots, then runs the dry run on the real Vault in a private session; verify the report has no unmapped fields left that the Owner hasn't accepted
+  - Note: a first dry run on the real Vault was made against a local server with an empty Tree; its report is with the Owner, outside the repository. Left open: the Owner reviews the report and marks the Family roots first (or passes them with `--root`), then runs the dry run again.
 - [ ] 4.2 Owner runs the real import, samples and accepts the batch; verify Tree counts match the dry run and the log names the importing Agent
 - [ ] 4.3 Freeze the Vault: final README note, GitHub archive or branch protection, and agents pointed to the API and MCP; verify a push to `rodokmen-data` is refused
 
