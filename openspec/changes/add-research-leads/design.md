@@ -35,6 +35,15 @@ These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each l
 - **Leads answered by a Proposal** (research-leads: Findings link back to leads): proved: accepting marks exactly the leads the Proposal answers as found, and undoing it reopens exactly those.
 - **Leads in an Export** (exports: Living people are reduced in every Export): proved: an exported lead links to no Living person.
 
+## As built (issue #16)
+
+- **Who may write.** `mayDo` has two new actions: `writeLeads` (create and edit leads, add search records) for Members and Agents, and `decideSuggestions` (accept or dismiss a suggested lead) for Members only. Agents still never accept, reject, merge, undo or edit the Tree directly; the proof says so.
+- **History.** `lead_event` keeps each change with author, time, kind (created, edited, searched, closed, answered, reopened) and the fields before and after. An edit names the version it was based on; a lead changed since answers 409, so two writers never overwrite each other unseen.
+- **Registers in the Tree.** The gap finder names "the registers held for" a Parish, which the Tree did not know. A Source of type parish register now has an optional register coverage: its Parish, its kinds of entries (births, marriages, deaths) and its years, open where unknown (`source.register_*`, `register` in `createSource` and `setField`). It is a Tree field, so it changes through Proposals and is logged and undone with the Source. The Vault's `registers/` notes (kind, years) can map to it.
+- **Gap finder inputs.** Only Relatives; a birth or baptism is an Event of that type with the Person as child; its years are those of its earliest and latest day, widened by one year on each side (a baptism may be entered the next year; "about 1801" gives 1798–1804); its Parishes are those of its Place in those years. A marriage is a Family's two partners and the Events where both are partners, read as the relation rule reads a partner link. A suggestion names each fitting register, else none; its archive is the register's holder, else the archive of the Place's Municipality (app/data/archives.json, by district).
+- **When.** In the transaction of every accepted change, for the Persons it touched or whose relation it changed, and nightly over everyone (which also picks up a register added by a Proposal that touched no Person). The key is `kind:subject:source`, where the subject is the Person or, for a marriage, the Family.
+- **Undo, merge, erasure.** A lead's link goes with its Person or Place, so an undo that removes a Person takes the link along. A link to a Person merged into another is read as the Person kept. Erasure and the Export use the entries in `server/src/leads/` (task 1.4).
+
 ## Risks / Trade-offs
 
 - [Unreviewed text could hold mistakes] → leads hold plans, never facts; anything they find still goes through review.
