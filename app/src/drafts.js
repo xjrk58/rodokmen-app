@@ -38,6 +38,7 @@ export const QUOTA_WARNING = 0.8;
  * @property {Blob} blob
  * @property {string} name
  * @property {string | null} uploadId set once uploaded, so a retried submit does not upload it again
+ * @property {number} [order] position among the Draft's photos: a reading's pages are in this order
  */
 
 /** @type {Promise<IDBDatabase> | null} */
@@ -205,7 +206,9 @@ export async function deleteDraft(id) {
 /** @param {string} draftId @returns {Promise<DraftPhoto[]>} */
 export async function draftPhotos(draftId) {
   const photos = await run('photos', 'readonly', (s) => s.index('draftId').getAll(draftId));
-  return Array.isArray(photos) ? photos.filter(isPhoto) : [];
+  const list = Array.isArray(photos) ? photos.filter(isPhoto) : [];
+  // In the order they were added where it is known (a reading's pages), else as stored.
+  return list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
 /** @param {DraftPhoto} photo */

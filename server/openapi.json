@@ -4096,6 +4096,749 @@
           "retryAt"
         ]
       },
+      "SetFamilyRootInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setFamilyRoot"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "True marks the Person as a Family root, false unmarks them"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "familyRoot"
+        ],
+        "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
+      },
+      "TempIdInput": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "RefInput": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          {
+            "$ref": "#/components/schemas/TempIdInput"
+          }
+        ]
+      },
+      "CreatePersonInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPerson"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/SexInput"
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "given": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "surname": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "type": {
+                "$ref": "#/components/schemas/NameTypeInput"
+              },
+              "asFound": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The spelling exactly as found in the Source"
+              }
+            },
+            "required": [
+              "given",
+              "surname",
+              "type",
+              "asFound"
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sex",
+          "name"
+        ],
+        "description": "A new Person with a primary Name"
+      },
+      "AddNameInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addName"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "given": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "surname": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "type": {
+            "$ref": "#/components/schemas/NameTypeInput"
+          },
+          "asFound": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The spelling exactly as found in the Source"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "given",
+          "surname",
+          "type",
+          "asFound"
+        ],
+        "description": "Another Name of a Person (not primary)"
+      },
+      "CreateEventInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEvent"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventTypeInput"
+          },
+          "typeDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EdtfDateInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "placeId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "houseId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "date"
+        ]
+      },
+      "AddRoleInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addRole"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleTypeInput"
+          },
+          "roleDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "eventId",
+          "personId",
+          "role"
+        ],
+        "description": "The part a Person plays in an Event"
+      },
+      "CreateFamilyInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createFamily"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "partner1Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "partner2Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "partner1Id",
+          "partner2Id"
+        ]
+      },
+      "LinkChildInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkChild"
+          },
+          "familyId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "childId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "linkType": {
+            "$ref": "#/components/schemas/ChildLinkTypeInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Family",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "familyId",
+          "childId",
+          "linkType"
+        ]
+      },
+      "CreateSourceInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createSource"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceTypeInput"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "repository": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "familyAccount": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "title"
+        ]
+      },
+      "CreateCitationInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createCitation"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "page": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/ConfidenceInput"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sourceId",
+          "transcription",
+          "readOn",
+          "confidence"
+        ]
+      },
+      "AttachCitationInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "attachCitation"
+          },
+          "citationId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "nameId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event or Name",
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "citationId"
+        ]
+      },
+      "AddImageInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addImage"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempIdInput"
+          },
+          "uploadId": {
+            "description": "A finished upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKindInput"
+          },
+          "citationId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RefInput"
+            }
+          },
+          "caption": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "uploadId",
+          "kind"
+        ]
+      },
+      "SettableRecordInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "event",
+          "role",
+          "childLink",
+          "source",
+          "citation"
+        ]
+      },
+      "SetFieldInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setField"
+          },
+          "record": {
+            "$ref": "#/components/schemas/SettableRecordInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "baseVersion": {
+            "description": "Version of the record as the Member saw it",
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "set": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "Field names and their new values"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "baseVersion",
+          "set"
+        ],
+        "description": "Changes fields of an existing record"
+      },
+      "MergePersonsInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "mergePersons"
+          },
+          "keepId": {
+            "description": "The Person that remains",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "mergeId": {
+            "description": "The Person merged into it",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "keepId",
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ],
+        "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
+      },
+      "RestorableTableInput": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "family",
+          "family_child",
+          "event",
+          "event_role",
+          "source",
+          "citation",
+          "event_citation",
+          "name_citation",
+          "image",
+          "image_person",
+          "family_root"
+        ]
+      },
+      "RestoreRecordInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "restoreRecord"
+          },
+          "table": {
+            "$ref": "#/components/schemas/RestorableTableInput"
+          },
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "baseVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VersionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version the record has after the undone Proposal; null if that Proposal deleted it"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "op",
+          "table",
+          "id",
+          "baseVersion",
+          "values"
+        ]
+      },
+      "OperationInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreatePersonInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddNameInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEventInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddRoleInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateFamilyInput"
+          },
+          {
+            "$ref": "#/components/schemas/LinkChildInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateSourceInput"
+          },
+          {
+            "$ref": "#/components/schemas/CreateCitationInput"
+          },
+          {
+            "$ref": "#/components/schemas/AttachCitationInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddImageInput"
+          },
+          {
+            "$ref": "#/components/schemas/SetFieldInput"
+          },
+          {
+            "$ref": "#/components/schemas/MergePersonsInput"
+          },
+          {
+            "$ref": "#/components/schemas/RestoreRecordInput"
+          },
+          {
+            "$ref": "#/components/schemas/SetFamilyRootInput"
+          }
+        ]
+      },
+      "ProposalStatusInput": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "ProposalKindInput": {
+        "type": "string",
+        "enum": [
+          "contribution",
+          "direct",
+          "undo"
+        ],
+        "description": "Submitted for review, an Editor's direct change, or an undo"
+      },
       "LanguageTagInput": {
         "type": "string",
         "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
@@ -5223,749 +5966,6 @@
         ],
         "additionalProperties": false,
         "description": "The Proposal was drafted from scan readings"
-      },
-      "SetFamilyRootInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "setFamilyRoot"
-          },
-          "personId": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "familyRoot": {
-            "type": "boolean",
-            "description": "True marks the Person as a Family root, false unmarks them"
-          }
-        },
-        "required": [
-          "op",
-          "personId",
-          "familyRoot"
-        ],
-        "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
-      },
-      "TempIdInput": {
-        "type": "string",
-        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
-        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
-      },
-      "RefInput": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          {
-            "$ref": "#/components/schemas/TempIdInput"
-          }
-        ]
-      },
-      "CreatePersonInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createPerson"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "sex": {
-            "$ref": "#/components/schemas/SexInput"
-          },
-          "name": {
-            "type": "object",
-            "properties": {
-              "given": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "surname": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "type": {
-                "$ref": "#/components/schemas/NameTypeInput"
-              },
-              "asFound": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 400,
-                "description": "The spelling exactly as found in the Source"
-              }
-            },
-            "required": [
-              "given",
-              "surname",
-              "type",
-              "asFound"
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "sex",
-          "name"
-        ],
-        "description": "A new Person with a primary Name"
-      },
-      "AddNameInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "addName"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "personId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "baseVersion": {
-            "description": "Version of the existing Person",
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "given": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "surname": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "type": {
-            "$ref": "#/components/schemas/NameTypeInput"
-          },
-          "asFound": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400,
-            "description": "The spelling exactly as found in the Source"
-          }
-        },
-        "required": [
-          "op",
-          "personId",
-          "given",
-          "surname",
-          "type",
-          "asFound"
-        ],
-        "description": "Another Name of a Person (not primary)"
-      },
-      "CreateEventInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createEvent"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "type": {
-            "$ref": "#/components/schemas/EventTypeInput"
-          },
-          "typeDetail": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "date": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EdtfDateInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "placeId": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IdInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "houseId": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IdInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "description": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "type",
-          "date"
-        ]
-      },
-      "AddRoleInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "addRole"
-          },
-          "eventId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "personId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "role": {
-            "$ref": "#/components/schemas/RoleTypeInput"
-          },
-          "roleDetail": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "baseVersion": {
-            "description": "Version of the existing Event",
-            "$ref": "#/components/schemas/VersionInput"
-          }
-        },
-        "required": [
-          "op",
-          "eventId",
-          "personId",
-          "role"
-        ],
-        "description": "The part a Person plays in an Event"
-      },
-      "CreateFamilyInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createFamily"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "partner1Id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RefInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "partner2Id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RefInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "partner1Id",
-          "partner2Id"
-        ]
-      },
-      "LinkChildInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "linkChild"
-          },
-          "familyId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "childId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "linkType": {
-            "$ref": "#/components/schemas/ChildLinkTypeInput"
-          },
-          "baseVersion": {
-            "description": "Version of the existing Family",
-            "$ref": "#/components/schemas/VersionInput"
-          }
-        },
-        "required": [
-          "op",
-          "familyId",
-          "childId",
-          "linkType"
-        ]
-      },
-      "CreateSourceInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createSource"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceTypeInput"
-          },
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400
-          },
-          "repository": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 400
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "reference": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "url": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2000,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "familyAccount": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccountInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "type",
-          "title"
-        ]
-      },
-      "CreateCitationInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createCitation"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "sourceId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "page": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "transcription": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000
-          },
-          "readOn": {
-            "type": "string",
-            "format": "date",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-          },
-          "confidence": {
-            "$ref": "#/components/schemas/ConfidenceInput"
-          },
-          "note": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "sourceId",
-          "transcription",
-          "readOn",
-          "confidence"
-        ]
-      },
-      "AttachCitationInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "attachCitation"
-          },
-          "citationId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "eventId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "nameId": {
-            "$ref": "#/components/schemas/RefInput"
-          },
-          "baseVersion": {
-            "description": "Version of the existing Event or Name",
-            "$ref": "#/components/schemas/VersionInput"
-          }
-        },
-        "required": [
-          "op",
-          "citationId"
-        ]
-      },
-      "AddImageInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "addImage"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempIdInput"
-          },
-          "uploadId": {
-            "description": "A finished upload of the author (POST /api/uploads)",
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ImageKindInput"
-          },
-          "citationId": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RefInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "personIds": {
-            "default": [],
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RefInput"
-            }
-          },
-          "caption": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "uploadId",
-          "kind"
-        ]
-      },
-      "SettableRecordInput": {
-        "type": "string",
-        "enum": [
-          "person",
-          "name",
-          "event",
-          "role",
-          "childLink",
-          "source",
-          "citation"
-        ]
-      },
-      "SetFieldInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "setField"
-          },
-          "record": {
-            "$ref": "#/components/schemas/SettableRecordInput"
-          },
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "baseVersion": {
-            "description": "Version of the record as the Member saw it",
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "set": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {},
-            "description": "Field names and their new values"
-          }
-        },
-        "required": [
-          "op",
-          "record",
-          "id",
-          "baseVersion",
-          "set"
-        ],
-        "description": "Changes fields of an existing record"
-      },
-      "MergePersonsInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "mergePersons"
-          },
-          "keepId": {
-            "description": "The Person that remains",
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "mergeId": {
-            "description": "The Person merged into it",
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "keepBaseVersion": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "mergeBaseVersion": {
-            "$ref": "#/components/schemas/VersionInput"
-          }
-        },
-        "required": [
-          "op",
-          "keepId",
-          "mergeId",
-          "keepBaseVersion",
-          "mergeBaseVersion"
-        ],
-        "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
-      },
-      "RestorableTableInput": {
-        "type": "string",
-        "enum": [
-          "person",
-          "name",
-          "family",
-          "family_child",
-          "event",
-          "event_role",
-          "source",
-          "citation",
-          "event_citation",
-          "name_citation",
-          "image",
-          "image_person",
-          "family_root"
-        ]
-      },
-      "RestoreRecordInput": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "restoreRecord"
-          },
-          "table": {
-            "$ref": "#/components/schemas/RestorableTableInput"
-          },
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "baseVersion": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VersionInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Version the record has after the undone Proposal; null if that Proposal deleted it"
-          },
-          "values": {
-            "anyOf": [
-              {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "fields": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "op",
-          "table",
-          "id",
-          "baseVersion",
-          "values"
-        ]
-      },
-      "OperationInput": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CreatePersonInput"
-          },
-          {
-            "$ref": "#/components/schemas/AddNameInput"
-          },
-          {
-            "$ref": "#/components/schemas/CreateEventInput"
-          },
-          {
-            "$ref": "#/components/schemas/AddRoleInput"
-          },
-          {
-            "$ref": "#/components/schemas/CreateFamilyInput"
-          },
-          {
-            "$ref": "#/components/schemas/LinkChildInput"
-          },
-          {
-            "$ref": "#/components/schemas/CreateSourceInput"
-          },
-          {
-            "$ref": "#/components/schemas/CreateCitationInput"
-          },
-          {
-            "$ref": "#/components/schemas/AttachCitationInput"
-          },
-          {
-            "$ref": "#/components/schemas/AddImageInput"
-          },
-          {
-            "$ref": "#/components/schemas/SetFieldInput"
-          },
-          {
-            "$ref": "#/components/schemas/MergePersonsInput"
-          },
-          {
-            "$ref": "#/components/schemas/RestoreRecordInput"
-          },
-          {
-            "$ref": "#/components/schemas/SetFamilyRootInput"
-          }
-        ]
-      },
-      "ProposalStatusInput": {
-        "type": "string",
-        "enum": [
-          "pending",
-          "accepted",
-          "rejected"
-        ]
-      },
-      "ProposalKindInput": {
-        "type": "string",
-        "enum": [
-          "contribution",
-          "direct",
-          "undo"
-        ],
-        "description": "Submitted for review, an Editor's direct change, or an undo"
       },
       "SubmitProposalBodyInput": {
         "type": "object",
@@ -11236,6 +11236,778 @@
         ],
         "additionalProperties": false
       },
+      "SetFamilyRoot": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setFamilyRoot"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "familyRoot": {
+            "type": "boolean",
+            "description": "True marks the Person as a Family root, false unmarks them"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "familyRoot"
+        ],
+        "additionalProperties": false,
+        "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
+      },
+      "TempId": {
+        "type": "string",
+        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
+        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
+      },
+      "Ref": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Id"
+          },
+          {
+            "$ref": "#/components/schemas/TempId"
+          }
+        ]
+      },
+      "CreatePerson": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createPerson"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/Sex"
+          },
+          "name": {
+            "type": "object",
+            "properties": {
+              "given": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "surname": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "type": {
+                "$ref": "#/components/schemas/NameType"
+              },
+              "asFound": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "description": "The spelling exactly as found in the Source"
+              }
+            },
+            "required": [
+              "given",
+              "surname",
+              "type",
+              "asFound"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sex",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "A new Person with a primary Name"
+      },
+      "AddName": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addName"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Person",
+            "$ref": "#/components/schemas/Version"
+          },
+          "given": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "surname": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "type": {
+            "$ref": "#/components/schemas/NameType"
+          },
+          "asFound": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "The spelling exactly as found in the Source"
+          }
+        },
+        "required": [
+          "op",
+          "personId",
+          "given",
+          "surname",
+          "type",
+          "asFound"
+        ],
+        "additionalProperties": false,
+        "description": "Another Name of a Person (not primary)"
+      },
+      "CreateEvent": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createEvent"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "typeDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "date": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EdtfDate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "placeId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "houseId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "typeDetail",
+          "date",
+          "placeId",
+          "houseId",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "AddRole": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addRole"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "personId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleType"
+          },
+          "roleDetail": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "eventId",
+          "personId",
+          "role",
+          "roleDetail"
+        ],
+        "additionalProperties": false,
+        "description": "The part a Person plays in an Event"
+      },
+      "CreateFamily": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createFamily"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "partner1Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "partner2Id": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "partner1Id",
+          "partner2Id"
+        ],
+        "additionalProperties": false
+      },
+      "LinkChild": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "linkChild"
+          },
+          "familyId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "childId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "linkType": {
+            "$ref": "#/components/schemas/ChildLinkType"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Family",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "familyId",
+          "childId",
+          "linkType"
+        ],
+        "additionalProperties": false
+      },
+      "CreateSource": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createSource"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceType"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "repository": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 400
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reference": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "familyAccount": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount"
+        ],
+        "additionalProperties": false
+      },
+      "CreateCitation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "createCitation"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "page": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "note": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "tempId",
+          "sourceId",
+          "page",
+          "transcription",
+          "readOn",
+          "confidence",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "AttachCitation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "attachCitation"
+          },
+          "citationId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "eventId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "nameId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "baseVersion": {
+            "description": "Version of the existing Event or Name",
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "citationId"
+        ],
+        "additionalProperties": false
+      },
+      "AddImage": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addImage"
+          },
+          "tempId": {
+            "$ref": "#/components/schemas/TempId"
+          },
+          "uploadId": {
+            "description": "A finished upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKind"
+          },
+          "citationId": {
+            "default": null,
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "default": [],
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Ref"
+            }
+          },
+          "caption": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "op",
+          "uploadId",
+          "kind",
+          "citationId",
+          "personIds",
+          "caption"
+        ],
+        "additionalProperties": false
+      },
+      "SettableRecord": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "event",
+          "role",
+          "childLink",
+          "source",
+          "citation"
+        ]
+      },
+      "SetField": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "setField"
+          },
+          "record": {
+            "$ref": "#/components/schemas/SettableRecord"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "baseVersion": {
+            "description": "Version of the record as the Member saw it",
+            "$ref": "#/components/schemas/Version"
+          },
+          "set": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {},
+            "description": "Field names and their new values"
+          }
+        },
+        "required": [
+          "op",
+          "record",
+          "id",
+          "baseVersion",
+          "set"
+        ],
+        "additionalProperties": false,
+        "description": "Changes fields of an existing record"
+      },
+      "MergePersons": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "mergePersons"
+          },
+          "keepId": {
+            "description": "The Person that remains",
+            "$ref": "#/components/schemas/Id"
+          },
+          "mergeId": {
+            "description": "The Person merged into it",
+            "$ref": "#/components/schemas/Id"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "keepId",
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ],
+        "additionalProperties": false,
+        "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
+      },
+      "RestorableTable": {
+        "type": "string",
+        "enum": [
+          "person",
+          "name",
+          "family",
+          "family_child",
+          "event",
+          "event_role",
+          "source",
+          "citation",
+          "event_citation",
+          "name_citation",
+          "image",
+          "image_person",
+          "family_root"
+        ]
+      },
+      "RestoreRecord": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "restoreRecord"
+          },
+          "table": {
+            "$ref": "#/components/schemas/RestorableTable"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "baseVersion": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Version"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Version the record has after the undone Proposal; null if that Proposal deleted it"
+          },
+          "values": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "op",
+          "table",
+          "id",
+          "baseVersion",
+          "values"
+        ],
+        "additionalProperties": false
+      },
+      "Operation": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreatePerson"
+          },
+          {
+            "$ref": "#/components/schemas/AddName"
+          },
+          {
+            "$ref": "#/components/schemas/CreateEvent"
+          },
+          {
+            "$ref": "#/components/schemas/AddRole"
+          },
+          {
+            "$ref": "#/components/schemas/CreateFamily"
+          },
+          {
+            "$ref": "#/components/schemas/LinkChild"
+          },
+          {
+            "$ref": "#/components/schemas/CreateSource"
+          },
+          {
+            "$ref": "#/components/schemas/CreateCitation"
+          },
+          {
+            "$ref": "#/components/schemas/AttachCitation"
+          },
+          {
+            "$ref": "#/components/schemas/AddImage"
+          },
+          {
+            "$ref": "#/components/schemas/SetField"
+          },
+          {
+            "$ref": "#/components/schemas/MergePersons"
+          },
+          {
+            "$ref": "#/components/schemas/RestoreRecord"
+          },
+          {
+            "$ref": "#/components/schemas/SetFamilyRoot"
+          }
+        ]
+      },
+      "ProposalStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "accepted",
+          "rejected"
+        ]
+      },
+      "ProposalKind": {
+        "type": "string",
+        "enum": [
+          "contribution",
+          "direct",
+          "undo"
+        ],
+        "description": "Submitted for review, an Editor's direct change, or an undo"
+      },
       "LanguageTag": {
         "type": "string",
         "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
@@ -12396,778 +13168,6 @@
         ],
         "additionalProperties": false,
         "description": "The Proposal was drafted from scan readings"
-      },
-      "SetFamilyRoot": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "setFamilyRoot"
-          },
-          "personId": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "familyRoot": {
-            "type": "boolean",
-            "description": "True marks the Person as a Family root, false unmarks them"
-          }
-        },
-        "required": [
-          "op",
-          "personId",
-          "familyRoot"
-        ],
-        "additionalProperties": false,
-        "description": "The Owner only, through PUT /api/persons/{id}/family-root: marks or unmarks a Family root"
-      },
-      "TempId": {
-        "type": "string",
-        "pattern": "^tmp:[A-Za-z0-9_-]{1,40}$",
-        "description": "Temporary id of a record created earlier in the same Proposal, such as tmp:child"
-      },
-      "Ref": {
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/Id"
-          },
-          {
-            "$ref": "#/components/schemas/TempId"
-          }
-        ]
-      },
-      "CreatePerson": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createPerson"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "sex": {
-            "$ref": "#/components/schemas/Sex"
-          },
-          "name": {
-            "type": "object",
-            "properties": {
-              "given": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "surname": {
-                "type": "string",
-                "maxLength": 200
-              },
-              "type": {
-                "$ref": "#/components/schemas/NameType"
-              },
-              "asFound": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 400,
-                "description": "The spelling exactly as found in the Source"
-              }
-            },
-            "required": [
-              "given",
-              "surname",
-              "type",
-              "asFound"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "sex",
-          "name"
-        ],
-        "additionalProperties": false,
-        "description": "A new Person with a primary Name"
-      },
-      "AddName": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "addName"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "personId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "baseVersion": {
-            "description": "Version of the existing Person",
-            "$ref": "#/components/schemas/Version"
-          },
-          "given": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "surname": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "type": {
-            "$ref": "#/components/schemas/NameType"
-          },
-          "asFound": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400,
-            "description": "The spelling exactly as found in the Source"
-          }
-        },
-        "required": [
-          "op",
-          "personId",
-          "given",
-          "surname",
-          "type",
-          "asFound"
-        ],
-        "additionalProperties": false,
-        "description": "Another Name of a Person (not primary)"
-      },
-      "CreateEvent": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createEvent"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "type": {
-            "$ref": "#/components/schemas/EventType"
-          },
-          "typeDetail": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "date": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/EdtfDate"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "placeId": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "houseId": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "description": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "type",
-          "typeDetail",
-          "date",
-          "placeId",
-          "houseId",
-          "description"
-        ],
-        "additionalProperties": false
-      },
-      "AddRole": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "addRole"
-          },
-          "eventId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "personId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "role": {
-            "$ref": "#/components/schemas/RoleType"
-          },
-          "roleDetail": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "baseVersion": {
-            "description": "Version of the existing Event",
-            "$ref": "#/components/schemas/Version"
-          }
-        },
-        "required": [
-          "op",
-          "eventId",
-          "personId",
-          "role",
-          "roleDetail"
-        ],
-        "additionalProperties": false,
-        "description": "The part a Person plays in an Event"
-      },
-      "CreateFamily": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createFamily"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "partner1Id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Ref"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "partner2Id": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Ref"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "partner1Id",
-          "partner2Id"
-        ],
-        "additionalProperties": false
-      },
-      "LinkChild": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "linkChild"
-          },
-          "familyId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "childId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "linkType": {
-            "$ref": "#/components/schemas/ChildLinkType"
-          },
-          "baseVersion": {
-            "description": "Version of the existing Family",
-            "$ref": "#/components/schemas/Version"
-          }
-        },
-        "required": [
-          "op",
-          "familyId",
-          "childId",
-          "linkType"
-        ],
-        "additionalProperties": false
-      },
-      "CreateSource": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createSource"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceType"
-          },
-          "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 400
-          },
-          "repository": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 400
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "reference": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "url": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 2000,
-                "format": "uri"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "familyAccount": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccount"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount"
-        ],
-        "additionalProperties": false
-      },
-      "CreateCitation": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "createCitation"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "sourceId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "page": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "transcription": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000
-          },
-          "readOn": {
-            "type": "string",
-            "format": "date",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
-          },
-          "confidence": {
-            "$ref": "#/components/schemas/Confidence"
-          },
-          "note": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "tempId",
-          "sourceId",
-          "page",
-          "transcription",
-          "readOn",
-          "confidence",
-          "note"
-        ],
-        "additionalProperties": false
-      },
-      "AttachCitation": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "attachCitation"
-          },
-          "citationId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "eventId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "nameId": {
-            "$ref": "#/components/schemas/Ref"
-          },
-          "baseVersion": {
-            "description": "Version of the existing Event or Name",
-            "$ref": "#/components/schemas/Version"
-          }
-        },
-        "required": [
-          "op",
-          "citationId"
-        ],
-        "additionalProperties": false
-      },
-      "AddImage": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "addImage"
-          },
-          "tempId": {
-            "$ref": "#/components/schemas/TempId"
-          },
-          "uploadId": {
-            "description": "A finished upload of the author (POST /api/uploads)",
-            "$ref": "#/components/schemas/Id"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ImageKind"
-          },
-          "citationId": {
-            "default": null,
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Ref"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "personIds": {
-            "default": [],
-            "maxItems": 50,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Ref"
-            }
-          },
-          "caption": {
-            "default": null,
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "op",
-          "uploadId",
-          "kind",
-          "citationId",
-          "personIds",
-          "caption"
-        ],
-        "additionalProperties": false
-      },
-      "SettableRecord": {
-        "type": "string",
-        "enum": [
-          "person",
-          "name",
-          "event",
-          "role",
-          "childLink",
-          "source",
-          "citation"
-        ]
-      },
-      "SetField": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "setField"
-          },
-          "record": {
-            "$ref": "#/components/schemas/SettableRecord"
-          },
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "baseVersion": {
-            "description": "Version of the record as the Member saw it",
-            "$ref": "#/components/schemas/Version"
-          },
-          "set": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {},
-            "description": "Field names and their new values"
-          }
-        },
-        "required": [
-          "op",
-          "record",
-          "id",
-          "baseVersion",
-          "set"
-        ],
-        "additionalProperties": false,
-        "description": "Changes fields of an existing record"
-      },
-      "MergePersons": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "mergePersons"
-          },
-          "keepId": {
-            "description": "The Person that remains",
-            "$ref": "#/components/schemas/Id"
-          },
-          "mergeId": {
-            "description": "The Person merged into it",
-            "$ref": "#/components/schemas/Id"
-          },
-          "keepBaseVersion": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "mergeBaseVersion": {
-            "$ref": "#/components/schemas/Version"
-          }
-        },
-        "required": [
-          "op",
-          "keepId",
-          "mergeId",
-          "keepBaseVersion",
-          "mergeBaseVersion"
-        ],
-        "additionalProperties": false,
-        "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
-      },
-      "RestorableTable": {
-        "type": "string",
-        "enum": [
-          "person",
-          "name",
-          "family",
-          "family_child",
-          "event",
-          "event_role",
-          "source",
-          "citation",
-          "event_citation",
-          "name_citation",
-          "image",
-          "image_person",
-          "family_root"
-        ]
-      },
-      "RestoreRecord": {
-        "type": "object",
-        "properties": {
-          "op": {
-            "type": "string",
-            "const": "restoreRecord"
-          },
-          "table": {
-            "$ref": "#/components/schemas/RestorableTable"
-          },
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "baseVersion": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Version"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Version the record has after the undone Proposal; null if that Proposal deleted it"
-          },
-          "values": {
-            "anyOf": [
-              {
-                "type": "object",
-                "propertyNames": {
-                  "type": "string"
-                },
-                "additionalProperties": {}
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "fields": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "op",
-          "table",
-          "id",
-          "baseVersion",
-          "values"
-        ],
-        "additionalProperties": false
-      },
-      "Operation": {
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/CreatePerson"
-          },
-          {
-            "$ref": "#/components/schemas/AddName"
-          },
-          {
-            "$ref": "#/components/schemas/CreateEvent"
-          },
-          {
-            "$ref": "#/components/schemas/AddRole"
-          },
-          {
-            "$ref": "#/components/schemas/CreateFamily"
-          },
-          {
-            "$ref": "#/components/schemas/LinkChild"
-          },
-          {
-            "$ref": "#/components/schemas/CreateSource"
-          },
-          {
-            "$ref": "#/components/schemas/CreateCitation"
-          },
-          {
-            "$ref": "#/components/schemas/AttachCitation"
-          },
-          {
-            "$ref": "#/components/schemas/AddImage"
-          },
-          {
-            "$ref": "#/components/schemas/SetField"
-          },
-          {
-            "$ref": "#/components/schemas/MergePersons"
-          },
-          {
-            "$ref": "#/components/schemas/RestoreRecord"
-          },
-          {
-            "$ref": "#/components/schemas/SetFamilyRoot"
-          }
-        ]
-      },
-      "ProposalStatus": {
-        "type": "string",
-        "enum": [
-          "pending",
-          "accepted",
-          "rejected"
-        ]
-      },
-      "ProposalKind": {
-        "type": "string",
-        "enum": [
-          "contribution",
-          "direct",
-          "undo"
-        ],
-        "description": "Submitted for review, an Editor's direct change, or an undo"
       },
       "SubmitProposalBody": {
         "type": "object",

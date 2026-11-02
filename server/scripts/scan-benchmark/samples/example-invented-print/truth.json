@@ -1,0 +1,15 @@
+{
+  "example": true,
+  "source": "Invented for this repository: a printed page in the layout of a baptism register, with invented names. It shows the format of a sample only; it is not handwriting and says nothing about reading quality.",
+  "script": "print",
+  "languages": ["la"],
+  "context": { "sourceTitle": "Invented register N 1820–1840", "page": "41", "years": { "from": 1830, "to": 1830 }, "note": null },
+  "transcription": "Anno 1830\nDie 14. Martii baptizata est Anna, filia legitima Joannis Nowak coloni N. 15 et Catharinae uxoris eius.\nPatrina Rosalia Swobodowa. Baptizavit Franciscus Kral cooperator.",
+  "entries": [
+    {
+      "date": "1830-03-14",
+      "house": "15",
+      "names": ["Anna", "Joannis Nowak", "Catharinae", "Rosalia Swobodowa", "Franciscus Kral"]
+    }
+  ]
+}

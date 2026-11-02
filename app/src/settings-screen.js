@@ -1,8 +1,10 @@
 // Settings (family-view spec, "Owner settings in the app"): every Member's own language,
 // passkeys and sessions, and sign-out; for the Owner also the Family roots and the family:
 // invitations, roles, disabling and enabling Members, and the link from each Member to their
-// Person. Settings that later changes add (Agent accounts, scan reading) get their own section
-// here. Other Members see nothing about anyone else.
+// Person; and scan reading (scan-reading spec, "The Owner switches it on"): the switch, which
+// says that scans go to Anthropic's API, the daily limit and the readings made. Settings that
+// later changes add (Agent accounts) get their own section here. Other Members see nothing about
+// anyone else.
 
 import * as API from './api.js';
 import { LANGUAGES, language, t } from './i18n.js';
@@ -351,6 +353,68 @@ function FamilyRootsSection({ refreshMe }) {
   </section>`;
 }
 
+/**
+ * Scan reading (scan-reading spec, "The Owner switches it on"): off until the Owner switches it
+ * on, saying plainly that scans then go to Anthropic's API; the daily limit per Member; and the
+ * readings made per Member and day.
+ */
+function ScanReadingSection() {
+  const settings = useLoad((signal) => API.scanReadingSettings(signal));
+  const [limit, setLimit] = useState('');
+  const [text, error, run] = useAction();
+  const s = settings.data;
+  if (!s) return html`<section class="card" data-testid="settings-scan-reading"><h2>${t('settings.scanReading')}</h2></section>`;
+  const dailyLimit = Number(limit || s.dailyLimit);
+  const save = (/** @type {boolean} */ enabled) =>
+    run(async () => {
+      await API.setScanReadingSettings({ enabled, dailyLimit });
+      settings.reload();
+    }, t('settings.saved'));
+  const today = new Date().toISOString().slice(0, 10);
+  const usedToday = s.usage.filter((u) => u.day === today).reduce((n, u) => n + u.readings, 0);
+  return html`<section class="card" data-testid="settings-scan-reading">
+    <h2>${t('settings.scanReading')}</h2>
+    <p class="note small" data-testid="scan-reading-notice">${t('settings.scanReadingNotice')}</p>
+    ${s.configured ? null : html`<p class="warning small" data-testid="scan-reading-no-key">${t('settings.scanReadingNoKey')}</p>`}
+    <label class="switch-row">
+      <input
+        type="checkbox"
+        data-testid="scan-reading-switch"
+        checked=${s.enabled}
+        disabled=${!s.configured && !s.enabled}
+        onChange=${(/** @type {Event} */ e) => void save(/** @type {HTMLInputElement} */ (e.currentTarget).checked)}
+      />
+      <span>${t('settings.scanReadingSwitch')}</span>
+    </label>
+    <label class="field"
+      ><span>${t('settings.scanReadingLimit')}</span
+      ><input
+        type="number"
+        min="1"
+        max="200"
+        inputmode="numeric"
+        data-testid="scan-reading-limit"
+        value=${limit || String(s.dailyLimit)}
+        onInput=${(/** @type {Event} */ e) => setLimit(/** @type {HTMLInputElement} */ (e.currentTarget).value)}
+    /></label>
+    <button type="button" class="button" data-testid="scan-reading-save" onClick=${() => void save(s.enabled)}>${t('settings.save')}</button>
+    <p class="muted small" data-testid="scan-reading-model">${t('settings.scanReadingModel', { model: s.model, today: usedToday })}</p>
+    <${Status} text=${text} error=${error} testid="scan-reading-status" />
+    <h3>${t('settings.scanReadingUsage')}</h3>
+    ${s.usage.length === 0 ? html`<p class="muted small">${t('settings.scanReadingNone')}</p>` : null}
+    <ul class="plain-list" data-testid="scan-reading-usage">
+      ${s.usage.map(
+        (u) =>
+          html`<li key=${`${u.day}-${u.author.id}`} data-testid="usage">
+            <span>${u.day}</span> ·
+            <span>${u.author.displayName}</span>${u.author.isAgent ? html` <span class="badge agent">${t('review.agent')}</span>` : null}
+            <span class="muted small"> · ${t('settings.scanReadingCount', { count: u.readings, failed: u.failed })}</span>
+          </li>`,
+      )}
+    </ul>
+  </section>`;
+}
+
 /** @param {SettingsProps} props */
 export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
   const [text, error, run] = useAction();
@@ -367,7 +431,7 @@ export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
     <${PasskeysSection} me=${me} refreshMe=${refreshMe} />
     <${SessionsSection} />
     ${me.permissions.markFamilyRoots ? html`<${FamilyRootsSection} refreshMe=${refreshMe} />` : null}
-    ${me.role === 'owner' ? html`<${FamilySection} me=${me} />` : null}
+    ${me.role === 'owner' ? html`<${FamilySection} me=${me} />` : null} ${me.permissions.manageSettings ? html`<${ScanReadingSection} />` : null}
     <section class="card">
       <h2>${t('settings.about')}</h2>
       <p class="muted small">${t('settings.version', { version: APP_VERSION })}</p>

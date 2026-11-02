@@ -190,6 +190,12 @@ function correctionInputs(o, state) {
 function changeItem(p, o, state, review) {
   const lang = language();
   const li = h('li', { class: o.conflict ? 'conflict' : '' }, h('span', {}, o.summary[lang]));
+  // Drafted from a scan reading: the values the Member neither confirmed nor changed (scan-reading spec).
+  const marked = p.reader?.marks.find((m) => m.position === o.position);
+  if (marked) {
+    const fields = marked.fields.map((f) => t(`field.${f.split('.').pop()}`)).join(', ');
+    li.append(' ', h('span', { class: 'chip ai', 'data-testid': 'ai-mark', title: t('reading.aiMarkHelp') }, `${t('reading.aiMark')}: ${fields}`));
+  }
   if (o.corrected && o.originalSummary) li.append(h('span', { class: 'muted small corrected' }, ` (${t('review.correctedFrom')}: ${o.originalSummary[lang]})`));
   const set = o.operation.op === 'setField' ? o.operation.set : {};
   if (o.current && !o.conflict) {
