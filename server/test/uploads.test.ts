@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import { crc32 } from 'node:zlib';
+import { crc32, deflateSync } from 'node:zlib';
 import { ProposalView, UploadTicket, UploadView, type OperationInput } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { DailyScheduler } from '../src/jobs/daily.js';
 import { createImageStorage, MemoryImageStorage } from '../src/storage/images.js';
-import { HEIC_MESSAGE, MAX_INPUT_PIXELS, processImage, sniffImageType, TOO_MANY_PIXELS_MESSAGE } from '../src/storage/process.js';
+import { HEIC_MESSAGE, processImage, SHARP_MAX_INPUT_PIXELS, sniffImageType, TOO_MANY_PIXELS_MESSAGE } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { createMember, DAY, ensureOwner, errorOf, makeApp, signIn, TestClock, testConfig, type TestApp } from './helpers.js';
 
@@ -28,8 +28,8 @@ function heicContainer(): Buffer {
   return Buffer.concat([ftyp, Buffer.alloc(2048, 0x11)]);
 }
 
-/** A small PNG whose header claims width × height pixels; its image data is a few bytes. */
-function pngClaiming(width: number, height: number): Buffer {
+/** A PNG of width × height pixels with the given IHDR depth and colour type, and image data. */
+function png(width: number, height: number, depthAndColour: [number, number], data: Buffer): Buffer {
   const chunk = (type: string, data: Buffer) => {
     const body = Buffer.concat([Buffer.from(type, 'latin1'), data]);
     const out = Buffer.alloc(body.length + 8);
@@ -41,10 +41,16 @@ function pngClaiming(width: number, height: number): Buffer {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(width, 0);
   ihdr.writeUInt32BE(height, 4);
-  ihdr.set([8, 2, 0, 0, 0], 8); // 8-bit RGB
+  ihdr.set([...depthAndColour, 0, 0, 0], 8);
   const signature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  return Buffer.concat([signature, chunk('IHDR', ihdr), chunk('IDAT', Buffer.from([0x78, 0x9c, 0x03, 0x00])), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([signature, chunk('IHDR', ihdr), chunk('IDAT', data), chunk('IEND', Buffer.alloc(0))]);
 }
+
+/** A small 8-bit RGB PNG whose header claims width × height pixels; its image data is a few bytes. */
+const pngClaiming = (width: number, height: number) => png(width, height, [8, 2], Buffer.from([0x78, 0x9c, 0x03, 0x00]));
+
+/** A real, all-black 1-bit greyscale PNG of width × height pixels (width a multiple of 8): each row is a filter byte and zeros, which compress to almost nothing. */
+const flatPng = (width: number, height: number) => png(width, height, [1, 0], deflateSync(Buffer.alloc((1 + width / 8) * height), { level: 9 }));
 
 describe('images: uploads, display copies, privacy and deletion', () => {
   let t: TestDatabase;
@@ -185,14 +191,26 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     await expect(processImage(big)).rejects.toMatchObject({ statusCode: 413, code: 'too_large' });
   });
 
-  it('refuses an image with more pixels than a 25 MB file can hold, from its header alone', async () => {
-    expect(MAX_INPUT_PIXELS).toBe(8 * 25_000_000);
-    const bomb = pngClaiming(20_000, 10_001); // 200,020,000 pixels in under 100 bytes
+  it("refuses an image over sharp's own pixel limit with a clear 413, from its header alone", async () => {
+    expect(SHARP_MAX_INPUT_PIXELS).toBe(268_402_689); // sharp's default limitInputPixels, 16,383 × 16,383
+    // sharp's own limit is this one: it reads the header of a file at the limit and refuses one just over.
+    await expect(sharp(pngClaiming(16_383, 16_383)).metadata()).resolves.toMatchObject({ width: 16_383, height: 16_383 });
+    await expect(sharp(pngClaiming(16_383, 16_384)).metadata()).rejects.toThrow();
+
+    const bomb = pngClaiming(16_383, 16_384); // 268,419,072 pixels in under 100 bytes
     expect(bomb.length).toBeLessThan(100);
     await expect(processImage(bomb)).rejects.toMatchObject({ statusCode: 413, code: 'too_large', message: TOO_MANY_PIXELS_MESSAGE });
-    expect(TOO_MANY_PIXELS_MESSAGE).toMatch(/at most 200 million pixels/);
-    // Just within the limit, the same file gets as far as decoding (and fails there, having no data).
-    await expect(processImage(pngClaiming(20_000, 10_000))).rejects.toMatchObject({ statusCode: 415, code: 'image_unreadable' });
+    expect(TOO_MANY_PIXELS_MESSAGE).toMatch(/at most about 268 million pixels/);
+    // At the limit, the same file gets as far as decoding (and fails there, having no data).
+    await expect(processImage(pngClaiming(16_383, 16_383))).rejects.toMatchObject({ statusCode: 415, code: 'image_unreadable' });
+  });
+
+  it("accepts an image between the old 200-million-pixel limit and sharp's (#98)", async () => {
+    const large = flatPng(16_384, 13_000); // 212,992,000 pixels in a few tens of kB
+    expect(large.length).toBeLessThan(100_000);
+    const done = await processImage(large);
+    expect(done).toMatchObject({ contentType: 'image/png', width: 16_384, height: 13_000 });
+    expect(await sharp(done.display).metadata()).toMatchObject({ width: 2000, height: 1587 });
   });
 
   it('signs upload links for exactly the announced type and size, valid 15 minutes', async () => {
