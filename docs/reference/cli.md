@@ -22,8 +22,27 @@
 | `alert --subject S [--details D]`                     | emails an alert to `ALERT_EMAIL`                                                                                                                                                                   |
 | `health [url]`                                        | exits 0 when the health check answers within 5 seconds, else prints why and exits 1; default `http://127.0.0.1:<PORT>/api/health`                                                                  |
 | `watchdog`                                            | runs until stopped: every 30 seconds checks `WATCHDOG_URL` and, if set, `BACKUP_STATUS_FILE`, and alerts the Owner when the health check fails for over 5 minutes or a Backup failed or is missing |
+| `vault-import --vault DIR [options]`                  | imports the Vault through the API as one Import batch, with an Agent token; see [the Vault importer](#the-vault-importer)                                                                          |
 
 Exit codes: 0 success; 1 failure, with the error printed; 2 an unknown command or missing option, with the usage printed.
+
+### The Vault importer
+
+`vault-import` (`server/src/vault-import/`) reads a checkout of the Vault and submits it through the API as an Agent, never to the database directly. How to run it: [Import the Vault](../how-to/import-the-vault.md).
+
+| Option                   | Default                        | Meaning                                                                                                    |
+| ------------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `--vault DIR`            | required                       | the Vault checkout; its commit is recorded in the provenance Source                                        |
+| `--dry-run`              | off                            | read the Vault and the server's id map, write the report, submit nothing                                   |
+| `--report FILE`          | `vault-import-report.md`       | where the report goes; it names Vault notes and people, so keep it outside any repository                  |
+| `--name N`               | `Vault import <day>`           | the name of the Import batch                                                                               |
+| `--given-by N`           | `the Owner`                    | who gave the Vault, as the Family account of its provenance Source                                         |
+| `--root ID` (repeatable) | none                           | Vault ids of the Family roots, for the dry run's comparison of the relation to the family on an empty Tree |
+| `--municipalities FILE`  | `app/data/municipalities.json` | the list of Municipalities that Places are matched against                                                 |
+
+It needs `RODOKMEN_URL` (the server) and `RODOKMEN_TOKEN` (an Agent token); without them it exits 2 and says what to set. LibreOffice (`soffice`) on `PATH` converts DOC files to PDF; without it, each DOC is reported and left out.
+
+A run opens one Import batch, uploads the scans and documents, and submits the Proposals in order. A later run submits only what its id map (`GET`, `PUT /api/import-map`) does not have yet, and creates the Research leads once the Persons and Places they link exist. It prints the batch, the counts of Proposals and records, and the leads created or waiting.
 
 ## Workspace scripts
 

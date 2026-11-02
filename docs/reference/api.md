@@ -26,25 +26,27 @@ Each route needs an action that the caller's role may do ([Roles and actions](ro
 
 The OpenAPI tags, and the routes in each:
 
-| Tag       | Routes                                                                                                                                                                                                                                                  |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| System    | `GET /api/health` (public), `GET /api/openapi.json`                                                                                                                                                                                                     |
-| Persons   | `GET /api/persons` (search), `GET /api/persons/{id}`, `…/ancestors`, `…/descendants`, `…/hourglass`; `GET /api/family-roots`, `PUT /api/persons/{id}/family-root`                                                                                       |
-| Families  | `GET /api/families/{id}`                                                                                                                                                                                                                                |
-| Events    | `GET /api/events/{id}`                                                                                                                                                                                                                                  |
-| Map       | `GET /api/map/events`                                                                                                                                                                                                                                   |
-| Places    | `GET /api/places` (search), `GET /api/places/{id}`, `…/events`, `…/houses`; `GET /api/houses/{id}`, `GET /api/parishes/{id}`, `GET /api/estates/{id}`                                                                                                   |
-| Sources   | `GET /api/sources` (search), `GET /api/sources/{id}`, `GET /api/citations/{id}`, `GET /api/images/{id}`                                                                                                                                                 |
-| Proposals | `POST /api/proposals`, `GET /api/proposals`, `GET /api/proposals/{id}`                                                                                                                                                                                  |
-| Review    | `GET /api/review`, `POST /api/proposals/{id}/accept`, `POST /api/proposals/{id}/reject`, `POST /api/persons/{id}/merge`                                                                                                                                 |
-| History   | `GET /api/history/{kind}/{id}`, `GET /api/proposals/{id}/undo` (what an undo would do), `POST /api/proposals/{id}/undo`                                                                                                                                 |
-| Images    | `POST /api/uploads`, `POST /api/uploads/{id}/complete`, `GET /api/uploads/{id}`                                                                                                                                                                         |
-| Account   | `GET`, `PATCH /api/me`; `GET`, `PUT /api/me/notifications`; `GET /api/me/sessions`, `DELETE /api/me/sessions/{id}`; `GET /api/me/passkeys`, `DELETE /api/me/passkeys/{id}`                                                                              |
-| Members   | `GET /api/members`, `PUT /api/members/{id}/role`, `POST /api/members/{id}/disable`, `…/enable`, `PUT /api/members/{id}/person`; `GET`, `POST /api/invitations`, `DELETE /api/invitations/{id}`                                                          |
-| Agents    | `GET`, `POST /api/agents`, `GET /api/agents/{id}`, `POST /api/agents/{id}/tokens`, `DELETE /api/agents/{id}/tokens/{tokenId}`, `POST /api/agents/{id}/disable`, `…/enable`                                                                              |
-| Sign-in   | `POST /api/auth/invitation/check`, `…/invitation/accept`, `…/email-link`, `…/email-link/verify`, `…/passkey/authentication/options`, `…/passkey/authentication/verify`, `…/passkey/registration/options`, `…/passkey/registration/verify`, `…/sign-out` |
+| Tag            | Routes                                                                                                                                                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System         | `GET /api/health` (public), `GET /api/openapi.json`                                                                                                                                                                                                     |
+| Persons        | `GET /api/persons` (search), `GET /api/persons/{id}`, `…/ancestors`, `…/descendants`, `…/hourglass`; `GET /api/family-roots`, `PUT /api/persons/{id}/family-root`                                                                                       |
+| Families       | `GET /api/families/{id}`                                                                                                                                                                                                                                |
+| Events         | `GET /api/events/{id}`                                                                                                                                                                                                                                  |
+| Map            | `GET /api/map/events`                                                                                                                                                                                                                                   |
+| Places         | `GET /api/places` (search), `GET /api/places/{id}`, `…/events`, `…/houses`; `GET /api/houses/{id}`, `GET /api/parishes/{id}`, `GET /api/estates/{id}`                                                                                                   |
+| Sources        | `GET /api/sources` (search), `GET /api/sources/{id}`, `GET /api/citations/{id}`, `GET /api/documents/{id}` (a PDF document), `GET /api/images/{id}`                                                                                                     |
+| Proposals      | `POST /api/proposals` (with `answersLeads`, the Research leads it answers), `GET /api/proposals`, `GET /api/proposals/{id}`                                                                                                                             |
+| Review         | `GET /api/review`, `POST /api/proposals/{id}/accept`, `POST /api/proposals/{id}/reject`, `POST /api/persons/{id}/merge`                                                                                                                                 |
+| History        | `GET /api/history/{kind}/{id}`, `GET /api/proposals/{id}/undo` (what an undo would do), `POST /api/proposals/{id}/undo`                                                                                                                                 |
+| Images         | `POST /api/uploads`, `POST /api/uploads/{id}/complete`, `GET /api/uploads/{id}`                                                                                                                                                                         |
+| Import batches | `POST`, `GET /api/batches`, `GET /api/batches/{id}`, `GET`, `POST /api/batches/{id}/proposals`, `POST /api/batches/{id}/accept` (the Owner), `POST /api/batches/{id}/uploads`, `…/uploads/{uploadId}/complete`; `GET`, `PUT /api/import-map`            |
+| Leads          | `GET`, `POST /api/leads`, `GET`, `PATCH /api/leads/{id}`, `POST /api/leads/{id}/searches`, `…/close`; `GET /api/lead-suggestions`, `POST /api/lead-suggestions/{id}/accept`, `…/dismiss` ([Research leads](research-leads.md))                          |
+| Account        | `GET`, `PATCH /api/me`; `GET`, `PUT /api/me/notifications`; `GET /api/me/sessions`, `DELETE /api/me/sessions/{id}`; `GET /api/me/passkeys`, `DELETE /api/me/passkeys/{id}`                                                                              |
+| Members        | `GET /api/members`, `PUT /api/members/{id}/role`, `POST /api/members/{id}/disable`, `…/enable`, `PUT /api/members/{id}/person`; `GET`, `POST /api/invitations`, `DELETE /api/invitations/{id}`                                                          |
+| Agents         | `GET`, `POST /api/agents`, `GET /api/agents/{id}`, `POST /api/agents/{id}/tokens`, `DELETE /api/agents/{id}/tokens/{tokenId}`, `POST /api/agents/{id}/disable`, `…/enable`                                                                              |
+| Sign-in        | `POST /api/auth/invitation/check`, `…/invitation/accept`, `…/email-link`, `…/email-link/verify`, `…/passkey/authentication/options`, `…/passkey/authentication/verify`, `…/passkey/registration/options`, `…/passkey/registration/verify`, `…/sign-out` |
 
-Every record carries a `version` that changes whenever the record changes. A Proposal names the version of each record it was based on, and review shows a conflict when the record has changed since.
+Every record carries a `version` that changes whenever the record changes. A Proposal names the version of each record it was based on, and review shows a conflict when the record has changed since. A change to a Research lead names the version it read too, and is refused with 409 when the lead changed since.
 
 ## Errors
 
@@ -54,15 +56,15 @@ Errors are JSON:
 { "statusCode": 403, "error": "Forbidden", "message": "Only Editors can do this.", "code": "forbidden" }
 ```
 
-| Status | When                                                                                                                    |
-| ------ | ----------------------------------------------------------------------------------------------------------------------- |
-| 400    | the request does not match its schema (`code` `validation`)                                                             |
-| 401    | no valid session or token; it reveals nothing about whether a record exists                                             |
-| 403    | the role may not do this, or a write with the session cookie came from another site                                     |
-| 404    | no such record or route                                                                                                 |
-| 409    | the request conflicts with the Tree as it is, such as marking a Person merged into another                              |
-| 429    | an Agent reached its hourly limit (`code` `rate_limited`); `retryAt` and the `Retry-After` header say when to try again |
+| Status | When                                                                                                                                                                                                     |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 400    | the request does not match its schema (`code` `validation`), or breaks a rule the schema cannot check, such as a Research lead closed as not found without a search record (`search_needed`)             |
+| 401    | no valid session or token; it reveals nothing about whether a record exists                                                                                                                              |
+| 403    | the role may not do this, or a write with the session cookie came from another site                                                                                                                      |
+| 404    | no such record or route                                                                                                                                                                                  |
+| 409    | the request conflicts with the Tree as it is, such as marking a Person merged into another; a Research lead changed since it was read (`conflict`); a suggested lead already decided (`already_decided`) |
+| 429    | an Agent reached its hourly limit (`code` `rate_limited`); `retryAt` and the `Retry-After` header say when to try again                                                                                  |
 
 ## Agent limits
 
-Each Agent may submit 60 Proposals and make 1,000 other requests an hour, counted in fixed hourly windows over all its tokens.
+Each Agent may submit 60 Proposals and make 1,000 other requests an hour, counted in fixed hourly windows over all its tokens. Its requests to its own Import batches (opening one, submitting into it, its uploads and the import map) count instead against a window of 10,000 an hour of their own, so that the Vault import fits in one run. Every Proposal in a batch is still reviewed.
