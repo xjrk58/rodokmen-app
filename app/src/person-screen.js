@@ -52,6 +52,19 @@ function Citation({ citation, cache }) {
                 : null
             }
             ${d && !d.images.length ? html`<p class="muted small">${t('person.noImages')}</p>` : null}
+            ${
+              d?.documents.length
+                ? html`<ul class="documents" aria-label=${t('documents.title')}>
+                    ${d.documents.map(
+                      (doc) =>
+                        html`<li key=${doc.id}>
+                          <a href=${doc.url} target="_blank" rel="noopener noreferrer" data-testid="citation-document">${doc.title}</a>
+                          ${doc.original ? html` · <a href=${doc.original.url} target="_blank" rel="noopener noreferrer">${t('documents.original')}</a>` : null}
+                        </li>`,
+                    )}
+                  </ul>`
+                : null
+            }
           </div>`
         : null
     }

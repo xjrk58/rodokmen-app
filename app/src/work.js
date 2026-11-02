@@ -15,6 +15,7 @@ import {
   notificationSettings,
   setNotificationSettings,
   submitProposal,
+  uploadDocument,
   uploadImage,
 } from './api.js';
 import { guarded, h, showError } from './dom.js';
@@ -85,15 +86,18 @@ function draftFamily(draft) {
  */
 async function proposalBody(draft) {
   const uploadIds = [];
+  const documents = [];
   for (const photo of await draftPhotos(draft.id)) {
+    const document = photo.kind === 'document';
     if (!photo.uploadId) {
-      photo.uploadId = await uploadImage(photo.blob);
+      photo.uploadId = document ? await uploadDocument(photo.blob) : await uploadImage(photo.blob);
       await savePhoto(photo);
     }
-    uploadIds.push(photo.uploadId);
+    if (document) documents.push({ uploadId: photo.uploadId, title: photo.name.replace(/\.pdf$/i, '') || photo.name });
+    else uploadIds.push(photo.uploadId);
   }
   const family = await draftFamily(draft);
-  const operations = buildOperations(draft, { uploadIds, family });
+  const operations = buildOperations(draft, { uploadIds, documents, family });
   return {
     formatVersion: OPERATIONS_VERSION,
     idempotencyKey: draft.idempotencyKey,

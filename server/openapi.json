@@ -2442,6 +2442,504 @@
           "truncated"
         ]
       },
+      "SourceSummaryInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceTypeInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register"
+        ]
+      },
+      "SourceSearchResultInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceSummaryInput"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "limit",
+          "offset"
+        ]
+      },
+      "DocumentViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string",
+            "const": "application/pdf"
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "url": {
+            "type": "string",
+            "description": "The PDF; redirects to a link that expires within minutes"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "const": "application/msword"
+                  },
+                  "byteSize": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Redirects to a link that expires"
+                  }
+                },
+                "required": [
+                  "contentType",
+                  "byteSize",
+                  "url"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The DOC the PDF was converted from, when it was kept"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "title",
+          "contentType",
+          "byteSize",
+          "url",
+          "original"
+        ]
+      },
+      "SourceDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceTypeInput"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccountInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverageInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationSummaryInput"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentViewInput"
+            },
+            "description": "PDF documents of the Source, such as a family chronicle"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register",
+          "citations",
+          "documents",
+          "notes"
+        ]
+      },
+      "ImageViewInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKindInput"
+          },
+          "citationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "Persons shown, for portraits"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 26214400
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Presigned link to the image; expires within minutes"
+          },
+          "urlExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind",
+          "citationId",
+          "personIds",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "sha256",
+          "caption",
+          "url",
+          "urlExpiresAt"
+        ]
+      },
+      "CitationDetailInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "version": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Page or frame; null for a Family account"
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "description": "Transcription in the original language"
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "When the entry was read"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/ConfidenceInput"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceSummaryInput"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentViewInput"
+            },
+            "description": "The Source's documents"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummaryInput"
+            }
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "personId": {
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "asFound": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "personId",
+                "asFound"
+              ]
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageViewInput"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "sourceId",
+          "page",
+          "transcription",
+          "readOn",
+          "confidence",
+          "note",
+          "source",
+          "documents",
+          "events",
+          "names",
+          "images"
+        ]
+      },
+      "HealthInput": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unreachable"
+            ]
+          },
+          "release": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "release"
+        ]
+      },
       "PlaceEventInput": {
         "type": "object",
         "properties": {
@@ -2997,421 +3495,6 @@
           "name",
           "places",
           "notes"
-        ]
-      },
-      "SourceSummaryInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceTypeInput"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccountInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverageInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register"
-        ]
-      },
-      "SourceSearchResultInput": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SourceSummaryInput"
-            }
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "offset": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "items",
-          "limit",
-          "offset"
-        ]
-      },
-      "SourceDetailInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceTypeInput"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccountInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverageInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          },
-          "citations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CitationSummaryInput"
-            }
-          },
-          "notes": {
-            "description": "Research notes in Markdown; null when there are none",
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register",
-          "citations",
-          "notes"
-        ]
-      },
-      "ImageViewInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ImageKindInput"
-          },
-          "citationId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/IdInput"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "personIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/IdInput"
-            },
-            "description": "Persons shown, for portraits"
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "image/jpeg",
-              "image/png",
-              "image/webp",
-              "image/heic",
-              "image/heif"
-            ]
-          },
-          "byteSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 26214400
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "caption": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Presigned link to the image; expires within minutes"
-          },
-          "urlExpiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "kind",
-          "citationId",
-          "personIds",
-          "contentType",
-          "byteSize",
-          "width",
-          "height",
-          "sha256",
-          "caption",
-          "url",
-          "urlExpiresAt"
-        ]
-      },
-      "CitationDetailInput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "version": {
-            "$ref": "#/components/schemas/VersionInput"
-          },
-          "sourceId": {
-            "$ref": "#/components/schemas/IdInput"
-          },
-          "page": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Page or frame; null for a Family account"
-          },
-          "transcription": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000,
-            "description": "Transcription in the original language"
-          },
-          "readOn": {
-            "type": "string",
-            "format": "date",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-            "description": "When the entry was read"
-          },
-          "confidence": {
-            "$ref": "#/components/schemas/ConfidenceInput"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "$ref": "#/components/schemas/SourceSummaryInput"
-          },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSummaryInput"
-            }
-          },
-          "names": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "$ref": "#/components/schemas/IdInput"
-                },
-                "personId": {
-                  "$ref": "#/components/schemas/IdInput"
-                },
-                "asFound": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "personId",
-                "asFound"
-              ]
-            }
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ImageViewInput"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "sourceId",
-          "page",
-          "transcription",
-          "readOn",
-          "confidence",
-          "note",
-          "source",
-          "events",
-          "names",
-          "images"
-        ]
-      },
-      "HealthInput": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "degraded"
-            ]
-          },
-          "database": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "unreachable"
-            ]
-          },
-          "release": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "status",
-          "database",
-          "release"
         ]
       },
       "MemberRoleInput": {
@@ -4765,6 +4848,47 @@
         ],
         "description": "Takes a Label off a Person, matched ignoring case and diacritics"
       },
+      "AddDocumentInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addDocument"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/RefInput"
+          },
+          "uploadId": {
+            "description": "A finished PDF upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "originalUploadId": {
+            "default": null,
+            "description": "The DOC the PDF was converted from, kept beside it (an upload of type application/msword)",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "What the document is, such as \"Family chronicle, typescript of 1936\""
+          }
+        },
+        "required": [
+          "op",
+          "sourceId",
+          "uploadId",
+          "title"
+        ],
+        "description": "A PDF document of up to 50 MB on a Source (evidence-media spec, \"Documents on Sources\")"
+      },
       "SetFamilyRootInput": {
         "type": "object",
         "properties": {
@@ -5472,7 +5596,8 @@
           "place_parish",
           "estate",
           "place_estate",
-          "person_label"
+          "person_label",
+          "source_document"
         ]
       },
       "RestoreRecordInput": {
@@ -5604,6 +5729,9 @@
           },
           {
             "$ref": "#/components/schemas/RemoveLabelInput"
+          },
+          {
+            "$ref": "#/components/schemas/AddDocumentInput"
           }
         ]
       },
@@ -5887,6 +6015,14 @@
           "deleted"
         ]
       },
+      "UploadKindInput": {
+        "type": "string",
+        "enum": [
+          "image",
+          "document"
+        ],
+        "description": "An image, or a document (PDF, or the DOC a PDF was converted from)"
+      },
       "UploadViewInput": {
         "type": "object",
         "properties": {
@@ -5896,6 +6032,9 @@
           "status": {
             "$ref": "#/components/schemas/UploadStatusInput"
           },
+          "kind": {
+            "$ref": "#/components/schemas/UploadKindInput"
+          },
           "contentType": {
             "type": "string",
             "enum": [
@@ -5903,7 +6042,9 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
+              "image/heif",
+              "application/pdf",
+              "application/msword"
             ]
           },
           "byteSize": {
@@ -5937,7 +6078,7 @@
           },
           "url": {
             "type": "string",
-            "description": "Display copy (WebP); redirects to an expiring link"
+            "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
           },
           "fullUrl": {
             "type": "string",
@@ -5947,6 +6088,7 @@
         "required": [
           "id",
           "status",
+          "kind",
           "contentType",
           "byteSize",
           "width",
@@ -6008,7 +6150,9 @@
                     "image/png",
                     "image/webp",
                     "image/heic",
-                    "image/heif"
+                    "image/heif",
+                    "application/pdf",
+                    "application/msword"
                   ]
                 },
                 "byteSize": {
@@ -6042,13 +6186,14 @@
                 },
                 "url": {
                   "type": "string",
-                  "description": "Display copy (WebP); redirects to an expiring link"
+                  "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
                 },
                 "fullUrl": {
                   "type": "string",
                   "description": "The original file; redirects to an expiring link"
                 },
                 "kind": {
+                  "description": "Page image, photo or portrait",
                   "$ref": "#/components/schemas/ImageKindInput"
                 }
               },
@@ -6671,8 +6816,11 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
-            ]
+              "image/heif",
+              "application/pdf",
+              "application/msword"
+            ],
+            "description": "An image type, or application/pdf for a document (application/msword only for the original of a converted PDF)"
           },
           "byteSize": {
             "type": "integer",
@@ -10290,6 +10438,513 @@
         ],
         "additionalProperties": false
       },
+      "SourceSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register"
+        ],
+        "additionalProperties": false
+      },
+      "SourceSearchResult": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SourceSummary"
+            }
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "items",
+          "limit",
+          "offset"
+        ],
+        "additionalProperties": false
+      },
+      "DocumentView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string",
+            "const": "application/pdf"
+          },
+          "byteSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "url": {
+            "type": "string",
+            "description": "The PDF; redirects to a link that expires within minutes"
+          },
+          "original": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "contentType": {
+                    "type": "string",
+                    "const": "application/msword"
+                  },
+                  "byteSize": {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  "url": {
+                    "type": "string",
+                    "description": "Redirects to a link that expires"
+                  }
+                },
+                "required": [
+                  "contentType",
+                  "byteSize",
+                  "url"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The DOC the PDF was converted from, when it was kept"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "title",
+          "contentType",
+          "byteSize",
+          "url",
+          "original"
+        ],
+        "additionalProperties": false
+      },
+      "SourceDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "type": {
+            "$ref": "#/components/schemas/SourceType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "repository": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "familyAccount": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyAccount"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "register": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RegisterCoverage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a register book: its Parish, kinds and years"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationSummary"
+            }
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentView"
+            },
+            "description": "PDF documents of the Source, such as a family chronicle"
+          },
+          "notes": {
+            "description": "Research notes in Markdown; null when there are none",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "type",
+          "title",
+          "repository",
+          "reference",
+          "url",
+          "familyAccount",
+          "register",
+          "citations",
+          "documents",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "ImageView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImageKind"
+          },
+          "citationId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "personIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Persons shown, for portraits"
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/heic",
+              "image/heif"
+            ]
+          },
+          "byteSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 26214400
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "caption": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Presigned link to the image; expires within minutes"
+          },
+          "urlExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "kind",
+          "citationId",
+          "personIds",
+          "contentType",
+          "byteSize",
+          "width",
+          "height",
+          "sha256",
+          "caption",
+          "url",
+          "urlExpiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "CitationDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Page or frame; null for a Family account"
+          },
+          "transcription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000,
+            "description": "Transcription in the original language"
+          },
+          "readOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "When the entry was read"
+          },
+          "confidence": {
+            "$ref": "#/components/schemas/Confidence"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/SourceSummary"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentView"
+            },
+            "description": "The Source's documents"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummary"
+            }
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "personId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "asFound": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "personId",
+                "asFound"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImageView"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "sourceId",
+          "page",
+          "transcription",
+          "readOn",
+          "confidence",
+          "note",
+          "source",
+          "documents",
+          "events",
+          "names",
+          "images"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "unreachable"
+            ]
+          },
+          "release": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "database",
+          "release"
+        ],
+        "additionalProperties": false
+      },
       "PlaceEvent": {
         "type": "object",
         "properties": {
@@ -10858,428 +11513,6 @@
           "name",
           "places",
           "notes"
-        ],
-        "additionalProperties": false
-      },
-      "SourceSummary": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceType"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccount"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverage"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register"
-        ],
-        "additionalProperties": false
-      },
-      "SourceSearchResult": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SourceSummary"
-            }
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "offset": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "items",
-          "limit",
-          "offset"
-        ],
-        "additionalProperties": false
-      },
-      "SourceDetail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "type": {
-            "$ref": "#/components/schemas/SourceType"
-          },
-          "title": {
-            "type": "string"
-          },
-          "repository": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "reference": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "url": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "familyAccount": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/FamilyAccount"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "register": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RegisterCoverage"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a register book: its Parish, kinds and years"
-          },
-          "citations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CitationSummary"
-            }
-          },
-          "notes": {
-            "description": "Research notes in Markdown; null when there are none",
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "type",
-          "title",
-          "repository",
-          "reference",
-          "url",
-          "familyAccount",
-          "register",
-          "citations",
-          "notes"
-        ],
-        "additionalProperties": false
-      },
-      "ImageView": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "kind": {
-            "$ref": "#/components/schemas/ImageKind"
-          },
-          "citationId": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/Id"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "personIds": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Id"
-            },
-            "description": "Persons shown, for portraits"
-          },
-          "contentType": {
-            "type": "string",
-            "enum": [
-              "image/jpeg",
-              "image/png",
-              "image/webp",
-              "image/heic",
-              "image/heif"
-            ]
-          },
-          "byteSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 26214400
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "height": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "exclusiveMinimum": 0,
-                "maximum": 9007199254740991
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "sha256": {
-            "type": "string",
-            "pattern": "^[0-9a-f]{64}$"
-          },
-          "caption": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 1000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "url": {
-            "type": "string",
-            "format": "uri",
-            "description": "Presigned link to the image; expires within minutes"
-          },
-          "urlExpiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "kind",
-          "citationId",
-          "personIds",
-          "contentType",
-          "byteSize",
-          "width",
-          "height",
-          "sha256",
-          "caption",
-          "url",
-          "urlExpiresAt"
-        ],
-        "additionalProperties": false
-      },
-      "CitationDetail": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "version": {
-            "$ref": "#/components/schemas/Version"
-          },
-          "sourceId": {
-            "$ref": "#/components/schemas/Id"
-          },
-          "page": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Page or frame; null for a Family account"
-          },
-          "transcription": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 20000,
-            "description": "Transcription in the original language"
-          },
-          "readOn": {
-            "type": "string",
-            "format": "date",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
-            "description": "When the entry was read"
-          },
-          "confidence": {
-            "$ref": "#/components/schemas/Confidence"
-          },
-          "note": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 4000
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "source": {
-            "$ref": "#/components/schemas/SourceSummary"
-          },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventSummary"
-            }
-          },
-          "names": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "$ref": "#/components/schemas/Id"
-                },
-                "personId": {
-                  "$ref": "#/components/schemas/Id"
-                },
-                "asFound": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "id",
-                "personId",
-                "asFound"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ImageView"
-            }
-          }
-        },
-        "required": [
-          "id",
-          "version",
-          "sourceId",
-          "page",
-          "transcription",
-          "readOn",
-          "confidence",
-          "note",
-          "source",
-          "events",
-          "names",
-          "images"
-        ],
-        "additionalProperties": false
-      },
-      "Health": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "degraded"
-            ]
-          },
-          "database": {
-            "type": "string",
-            "enum": [
-              "ok",
-              "unreachable"
-            ]
-          },
-          "release": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "status",
-          "database",
-          "release"
         ],
         "additionalProperties": false
       },
@@ -12690,6 +12923,49 @@
         "additionalProperties": false,
         "description": "Takes a Label off a Person, matched ignoring case and diacritics"
       },
+      "AddDocument": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "addDocument"
+          },
+          "sourceId": {
+            "$ref": "#/components/schemas/Ref"
+          },
+          "uploadId": {
+            "description": "A finished PDF upload of the author (POST /api/uploads)",
+            "$ref": "#/components/schemas/Id"
+          },
+          "originalUploadId": {
+            "default": null,
+            "description": "The DOC the PDF was converted from, kept beside it (an upload of type application/msword)",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "description": "What the document is, such as \"Family chronicle, typescript of 1936\""
+          }
+        },
+        "required": [
+          "op",
+          "sourceId",
+          "uploadId",
+          "originalUploadId",
+          "title"
+        ],
+        "additionalProperties": false,
+        "description": "A PDF document of up to 50 MB on a Source (evidence-media spec, \"Documents on Sources\")"
+      },
       "SetFamilyRoot": {
         "type": "object",
         "properties": {
@@ -13429,7 +13705,8 @@
           "place_parish",
           "estate",
           "place_estate",
-          "person_label"
+          "person_label",
+          "source_document"
         ]
       },
       "RestoreRecord": {
@@ -13562,6 +13839,9 @@
           },
           {
             "$ref": "#/components/schemas/RemoveLabel"
+          },
+          {
+            "$ref": "#/components/schemas/AddDocument"
           }
         ]
       },
@@ -13855,6 +14135,14 @@
           "deleted"
         ]
       },
+      "UploadKind": {
+        "type": "string",
+        "enum": [
+          "image",
+          "document"
+        ],
+        "description": "An image, or a document (PDF, or the DOC a PDF was converted from)"
+      },
       "UploadView": {
         "type": "object",
         "properties": {
@@ -13864,6 +14152,9 @@
           "status": {
             "$ref": "#/components/schemas/UploadStatus"
           },
+          "kind": {
+            "$ref": "#/components/schemas/UploadKind"
+          },
           "contentType": {
             "type": "string",
             "enum": [
@@ -13871,7 +14162,9 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
+              "image/heif",
+              "application/pdf",
+              "application/msword"
             ]
           },
           "byteSize": {
@@ -13905,7 +14198,7 @@
           },
           "url": {
             "type": "string",
-            "description": "Display copy (WebP); redirects to an expiring link"
+            "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
           },
           "fullUrl": {
             "type": "string",
@@ -13915,6 +14208,7 @@
         "required": [
           "id",
           "status",
+          "kind",
           "contentType",
           "byteSize",
           "width",
@@ -13977,7 +14271,9 @@
                     "image/png",
                     "image/webp",
                     "image/heic",
-                    "image/heif"
+                    "image/heif",
+                    "application/pdf",
+                    "application/msword"
                   ]
                 },
                 "byteSize": {
@@ -14011,13 +14307,14 @@
                 },
                 "url": {
                   "type": "string",
-                  "description": "Display copy (WebP); redirects to an expiring link"
+                  "description": "Display copy (WebP) of an image, the file itself of a document; redirects to an expiring link"
                 },
                 "fullUrl": {
                   "type": "string",
                   "description": "The original file; redirects to an expiring link"
                 },
                 "kind": {
+                  "description": "Page image, photo or portrait",
                   "$ref": "#/components/schemas/ImageKind"
                 }
               },
@@ -14674,8 +14971,11 @@
               "image/png",
               "image/webp",
               "image/heic",
-              "image/heif"
-            ]
+              "image/heif",
+              "application/pdf",
+              "application/msword"
+            ],
+            "description": "An image type, or application/pdf for a document (application/msword only for the original of a converted PDF)"
           },
           "byteSize": {
             "type": "integer",
@@ -17286,6 +17586,72 @@
         }
       }
     },
+    "/api/documents/{id}": {
+      "get": {
+        "summary": "Redirects to an expiring link to a Source's PDF document, or with original=true the DOC it was converted from (Members and Agents only; never in an Export)",
+        "tags": [
+          "Sources"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "in": "query",
+            "name": "original",
+            "required": false,
+            "description": "true: the original DOC the PDF was converted from"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Location: presigned link, valid 5 minutes"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/images/{id}": {
       "get": {
         "summary": "Redirects to an expiring link to the image: the display copy, or with full=true the original file",
@@ -18256,7 +18622,7 @@
     },
     "/api/uploads": {
       "post": {
-        "summary": "Start an image upload: returns a presigned PUT link into pending/. JPEG, PNG, WebP or HEIC, at most 25 MB",
+        "summary": "Start an upload: returns a presigned PUT link into pending/. An image (JPEG, PNG, WebP or HEIC, at most 25 MB) or a document (PDF, or the DOC a PDF was converted from, at most 50 MB)",
         "tags": [
           "Images"
         ],

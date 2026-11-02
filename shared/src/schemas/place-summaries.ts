@@ -57,6 +57,13 @@ function notesAndLabels(op: Op<'setNotes' | 'addLabel' | 'removeLabel'>, { L, cs
     : `writes research notes on ${L(op.id)} (${record}): ${quote(shown, language)}`;
 }
 
+function addDocument(op: Op<'addDocument'>, { L, cs, language }: Say): string {
+  const original = op.originalUploadId ? (cs ? ' (s původním souborem DOC)' : ' (with its original DOC)') : '';
+  return cs
+    ? `přidává dokument ${quote(op.title, language)}${original} k prameni ${L(op.sourceId)}`
+    : `adds the document ${quote(op.title, language)}${original} to ${L(op.sourceId)}`;
+}
+
 /** The sentence of one of these operations. */
 export function describePlaceOrNote(op: PlaceOrNoteOperation, say: Say): string {
   switch (op.op) {
@@ -74,5 +81,7 @@ export function describePlaceOrNote(op: PlaceOrNoteOperation, say: Say): string 
     case 'addLabel':
     case 'removeLabel':
       return notesAndLabels(op, say);
+    case 'addDocument':
+      return addDocument(op, say);
   }
 }

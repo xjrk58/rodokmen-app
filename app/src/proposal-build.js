@@ -73,6 +73,7 @@ export const OPERATIONS_VERSION = 1;
 /**
  * @typedef {object} BuildContext
  * @property {string[]} uploadIds uploaded photos of the Draft
+ * @property {{ uploadId: string, title: string }[]} [documents] uploaded PDF documents of the Draft, for its Source
  * @property {{ id: string, version: number } | null} [family] the existing Family of both parents (or partners)
  */
 
@@ -342,8 +343,9 @@ class Builder {
    * The Citation, with its Source when new, and the Draft's photos. Returns the Citation's id.
    * @param {CitationForm} c
    * @param {string[]} uploadIds
+   * @param {{ uploadId: string, title: string }[]} [documents] PDF documents for the Source
    */
-  citation(c, uploadIds) {
+  citation(c, uploadIds, documents = []) {
     const sourceId = this.source(c);
     const citationId = this.temp('citation');
     this.ops.push({
@@ -358,6 +360,7 @@ class Builder {
     const type = sourceTypeOf(c);
     const kind = type && PAGED_SOURCES.has(type) ? 'page' : 'photo';
     for (const uploadId of uploadIds) this.ops.push({ op: 'addImage', uploadId, kind, citationId });
+    for (const d of documents) this.ops.push({ op: 'addDocument', sourceId, uploadId: d.uploadId, title: d.title });
     return citationId;
   }
 
@@ -369,7 +372,7 @@ class Builder {
    * @param {number} [baseVersion] of the target, when it is in the Tree already
    */
   cite(c, ctx, target, baseVersion) {
-    const citationId = this.citation(c ?? { sourceMode: 'new' }, ctx.uploadIds);
+    const citationId = this.citation(c ?? { sourceMode: 'new' }, ctx.uploadIds, ctx.documents);
     this.ops.push({ op: 'attachCitation', citationId, ...target, ...(baseVersion === undefined ? {} : { baseVersion }) });
   }
 }

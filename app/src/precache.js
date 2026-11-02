@@ -11,6 +11,7 @@ export const PRECACHE = [
   'src/archive-lookup.js',
   'src/cache.js',
   'src/data.js',
+  'src/document-fields.js',
   'src/dom.js',
   'src/drafts.js',
   'src/family-map.js',

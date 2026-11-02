@@ -275,6 +275,18 @@ export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'im
 export type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number];
 export const IMAGE_MAX_BYTES = 25 * 1024 * 1024;
 
+/**
+ * Documents on Sources (evidence-media spec, "Documents on Sources"): PDF files of up to 50 MB.
+ * The original DOC a PDF was converted from is kept beside it (the Vault importer); the app
+ * accepts PDF only.
+ */
+export const DOCUMENT_CONTENT_TYPES = ['application/pdf', 'application/msword'] as const;
+export type DocumentContentType = (typeof DOCUMENT_CONTENT_TYPES)[number];
+export const DOCUMENT_MAX_BYTES = 50 * 1024 * 1024;
+export const UPLOAD_CONTENT_TYPES = [...IMAGE_CONTENT_TYPES, ...DOCUMENT_CONTENT_TYPES] as const;
+export type UploadContentType = (typeof UPLOAD_CONTENT_TYPES)[number];
+export const isDocumentType = (t: string): t is DocumentContentType => (DOCUMENT_CONTENT_TYPES as readonly string[]).includes(t);
+
 export const ImageMetadata = z
   .object({
     id: Id,

@@ -85,3 +85,6 @@ addLabel
 removeLabel
   cs: odebírá štítek „emigrated“ osobě: Anna Králová
   en: takes the Label “emigrated” off Anna Králová
+addDocument
+  cs: přidává dokument „Family chronicle, typescript of 1936“ (s původním souborem DOC) k prameni „Grandmother remembers“
+  en: adds the document “Family chronicle, typescript of 1936” (with its original DOC) to “Grandmother remembers”

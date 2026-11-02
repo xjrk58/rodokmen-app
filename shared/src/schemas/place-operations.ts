@@ -118,6 +118,18 @@ export const RemoveLabel = z
   .object({ op: z.literal('removeLabel'), personId: Id, baseVersion: Version.optional().describe('Version of the Person'), label: Label })
   .meta({ id: 'RemoveLabel', description: 'Takes a Label off a Person, matched ignoring case and diacritics' });
 
+// ---------------------------------------------------------------- documents on Sources
+
+export const AddDocument = z
+  .object({
+    op: z.literal('addDocument'),
+    sourceId: Ref,
+    uploadId: Id.describe('A finished PDF upload of the author (POST /api/uploads)'),
+    originalUploadId: Id.nullable().default(null).describe('The DOC the PDF was converted from, kept beside it (an upload of type application/msword)'),
+    title: nonEmpty(400).describe('What the document is, such as "Family chronicle, typescript of 1936"'),
+  })
+  .meta({ id: 'AddDocument', description: 'A PDF document of up to 50 MB on a Source (evidence-media spec, "Documents on Sources")' });
+
 /** The operations of this file. */
 export const PLACE_AND_NOTE_OPERATIONS = [
   CreatePlace,
@@ -131,6 +143,7 @@ export const PLACE_AND_NOTE_OPERATIONS = [
   SetNotes,
   AddLabel,
   RemoveLabel,
+  AddDocument,
 ] as const;
 export type PlaceOrNoteOperation = z.infer<(typeof PLACE_AND_NOTE_OPERATIONS)[number]>;
 
@@ -162,6 +175,8 @@ export function placeReferencesOf(op: PlaceOrNoteOperation): Array<{ ref: string
       return ref(op.id, op.record, 'id');
     case 'addLabel':
       return ref(op.personId, 'person', 'personId');
+    case 'addDocument':
+      return ref(op.sourceId, 'source', 'sourceId');
     case 'createPlace':
     case 'createEstate':
     case 'removeLabel':

@@ -542,5 +542,10 @@
   "person.labels": "Štítky",
   "person.editNotes": "Poznámky a štítky",
   "people.labelFilter": "Štítky",
-  "people.labelPlaceholder": "line/novak, vystěhovalci"
+  "people.labelPlaceholder": "line/novak, vystěhovalci",
+  "documents.add": "Přidat dokument PDF",
+  "documents.notPdf": "Připojit lze jen dokumenty PDF. Dokument nejdřív uložte jako PDF a pak přidejte PDF.",
+  "documents.tooLarge": "Dokument smí mít nejvýš 50 MB. Uložte menší kopii.",
+  "documents.title": "Dokumenty",
+  "documents.original": "původní DOC"
 }

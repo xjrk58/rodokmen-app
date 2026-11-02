@@ -17,12 +17,13 @@ import type {
   Sex,
   SourceType,
   UiLanguage,
-  UploadStatus,
 } from '@rodokmen/shared';
 import type { ColumnType, Generated, Insertable, Selectable } from 'kysely';
 import type { Snapshot } from '../proposals/records.js';
 import type { LeadEventTable, LeadLinkTable, LeadSearchTable, LeadSuggestionTable, LeadTable, ProposalLeadTable } from './lead-types.js';
-import type { PersonLabelTable } from './vault-import-types.js';
+import type { PersonLabelTable, SourceDocumentTable, UploadTable } from './vault-import-types.js';
+
+export type { UploadTable } from './vault-import-types.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -357,29 +358,6 @@ export interface LogChangeTable {
   after: SnapshotJson;
 }
 
-export interface UploadTable {
-  id: Generated<string>;
-  version: Generated<number>;
-  author_id: string;
-  status: Generated<UploadStatus>;
-  storage_key: string;
-  display_key: string;
-  declared_type: ImageTable['content_type'];
-  declared_size: number;
-  declared_sha256: string;
-  content_type: ImageTable['content_type'] | null;
-  byte_size: number | null;
-  sha256: string | null;
-  width: number | null;
-  height: number | null;
-  proposal_id: string | null;
-  image_id: string | null;
-  orphaned_at: Timestamp | null;
-  deleted_at: Timestamp | null;
-  created_at: CreatedAt;
-  updated_at: Generated<Date>;
-}
-
 export interface JobRunTable {
   job: string;
   day: string;
@@ -404,6 +382,7 @@ export interface Database {
   family_root: FamilyRootTable;
   name: NameTable;
   person_label: PersonLabelTable;
+  source_document: SourceDocumentTable;
   family: FamilyTable;
   family_child: FamilyChildTable;
   place: PlaceTable;

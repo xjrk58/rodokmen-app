@@ -13,11 +13,16 @@ export class ConflictProblem extends ApiProblem {
   }
 }
 
+/**
+ * An upload on its way out of pending/ when its Proposal is accepted: an image to images/ with
+ * its display copy, or a document to documents/ (no display copy).
+ */
 export interface UploadMove {
   uploadId: string;
-  imageId: string;
-  from: { original: string; display: string };
-  to: { original: string; display: string };
+  imageId?: string;
+  documentId?: string;
+  from: { original: string; display?: string };
+  to: { original: string; display?: string };
 }
 
 export interface ApplyResult {

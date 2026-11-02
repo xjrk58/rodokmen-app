@@ -278,7 +278,10 @@ test('notes and Labels: only what changed is proposed, Labels compared ignoring 
   assert.deepEqual(formProblems(emptyForm('notes')), ['propose.needNotes']);
   // Emptied notes are taken away.
   assert.deepEqual(
-    buildOperations({ kind: 'notes', form: { ...form, notes: ' ', labels: ['line/novak', 'old'], base: { ...form.base, notes: 'x' } } }, { uploadIds: [] }),
+    buildOperations(
+      { kind: 'notes', form: { ...form, notes: ' ', labels: ['line/novak', 'old'], base: { version: 4, notes: 'x', labels: ['line/novak', 'old'] } } },
+      { uploadIds: [] },
+    ),
     [{ op: 'setNotes', record: 'person', id: anna.id, baseVersion: 4, notes: null }],
   );
 });

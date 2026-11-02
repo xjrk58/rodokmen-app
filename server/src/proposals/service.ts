@@ -22,6 +22,7 @@ import { refreshSuggestions } from '../leads/gaps.js';
 import { touchedPersons } from '../leads/touched.js';
 import { checkAnsweredLeads, markAnsweredLeads, storeAnsweredLeads } from '../leads/service.js';
 import { canReview, isAgent, loadOperations, proposalViews, type StoredOperation } from './views.js';
+import type { Snapshot } from './records.js';
 import { resolveConflicts } from './conflicts.js';
 
 /** Writing Proposals: submit, accept (with corrections and conflict choices), reject and merge. */
@@ -103,7 +104,11 @@ async function insertProposal(
     .values(ops.map((op, position) => ({ proposal_id: inserted.id, position, op: op.op, operation: JSON.stringify(op), ...targetColumns(op) })))
     .execute();
   await storeAnsweredLeads(tx, inserted.id, fields.answersLeads ?? []);
-  const uploadIds = ops.flatMap((o) => (o.op === 'addImage' ? [o.uploadId] : []));
+  const uploadIds = ops.flatMap((o) => {
+    if (o.op === 'addImage') return [o.uploadId];
+    if (o.op === 'addDocument') return o.originalUploadId ? [o.uploadId, o.originalUploadId] : [o.uploadId];
+    return [];
+  });
   for (const uploadId of uploadIds) {
     const r = await tx
       .updateTable('upload')
@@ -117,7 +122,7 @@ async function insertProposal(
       throw new ApiProblem(
         409,
         'upload_unusable',
-        'An image of this Proposal is not uploaded yet, is not yours, or belongs to another Proposal. Upload it again.',
+        'An image or document of this Proposal is not uploaded yet, is not yours, or belongs to another Proposal. Upload it again.',
       );
   }
   return { proposal: inserted, created: true };
@@ -167,8 +172,10 @@ async function transaction<T extends { moves?: UploadMove[] }>(db: Db, fn: (tx: 
       const out = await fn(tx);
       for (const m of out.moves ?? []) {
         for (const kind of ['original', 'display'] as const) {
-          await deps.images.copy(m.from[kind], m.to[kind]);
-          copied.push(m.to[kind]);
+          const [from, to] = [m.from[kind], m.to[kind]];
+          if (from === undefined || to === undefined) continue; // a document has no display copy
+          await deps.images.copy(from, to);
+          copied.push(to);
         }
       }
       return out;
@@ -185,7 +192,7 @@ async function transaction<T extends { moves?: UploadMove[] }>(db: Db, fn: (tx: 
  */
 async function finishMoves(deps: ProposalDeps, moves: readonly UploadMove[]): Promise<void> {
   for (const m of moves) {
-    for (const key of new Set([m.from.original, m.from.display, uploadKeys(m.uploadId).link])) {
+    for (const key of new Set([m.from.original, m.from.display ?? m.from.original, uploadKeys(m.uploadId).link])) {
       await deps.images.delete(key).catch((e) => deps.log?.('could not delete a pending image', e));
     }
   }
@@ -266,17 +273,30 @@ async function followUploads(tx: Db, applied: ApplyResult, now: Date): Promise<v
   for (const m of applied.uploads) {
     await tx
       .updateTable('upload')
-      .set({ image_id: m.imageId, storage_key: m.to.original, display_key: m.to.display, orphaned_at: null })
+      .set({
+        image_id: m.imageId ?? null,
+        document_id: m.documentId ?? null,
+        storage_key: m.to.original,
+        ...(m.to.display ? { display_key: m.to.display } : {}),
+        orphaned_at: null,
+      })
       .where('id', '=', m.uploadId)
       .execute();
   }
-  for (const c of applied.changes.list().filter((x) => x.table === 'image')) {
-    const removed = c.after === null ? c.before?.storage_key : undefined;
-    const restored = c.before === null && !applied.uploads.some((m) => m.imageId === c.id) ? c.after?.storage_key : undefined;
-    if (typeof removed === 'string') {
+  const moved = new Set(applied.uploads.flatMap((m) => [m.imageId, m.documentId]));
+  for (const c of applied.changes.list().filter((x) => x.table === 'image' || x.table === 'source_document')) {
+    const keys = (snap: Snapshot | null) => [snap?.storage_key, snap?.original_key].filter((k): k is string => typeof k === 'string');
+    const link = c.table === 'image' ? { image_id: c.id } : { document_id: c.id };
+    for (const removed of c.after === null ? keys(c.before) : []) {
       await tx.updateTable('upload').set({ orphaned_at: now }).where('storage_key', '=', removed).execute();
-    } else if (typeof restored === 'string') {
-      await tx.updateTable('upload').set({ image_id: c.id, orphaned_at: null }).where('storage_key', '=', restored).where('status', '!=', 'deleted').execute();
+    }
+    for (const restored of c.before === null && !moved.has(c.id) ? keys(c.after) : []) {
+      await tx
+        .updateTable('upload')
+        .set({ ...link, orphaned_at: null })
+        .where('storage_key', '=', restored)
+        .where('status', '!=', 'deleted')
+        .execute();
     }
   }
 }

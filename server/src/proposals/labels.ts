@@ -105,6 +105,8 @@ async function placeRecordLabels(db: Db, ids: string[], out: Labels): Promise<vo
   for (const n of await db.selectFrom('house_number').select(['id', 'number']).where('id', 'in', ids).execute())
     out.set(n.id, { cs: `čp. ${n.number}`, en: `No. ${n.number}` });
   for (const l of await db.selectFrom('person_label').select(['id', 'label']).where('id', 'in', ids).execute()) out.set(l.id, both(`“${l.label}”`));
+  for (const d of await db.selectFrom('source_document').select(['id', 'title']).where('id', 'in', ids).execute())
+    out.set(d.id, { cs: `dokument „${d.title}“`, en: `the document “${d.title}”` });
 }
 
 async function familyLabels(db: Db, ids: string[], out: Labels): Promise<void> {

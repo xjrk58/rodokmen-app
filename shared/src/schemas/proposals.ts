@@ -21,6 +21,7 @@ import {
   LinkPlaceParish,
   RemoveLabel,
   SetNotes,
+  AddDocument,
 } from './place-operations.js';
 import { Ref, TempId } from './refs.js';
 import { SERVER_OPERATIONS, SetFamilyRoot } from './server-operations.js';
@@ -281,6 +282,7 @@ export const RESTORABLE_TABLES = [
   'estate',
   'place_estate',
   'person_label',
+  'source_document',
 ] as const;
 export const RestorableTable = z.enum(RESTORABLE_TABLES).meta({ id: 'RestorableTable' });
 export type RestorableTable = z.infer<typeof RestorableTable>;
@@ -328,6 +330,7 @@ export const Operation = z
     SetNotes,
     AddLabel,
     RemoveLabel,
+    AddDocument,
   ])
   .meta({ id: 'Operation' });
 

@@ -1,4 +1,5 @@
 import { isTempId, type PlaceOrNoteOperation } from '@rodokmen/shared';
+import { v7 as uuidv7 } from 'uuid';
 import { sql } from 'kysely';
 import { ApiProblem } from '../auth/problem.js';
 import { periodColumns } from '../tree/dates.js';
@@ -101,6 +102,52 @@ async function removeLabel(ctx: Ctx, position: number, op: Op<'removeLabel'>) {
   await ctx.rows.remove('person_label', found.id);
 }
 
+// ---------------------------------------------------------------- documents on Sources
+
+/** A finished document upload of this Proposal's author, of the given type. */
+async function documentUpload(ctx: Ctx, position: number, uploadId: string, type: 'application/pdf' | 'application/msword') {
+  const u = await ctx.db.selectFrom('upload').selectAll().where('id', '=', uploadId).forUpdate().executeTakeFirst();
+  if (
+    !u ||
+    u.kind !== 'document' ||
+    u.content_type !== type ||
+    u.author_id !== ctx.authorId ||
+    u.proposal_id !== ctx.proposalId ||
+    u.status !== 'ready' ||
+    !u.sha256 ||
+    !u.byte_size
+  ) {
+    const what = type === 'application/pdf' ? 'PDF' : 'original DOC';
+    throw new ApiProblem(409, 'upload_unusable', `Operation ${position + 1}: the ${what} upload is missing, not finished, or not part of this Proposal.`);
+  }
+  return { ...u, sha256: u.sha256, byte_size: u.byte_size };
+}
+
+/** A PDF document on a Source, with the DOC it was converted from when there is one (evidence-media spec, "Documents on Sources"). */
+async function addDocument(ctx: Ctx, position: number, op: Op<'addDocument'>) {
+  const sourceId = ref(ctx, op.sourceId);
+  if (!isTempId(op.sourceId)) await checkBase(ctx, position, 'source', sourceId, undefined, 'the Source');
+  const pdf = await documentUpload(ctx, position, op.uploadId, 'application/pdf');
+  const doc = op.originalUploadId ? await documentUpload(ctx, position, op.originalUploadId, 'application/msword') : null;
+  const id = uuidv7();
+  const keys = { pdf: `documents/${id}/document.pdf`, original: `documents/${id}/original.doc` };
+  await ctx.rows.insert('source_document', {
+    id,
+    source_id: sourceId,
+    title: op.title,
+    storage_key: keys.pdf,
+    content_type: 'application/pdf',
+    byte_size: pdf.byte_size,
+    sha256: pdf.sha256,
+    original_key: doc ? keys.original : null,
+    original_content_type: doc ? 'application/msword' : null,
+    original_byte_size: doc?.byte_size ?? null,
+    original_sha256: doc?.sha256 ?? null,
+  });
+  ctx.uploads.push({ uploadId: pdf.id, documentId: id, from: { original: pdf.storage_key }, to: { original: keys.pdf } });
+  if (doc) ctx.uploads.push({ uploadId: doc.id, documentId: id, from: { original: doc.storage_key }, to: { original: keys.original } });
+}
+
 export function applyPlaceOrNote(ctx: Ctx, position: number, op: PlaceOrNoteOperation): Promise<void> {
   switch (op.op) {
     case 'createPlace':
@@ -124,5 +171,7 @@ export function applyPlaceOrNote(ctx: Ctx, position: number, op: PlaceOrNoteOper
       return addLabel(ctx, position, op);
     case 'removeLabel':
       return removeLabel(ctx, position, op);
+    case 'addDocument':
+      return addDocument(ctx, position, op);
   }
 }

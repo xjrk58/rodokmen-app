@@ -7,6 +7,7 @@ export * from './text.js';
 export * from './schemas/common.js';
 export * from './schemas/tree.js';
 export * from './schemas/api.js';
+export * from './schemas/places-api.js';
 export * from './schemas/accounts.js';
 export * from './schemas/proposals.js';
 export * from './schemas/check-operations.js';

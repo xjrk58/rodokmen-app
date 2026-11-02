@@ -4,21 +4,15 @@
  */
 import { z } from 'zod';
 import { RELATIONS } from '../relation.js';
-import { EdtfDate, GeoPoint, Id, IsoDay, Paging, Period, Version } from './common.js';
+import { GeoPoint, Id, IsoDay, Paging, Version } from './common.js';
 import {
   ChildLinkType,
   CitationRecord,
   Confidence,
-  EstateRecord,
   EventType,
   FamilyAccount,
-  HouseNumberRecord,
   ImageMetadata,
-  MunicipalityLink,
   NameRecord,
-  ParishRecord,
-  PlaceNameRecord,
-  PlaceType,
   RegisterCoverage,
   RoleType,
   Sex,
@@ -28,7 +22,7 @@ import {
 // ---------------------------------------------------------------- shared pieces
 
 /** A record's research notes in Markdown (tree-model spec, "Research notes on records"). */
-const NotesField = z.string().nullable().describe('Research notes in Markdown; null when there are none');
+export const NotesField = z.string().nullable().describe('Research notes in Markdown; null when there are none');
 
 /** The relation to the family (tree-model spec, "Relation to the family is computed"; shared/src/relation.ts). */
 export const RelationToFamily = z.enum(RELATIONS).meta({
@@ -314,87 +308,6 @@ export const MapEventsResult = z
   })
   .meta({ id: 'MapEventsResult' });
 
-// ---------------------------------------------------------------- Places, Houses, Parishes, Estates
-
-export const PlaceEventsQuery = z.object({
-  limit: z.coerce.number().int().min(1).max(2000).default(1000),
-});
-
-export const PlaceEvent = EventSummary.safeExtend({
-  persons: z.array(z.object({ role: RoleType, roleDetail: z.string().nullable(), person: PersonSummary })),
-}).meta({ id: 'PlaceEvent' });
-
-export const PlaceEvents = z
-  .object({
-    place: PlaceRef,
-    events: z.array(PlaceEvent).describe('Events at the Place and at its Houses, ordered by the earliest date each could be; undated last'),
-    truncated: z.boolean().describe('True when more Events matched than the limit'),
-  })
-  .meta({ id: 'PlaceEvents' });
-
-export const PlaceSearchQuery = z.object({
-  q: z.string().trim().min(1).max(200).optional().describe('Any part of any name of the Place; case and diacritics are ignored'),
-  ...Paging.shape,
-});
-
-export const PlaceSummary = z
-  .object({
-    id: Id,
-    version: Version,
-    type: PlaceType,
-    name: z.string(),
-    location: GeoPoint.nullable(),
-    municipality: MunicipalityLink.nullable(),
-  })
-  .meta({ id: 'PlaceSummary' });
-
-export const PlaceSearchResult = z
-  .object({ items: z.array(PlaceSummary), limit: z.number().int(), offset: z.number().int() })
-  .meta({ id: 'PlaceSearchResult' });
-
-export const HouseSummary = z
-  .object({
-    id: Id,
-    version: Version,
-    placeId: Id,
-    location: GeoPoint.nullable(),
-    note: z.string().nullable(),
-    numbers: z.array(HouseNumberRecord).describe('House numbers (čp.) over time, oldest first'),
-  })
-  .meta({ id: 'HouseSummary' });
-
-export const PlaceDetail = PlaceSummary.safeExtend({
-  names: z.array(PlaceNameRecord),
-  parishes: z.array(z.object({ linkId: Id, linkVersion: Version, period: Period, parish: ParishRef })),
-  estates: z.array(z.object({ linkId: Id, linkVersion: Version, period: Period, estate: EstateRef })),
-  houses: z.array(HouseSummary),
-  notes: NotesField,
-}).meta({ id: 'PlaceDetail' });
-
-export const HouseLookupQuery = z.object({
-  number: z
-    .string()
-    .regex(/^\d{1,5}[a-z]?$/)
-    .describe('House number (čp.)'),
-  at: EdtfDate.describe('Date at which the number was carried'),
-});
-
-export const HouseDetail = HouseSummary.safeExtend({
-  place: PlaceRef,
-  events: z.array(EventSummary).describe('Events at this House, ordered by earliest date'),
-  notes: NotesField,
-}).meta({ id: 'HouseDetail' });
-
-export const ParishDetail = ParishRecord.safeExtend({
-  places: z.array(z.object({ linkId: Id, period: Period, place: PlaceRef })),
-  notes: NotesField,
-}).meta({ id: 'ParishDetail' });
-
-export const EstateDetail = EstateRecord.safeExtend({
-  places: z.array(z.object({ linkId: Id, period: Period, place: PlaceRef })),
-  notes: NotesField,
-}).meta({ id: 'EstateDetail' });
-
 // ---------------------------------------------------------------- Sources, Citations, images
 
 export const SourceSearchQuery = z.object({
@@ -421,8 +334,25 @@ export const SourceSearchResult = z
   .object({ items: z.array(SourceSummary), limit: z.number().int(), offset: z.number().int() })
   .meta({ id: 'SourceSearchResult' });
 
+/** A document of a Source (evidence-media spec, "Documents on Sources"): opened only through links that expire. */
+export const DocumentView = z
+  .object({
+    id: Id,
+    version: Version,
+    title: z.string(),
+    contentType: z.literal('application/pdf'),
+    byteSize: z.number().int(),
+    url: z.string().describe('The PDF; redirects to a link that expires within minutes'),
+    original: z
+      .object({ contentType: z.literal('application/msword'), byteSize: z.number().int(), url: z.string().describe('Redirects to a link that expires') })
+      .nullable()
+      .describe('The DOC the PDF was converted from, when it was kept'),
+  })
+  .meta({ id: 'DocumentView' });
+
 export const SourceDetail = SourceSummary.safeExtend({
   citations: z.array(CitationSummary),
+  documents: z.array(DocumentView).describe('PDF documents of the Source, such as a family chronicle'),
   notes: NotesField,
 }).meta({ id: 'SourceDetail' });
 
@@ -433,12 +363,15 @@ export const ImageView = ImageMetadata.safeExtend({
 
 export const CitationDetail = CitationRecord.safeExtend({
   source: SourceSummary,
+  documents: z.array(DocumentView).describe("The Source's documents"),
   events: z.array(EventSummary),
   names: z.array(z.object({ id: Id, personId: Id, asFound: z.string() })),
   images: z.array(ImageView),
 }).meta({ id: 'CitationDetail' });
 
 export const ImageLinkQuery = z.object({ full: z.enum(['true', 'false']).optional().describe('true: the original file instead of the display copy') });
+
+export const DocumentLinkQuery = z.object({ original: z.enum(['true', 'false']).optional().describe('true: the original DOC the PDF was converted from') });
 
 export const IdParams = z.object({ id: Id });
 
@@ -456,23 +389,15 @@ export type PersonSearchQuery = z.infer<typeof PersonSearchQuery>;
 export type PersonSearchResult = z.infer<typeof PersonSearchResult>;
 export type Pedigree = z.infer<typeof Pedigree>;
 export type Hourglass = z.infer<typeof Hourglass>;
-export type PlaceEvent = z.infer<typeof PlaceEvent>;
-export type PlaceEvents = z.infer<typeof PlaceEvents>;
 export type FamilyDetail = z.infer<typeof FamilyDetail>;
 export type EventDetail = z.infer<typeof EventDetail>;
 export type MapEventsQuery = z.infer<typeof MapEventsQuery>;
 export type MapEvent = z.infer<typeof MapEvent>;
 export type MapEventsResult = z.infer<typeof MapEventsResult>;
-export type PlaceSummary = z.infer<typeof PlaceSummary>;
-export type PlaceDetail = z.infer<typeof PlaceDetail>;
-export type HouseSummary = z.infer<typeof HouseSummary>;
-export type HouseDetail = z.infer<typeof HouseDetail>;
-export type ParishDetail = z.infer<typeof ParishDetail>;
-export type EstateDetail = z.infer<typeof EstateDetail>;
 export type SourceSummary = z.infer<typeof SourceSummary>;
 export type SourceDetail = z.infer<typeof SourceDetail>;
 export type CitationDetail = z.infer<typeof CitationDetail>;
+export type DocumentView = z.infer<typeof DocumentView>;
 export type ImageView = z.infer<typeof ImageView>;
 export type Health = z.infer<typeof Health>;
-export type PlaceSearchResult = z.infer<typeof PlaceSearchResult>;
 export type SourceSearchResult = z.infer<typeof SourceSearchResult>;

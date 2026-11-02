@@ -542,5 +542,10 @@
   "person.labels": "Labels",
   "person.editNotes": "Notes and Labels",
   "people.labelFilter": "Labels",
-  "people.labelPlaceholder": "line/novak, emigrated"
+  "people.labelPlaceholder": "line/novak, emigrated",
+  "documents.add": "Add a PDF document",
+  "documents.notPdf": "Only PDF documents can be attached. Save the document as a PDF first, then add the PDF.",
+  "documents.tooLarge": "Documents can be at most 50 MB. Save a smaller copy.",
+  "documents.title": "Documents",
+  "documents.original": "original DOC"
 }

@@ -44,6 +44,25 @@ export async function startBrowserWorld(): Promise<BrowserWorld> {
     mailer: new OutboxMailer(),
     clock,
     images,
+    // The bucket on the same server: the app PUTs uploads to /test-storage/… and reads links from there.
+    extraRoutes: (scope) => {
+      scope.addContentTypeParser(
+        ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf', 'application/msword'],
+        { parseAs: 'buffer', bodyLimit: 60 * 1024 * 1024 },
+        (_req, body, done) => done(null, body),
+      );
+      scope.put('/test-storage/*', { config: { action: 'propose' }, schema: { hide: true } }, async (req, reply) => {
+        const key = new URL(req.url, origin).pathname.replace('/test-storage/', '');
+        await images.put(key, Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0), req.headers['content-type'] ?? 'application/octet-stream');
+        return reply.code(200).send();
+      });
+      scope.get('/test-storage/*', { schema: { hide: true } }, async (req, reply) => {
+        const key = new URL(req.url, origin).pathname.replace('/test-storage/', '');
+        const object = images.objects.get(key);
+        if (!object) return reply.code(404).send();
+        return reply.type(key.endsWith('.webp') ? 'image/webp' : object.contentType).send(object.body);
+      });
+    },
   });
   await app.listen({ host: 'localhost', port });
   const browser: Browser = await chromium.launch();

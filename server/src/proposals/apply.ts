@@ -217,6 +217,7 @@ async function addImage(ctx: Ctx, position: number, op: Op<'addImage'>) {
   const upload = await ctx.db.selectFrom('upload').selectAll().where('id', '=', op.uploadId).forUpdate().executeTakeFirst();
   if (
     !upload ||
+    upload.kind !== 'image' ||
     upload.author_id !== ctx.authorId ||
     upload.proposal_id !== ctx.proposalId ||
     upload.status !== 'ready' ||

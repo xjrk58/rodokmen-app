@@ -13,6 +13,7 @@ const ids = {
   event: '0192f0c4-7a1e-7c3b-9d2a-000000000008',
   name: '0192f0c4-7a1e-7c3b-9d2a-000000000009',
   upload: '0192f0c4-7a1e-7c3b-9d2a-00000000000a',
+  upload2: '0192f0c4-7a1e-7c3b-9d2a-00000000000c',
   dup: '0192f0c4-7a1e-7c3b-9d2a-00000000000b',
 };
 const labels: Record<string, { cs: string; en: string }> = {
@@ -83,6 +84,7 @@ const examples: OperationInput[] = [
   { op: 'setNotes', record: 'place', id: 'tmp:place', notes: null },
   { op: 'addLabel', personId: 'tmp:child', label: 'line/dvorak' },
   { op: 'removeLabel', personId: ids.anna, baseVersion: 1, label: 'emigrated' },
+  { op: 'addDocument', sourceId: 'tmp:account', uploadId: ids.upload, originalUploadId: ids.upload2, title: 'Family chronicle, typescript of 1936' },
 ];
 
 describe('links in Sources', () => {

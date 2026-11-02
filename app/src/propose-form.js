@@ -8,6 +8,7 @@ import { guarded, h, showError } from './dom.js';
 import { draftPhotos, deletePhoto, savePhoto, newKey } from './drafts.js';
 import { t } from './i18n.js';
 import { personPicker, placePicker, sourcePicker } from './pickers.js';
+import { documentFields } from './document-fields.js';
 import { notesFields } from './notes-form.js';
 import { CONFIDENCES, formProblems, KINDS, NAME_LANGUAGES, NAME_TYPES, nameKind, NEW_SOURCE_TYPES } from './proposal-build.js';
 
@@ -217,7 +218,7 @@ function correctionFields(form) {
 function photoFields(draft, ensureSaved, report) {
   const photos = h('div', { class: 'photos', 'data-testid': 'photos' });
   const renderPhotos = async () => {
-    const list = await draftPhotos(draft.id);
+    const list = (await draftPhotos(draft.id)).filter((p) => p.kind !== 'document');
     photos.replaceChildren(
       ...list.map((p) => {
         const remove = h('button', { type: 'button', class: 'icon-button small', 'aria-label': t('photos.remove') }, '×');
@@ -324,6 +325,7 @@ function citationFields(draft, ensureSaved, report) {
     ),
     field(t('citation.readOn'), textInput(c, 'readOn', { type: 'date', 'data-testid': 'read-on' })),
     ...photoFields(draft, ensureSaved, report),
+    ...documentFields(draft, ensureSaved, report),
   );
 }
 

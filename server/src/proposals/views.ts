@@ -107,11 +107,12 @@ export async function findConflicts(db: Db, ops: readonly Operation[]): Promise<
 // ---------------------------------------------------------------- views
 
 export function uploadView(
-  u: Pick<Upload, 'id' | 'status' | 'content_type' | 'declared_type' | 'byte_size' | 'declared_size' | 'width' | 'height'>,
+  u: Pick<Upload, 'id' | 'status' | 'kind' | 'content_type' | 'declared_type' | 'byte_size' | 'declared_size' | 'width' | 'height'>,
 ): UploadView {
   return {
     id: u.id,
     status: u.status,
+    kind: u.kind,
     contentType: u.content_type ?? u.declared_type,
     byteSize: u.byte_size ?? u.declared_size,
     width: u.width,
@@ -276,7 +277,9 @@ function citationPreviews(ops: readonly Operation[], support: CitationSupport, l
   const imagesOf = (ref: string) =>
     ops.flatMap((o) => {
       const upload = o.op === 'addImage' && o.citationId === ref ? support.uploads.get(o.uploadId) : undefined;
-      return o.op === 'addImage' && upload ? [{ ...uploadView(upload), kind: o.kind }] : [];
+      if (o.op !== 'addImage' || !upload) return [];
+      const { kind: _uploadKind, ...view } = uploadView(upload);
+      return [{ ...view, kind: o.kind }];
     });
   // A new Citation, described by its operation.
   const created = (o: Extract<Operation, { op: 'createCitation' }>): CitationPreview => {

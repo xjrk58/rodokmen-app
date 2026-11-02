@@ -131,9 +131,10 @@ export async function sendDigests(deps: JobDeps, day: string, job = 'editor-dige
 }
 
 /**
- * Deletes image files nobody needs any more: those of Proposals rejected more than 30 days
- * ago, uploads never used in a Proposal after as long, and accepted images that an undo
- * removed 30 days ago (kept until then in case the undo itself is undone). Rows stay, marked deleted.
+ * Deletes image and document files nobody needs any more: those of Proposals rejected more than
+ * 30 days ago, uploads never used in a Proposal after as long, and accepted images and documents
+ * that an undo removed 30 days ago (kept until then in case the undo itself is undone). Rows
+ * stay, marked deleted.
  */
 export async function deleteUnusedImages(deps: JobDeps, now: Date): Promise<JobResult> {
   const cutoff = new Date(now.getTime() - REJECTED_IMAGE_DAYS * 86_400_000);
@@ -143,6 +144,7 @@ export async function deleteUnusedImages(deps: JobDeps, now: Date): Promise<JobR
     .select(['u.id', 'u.storage_key', 'u.display_key'])
     .where('u.status', '!=', 'deleted')
     .where('u.image_id', 'is', null)
+    .where('u.document_id', 'is', null)
     .where((eb) =>
       eb.or([
         eb.and([eb('p.status', '=', 'rejected'), eb('p.decided_at', '<', cutoff)]),

@@ -331,9 +331,22 @@ export const uploadUrl = (uploadId) => `${API}uploads/${encodeURIComponent(uploa
  * @param {Blob} blob
  * @returns {Promise<string>}
  */
-export async function uploadImage(blob) {
+export const uploadImage = (blob) => uploadFile(blob, /** @type {UploadTicket['upload']['contentType']} */ (blob.type || 'image/jpeg'));
+
+/**
+ * Uploads one PDF document for a Source (evidence-media spec, "Documents on Sources"). Returns the upload id.
+ * @param {Blob} blob
+ * @returns {Promise<string>}
+ */
+export const uploadDocument = (blob) => uploadFile(blob, 'application/pdf');
+
+/**
+ * @param {Blob} blob
+ * @param {UploadTicket['upload']['contentType']} contentType
+ * @returns {Promise<string>}
+ */
+async function uploadFile(blob, contentType) {
   const sha256 = hex(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())));
-  const contentType = blob.type || 'image/jpeg';
   /** @type {UploadTicket} */
   const ticket = await api('uploads', { method: 'POST', body: { contentType, byteSize: blob.size, sha256 } });
   let put;

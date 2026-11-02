@@ -7,8 +7,10 @@ import {
   History,
   HistoryKind,
   IdParams,
+  DOCUMENT_MAX_BYTES,
   IMAGE_MAX_BYTES,
   ImageLinkQuery,
+  isDocumentType,
   MergeBody,
   NotificationSettings,
   ProposalList,
@@ -28,12 +30,53 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 import { ApiProblem } from '../auth/problem.js';
+import type { Upload } from '../db/types.js';
 import { familyRootList, setFamilyRoot } from '../proposals/family-roots.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews, uploadView } from '../proposals/views.js';
 import { imageLink, uploadKeys } from '../storage/images.js';
 import { checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
+import { checkDocument, DOCUMENT_TOO_LARGE_MESSAGE } from '../storage/documents.js';
+
+/**
+ * Finishes a document upload (evidence-media spec, "Documents on Sources"): the file must be the
+ * PDF (or DOC) it was announced as and match its SHA-256. The checked bytes go where no upload
+ * link reaches, as for images; a document has no display copy.
+ */
+async function completeDocument(deps: ProposalDeps, u: Upload) {
+  const original = await deps.images.get(u.storage_key);
+  if (!original) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+  const declared = isDocumentType(u.declared_type) ? u.declared_type : 'application/pdf';
+  let checked;
+  try {
+    checked = checkDocument(original, declared);
+    if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
+  } catch (error) {
+    await deps.images.delete(u.storage_key).catch(() => undefined);
+    await deps.db
+      .updateTable('upload')
+      .set({ status: 'deleted', deleted_at: deps.clock.now() })
+      .where('id', '=', u.id)
+      .where('status', '=', 'waiting')
+      .execute();
+    throw error;
+  }
+  const verified = uploadKeys(u.id).verified;
+  await deps.images.put(verified, original, checked.contentType);
+  const row = await deps.db
+    .updateTable('upload')
+    .set({ status: 'ready', storage_key: verified, content_type: checked.contentType, byte_size: checked.byteSize, sha256: checked.sha256 })
+    .where('id', '=', u.id)
+    .where('status', '=', 'waiting')
+    .returningAll()
+    .executeTakeFirst();
+  await deps.images.delete(u.storage_key).catch((e: unknown) => deps.log?.('could not delete an uploaded file after checking it', e));
+  if (row) return uploadView(row);
+  const current = await deps.db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
+  if (current.status === 'ready') return uploadView(current);
+  throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
+}
 
 /** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
 const signedIn = { 401: ApiError, 429: RateLimited };
@@ -219,12 +262,15 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     config: { action: 'propose' },
     schema: {
       tags: ['Images'],
-      summary: 'Start an image upload: returns a presigned PUT link into pending/. JPEG, PNG, WebP or HEIC, at most 25 MB',
+      summary:
+        'Start an upload: returns a presigned PUT link into pending/. An image (JPEG, PNG, WebP or HEIC, at most 25 MB) or a document (PDF, or the DOC a PDF was converted from, at most 50 MB)',
       body: CreateUploadBody,
       response: { 201: UploadTicket, 400: ApiError, 413: ApiError, ...signedIn },
     },
     handler: async (req, reply) => {
-      if (req.body.byteSize > IMAGE_MAX_BYTES) throw new ApiProblem(413, 'too_large', TOO_LARGE_MESSAGE);
+      const document = isDocumentType(req.body.contentType);
+      if (document && req.body.byteSize > DOCUMENT_MAX_BYTES) throw new ApiProblem(413, 'too_large', DOCUMENT_TOO_LARGE_MESSAGE);
+      if (!document && req.body.byteSize > IMAGE_MAX_BYTES) throw new ApiProblem(413, 'too_large', TOO_LARGE_MESSAGE);
       const id = uuidv7();
       const keys = uploadKeys(id);
       const row = await db
@@ -237,6 +283,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
           declared_type: req.body.contentType,
           declared_size: req.body.byteSize,
           declared_sha256: req.body.sha256,
+          kind: document ? 'document' : 'image',
         })
         .returningAll()
         .executeTakeFirstOrThrow();
@@ -259,6 +306,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       const u = await db.selectFrom('upload').selectAll().where('id', '=', req.params.id).where('author_id', '=', req.member!.id).executeTakeFirst();
       if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
       if (u.status === 'ready') return uploadView(u);
+      if (u.kind === 'document') return completeDocument(deps, u);
       // Loaded and checked in its turn, one upload at a time (memory, issue #39).
       const checked = await checkUpload(() => deps.images.get(u.storage_key));
       if (!checked) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
@@ -323,6 +371,10 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       if (!u || (u.author_id !== member.id && !canReview(member) && u.image_id === null)) throw new ApiProblem(404, 'not_found', 'No image with this id.');
       if (u.status === 'deleted') throw new ApiProblem(410, 'deleted', 'This image was deleted.');
       if (u.status !== 'ready') throw new ApiProblem(409, 'not_ready', 'This image is still being uploaded.');
+      if (u.kind === 'document') {
+        const link = await deps.images.link(u.storage_key, u.content_type!);
+        return reply.header('cache-control', 'no-store').redirect(link.url, 302);
+      }
       // An accepted image is served from its image record; otherwise from the upload (pending/,
       // or images/ for one an undo removed, kept for 30 days).
       const image = u.image_id
