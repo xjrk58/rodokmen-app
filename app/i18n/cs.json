@@ -252,6 +252,8 @@
   "history.choice.keep": "ponechat",
   "history.confirmUndo": "Vrátit",
   "history.blocked": "Toto nejde vrátit samostatně: na jeho záznamy navazují pozdější přijaté návrhy ({count}). Vraťte nejdřív je, od nejnovějšího.",
+  "history.blockedUnlogged": "Toto nejde vrátit: na jeho záznamy navazují záznamy, které v historii nejsou (přidané mimo návrhy).",
+  "history.undoFirst": "Nejdřív vrátit tento",
   "tabs.label": "Hlavní části",
   "tabs.tree": "Strom",
   "tabs.map": "Mapa",

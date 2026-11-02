@@ -148,7 +148,11 @@ export const UndoPreview = z
   .object({
     proposalId: Id,
     laterEdits: z.array(LaterEdit),
-    blockedBy: z.array(z.string()).describe('Later accepted Proposals that attach records to ones this undo would remove; undo those first, newest first'),
+    blockedBy: z
+      .array(z.string())
+      .describe(
+        'Ids of later accepted Proposals that attach records to ones this undo would remove, newest first: undo those first (GET /api/proposals/{id} gives the author, date and changes of each). The single entry "(records not in the log)" means records added outside any logged Proposal are attached, so the undo cannot be done',
+      ),
   })
   .meta({ id: 'UndoPreview' });
 

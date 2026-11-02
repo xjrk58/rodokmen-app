@@ -2,7 +2,7 @@
 // tool, record history and undo. Phone-first: one card per Proposal, the
 // changes as sentences, conflicts with a choice per field, and one tap to accept.
 
-import { acceptProposal, getHistory, mergePersons, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
+import { acceptProposal, getHistory, getProposal, mergePersons, messageOf, rejectProposal, reviewQueue, undoPreview, undoProposal, uploadUrl } from './api.js';
 import { h } from './dom.js';
 import { language, t } from './i18n.js';
 import { personPicker } from './pickers.js';
@@ -68,12 +68,14 @@ function authorLine(author) {
 /**
  * "By {author} · accepted by {editor}" in the reader's language, with the author's name (and
  * the Agent badge) as in the review queue.
- * @param {HistoryEntry} e
+ * @param {AuthorRef} author
+ * @param {AuthorRef | null} editor
+ * @param {string} testid
  */
-function historyByline(e) {
+function historyByline(author, editor, testid) {
   const mark = '\u0001';
-  const [before = '', after = ''] = t('history.by', { author: mark, editor: e.acceptedBy.displayName }).split(mark);
-  return h('p', { class: 'small', 'data-testid': 'history-by' }, before, authorLine(e.author), after);
+  const [before = '', after = ''] = t('history.by', { author: mark, editor: editor?.displayName ?? '?' }).split(mark);
+  return h('p', { class: 'small', 'data-testid': testid }, before, authorLine(author), after);
 }
 
 /** @param {CitationPreview} c */
@@ -362,7 +364,7 @@ function historyEntry(e, canUndo, onUndone) {
     'article',
     { class: 'card history-entry', 'data-testid': 'history-entry' },
     h('header', { class: 'card-head' }, h('span', { class: 'chip' }, t(`kind.${e.kind}`)), h('span', { class: 'muted small' }, formatDate(e.acceptedAt))),
-    historyByline(e),
+    historyByline(e.author, e.acceptedBy, 'history-by'),
     h('ol', { class: 'changes' }, ...e.summaries.map((s) => h('li', {}, s[lang]))),
     ...e.corrections.map((c) => h('p', { class: 'muted small' }, t('history.corrected', { editor: c.by.displayName, change: c.summary[lang] }))),
     e.citations.length
@@ -455,8 +457,39 @@ function laterEditBlock(e, choice, lang) {
   return block;
 }
 
+/** A Proposal id in `blockedBy`, rather than the note for records that are not in the log. @param {string} ref */
+const isProposalId = (ref) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(ref);
+
 /**
- * Undo, with a choice per field when records were edited again since.
+ * A later Proposal that builds on the records of the one being undone: when it was accepted, by
+ * whom, what it changed, and its own Undo, so the Editor can undo it first from here.
+ * @param {ProposalView} p
+ * @param {() => void} onDone
+ */
+function blockerItem(p, onDone) {
+  const lang = language();
+  const box = h('div', { class: 'undo-box' });
+  const undo = h('button', { type: 'button', class: 'button', 'data-testid': 'undo-blocker-undo' }, t('history.undoFirst'));
+  undo.addEventListener('click', () => void undoFlow(p.id, box, onDone));
+  box.append(undo);
+  return h(
+    'li',
+    { class: 'undo-blocker', 'data-testid': 'undo-blocker', 'data-id': p.id },
+    h(
+      'div',
+      { class: 'card-head' },
+      h('span', { class: 'chip' }, t(`kind.${p.kind}`)),
+      h('span', { class: 'muted small' }, formatDate(p.decidedAt ?? p.submittedAt)),
+    ),
+    historyByline(p.author, p.decidedBy, 'undo-blocker-by'),
+    h('ol', { class: 'changes' }, ...p.operations.map((o) => h('li', {}, o.summary[lang]))),
+    box,
+  );
+}
+
+/**
+ * Undo, with a choice per field when records were edited again since. While later Proposals
+ * build on its records, the undo is refused and they are listed, newest first, to undo first.
  * @param {string} proposalId
  * @param {HTMLElement} box
  * @param {() => void} onDone
@@ -465,14 +498,24 @@ async function undoFlow(proposalId, box, onDone) {
   const lang = language();
   const status = h('p', { class: 'form-status', role: 'status' });
   let preview;
+  /** @type {ProposalView[]} */
+  let blockers;
   try {
     preview = await undoPreview(proposalId);
+    blockers = await Promise.all(preview.blockedBy.filter(isProposalId).map((id) => getProposal(id)));
   } catch (error) {
     box.replaceChildren(h('p', { class: 'form-status error' }, messageOf(error)));
     return;
   }
   if (preview.blockedBy.length) {
-    box.replaceChildren(h('p', { class: 'form-status error', 'data-testid': 'undo-blocked' }, t('history.blocked', { count: preview.blockedBy.length })));
+    box.replaceChildren(
+      h(
+        'p',
+        { class: 'form-status error', 'data-testid': 'undo-blocked' },
+        blockers.length ? t('history.blocked', { count: blockers.length }) : t('history.blockedUnlogged'),
+      ),
+      ...(blockers.length ? [h('ol', { class: 'undo-blockers' }, ...blockers.map((p) => blockerItem(p, onDone)))] : []),
+    );
     return;
   }
   /** @type {UndoBody['choices']} */

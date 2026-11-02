@@ -44,8 +44,14 @@ mergePersons
   cs: slučuje osobu Jan Novák (2) do osoby Anna Králová
   en: merges Jan Novák (2) into Anna Králová
 restoreRecord
-  cs: vrací záznam (person) Jan Novák (2) do dřívější podoby
-  en: restores the person record Jan Novák (2) to its earlier state
+  cs: vrací do dřívější podoby osobu: Jan Novák (2)
+  en: restores the Person Jan Novák (2) to its earlier state
 setFamilyRoot
   cs: označuje osobu Anna Králová za kořen rodu
   en: marks Anna Králová as a Family root
+restoreRecord
+  cs: odebírá jméno: „Joannes Nowak“
+  en: removes the Name “Joannes Nowak”
+restoreRecord
+  cs: odebírá událost: úmrtí 1850
+  en: removes the death of 1850
