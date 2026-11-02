@@ -6,7 +6,7 @@ import type { ProposalDeps } from '../proposals/service.js';
 import { uploadView } from '../proposals/views.js';
 import { checkDocument, DOCUMENT_TOO_LARGE_MESSAGE } from '../storage/documents.js';
 import { uploadKeys } from '../storage/images.js';
-import { checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
+import { CHECKSUM_MESSAGE, checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
 /**
  * Uploads of images and documents for Proposals (evidence-media spec): a presigned PUT link into
@@ -72,7 +72,7 @@ async function completeDocument(deps: ProposalDeps, u: Upload) {
   let checked;
   try {
     checked = checkDocument(original, declared);
-    if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
+    if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
   } catch (error) {
     return refuse(deps, u, error);
   }
@@ -99,17 +99,10 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
   if (u.status === 'ready') return uploadView(u);
   if (u.kind === 'document') return completeDocument(deps, u);
   // Loaded and checked in its turn, one upload at a time (memory, issue #39).
-  const checked = await checkUpload(() => deps.images.get(u.storage_key));
+  const checked = await checkUpload(() => deps.images.get(u.storage_key), u.declared_sha256);
   if (!checked) return finishedElsewhere(deps, u);
-  const { original } = checked;
-  let processed;
-  try {
-    if ('refused' in checked) throw checked.refused;
-    processed = checked.processed;
-    if (processed.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
-  } catch (error) {
-    return refuse(deps, u, error);
-  }
+  if ('refused' in checked) return refuse(deps, u, checked.refused);
+  const { original, processed } = checked;
   // The upload link stays valid for its 15 minutes, so the file it points at could still be
   // replaced. The bytes just checked go where no link reaches, and only they are used.
   const verified = uploadKeys(u.id).verified;

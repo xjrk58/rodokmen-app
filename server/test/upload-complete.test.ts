@@ -97,6 +97,15 @@ describe('finishing uploads', () => {
     expect(new Set(answers.map((r) => r.body)).size).toBe(1);
   });
 
+  it('a file other than the one announced is refused as such, before its type or pixels are checked (#97)', async () => {
+    const announced = await picture(900, 700);
+    const broken = Buffer.concat([announced.subarray(0, 64), Buffer.alloc(256, 0x55)]); // a JPEG that cannot be decoded
+    const id = await uploaded(broken, 'image/jpeg', sha(announced));
+    expect((await complete(id)).json()).toMatchObject({ statusCode: 400, code: 'checksum' });
+    expect(storage.objects.has(`pending/${id}/original`)).toBe(false);
+    expect(await t.db.selectFrom('upload').select('status').where('id', '=', id).executeTakeFirstOrThrow()).toEqual({ status: 'deleted' });
+  });
+
   it('a file that never arrived is still 409; one refused while the request waited is 404', async () => {
     const res = await a.app.inject({
       method: 'POST',

@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
-import { checkUpload, DISPLAY_MAX_PIXELS, processImage } from '../src/storage/process.js';
+import { CHECKSUM_MESSAGE, checkUpload, DISPLAY_MAX_PIXELS, processImage } from '../src/storage/process.js';
 import { SerialQueue } from '../src/storage/serial-queue.js';
 
 /** A promise with its resolve and reject at hand. */
@@ -13,6 +14,8 @@ function deferred<T = void>() {
   });
   return { promise, resolve, reject };
 }
+
+const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 
 /** Lets every pending promise callback run. */
 const settle = () => new Promise((r) => setImmediate(r));
@@ -109,12 +112,12 @@ describe('image processing on a small server (issue #39)', () => {
     const first = checkUpload(() => {
       loads.push('first');
       return gate.promise;
-    });
+    }, sha(image));
     const second = checkUpload(() => {
       loads.push('second');
       decodingWhenSecondLoads = sharp.counters().process;
       return Promise.resolve(image);
-    });
+    }, sha(image));
     await settle();
     expect(loads).toEqual(['first']); // the second waits while the first is still loading
     gate.resolve(image);
@@ -126,14 +129,33 @@ describe('image processing on a small server (issue #39)', () => {
   });
 
   it('a missing file is null, a refused image is returned, an error of loading is passed on', async () => {
-    await expect(checkUpload(() => Promise.resolve(null))).resolves.toBeNull();
+    await expect(checkUpload(() => Promise.resolve(null), 'a'.repeat(64))).resolves.toBeNull();
     const notAnImage = Buffer.from('not an image at all');
-    await expect(checkUpload(() => Promise.resolve(notAnImage))).resolves.toMatchObject({
+    await expect(checkUpload(() => Promise.resolve(notAnImage), sha(notAnImage))).resolves.toMatchObject({
       original: notAnImage,
       refused: { statusCode: 415, code: 'unsupported_image' },
     });
-    await expect(checkUpload(() => Promise.reject(new Error('storage unavailable')))).rejects.toThrow('storage unavailable');
+    await expect(checkUpload(() => Promise.reject(new Error('storage unavailable')), 'a'.repeat(64))).rejects.toThrow('storage unavailable');
     // The next upload gets its turn as usual.
-    await expect(checkUpload(() => picture(640, 480))).resolves.toMatchObject({ processed: { width: 640, height: 480 } });
+    const next = await picture(640, 480);
+    await expect(checkUpload(() => Promise.resolve(next), sha(next))).resolves.toMatchObject({ processed: { width: 640, height: 480 } });
+  });
+
+  it('a file other than the one announced is refused before anything is decoded (#97)', async () => {
+    const image = await picture(4000, 3000);
+    let most = 0;
+    let sampling = true;
+    const sample = () => {
+      most = Math.max(most, sharp.counters().process);
+      if (sampling) setImmediate(sample);
+    };
+    sample();
+    const checked = await checkUpload(() => Promise.resolve(image), sha(Buffer.from('the file announced'))).finally(() => {
+      sampling = false;
+    });
+    expect(checked).toMatchObject({ refused: { statusCode: 400, code: 'checksum', message: CHECKSUM_MESSAGE } });
+    expect(most).toBe(0);
+    // Not even its type or size is looked at: not an image, it is still told it differs.
+    await expect(checkUpload(() => Promise.resolve(Buffer.from('words')), sha(image))).resolves.toMatchObject({ refused: { code: 'checksum' } });
   });
 });

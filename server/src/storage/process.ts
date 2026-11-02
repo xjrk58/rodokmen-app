@@ -61,6 +61,7 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
 export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
+export const CHECKSUM_MESSAGE = 'The uploaded file differs from the one announced. Upload it again.';
 export const HEIC_MESSAGE =
   'This HEIC photo could not be converted. On an iPhone, set Settings → Camera → Formats → Most Compatible, or share the photo as JPEG, then add it again.';
 
@@ -79,22 +80,28 @@ export async function processImage(original: Buffer): Promise<ProcessedImage> {
 export type UploadCheck = { original: Buffer } & ({ processed: ProcessedImage } | { refused: ApiProblem });
 
 /**
- * Loads an upload's original with `load`, then checks it as processImage does, in one turn: any
- * number of uploads finished at once hold one original and one decode in memory, not one each.
- * Null when `load` finds no file; an error of `load` itself is passed on.
+ * Loads an upload's original with `load`, then checks it in one turn: first against `sha256`, the
+ * SHA-256 it was announced with, so that a file other than the one announced costs no decode
+ * (#97), then as processImage does. Any number of uploads finished at once hold one original and
+ * one decode in memory, not one each. Null when `load` finds no file; an error of `load` itself
+ * is passed on.
  */
-export function checkUpload(load: () => Promise<Buffer | null>): Promise<UploadCheck | null> {
+export function checkUpload(load: () => Promise<Buffer | null>, sha256: string): Promise<UploadCheck | null> {
   return turns.run(async () => {
     const original = await load();
     if (!original) return null;
     try {
-      return { original, processed: await displayCopy(original, typeOf(original)) };
+      const hash = sha256Of(original);
+      if (hash !== sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
+      return { original, processed: await displayCopy(original, typeOf(original), hash) };
     } catch (error) {
       if (error instanceof ApiProblem) return { original, refused: error };
       throw error;
     }
   });
 }
+
+const sha256Of = (original: Buffer) => createHash('sha256').update(original).digest('hex');
 
 /** The image type of an original within the size limit, or the refusal. */
 function typeOf(original: Buffer): ImageType {
@@ -105,7 +112,7 @@ function typeOf(original: Buffer): ImageType {
 }
 
 /** The display copy; every failure becomes an ApiProblem. */
-async function displayCopy(original: Buffer, contentType: ImageType): Promise<ProcessedImage> {
+async function displayCopy(original: Buffer, contentType: ImageType, sha256 = sha256Of(original)): Promise<ProcessedImage> {
   const heic = contentType === 'image/heic' || contentType === 'image/heif';
   try {
     // The header alone, without sharp's limit, so a file over it is told apart from an unreadable one.
@@ -122,7 +129,7 @@ async function displayCopy(original: Buffer, contentType: ImageType): Promise<Pr
     return {
       contentType,
       byteSize: original.length,
-      sha256: createHash('sha256').update(original).digest('hex'),
+      sha256,
       width: rotated ? meta.height : meta.width,
       height: rotated ? meta.width : meta.height,
       display,
