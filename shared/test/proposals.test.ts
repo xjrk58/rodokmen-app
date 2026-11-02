@@ -62,6 +62,9 @@ const examples: OperationInput[] = [
   { op: 'mergePersons', keepId: ids.anna, mergeId: ids.dup, keepBaseVersion: 1, mergeBaseVersion: 1 },
   { op: 'restoreRecord', table: 'person', id: ids.dup, baseVersion: 2, values: { id: ids.dup, sex: 'male', merged_into_id: null } },
   { op: 'setFamilyRoot', personId: ids.anna, familyRoot: true },
+  // What an undo says of the records it removes.
+  { op: 'restoreRecord', table: 'name', id: ids.name, baseVersion: 1, values: null },
+  { op: 'restoreRecord', table: 'event', id: ids.event, baseVersion: 2, values: null },
 ];
 
 describe('links in Sources', () => {

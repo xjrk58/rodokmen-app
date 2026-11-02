@@ -327,8 +327,7 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       expect(text).toContain('adds the Name “Prokopius Inventus” (Latin form) to Prokop Invented');
     });
 
-    // fixme(#74): once an undo removes records, the history names them by id ("removes the name record record 1a2b3c").
-    it.skip(`after an undo (${size}): the history still names the records the undo removed (fixme #74)`, async () => {
+    it(`after an undo (${size}): the history still names the records the undo removed (#74)`, async () => {
       const kristyna = await baptised('Kristýna', `Kristýna Invented ${size}`);
       await latinName(kristyna.id, 'Christina');
       const page = await open(editor, size, `#work/history/person/${kristyna.id}`);
@@ -338,7 +337,10 @@ describe('History and undo screens in the app (Chromium, phone and desktop, fixt
       // Newest first: the undo of the Person's baptism, the undo of the Latin Name, the Latin Name, the baptism.
       const said = await entries(page).locator('.changes').allTextContents();
       expect(said[0]).toContain(`Kristýna Invented ${size}`);
+      expect(said[0]).toContain('removes the Person Kristýna Invented');
       expect(said[1]).toContain('“Christina Inventus”');
+      // The Person is gone too, and the earlier entries still name her.
+      expect(said[2]).toContain('adds the Name “Christina Inventus” (Latin form) to Kristýna Invented');
       expect(said.join('\n')).not.toMatch(/record [0-9a-f]{6}/);
     });
 
