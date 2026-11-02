@@ -1716,3 +1716,65 @@ body.signed-in .screen {
 .here-persons li {
   padding: 4px 0;
 }
+
+/* Research leads (research-leads spec): the Leads list, a lead's page, and the leads of a Place on its sheet. */
+.lead-list,
+.search-records,
+.lead-history {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.lead-history li {
+  padding: 3px 0;
+  color: var(--ink-2);
+}
+.lead-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0 12px;
+  margin-bottom: 12px;
+}
+.lead-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+}
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 10px;
+}
+.search-record {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.search-record p {
+  margin: 2px 0;
+}
+.chip.lead-status.open {
+  background: #fbf0d9;
+  color: #7a5410;
+}
+.chip.lead-status.in_progress {
+  background: #dde9f6;
+  color: #1d4f86;
+}
+.chip.lead-status.found {
+  background: #dcefe0;
+  color: #1f6b33;
+}
+.chip.lead-status.not_found {
+  background: #ece6d8;
+  color: var(--ink-2);
+}
+.place-leads {
+  margin-top: 10px;
+}
+.place-leads li {
+  padding: 4px 0;
+}
+.person-leads {
+  margin-top: 18px;
+}

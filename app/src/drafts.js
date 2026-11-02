@@ -22,6 +22,7 @@ export const QUOTA_WARNING = 0.8;
  * @property {string} idempotencyKey
  * @property {string} createdAt ISO time
  * @property {string} updatedAt ISO time
+ * @property {{ id: string, question: string }} [lead] the Research lead the finding answers ("Start from this lead")
  */
 
 /**

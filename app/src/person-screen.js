@@ -1,12 +1,14 @@
 // The person page (family-view spec, "Person page"): all Names, the Events the Person took part
 // in with their Role, Place or House and date, the Families as partner and as child, and each
 // Citation with its confidence and images. It offers "Show in tree", the life path on the map,
-// "Propose a change" and the record's history, and to the Owner marking a Family root. It renders
+// "Propose a change" and the record's history, and to the Owner marking a Family root. Its Research
+// leads and suggested leads follow (research-leads spec, "Leads where people look"). It renders
 // from the device first and refreshes when online, with "as of" when the copy shown is not fresh.
 
 import { getCitation, getPerson, setFamilyRoot } from './api.js';
 import { lifeYears } from './hourglass-layout.js';
 import { t } from './i18n.js';
+import { PersonLeads } from './leads-screen.js';
 import { lifeAddress, personAddress, treeAddress } from './routes.js';
 import { AsOf, ErrorLine, errorText, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
 import { html, useState } from './ui.js';
@@ -216,5 +218,6 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     <${Events} person=${person} cache=${cache} />
     <h2>${t('person.families')}</h2>
     <${Families} person=${person} />
+    <${PersonLeads} personId=${person.id} me=${me} cache=${cache} />
   </section>`;
 }

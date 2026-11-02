@@ -1,6 +1,6 @@
 import { createServer } from 'node:net';
 import { mkdir } from 'node:fs/promises';
-import { Hourglass } from '@rodokmen/shared';
+import { Hourglass, LeadDetail } from '@rodokmen/shared';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp, type RodokmenApp } from '../src/app.js';
@@ -357,6 +357,57 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       const family = await people();
       await page.getByTestId('map-include-unrelated').check();
       await expect.poll(people).toBeGreaterThan(family);
+      expect(violationsOf(page)).toEqual([]);
+    }, 60_000);
+
+    it(`village sheet (${size}): the place sheet of a village with two open leads lists both with their questions and status; a search closes one as not found`, async () => {
+      const writer = await createMember(t.db, 'contributor', { displayName: `Lead writer ${size}`, language: 'en' });
+      const questions = [`Find the baptism of Matěj (${size})`, `Which House was the mill? (${size})`];
+      const ids: string[] = [];
+      for (const question of questions) {
+        const res = await inject(writer, 'POST', '/api/leads', {
+          question,
+          reason: 'Invented reason.',
+          placeIds: [L.kamennaLhota],
+          archive: 'Invented archive',
+        });
+        expect(res.statusCode, res.body).toBe(201);
+        ids.push(LeadDetail.parse(res.json()).id);
+      }
+      const page = await phoneAs(writer, size);
+      await page.goto(`${origin}/#map=14/49.93/15.91`);
+      await page.getByTestId('family-pin').first().waitFor();
+      await page
+        .getByTitle(/^Kamenná Lhota/)
+        .first()
+        .click();
+      const sheet = page.locator('#place-sheet');
+      for (const [i, question] of questions.entries()) {
+        const item = sheet.locator(`[data-testid="place-lead"][data-id="${ids[i]}"]`);
+        await item.waitFor();
+        expect(await item.textContent()).toContain(question);
+        expect(await item.getByTestId('lead-status').textContent()).toBe('Open');
+      }
+      expect(violationsOf(page)).toEqual([]);
+
+      // The lead's page: a search of the archive, recorded, closes it as not found.
+      await page.goto(`${origin}/#leads/${ids[0]}`);
+      await page.getByTestId('search-archive').fill('Invented archive');
+      await page.getByTestId('search-from').fill('1798');
+      await page.getByTestId('search-to').fill('1805');
+      await page.getByTestId('search-pages').fill('1–60');
+      await page.getByTestId('search-close-not-found').click();
+      await page.getByTestId('search-record').waitFor();
+      expect(await page.getByTestId('lead-screen').getByTestId('lead-status').first().textContent()).toBe('Not found');
+      const stored = LeadDetail.parse((await inject(owner, 'GET', `/api/leads/${ids[0]}`)).json());
+      expect(stored).toMatchObject({
+        status: 'not_found',
+        searches: [{ archive: 'Invented archive', years: { from: 1798, to: 1805 }, pages: '1–60', found: false }],
+      });
+      // And the Leads list, with its filters.
+      await page.goto(`${origin}/#leads/place/${L.kamennaLhota}`);
+      await page.locator(`[data-testid="lead"][data-id="${ids[1]}"]`).waitFor();
+      expect(await page.locator(`[data-testid="lead"][data-id="${ids[0]}"]`).count()).toBe(0);
       expect(violationsOf(page)).toEqual([]);
     }, 60_000);
   }

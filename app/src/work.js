@@ -3,8 +3,20 @@
 // "#work/…" addresses so links from emails land on the right screen:
 //   #work/propose[/kind[/<person id>]]  #work/draft/<id>  #work/drafts
 //   #work/mine[/<id>]     #work/review[/<id>]  #work/history[/person/<id>]
+//   #work/lead/<lead id>/<kind>   a Proposal that starts from a Research lead and answers it
 
-import { ApiError, getMe, getPerson, messageOf, myProposals, notificationSettings, setNotificationSettings, submitProposal, uploadImage } from './api.js';
+import {
+  ApiError,
+  getLead,
+  getMe,
+  getPerson,
+  messageOf,
+  myProposals,
+  notificationSettings,
+  setNotificationSettings,
+  submitProposal,
+  uploadImage,
+} from './api.js';
 import { guarded, h, showError } from './dom.js';
 import {
   deleteDraft,
@@ -20,6 +32,7 @@ import {
   storageEstimate,
 } from './drafts.js';
 import { onLanguageChange, t } from './i18n.js';
+import { leadStart } from './lead-parts.js';
 import { personText } from './pickers.js';
 import { kindChooser, proposeForm } from './propose-form.js';
 import { buildOperations, draftTitle, emptyForm, formProblems, KINDS, OPERATIONS_VERSION } from './proposal-build.js';
@@ -87,7 +100,7 @@ async function proposalBody(draft) {
     note: draft.form.note?.trim() || null,
     direct: false,
     operations,
-    answersLeads: [],
+    answersLeads: draft.lead ? [draft.lead.id] : [],
   };
 }
 
@@ -266,6 +279,7 @@ export class WorkPanel {
     else if (view === 'drafts') await this.renderDrafts(signal);
     else if (!this.me) body.replaceChildren(this.signInPrompt());
     else if (view === 'mine') await this.renderMine(a, signal);
+    else if (view === 'lead' && a) await this.renderFromLead(a, b, signal);
     else if (view === 'review' && this.me.permissions.review) await renderReview(body, a, signal);
     else if (view === 'history') await renderHistory(body, { kind: a, id: b, canUndo: this.me.permissions.review }, signal);
     else await this.renderPropose(undefined);
@@ -312,6 +326,45 @@ export class WorkPanel {
       const primary = person.names.find((n) => n.primary) ?? person.names[0];
       const birth = person.events.find((e) => e.role === 'child' && (e.event.type === 'birth' || e.event.type === 'baptism'))?.event.date ?? null;
       draft.form.person = { mode: 'existing', id: person.id, version: person.version, label: personText(primary?.given ?? '', primary?.surname ?? '', birth) };
+    }
+    this.showForm(draft, false);
+  }
+
+  /**
+   * "Start from this lead" (research-leads spec, "Findings link back to leads"): a Proposal of a
+   * kind that starts from the lead's Persons, Place and register, and names the lead it answers,
+   * so that accepting it marks the lead found.
+   * @param {string} leadId
+   * @param {string | undefined} kind
+   * @param {AbortSignal} signal
+   */
+  async renderFromLead(leadId, kind, signal) {
+    const lead = await getLead(leadId, signal);
+    if (signal.aborted) return;
+    if (!isKind(kind)) {
+      location.hash = `#leads/${leadId}`;
+      return;
+    }
+    const draft = newDraft(emptyForm(kind));
+    draft.lead = { id: lead.id, question: lead.question };
+    const { persons, place, source } = leadStart(lead);
+    const [first = null, second = null] = persons;
+    if (source) {
+      draft.form.citation.sourceMode = 'existing';
+      draft.form.citation.source = source;
+    }
+    if (draft.kind === 'baptism') {
+      if (first) draft.form.child = first;
+      draft.form.place = place;
+    } else if (draft.kind === 'marriage') {
+      draft.form.partner1 = first;
+      draft.form.partner2 = second;
+      draft.form.place = place;
+    } else if (draft.kind === 'death') {
+      draft.form.person = first;
+      draft.form.place = place;
+    } else {
+      draft.form.person = first;
     }
     this.showForm(draft, false);
   }

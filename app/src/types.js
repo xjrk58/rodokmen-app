@@ -152,5 +152,16 @@
 /** @typedef {import('../../shared/src/schemas/review.js').RejectBody} RejectBody */
 /** @typedef {import('../../shared/src/schemas/review.js').MergeBody} MergeBody */
 /** @typedef {import('../../shared/src/schemas/review.js').UndoBody} UndoBody */
+/** @typedef {import('../../shared/src/schemas/review.js').LeadStatus} LeadStatus */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadView} LeadView */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadDetail} LeadDetail */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadList} LeadList */
+/** @typedef {import('../../shared/src/schemas/leads.js').LeadSuggestion} LeadSuggestion */
+/** @typedef {import('../../shared/src/schemas/leads.js').SuggestionList} SuggestionList */
+/** @typedef {import('../../shared/src/schemas/leads.js').SearchRecordView} SearchRecordView */
+/** @typedef {import('../../shared/src/schemas/leads.js').CreateLeadInput} CreateLeadBody */
+/** @typedef {import('../../shared/src/schemas/leads.js').UpdateLeadInput} UpdateLeadBody */
+/** @typedef {import('../../shared/src/schemas/leads.js').SearchRecordInput} SearchRecordBody */
+/** @typedef {import('../../shared/src/schemas/leads.js').CloseLeadInput} CloseLeadBody */
 
 export {};

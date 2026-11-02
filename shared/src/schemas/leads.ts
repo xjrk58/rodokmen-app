@@ -245,6 +245,11 @@ export const SuggestionList = z
   .meta({ id: 'SuggestionList', description: 'Open suggested leads, shown apart from the leads until a Member accepts or dismisses them' });
 
 export type YearRange = z.infer<typeof YearRange>;
+/** What a client sends: fields with defaults may be left out. */
+export type CreateLeadInput = z.input<typeof CreateLeadBody>;
+export type UpdateLeadInput = z.input<typeof UpdateLeadBody>;
+export type SearchRecordInput = z.input<typeof SearchRecordBody>;
+export type CloseLeadInput = z.input<typeof CloseLeadBody>;
 export type LeadSource = z.infer<typeof LeadSource>;
 export type SearchRecordView = z.infer<typeof SearchRecordView>;
 export type LeadChange = z.infer<typeof LeadChange>;

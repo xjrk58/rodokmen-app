@@ -412,6 +412,7 @@ export function proposeForm(draft, actions) {
     'form',
     { class: 'propose-form', 'data-kind': draft.kind, 'data-testid': 'propose-form', novalidate: true },
     h('h2', {}, t(`propose.kind.${draft.kind}`)),
+    draft.lead ? h('p', { class: 'note small', 'data-testid': 'answers-lead' }, t('propose.answersLead', { question: draft.lead.question })) : null,
     notice,
     h('section', { class: 'form-section' }, ...findingFields(draft)),
     citationFields(draft, actions.save, report),
