@@ -103,6 +103,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiProblem) {
+      reply.headers(error.headers);
       if (error.statusCode === 429 && error.extra.retryAt) {
         const wait = Math.ceil((new Date(error.extra.retryAt).getTime() - clock.now().getTime()) / 1000);
         reply.header('retry-after', String(Math.max(1, wait)));
