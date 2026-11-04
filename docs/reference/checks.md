@@ -73,7 +73,7 @@ Both files are written by their tool, never by hand, and Prettier skips them.
 - **The audit workflow** (`.github/workflows/audit.yml`), on Mondays at 05:23 UTC: `node scripts/audit.mjs --issue`. On failure it opens an issue titled "pnpm audit: high or critical advisories in production dependencies" (label `bug`), or comments on that issue while it is open. Run by hand from the Actions tab, it defaults to a dry run.
 - **The proofs** run in the verify workflow ([run the proofs](../how-to/run-the-proofs.md)).
 
-`scripts/test/quality-checks.test.mjs` (`pnpm test:scripts`) gives each check the code of the bug it was added for and expects it to fail, and checks that AGENTS.md lists every check `pnpm check` runs.
+`scripts/test/quality-checks.test.mjs` (`pnpm test:scripts`) gives each check the code of the bug it was added for and expects it to fail, and checks that AGENTS.md lists every check `pnpm check` runs. It runs knip, dependency-cruiser and jscpd in a copy of the working tree without build output. The copy uses the checkout's `node_modules`, except that a workspace package such as `@rodokmen/shared` links to its folder in the copy, so the tests give the same result before and after `pnpm build` (#107).
 
 ## The audit and gitleaks scripts
 

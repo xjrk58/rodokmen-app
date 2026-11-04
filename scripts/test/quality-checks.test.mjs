@@ -4,9 +4,9 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import { describe, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
@@ -25,8 +25,30 @@ function copyOfRepo(t) {
     .split('\0')
     .filter(Boolean);
   for (const file of files) if (existsSync(join(ROOT, file))) cpSync(join(ROOT, file), join(dir, file));
-  for (const ws of WORKSPACES) symlinkSync(join(ROOT, ws, 'node_modules'), join(dir, ws, 'node_modules'));
+  for (const ws of WORKSPACES) linkModules(join(ROOT, ws, 'node_modules'), join(dir, ws, 'node_modules'), dir);
   return dir;
+}
+
+const REAL_ROOT = realpathSync(ROOT);
+const WORKSPACE_DIRS = WORKSPACES.map((ws) => join(REAL_ROOT, ws));
+
+/**
+ * Links the checkout's node_modules folder `from` into the copy at `to`, entry by entry, except
+ * that a workspace package (`@rodokmen/shared`) links to its folder in the copy. The checkout's own
+ * link leads to the checkout's shared/, and once `pnpm build` had made shared/dist/ there, knip
+ * resolved the server's imports to that build instead of the copy's sources (#107). The copy never
+ * holds build output, since git ignores it.
+ */
+function linkModules(from, to, dir) {
+  mkdirSync(to);
+  for (const entry of readdirSync(from, { withFileTypes: true })) {
+    const source = join(from, entry.name);
+    const target = join(to, entry.name);
+    const resolved = entry.isSymbolicLink() ? realpathSync(source) : source;
+    if (entry.isDirectory() && entry.name.startsWith('@')) linkModules(source, target, dir);
+    else if (WORKSPACE_DIRS.includes(resolved)) symlinkSync(join(dir, relative(REAL_ROOT, resolved)), target);
+    else symlinkSync(source, target);
+  }
 }
 
 /** Replaces `old`, which must occur once, in a file of the copy. */
