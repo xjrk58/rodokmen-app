@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
-import { IMAGE_MAX_BYTES, type ImageContentType } from '@rodokmen/shared';
+import { IMAGE_MAX_BYTES, type DocumentContentType, type ImageContentType } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
+import { checkDocument, type CheckedDocument } from './documents.js';
 import { STORE_TIMEOUT_MS, type ImageStorage } from './images.js';
 import { QueueFull, SerialQueue } from './serial-queue.js';
 
@@ -23,25 +24,27 @@ sharp.concurrency(1);
 sharp.cache({ memory: 16, items: 10, files: 0 });
 
 /**
- * The most uploads and crops that may wait for their turn or be in it, in one API slot (#97). The
- * app, the importer and the MCP server each send one upload at a time, so this many means several
- * Members at once; one more is refused with 503 and Retry-After, rather than kept waiting behind
- * one Member's pile of files. A turn takes from a fraction of a second to a few seconds.
+ * The most uploads (images and documents) and crops that may wait for their turn or be in it, in
+ * one API slot (#97, #120). The app, the importer and the MCP server each send one upload at a
+ * time, so this many means several Members at once; one more is refused with 503 and Retry-After,
+ * rather than kept waiting behind one Member's pile of files. A turn takes from a fraction of a
+ * second to a few seconds.
  */
 export const QUEUE_LIMIT = 8;
 /** How soon to try again when the queue was full: by then a turn or two have ended. */
 export const BUSY_RETRY_SECONDS = 10;
 
 /**
- * Images are checked one at a time, so uploads finished at the same moment cannot stack their
- * decodes, each of which can take a few hundred MB. An upload's turn covers loading its original
- * and writing its checked copy and display copy too (checkUpload), so the ones waiting hold
- * nothing yet, and the one done holds nothing any more.
+ * Uploads are checked one at a time, so uploads finished at the same moment cannot stack their
+ * decodes, each of which can take a few hundred MB, nor their files: a document can be 50 MB
+ * (#120). An upload's turn covers loading its file and writing its checked copy (and an image's
+ * display copy) too (checkUpload, checkDocumentUpload), so the ones waiting hold nothing yet, and
+ * the one done holds nothing any more.
  */
 const turns = new SerialQueue(QUEUE_LIMIT);
 
 /** Uploads and crops waiting for their turn or in it. */
-export const queuedImages = (): number => turns.size;
+export const queuedUploads = (): number => turns.size;
 
 /**
  * A turn for `task`, in the order asked for. Refused with 503 while QUEUE_LIMIT are queued;
@@ -90,7 +93,7 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
 export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
-export const BUSY_MESSAGE = 'The server is checking other images just now. Try again in a few seconds.';
+export const BUSY_MESSAGE = 'The server is checking other uploads just now. Try again in a few seconds.';
 export const STORE_TIMEOUT_MESSAGE = 'The image store did not answer in time. Try again in a minute.';
 export const CHECKSUM_MESSAGE = 'The uploaded file differs from the one announced. Upload it again.';
 export const HEIC_MESSAGE =
@@ -119,35 +122,94 @@ export interface PendingUpload {
 }
 
 /** An upload checked and kept, or why it was refused. */
-export type UploadCheck = { checked: CheckedImage } | { refused: ApiProblem };
+export type UploadCheck<T = CheckedImage> = { checked: T } | { refused: ApiProblem };
+
+/** What the check of an upload's file found: what its row records, and the files to write. */
+interface FileCheck<T> {
+  checked: T;
+  writes: { key: string; body: Buffer; contentType: string }[];
+}
 
 /**
- * Checks an upload in one turn: loads the file at its link, compares it with the SHA-256 it was
- * announced with, so that a file other than the one announced costs no decode (#97), checks it as
- * processImage does, and writes the checked original and its display copy. Any number of uploads
- * finished at once hold one original, one decode and one display copy in memory, not one each,
- * and nothing of an upload is held once its turn is over (#97). Null when there is no file at the
- * link; an error of the store is passed on. Refused with 503 while the queue is full, and skipped
- * when `gone` aborts before its turn (inTurn).
+ * Checks the file at `link` in one turn: loads it, runs `check` on it, and writes the files the
+ * check asks for, so that nothing of an upload is held before its turn or after it (#97). Null
+ * when there is no file at the link; a refusal (an ApiProblem) writes nothing; an error of the
+ * store is passed on. Refused with 503 while the queue is full, and skipped when `gone` aborts
+ * before its turn (inTurn).
  */
-export function checkUpload(images: ImageStorage, upload: PendingUpload, gone?: AbortSignal): Promise<UploadCheck | null> {
+function checkInTurn<T>(
+  images: ImageStorage,
+  link: string,
+  check: (file: Buffer) => Promise<FileCheck<T>>,
+  gone?: AbortSignal,
+): Promise<UploadCheck<T> | null> {
   return inTurn(async () => {
-    const original = await inTime((signal) => images.get(upload.link, signal));
-    if (!original) return null;
-    let processed: ProcessedImage;
+    const file = await inTime((signal) => images.get(link, signal));
+    if (!file) return null;
+    let result: FileCheck<T>;
     try {
-      const sha256 = sha256Of(original);
-      if (sha256 !== upload.sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
-      processed = await displayCopy(original, typeOf(original), sha256);
+      result = await check(file);
     } catch (error) {
       if (error instanceof ApiProblem) return { refused: error };
       throw error;
     }
-    const { display, ...checked } = processed;
-    await inTime((signal) => images.put(upload.verified, original, checked.contentType, signal));
-    await inTime((signal) => images.put(upload.display, display, 'image/webp', signal));
-    return { checked };
+    for (const w of result.writes) await inTime((signal) => images.put(w.key, w.body, w.contentType, signal));
+    return { checked: result.checked };
   }, gone);
+}
+
+/**
+ * Checks an image upload in one turn (checkInTurn): compares the file with the SHA-256 it was
+ * announced with, so that a file other than the one announced costs no decode (#97), checks it as
+ * processImage does, and writes the checked original and its display copy. Any number of uploads
+ * finished at once hold one original, one decode and one display copy in memory, not one each.
+ */
+export function checkUpload(images: ImageStorage, upload: PendingUpload, gone?: AbortSignal): Promise<UploadCheck | null> {
+  return checkInTurn(
+    images,
+    upload.link,
+    async (original) => {
+      const sha256 = sha256Of(original);
+      if (sha256 !== upload.sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
+      const { display, ...checked } = await displayCopy(original, typeOf(original), sha256);
+      return {
+        checked,
+        writes: [
+          { key: upload.verified, body: original, contentType: checked.contentType },
+          { key: upload.display, body: display, contentType: 'image/webp' },
+        ],
+      };
+    },
+    gone,
+  );
+}
+
+/** Where a document upload's files are, and the type and SHA-256 it was announced with. */
+export interface PendingDocument {
+  link: string;
+  verified: string;
+  declared: DocumentContentType;
+  sha256: string;
+}
+
+/**
+ * Checks a document upload in the same queue as images (#120): its size and type (checkDocument)
+ * and its SHA-256, then writes the checked copy. A document is not decoded, so its turn is short,
+ * but it may be 50 MB: documents finished at once hold one file in memory, not one each, and the
+ * queue's limit, its store timeouts and the skipping of closed requests cover them as they do
+ * images.
+ */
+export function checkDocumentUpload(images: ImageStorage, upload: PendingDocument, gone?: AbortSignal): Promise<UploadCheck<CheckedDocument> | null> {
+  return checkInTurn(
+    images,
+    upload.link,
+    async (file) => {
+      const checked = checkDocument(file, upload.declared);
+      if (checked.sha256 !== upload.sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
+      return { checked, writes: [{ key: upload.verified, body: file, contentType: checked.contentType }] };
+    },
+    gone,
+  );
 }
 
 /**
