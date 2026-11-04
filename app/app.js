@@ -7,14 +7,14 @@ import { loadData } from './src/data.js';
 import { Gazetteer } from './src/gazetteer.js';
 import { required } from './src/dom.js';
 import { FamilyMap } from './src/family-map.js';
-import { detectLanguage, onLanguageChange, setLanguage, t } from './src/i18n.js';
+import { detectLanguage, onLanguageChange, setLanguage, storedLanguage, t } from './src/i18n.js';
 import { LayersPanel } from './src/layers-panel.js';
 import { placeLeads } from './src/leads-screen.js';
 import { createMap } from './src/map.js';
 import { PlaceSheet } from './src/place-sheet.js';
 import { SearchBox } from './src/search-box.js';
 import { Settings } from './src/settings.js';
-import { Shell } from './src/shell.js';
+import { Shell, whoIsSignedIn } from './src/shell.js';
 import { registerServiceWorker } from './src/sw-client.js';
 import { WorkPanel } from './src/work.js';
 
@@ -58,7 +58,10 @@ async function main() {
     };
   }).catch((error) => console.warn('Service worker not registered; the app will not work offline.', error));
 
-  await setLanguage(detectLanguage());
+  // Who is signed in is asked first: without a choice on this device, a Member's account language
+  // is the first one shown, not Czech for a moment before it (default-to-czech, #124).
+  const signedIn = whoIsSignedIn();
+  await setLanguage(storedLanguage() ?? detectLanguage((await signedIn).me?.language));
 
   // Drafts and the #work screens need no map data: they work even when it fails to load.
   const work = new WorkPanel({
@@ -89,7 +92,7 @@ async function main() {
       if (familyMap && screen === 'map') void familyMap.showLife(route.screen === 'map' ? route.life : null);
     },
   });
-  const started = shell.start();
+  const started = shell.start(signedIn);
 
   let data;
   try {

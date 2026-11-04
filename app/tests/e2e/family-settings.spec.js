@@ -95,7 +95,13 @@ test("the language chosen in Settings applies on this device and to the Member's
 test.describe("Member's setting", () => {
   test.use({ language: null, locale: 'cs-CZ' });
 
-  test('a signed-in Member whose account language is English gets English on a new device', async ({ page }) => {
+  test('a signed-in Member whose account language is English gets English on a new device, and no Czech before it', async ({ page }) => {
+    /** @type {string[]} */
+    const loaded = [];
+    page.on('request', (request) => {
+      const lang = /\/i18n\/(\w+)\.json$/.exec(request.url())?.[1];
+      if (lang) loaded.push(lang);
+    });
     await mockFamilyApi(page, { me: member('contributor', { person: 10, language: 'en' }) });
     await page.goto('./');
     await expect(page.getByTestId('tree')).toBeVisible();
@@ -103,6 +109,8 @@ test.describe("Member's setting", () => {
     await expect(page.getByTestId('tabbar-people')).toContainText('People');
     // Nothing was stored on the device: the account decides.
     expect(await page.evaluate(() => localStorage.getItem('rodokmen.language'))).toBeNull();
+    // The app asks who is signed in before it shows any text, so the Czech texts are never even loaded (#124).
+    expect(loaded).toEqual(['en']);
   });
 
   test('a choice made on the device wins over the account language', async ({ page }) => {
