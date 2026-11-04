@@ -110,7 +110,7 @@ Only Persons whose name matches are offered.
 | -------------------- | ------------------------------------------------------------------------------------- |
 | `switched_off`       | scan reading was switched off before the reading started; nothing was sent            |
 | `image_missing`      | a scan of the reading is no longer stored                                             |
-| `busy`               | a crop was to be cut while 8 images were already waiting to be checked                |
+| `busy`               | a crop was to be cut while 8 uploads and crops were already waiting their turn        |
 | `store_timeout`      | the image store did not answer within 30 seconds while a crop was cut                 |
 | `refused`            | the model declined to read the scans                                                  |
 | `too_long`           | the answer was cut off; read fewer pages, or mark a crop                              |
