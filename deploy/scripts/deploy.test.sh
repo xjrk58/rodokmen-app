@@ -2,10 +2,12 @@
 # Tests the control flow of deploy.sh with a fake `docker` command: a healthy release switches
 # slots (Caddy sends new requests to it) and stops the old one only after that, once Caddy has no
 # request in flight to it (#71); a release that fails its health check is removed, the old slot
-# keeps serving, the Owner is alerted, and deploy.sh exits non-zero. Also that every deploy sets
-# up the image store (storage-init.sh): the Backup's read-only key is imported once, with its
-# secret on stdin only, and a deploy stops before starting anything when that fails. Caddy
-# reloads its Caddyfile on every deploy; Garage restarts only when garage.toml changed.
+# keeps serving, the Owner is alerted, and deploy.sh exits non-zero. After a switch the MCP server
+# is replaced on its own, before the watchdog, so that it does not wait for the watchdog to stop
+# (#89). Also that every deploy sets up the image store (storage-init.sh): the Backup's read-only
+# key is imported once, with its secret on stdin only, and a deploy stops before starting anything
+# when that fails. Caddy reloads its Caddyfile on every deploy; Garage restarts only when
+# garage.toml changed.
 # Run: bash deploy/scripts/deploy.test.sh
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -64,6 +66,8 @@ fail() { echo "FAIL: $*"; echo "--- docker calls"; cat "$DOCKER_LOG"; exit 1; }
 deploy() { : > "$DOCKER_LOG"; ./scripts/deploy.sh "$1" > "$tmp/out.log" 2>&1; }
 # The Caddy admin API polls before `compose stop api-$1`.
 polls_before_stop() { sed -n "/compose .* stop api-$1\$/q;p" "$DOCKER_LOG" | grep -c "exec -T caddy wget" || true; }
+# The line of the first docker call that matches $1.
+line_of() { grep -n -m1 -e "$1" "$DOCKER_LOG" | cut -d: -f1; }
 
 deploy ghcr.io/x/app:v1 || fail "first deploy should succeed"
 [ "$(cat state/active)" = blue ] || fail "first deploy goes to blue"
@@ -88,7 +92,10 @@ grep -q "compose .* restart garage" "$DOCKER_LOG" || fail "Garage restarts when 
 grep -q "compose .* stop api-blue" "$DOCKER_LOG" || fail "old slot stopped after the switch"
 grep -q "^WATCHDOG_IMAGE=ghcr.io/x/app:v2$" state/images.env || fail "watchdog follows the release"
 grep -q "^MCP_IMAGE=ghcr.io/x/app:v2$" state/images.env || fail "the MCP server follows the release"
-grep -q "compose .* up -d --no-deps watchdog mcp" "$DOCKER_LOG" || fail "the MCP server is restarted with the release"
+grep -q "compose .* up -d --no-deps mcp$" "$DOCKER_LOG" || fail "the MCP server is replaced with the release, in a compose up of its own"
+grep -q "compose .* up -d --no-deps watchdog$" "$DOCKER_LOG" || fail "the watchdog is replaced with the release"
+[ "$(line_of "up -d --no-deps mcp$")" -lt "$(line_of "up -d --no-deps watchdog$")" ] || fail "the MCP server does not wait for the watchdog to stop"
+[ "$(line_of "stop api-blue$")" -lt "$(line_of "up -d --no-deps mcp$")" ] || fail "the MCP server is replaced after the switch"
 grep -q "compose .* exec -T caddy caddy reload" "$DOCKER_LOG" || fail "Caddy reads its Caddyfile again"
 
 rm state/api-slot/green # as a deploy.sh from before the switch file left it
@@ -99,6 +106,7 @@ grep -q "compose .* restart garage" "$DOCKER_LOG" && fail "Garage is not restart
 [ "$(cat state/active)" = green ] || fail "the old slot stays active"
 grep -q "compose .* stop api-blue" "$DOCKER_LOG" || fail "the broken slot is stopped"
 grep -q "compose .* rm -f api-blue" "$DOCKER_LOG" || fail "the broken slot is removed"
+grep -q "compose .* up -d --no-deps mcp" "$DOCKER_LOG" && fail "a broken release does not replace the MCP server"
 grep -q "compose .* stop api-green" "$DOCKER_LOG" && fail "the serving slot must not be stopped"
 grep -q "compose .* exec -T api-green node dist/cli.js alert --subject Deploy failed" "$DOCKER_LOG" || fail "the Owner is alerted from the serving slot"
 grep -q "previous version keeps serving" "$tmp/out.log" || fail "the log says so"
@@ -129,4 +137,4 @@ grep -q "api-green: an unknown number of requests still in flight through Caddy 
 [ "$(polls_before_stop green)" -eq 4 ] || fail "without an answer from Caddy, the old slot is given DRAIN_SECONDS"
 rm "$tmp/no-admin"
 
-echo "deploy.sh: switch, drain, failed health check, rollback, configuration reload and image store setup behave as specified"
+echo "deploy.sh: switch, drain, failed health check, rollback, MCP server, configuration reload and image store setup behave as specified"

@@ -330,11 +330,30 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
    exits, within 15 s (`server/src/shutdown.ts`; Docker would kill it after 20 s). No request
    fails on the way (#71). The MCP server reaches the API through Caddy as well
    (`http://api:3000` inside the network), so its calls follow the same switch;
-5. if the health check fails, the new slot is removed, the old version keeps serving, the Owner
+5. then the MCP server is replaced with a container of the new image, and after it the watchdog.
+   The MCP server runs in one container, so the old one stops before the new one starts. On
+   SIGTERM it first fails its health check (`/mcp/health` answers 503) for 1 s while it still
+   accepts and answers requests; Caddy checks every 250 ms and stops sending it requests. Only then
+   does it stop accepting connections, answer the requests it has, each with `Connection: close`,
+   and exit, within 15 s more (`server/mcp/src/shutdown.ts`; Docker would kill it after 20 s).
+   Until the new one passes the health check, Caddy holds each `/mcp` request and tries again every
+   250 ms, for up to 30 s: nothing was sent yet, so that is safe for any request. Caddy opens a new
+   connection for every MCP request, so the server never has to close one that Caddy might be
+   sending a request on. The MCP server is replaced in a `compose up` of its own: in one together
+   with the watchdog, it would start only after the watchdog had stopped. An assistant sees a wait
+   of under 2 s, and no request fails (#89);
+6. if the health check fails, the new slot is removed, the old version keeps serving, the Owner
    gets an alert, and the workflow fails.
 
 **Migrations must work with the previous release still running**, since it serves while the new
 one migrates: add columns and tables in one release, remove the old ones in a later one.
+
+**Idle connections**, at any time, not only during a deploy: Caddy keeps its connections to the
+API open between requests, and gives one up after 60 s without a request. The API would close it
+after 73 s (`keepAliveTimeout` of 72 s in `server/src/app.ts`, and Node waits 1 s more), so Caddy
+always does it first. The other way round, Caddy could send a request on a connection at the
+moment the API closes it, and a POST would fail with 502 (#90). `server/test/proxy.test.ts`
+checks that Caddy's time stays the shorter.
 
 **Configuration files** are mounted as folders (`caddy/`, `garage/`), not as single files: a
 deploy replaces each changed file with a new one, which a container with the old file mounted
@@ -417,7 +436,8 @@ An assistant connects in one of two ways:
   `pnpm build`: the command `node server/mcp/dist/stdio.js` with the environment variables
   `RODOKMEN_URL=https://<domain>` and `RODOKMEN_TOKEN=<token>`.
 
-The `mcp` service restarts with each deploy, so MCP connections drop for a moment then.
+The `mcp` service is replaced with each deploy. Requests that arrive meanwhile wait at Caddy until
+the new server is ready, under 2 s, and none fails (see Deploys).
 
 ## Scan reading
 

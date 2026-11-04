@@ -1,13 +1,12 @@
-import { connect, type Socket } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { shutDown } from '../src/shutdown.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { makeApp, portOf } from './helpers.js';
+import { deferred, open, parse, pause, tryConnect } from './raw-http.js';
 
 /**
  * Stopping a slot fails no request (#71): what a deploy relies on once Caddy has switched to the
- * new slot (deploy/scripts/deploy.sh). The tests speak HTTP/1.1 over plain sockets, so they decide
- * exactly what reaches the server and when.
+ * new slot (deploy/scripts/deploy.sh). The tests speak HTTP/1.1 over plain sockets (raw-http.ts).
  */
 
 let t: TestDatabase;
@@ -17,14 +16,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await t.drop();
 });
-
-function deferred() {
-  let resolve!: () => void;
-  const promise = new Promise<void>((r) => (resolve = r));
-  return { promise, resolve };
-}
-
-const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** An app with a request that runs until `release` and one that echoes its body, listening on a free port. */
 async function slowApp() {
@@ -55,39 +46,6 @@ async function slowApp() {
     },
   };
   return { app, port: portOf(app.server.address()), started, release, events, parts };
-}
-
-/** A connection to the server, and everything the server sends on it until it closes it. */
-async function open(port: number): Promise<{ socket: Socket; received: Promise<string> }> {
-  const socket = connect(port, '127.0.0.1');
-  socket.setEncoding('utf8');
-  let data = '';
-  socket.on('data', (chunk: string) => (data += chunk));
-  socket.on('error', () => undefined);
-  const received = new Promise<string>((resolve) => socket.on('close', () => resolve(data)));
-  await new Promise<void>((resolve, reject) => {
-    socket.once('connect', resolve);
-    socket.once('error', reject);
-  });
-  return { socket, received };
-}
-
-/** Whether a new connection is accepted: 'connected', or the error code. */
-const tryConnect = (port: number) =>
-  new Promise<string>((resolve) => {
-    const socket = connect(port, '127.0.0.1');
-    socket.once('connect', () => {
-      socket.destroy();
-      resolve('connected');
-    });
-    socket.once('error', (error: NodeJS.ErrnoException) => resolve(error.code ?? 'error'));
-  });
-
-function parse(raw: string) {
-  const [head = '', ...rest] = raw.split('\r\n\r\n');
-  const [statusLine = '', ...lines] = head.split('\r\n');
-  const headers = Object.fromEntries(lines.map((line) => [line.slice(0, line.indexOf(':')).toLowerCase(), line.slice(line.indexOf(':') + 1).trim()]));
-  return { status: Number(statusLine.split(' ')[1]), headers, body: rest.join('\r\n\r\n') };
 }
 
 describe('stopping the server', () => {

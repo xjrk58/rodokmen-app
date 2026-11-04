@@ -125,7 +125,11 @@ if compose up -d --no-deps --wait --wait-timeout 180 "api-$idle"; then
   fi
   set_var WATCHDOG_IMAGE "$target"
   set_var MCP_IMAGE "$target"
-  compose up -d --no-deps watchdog mcp
+  # The MCP server is replaced on its own, and first: one `compose up` starts the new containers
+  # only once all the old ones have stopped, so the MCP server would wait for the watchdog, while
+  # Caddy holds every /mcp request until the new one listens (#89).
+  compose up -d --no-deps mcp
+  compose up -d --no-deps watchdog
   log "deployed $target"
 else
   log "api-$idle failed its health check; the previous version keeps serving"
