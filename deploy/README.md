@@ -341,7 +341,10 @@ files) is copied to the VPS, and `scripts/deploy.sh <image>` runs there:
    connection for every MCP request, so the server never has to close one that Caddy might be
    sending a request on. The MCP server is replaced in a `compose up` of its own: in one together
    with the watchdog, it would start only after the watchdog had stopped. An assistant sees a wait
-   of under 2 s, and no request fails (#89);
+   of under 2 s, and no request fails (#89). On SIGTERM the watchdog starts no more checks and
+   exits once a round still running has finished, within 5 s (`server/src/ops/watchdog.ts`;
+   Docker would kill it after 10 s). Between rounds, which is nearly always, it stops at once
+   (#122);
 6. if the health check fails, the new slot is removed, the old version keeps serving, the Owner
    gets an alert, and the workflow fails.
 

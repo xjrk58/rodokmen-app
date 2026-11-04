@@ -8,7 +8,7 @@ import { loadFixture } from './fixture/load.js';
 import { createMailer } from './mail/mailer.js';
 import { sendAlert } from './ops/alerts.js';
 import { OPENAPI_FILE, openApiJson } from './ops/openapi-file.js';
-import { backupStatusReader, httpHealthCheck, Watchdog } from './ops/watchdog.js';
+import { backupStatusReader, CHECK_INTERVAL_MS, httpHealthCheck, startWatchdog, STOP_TIMEOUT_MS, Watchdog } from './ops/watchdog.js';
 import { systemClock } from './clock.js';
 import { messageOf } from './errors.js';
 import { vaultImportCommand } from './vault-import/command.js';
@@ -111,11 +111,19 @@ const COMMANDS: Record<string, Command> = {
       alert: (subject, details) => sendAlert(config, mailer, subject, details),
       clock: systemClock,
     });
-    console.log(`watchdog: checking ${config.watchdog.url} every 30 s${config.watchdog.backupStatusFile ? ` and ${config.watchdog.backupStatusFile}` : ''}`);
-    for (;;) {
-      await watchdog.tick().catch((error: unknown) => console.error('watchdog tick failed', error));
-      await new Promise((r) => setTimeout(r, 30_000));
-    }
+    console.log(
+      `watchdog: checking ${config.watchdog.url} every ${CHECK_INTERVAL_MS / 1000} s${config.watchdog.backupStatusFile ? ` and ${config.watchdog.backupStatusFile}` : ''}`,
+    );
+    const running = startWatchdog(watchdog, { onError: (error) => console.error('watchdog tick failed', error) });
+    // Docker sends SIGTERM when a deploy replaces the container or the stack stops (#122).
+    const signal = await new Promise<NodeJS.Signals>((resolve) => {
+      process.on('SIGTERM', resolve);
+      process.on('SIGINT', resolve);
+    });
+    console.log(`watchdog: ${signal}, stopping`);
+    if (await running.stop()) return 0;
+    console.error(`watchdog: a round of checks was still running after ${STOP_TIMEOUT_MS / 1000} s; it was given up`);
+    return 1;
   },
 };
 

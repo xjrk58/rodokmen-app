@@ -124,6 +124,67 @@ export class Watchdog {
   }
 }
 
+/** How long the watchdog waits after each round of checks before the next. */
+export const CHECK_INTERVAL_MS = 30_000;
+
+/**
+ * How long a stopping watchdog waits for the round of checks it is running, which may be sending
+ * an alert. Docker stops the container with SIGKILL 10 s after SIGTERM (stop_grace_period of the
+ * watchdog service in deploy/docker-compose.yml); this ends well before that.
+ */
+export const STOP_TIMEOUT_MS = 5_000;
+
+export interface RunningWatchdog {
+  /**
+   * Starts no further round. Resolves true at once between rounds, or once the running round has
+   * finished; false if it is still running after `timeoutMs`, and then nothing waits for it.
+   */
+  stop: (timeoutMs?: number) => Promise<boolean>;
+}
+
+/**
+ * Runs the watchdog's checks now, and again `intervalMs` after each round ends, until stopped. A
+ * round that throws (an alert could not be sent) goes to `onError`; the next round tries again.
+ *
+ * The CLI stops it on SIGTERM (#122): as PID 1 in its container, a process without a handler
+ * ignores the signal, so each deploy waited for Docker's SIGKILL.
+ */
+export function startWatchdog(
+  watchdog: Pick<Watchdog, 'tick'>,
+  { intervalMs = CHECK_INTERVAL_MS, onError }: { intervalMs?: number; onError: (error: unknown) => void },
+): RunningWatchdog {
+  let stopped = false;
+  let timer: NodeJS.Timeout | undefined;
+  let round: Promise<void> | undefined;
+  const next = () => {
+    round = watchdog
+      .tick()
+      .catch(onError)
+      .finally(() => {
+        round = undefined;
+        if (!stopped) timer = setTimeout(next, intervalMs);
+      });
+  };
+  next();
+
+  async function stop(timeoutMs = STOP_TIMEOUT_MS): Promise<boolean> {
+    stopped = true;
+    clearTimeout(timer);
+    if (round === undefined) return true;
+    let wait: NodeJS.Timeout | undefined;
+    const timedOut = new Promise<false>((resolve) => {
+      wait = setTimeout(() => resolve(false), timeoutMs);
+    });
+    try {
+      return await Promise.race([round.then(() => true as const), timedOut]);
+    } finally {
+      clearTimeout(wait);
+    }
+  }
+
+  return { stop };
+}
+
 export async function httpHealthCheck(url: string, timeoutMs = 10_000): Promise<{ ok: boolean; detail: string }> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), redirect: 'manual' });
