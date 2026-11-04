@@ -200,6 +200,10 @@ services:
       retries: 3
     mem_limit: 128m
     memswap_limit: 192m
+    # On SIGTERM, as a deploy replaces the container, the server fails Caddy's health check for 1 s,
+    # then answers its requests in flight and gives up 15 s later (server/mcp/src/shutdown.ts),
+    # before Docker's SIGKILL.
+    stop_grace_period: 20s
     networks: [rodokmen]
 
   # Alerts the Owner when the public health check fails for over 5 minutes or a Backup fails.

@@ -57,10 +57,28 @@
 
 	# The MCP server (add-agent-access) for AI assistants with an Agent token. Its answers may
 	# be streamed (server-sent events), so they go out at once and uncompressed.
+	#
+	# Each deploy replaces its one container (#89). On SIGTERM the old server first fails its health
+	# check for 1 s while it still accepts and answers requests, and Caddy, which checks every
+	# 250 ms, stops sending it requests. Only then does the server stop accepting connections (the
+	# kernel would reset one still waiting to be accepted), answer the requests it has, and exit
+	# (server/mcp/src/shutdown.ts). Until the new server passes the health check, Caddy holds each
+	# request and tries again every 250 ms for up to 30 s, whatever its method: nothing was sent yet.
+	# Every request gets a new connection (keepalive off). A server can close an idle connection
+	# only at a moment when Caddy may be sending a request on it, which would then fail with 502;
+	# with one request per connection there is none to close. Inside the Docker network a new
+	# connection costs little.
 	@mcp path /mcp /mcp/*
 	handle @mcp {
 		reverse_proxy {$MCP_UPSTREAM:mcp:3001} {
 			flush_interval -1
+			lb_try_duration 30s
+			lb_try_interval 250ms
+			health_uri /mcp/health
+			health_interval 250ms
+			transport http {
+				keepalive off
+			}
 		}
 	}
 

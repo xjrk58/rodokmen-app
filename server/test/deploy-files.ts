@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import YAML from 'yaml';
+import { z } from 'zod';
 
 /**
  * The production stack's files in deploy/, for tests that check them against the servers' own
@@ -33,4 +35,11 @@ export function durationMs(value: string | undefined): number {
   const match = /^(\d+)(ms|s|m)$/.exec(value ?? '');
   if (!match) throw new Error(`not a duration: ${value}`);
   return Number(match[1]) * (match[2] === 'ms' ? 1 : match[2] === 's' ? 1000 : 60_000);
+}
+
+const Compose = z.object({ services: z.record(z.string(), z.record(z.string(), z.unknown())) });
+
+/** A setting of a service in deploy/docker-compose.yml. */
+export function composeSetting(service: string, key: string): unknown {
+  return Compose.parse(YAML.parse(read('docker-compose.yml'), { merge: true })).services[service]?.[key];
 }

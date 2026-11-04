@@ -31,7 +31,7 @@ Point the assistant at `https://<domain>/mcp` with the header `Authorization: Be
 claude mcp add --transport http rodokmen https://rodokmen.dev/mcp --header "Authorization: Bearer rdk_ag_…"
 ```
 
-Every request there checks the token with the API first, which counts as one of the Agent's requests. Connections drop for a moment when Rodokmen is deployed.
+Every request there checks the token with the API first, which counts as one of the Agent's requests. While Rodokmen is being deployed, the MCP server restarts, and requests wait a moment for it rather than fail.
 
 ### Over stdio, on the assistant's machine
 
