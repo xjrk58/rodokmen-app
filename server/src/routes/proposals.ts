@@ -31,7 +31,7 @@ import { recordHistory, undoPreview, undoProposal } from '../proposals/history.j
 import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews } from '../proposals/views.js';
 import { imageLink } from '../storage/images.js';
-import { completeUpload, createUpload } from './uploads.js';
+import { completeUpload, createUpload, whenGone } from './uploads.js';
 
 /** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
 const signedIn = { 401: ApiError, 429: RateLimited };
@@ -235,11 +235,11 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     schema: {
       tags: ['Images'],
       summary:
-        'Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message)',
+        'Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message). Images are checked one at a time; 503 with Retry-After when too many are waiting or the image store did not answer in time',
       params: IdParams,
-      response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, ...signedIn },
+      response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, 503: ApiError, ...signedIn },
     },
-    handler: async (req) => completeUpload(deps, req.member!, req.params.id),
+    handler: async (req, reply) => completeUpload(deps, req.member!, req.params.id, whenGone(reply)),
   });
 
   app.get('/api/uploads/:id', {

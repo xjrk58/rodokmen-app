@@ -1,4 +1,5 @@
 import { imagesToSend, ReadingContext, ReadingCrop, ReadingResult, type ImageToSend } from '@rodokmen/shared';
+import { ApiProblem } from '../auth/problem.js';
 import type { Clock } from '../clock.js';
 import type { Db } from '../db/db.js';
 import type { Reading } from '../db/types.js';
@@ -98,7 +99,7 @@ export class ReadingJobs {
     if (send.copy === 'crop') {
       const crop = crops.find((c) => c.uploadId === send.uploadId);
       if (!crop) return null;
-      const data = await cropForReading(() => images.get(original), crop);
+      const data = await cropForReading(images, original, crop);
       return data ? { data, mediaType: 'image/webp' } : null;
     }
     const data = await images.get(display);
@@ -167,6 +168,11 @@ export class ReadingJobs {
         .where('id', '=', id)
         .execute();
     } catch (error) {
+      // Such as the image store not answering in time while a crop was cut (process.ts).
+      if (error instanceof ApiProblem) {
+        await this.fail(id, error.code, error.message).catch(() => undefined);
+        return;
+      }
       this.deps.log?.('a reading failed', error);
       await this.fail(id, 'internal', `The reading failed on the server (${messageOf(error)}).`).catch(() => undefined);
     }

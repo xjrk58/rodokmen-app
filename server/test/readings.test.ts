@@ -6,8 +6,9 @@ import type { Account } from '../src/db/types.js';
 import { generateFixture } from '../src/fixture/generate.js';
 import { MAX_TOKENS, READING_FORMAT, SYSTEM_PROMPT } from '../src/readings/reader.js';
 import { endOfPragueDay } from '../src/readings/settings.js';
-import { DISPLAY_MAX_PIXELS } from '../src/storage/process.js';
+import { BUSY_MESSAGE, checkUpload, DISPLAY_MAX_PIXELS, QUEUE_LIMIT } from '../src/storage/process.js';
 import { recording } from './fake-anthropic.js';
+import { GatedStorage } from './gated-storage.js';
 import { bearer, createAgentWithToken, makeApp, signIn, TestClock } from './helpers.js';
 import { imagesIn, page, useReadingWorld } from './reading-world.js';
 
@@ -239,6 +240,21 @@ describe('scan reading (scan-reading and evidence-media specs)', () => {
       expect(refused.error!.code).toBe('refused');
       const busy = await read(contributor, { uploadIds: [scan] });
       expect(busy.error!.code).toBe('reader_error');
+    });
+
+    it('fails a reading whose crop finds the image queue full, and sends nothing (#97)', async () => {
+      const scan = await upload(contributor, await page());
+      // Uploads fill the image queue, the first one held in its turn.
+      const held = new GatedStorage();
+      const files = { link: 'pending/held/original', verified: 'pending/held/verified', display: 'pending/held/display.webp', sha256: 'a'.repeat(64) };
+      held.hold(files.link);
+      const uploads = Array.from({ length: QUEUE_LIMIT }, () => checkUpload(held, files));
+      const failed = await read(contributor, { uploadIds: [scan], crops: [{ uploadId: scan, left: 0, top: 0, width: 0.5, height: 0.5 }] }).finally(() =>
+        held.releaseAll(),
+      );
+      await Promise.all(uploads);
+      expect(failed).toMatchObject({ status: 'failed', error: { code: 'busy', message: BUSY_MESSAGE } });
+      expect(api.requests).toHaveLength(0);
     });
 
     it('lets an Agent ask for a reading of a scan it uploaded, within the same limits', async () => {

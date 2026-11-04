@@ -3,7 +3,8 @@ import { IMAGE_MAX_BYTES, type ImageContentType } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
-import { SerialQueue } from './serial-queue.js';
+import { STORE_TIMEOUT_MS, type ImageStorage } from './images.js';
+import { QueueFull, SerialQueue } from './serial-queue.js';
 
 /** Longest side of the display copy (evidence-media spec, "Originals are kept"). */
 export const DISPLAY_MAX_PIXELS = 2000;
@@ -22,20 +23,51 @@ sharp.concurrency(1);
 sharp.cache({ memory: 16, items: 10, files: 0 });
 
 /**
- * Images are checked one at a time, so uploads finished at the same moment cannot stack their
- * decodes, each of which can take a few hundred MB. An upload's turn also covers loading its
- * original (checkUpload), so the ones waiting hold nothing yet.
+ * The most uploads and crops that may wait for their turn or be in it, in one API slot (#97). The
+ * app, the importer and the MCP server each send one upload at a time, so this many means several
+ * Members at once; one more is refused with 503 and Retry-After, rather than kept waiting behind
+ * one Member's pile of files. A turn takes from a fraction of a second to a few seconds.
  */
-const turns = new SerialQueue();
+export const QUEUE_LIMIT = 8;
+/** How soon to try again when the queue was full: by then a turn or two have ended. */
+export const BUSY_RETRY_SECONDS = 10;
+
+/**
+ * Images are checked one at a time, so uploads finished at the same moment cannot stack their
+ * decodes, each of which can take a few hundred MB. An upload's turn covers loading its original
+ * and writing its checked copy and display copy too (checkUpload), so the ones waiting hold
+ * nothing yet, and the one done holds nothing any more.
+ */
+const turns = new SerialQueue(QUEUE_LIMIT);
+
+/** Uploads and crops waiting for their turn or in it. */
+export const queuedImages = (): number => turns.size;
+
+/**
+ * A turn for `task`, in the order asked for. Refused with 503 while QUEUE_LIMIT are queued;
+ * skipped, without running, when `gone` aborts before its turn (its request was closed, #97).
+ */
+async function inTurn<T>(task: () => Promise<T>, gone?: AbortSignal): Promise<T> {
+  try {
+    return await turns.run(task, gone);
+  } catch (error) {
+    if (error instanceof QueueFull) throw new ApiProblem(503, 'busy', BUSY_MESSAGE, {}, { 'retry-after': String(BUSY_RETRY_SECONDS) });
+    throw error;
+  }
+}
 
 export type ImageType = ImageContentType;
 
-export interface ProcessedImage {
+/** What an upload's row records of its checked image. */
+export interface CheckedImage {
   contentType: ImageType;
   byteSize: number;
   sha256: string;
   width: number;
   height: number;
+}
+
+export interface ProcessedImage extends CheckedImage {
   /** WebP, at most DISPLAY_MAX_PIXELS on its longest side. */
   display: Buffer;
 }
@@ -58,6 +90,9 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
 export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
+export const BUSY_MESSAGE = 'The server is checking other images just now. Try again in a few seconds.';
+export const STORE_TIMEOUT_MESSAGE = 'The image store did not answer in time. Try again in a minute.';
+export const CHECKSUM_MESSAGE = 'The uploaded file differs from the one announced. Upload it again.';
 export const HEIC_MESSAGE =
   'This HEIC photo could not be converted. On an iPhone, set Settings → Camera → Formats → Most Compatible, or share the photo as JPEG, then add it again.';
 
@@ -69,29 +104,74 @@ export const HEIC_MESSAGE =
  */
 export async function processImage(original: Buffer): Promise<ProcessedImage> {
   const contentType = typeOf(original);
-  return turns.run(() => displayCopy(original, contentType));
+  return inTurn(() => displayCopy(original, contentType));
 }
 
-/** An upload's original, loaded in its turn, with its display copy or why it was refused. */
-export type UploadCheck = { original: Buffer } & ({ processed: ProcessedImage } | { refused: ApiProblem });
+/** Where an upload's files are, and the SHA-256 it was announced with. */
+export interface PendingUpload {
+  /** The file the upload link put. */
+  link: string;
+  /** Where the checked original goes, which no upload link reaches (issue #52). */
+  verified: string;
+  /** Where its display copy goes. */
+  display: string;
+  sha256: string;
+}
+
+/** An upload checked and kept, or why it was refused. */
+export type UploadCheck = { checked: CheckedImage } | { refused: ApiProblem };
 
 /**
- * Loads an upload's original with `load`, then checks it as processImage does, in one turn: any
- * number of uploads finished at once hold one original and one decode in memory, not one each.
- * Null when `load` finds no file; an error of `load` itself is passed on.
+ * Checks an upload in one turn: loads the file at its link, compares it with the SHA-256 it was
+ * announced with, so that a file other than the one announced costs no decode (#97), checks it as
+ * processImage does, and writes the checked original and its display copy. Any number of uploads
+ * finished at once hold one original, one decode and one display copy in memory, not one each,
+ * and nothing of an upload is held once its turn is over (#97). Null when there is no file at the
+ * link; an error of the store is passed on. Refused with 503 while the queue is full, and skipped
+ * when `gone` aborts before its turn (inTurn).
  */
-export function checkUpload(load: () => Promise<Buffer | null>): Promise<UploadCheck | null> {
-  return turns.run(async () => {
-    const original = await load();
+export function checkUpload(images: ImageStorage, upload: PendingUpload, gone?: AbortSignal): Promise<UploadCheck | null> {
+  return inTurn(async () => {
+    const original = await inTime((signal) => images.get(upload.link, signal));
     if (!original) return null;
+    let processed: ProcessedImage;
     try {
-      return { original, processed: await displayCopy(original, typeOf(original)) };
+      const sha256 = sha256Of(original);
+      if (sha256 !== upload.sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
+      processed = await displayCopy(original, typeOf(original), sha256);
     } catch (error) {
-      if (error instanceof ApiProblem) return { original, refused: error };
+      if (error instanceof ApiProblem) return { refused: error };
       throw error;
     }
-  });
+    const { display, ...checked } = processed;
+    await inTime((signal) => images.put(upload.verified, original, checked.contentType, signal));
+    await inTime((signal) => images.put(upload.display, display, 'image/webp', signal));
+    return { checked };
+  }, gone);
 }
+
+/**
+ * A read or write of the image store in a turn, given up after STORE_TIMEOUT_MS (#97): its request
+ * is aborted, and the turn stops waiting for it even when the store ignores that, so the uploads
+ * behind it go ahead. A decode is never cut short: two would then run at once.
+ */
+async function inTime<T>(io: (signal: AbortSignal) => Promise<T>): Promise<T> {
+  const deadline = new AbortController();
+  let timer: NodeJS.Timeout | undefined;
+  const timedOut = new Promise<never>((_resolve, reject) => {
+    timer = setTimeout(() => {
+      reject(new ApiProblem(503, 'store_timeout', STORE_TIMEOUT_MESSAGE, {}, { 'retry-after': '60' }));
+      deadline.abort();
+    }, STORE_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([io(deadline.signal), timedOut]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const sha256Of = (original: Buffer) => createHash('sha256').update(original).digest('hex');
 
 /** The image type of an original within the size limit, or the refusal. */
 function typeOf(original: Buffer): ImageType {
@@ -102,7 +182,7 @@ function typeOf(original: Buffer): ImageType {
 }
 
 /** The display copy; every failure becomes an ApiProblem. */
-async function displayCopy(original: Buffer, contentType: ImageType): Promise<ProcessedImage> {
+async function displayCopy(original: Buffer, contentType: ImageType, sha256 = sha256Of(original)): Promise<ProcessedImage> {
   const heic = contentType === 'image/heic' || contentType === 'image/heif';
   try {
     // The header alone, without sharp's limit, so a file over it is told apart from an unreadable one.
@@ -119,7 +199,7 @@ async function displayCopy(original: Buffer, contentType: ImageType): Promise<Pr
     return {
       contentType,
       byteSize: original.length,
-      sha256: createHash('sha256').update(original).digest('hex'),
+      sha256,
       width: rotated ? meta.height : meta.width,
       height: rotated ? meta.width : meta.height,
       display,
@@ -141,13 +221,13 @@ export interface Crop {
 
 /**
  * A crop for scan reading (evidence-media spec, "Images sent for reading"): only the marked part
- * of the checked original, at most DISPLAY_MAX_PIXELS on its longest side, as WebP. The original
- * file itself never leaves the server. Loaded and decoded in its turn, like every upload. Null
- * when `load` finds no file.
+ * of the checked original at `key`, at most DISPLAY_MAX_PIXELS on its longest side, as WebP. The
+ * original file itself never leaves the server. Loaded and decoded in its turn, like every
+ * upload. Null when there is no file at `key`.
  */
-export function cropForReading(load: () => Promise<Buffer | null>, crop: Crop): Promise<Buffer | null> {
-  return turns.run(async () => {
-    const original = await load();
+export function cropForReading(images: ImageStorage, key: string, crop: Crop): Promise<Buffer | null> {
+  return inTurn(async () => {
+    const original = await inTime((signal) => images.get(key, signal));
     if (!original) return null;
     const meta = await sharp(original).metadata();
     if (!meta.width || !meta.height) throw new Error('an image without dimensions');

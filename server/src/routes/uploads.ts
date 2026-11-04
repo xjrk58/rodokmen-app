@@ -1,4 +1,5 @@
 import { DOCUMENT_MAX_BYTES, IMAGE_MAX_BYTES, isDocumentType, type CreateUploadBody, type UploadTicket, type UploadView } from '@rodokmen/shared';
+import type { FastifyReply } from 'fastify';
 import { v7 as uuidv7 } from 'uuid';
 import { ApiProblem } from '../auth/problem.js';
 import type { Account, Upload } from '../db/types.js';
@@ -6,7 +7,7 @@ import type { ProposalDeps } from '../proposals/service.js';
 import { uploadView } from '../proposals/views.js';
 import { checkDocument, DOCUMENT_TOO_LARGE_MESSAGE } from '../storage/documents.js';
 import { uploadKeys } from '../storage/images.js';
-import { checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
+import { CHECKSUM_MESSAGE, checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
 /**
  * Uploads of images and documents for Proposals (evidence-media spec): a presigned PUT link into
@@ -39,27 +40,42 @@ export async function createUpload(deps: ProposalDeps, member: Account, body: Cr
 }
 
 /**
+ * When the file at the upload link is gone: another request for the same upload (a double tap, a
+ * retry, the app and an MCP client) may have finished it meanwhile and moved the file, or refused
+ * it (#95). Only an upload still waiting has really not arrived.
+ */
+async function finishedElsewhere(deps: ProposalDeps, u: Upload): Promise<UploadView> {
+  const current = await deps.db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
+  if (current.status === 'ready') return uploadView(current);
+  if (current.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
+  throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+}
+
+/**
+ * Refuses an upload with `error`. The upload is marked deleted before its file goes, so that a
+ * request for it that then finds no file answers 404, not "not arrived" (#95).
+ */
+async function refuse(deps: ProposalDeps, u: Upload, error: unknown): Promise<never> {
+  await deps.db.updateTable('upload').set({ status: 'deleted', deleted_at: deps.clock.now() }).where('id', '=', u.id).where('status', '=', 'waiting').execute();
+  await deps.images.delete(u.storage_key).catch(() => undefined);
+  throw error;
+}
+
+/**
  * Finishes a document upload (evidence-media spec, "Documents on Sources"): the file must be the
  * PDF (or DOC) it was announced as and match its SHA-256. The checked bytes go where no upload
  * link reaches, as for images; a document has no display copy.
  */
 async function completeDocument(deps: ProposalDeps, u: Upload) {
   const original = await deps.images.get(u.storage_key);
-  if (!original) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
+  if (!original) return finishedElsewhere(deps, u);
   const declared = isDocumentType(u.declared_type) ? u.declared_type : 'application/pdf';
   let checked;
   try {
     checked = checkDocument(original, declared);
-    if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
+    if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
   } catch (error) {
-    await deps.images.delete(u.storage_key).catch(() => undefined);
-    await deps.db
-      .updateTable('upload')
-      .set({ status: 'deleted', deleted_at: deps.clock.now() })
-      .where('id', '=', u.id)
-      .where('status', '=', 'waiting')
-      .execute();
-    throw error;
+    return refuse(deps, u, error);
   }
   const verified = uploadKeys(u.id).verified;
   await deps.images.put(verified, original, checked.contentType);
@@ -77,46 +93,46 @@ async function completeDocument(deps: ProposalDeps, u: Upload) {
   throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
 }
 
-/** Finishes an upload: checks the file, keeps the checked copy where the link cannot reach, and makes an image's display copy. */
-export async function completeUpload(deps: ProposalDeps, member: Account, id: string): Promise<UploadView> {
+/**
+ * Aborts when the client goes away before its answer is sent, so that an upload still waiting
+ * for its turn is skipped (#97). (Fastify's request.signal cannot tell: it also aborts as soon as
+ * a request's body has been read.)
+ */
+export function whenGone(reply: FastifyReply): AbortSignal {
+  const gone = new AbortController();
+  reply.raw.once('close', () => {
+    if (!reply.raw.writableEnded) gone.abort(new ApiProblem(499, 'gone', 'The request was closed before its upload was checked.'));
+  });
+  return gone.signal;
+}
+
+/**
+ * Finishes an upload: checks the file, keeps the checked copy where the link cannot reach, and
+ * makes an image's display copy. An image waiting for its turn is skipped when `gone` aborts.
+ */
+export async function completeUpload(deps: ProposalDeps, member: Account, id: string, gone?: AbortSignal): Promise<UploadView> {
   const u = await deps.db.selectFrom('upload').selectAll().where('id', '=', id).where('author_id', '=', member.id).executeTakeFirst();
   if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
   if (u.status === 'ready') return uploadView(u);
   if (u.kind === 'document') return completeDocument(deps, u);
-  // Loaded and checked in its turn, one upload at a time (memory, issue #39).
-  const checked = await checkUpload(() => deps.images.get(u.storage_key));
-  if (!checked) throw new ApiProblem(409, 'not_uploaded', 'The file has not arrived yet. Upload it with the link first.');
-  const { original } = checked;
-  let processed;
-  try {
-    if ('refused' in checked) throw checked.refused;
-    processed = checked.processed;
-    if (processed.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', 'The uploaded file differs from the one announced. Upload it again.');
-  } catch (error) {
-    await deps.images.delete(u.storage_key).catch(() => undefined);
-    await deps.db
-      .updateTable('upload')
-      .set({ status: 'deleted', deleted_at: deps.clock.now() })
-      .where('id', '=', u.id)
-      .where('status', '=', 'waiting')
-      .execute();
-    throw error;
-  }
   // The upload link stays valid for its 15 minutes, so the file it points at could still be
-  // replaced. The bytes just checked go where no link reaches, and only they are used.
-  const verified = uploadKeys(u.id).verified;
-  await deps.images.put(verified, original, processed.contentType);
-  await deps.images.put(u.display_key, processed.display, 'image/webp');
+  // replaced. The bytes checked go where no link reaches, and only they are used. Loaded, checked
+  // and written in its turn, one upload at a time (memory, issues #39 and #97).
+  const { verified } = uploadKeys(u.id);
+  const result = await checkUpload(deps.images, { link: u.storage_key, verified, display: u.display_key, sha256: u.declared_sha256 }, gone);
+  if (!result) return finishedElsewhere(deps, u);
+  if ('refused' in result) return refuse(deps, u, result.refused);
+  const { checked } = result;
   const row = await deps.db
     .updateTable('upload')
     .set({
       status: 'ready',
       storage_key: verified,
-      content_type: processed.contentType,
-      byte_size: processed.byteSize,
-      sha256: processed.sha256,
-      width: processed.width,
-      height: processed.height,
+      content_type: checked.contentType,
+      byte_size: checked.byteSize,
+      sha256: checked.sha256,
+      width: checked.width,
+      height: checked.height,
     })
     .where('id', '=', u.id)
     .where('status', '=', 'waiting')
