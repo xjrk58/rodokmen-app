@@ -3,14 +3,15 @@ import { UploadTicket, UploadView } from '@rodokmen/shared';
 import sharp from 'sharp';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../src/db/types.js';
-import { BUSY_MESSAGE, QUEUE_LIMIT, queuedImages } from '../src/storage/process.js';
+import { BUSY_MESSAGE, QUEUE_LIMIT, queuedUploads } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { GatedStorage } from './gated-storage.js';
 import { createMember, ensureOwner, makeApp, portOf, signIn, type TestApp } from './helpers.js';
 
 /**
- * Finishing uploads while others are checked (issues #95 and #97): POST /api/uploads/{id}/complete
- * waits for its turn in the image queue (server/src/storage/process.ts).
+ * Finishing uploads while others are checked (issues #95, #97 and #120): POST
+ * /api/uploads/{id}/complete waits for its turn in the upload queue, images and documents alike
+ * (server/src/storage/process.ts).
  */
 const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
 
@@ -20,7 +21,10 @@ const picture = (width: number, height: number, format: 'jpeg' | 'png' = 'jpeg')
     [format]()
     .toBuffer();
 
-const PDF = Buffer.concat([Buffer.from('%PDF-1.4\n% Invented parish chronicle\n', 'latin1'), Buffer.alloc(1024, 0x20), Buffer.from('\n%%EOF\n')]);
+/** A minimal invented PDF; `pages` only makes it longer, so that each one differs. */
+const pdf = (pages = 1) =>
+  Buffer.concat([Buffer.from('%PDF-1.4\n% Invented parish chronicle\n', 'latin1'), Buffer.alloc(1024 * pages, 0x20), Buffer.from('\n%%EOF\n')]);
+const PDF = pdf();
 
 describe('finishing uploads', () => {
   let t: TestDatabase;
@@ -54,7 +58,7 @@ describe('finishing uploads', () => {
   // A test that failed while holding a read must not leave its uploads in the queue for the next (#99).
   afterEach(async () => {
     storage.releaseAll();
-    await vi.waitFor(() => expect(queuedImages()).toBe(0), { timeout: 10_000 });
+    await vi.waitFor(() => expect(queuedUploads()).toBe(0), { timeout: 10_000 });
   });
   afterAll(async () => {
     await a?.app.close();
@@ -72,11 +76,43 @@ describe('finishing uploads', () => {
     expect(storage.objects.has(`pending/${id}/original`)).toBe(false);
   });
 
-  it('a document finished three times at once answers 200 each time too', async () => {
+  it('a document finished three times at once answers 200 with the same view each time too (#95, #120)', async () => {
     const id = await uploaded(PDF, 'application/pdf');
     const answers = await Promise.all([complete(id), complete(id), complete(id)]);
     expect(answers.map((r) => r.statusCode)).toEqual([200, 200, 200]);
     expect(new Set(answers.map((r) => r.body)).size).toBe(1);
+    expect(UploadView.parse(answers[0].json())).toMatchObject({ id, kind: 'document', status: 'ready', contentType: 'application/pdf', byteSize: PDF.length });
+    expect(storage.objects.has(`pending/${id}/original`)).toBe(false);
+    expect(storage.objects.get(`pending/${id}/verified`)!.body.equals(PDF)).toBe(true);
+    // And once more, after it is finished.
+    expect((await complete(id)).body).toBe(answers[0].body);
+  });
+
+  it('documents finished together wait their turn behind an image, and each is loaded only once the one before is written (#120)', async () => {
+    const image = await uploaded(await picture(800, 600));
+    const documents = [];
+    for (const pages of [1, 2, 3]) documents.push(await uploaded(pdf(pages), 'application/pdf'));
+    const start = storage.log.length;
+    const release = storage.hold(`pending/${image}/original`);
+    const first = complete(image);
+    await vi.waitFor(() => expect(queuedUploads()).toBe(1));
+    const rest = documents.map((id) => complete(id));
+    try {
+      await vi.waitFor(() => expect(queuedUploads()).toBe(4));
+      expect(storage.log.slice(start)).toEqual([`get pending/${image}/original`]); // no document is loaded yet
+    } finally {
+      release();
+    }
+    expect((await Promise.all([first, ...rest])).map((r) => r.statusCode)).toEqual([200, 200, 200, 200]);
+    // One file in memory at a time: every upload writes its checked copy before the next one is
+    // loaded, and keeps nothing of it once its turn is over (the turn returns only what the row records).
+    const log = storage.log.slice(start);
+    expect(log.slice(0, 3)).toEqual([`get pending/${image}/original`, `put pending/${image}/verified`, `put pending/${image}/display.webp`]);
+    const turns = [];
+    for (let i = 3; i < log.length; i += 2) turns.push(log.slice(i, i + 2));
+    expect(turns).toHaveLength(documents.length);
+    for (const [get, put] of turns) expect(put).toBe(get!.replace(/^get (.*)\/original$/, 'put $1/verified'));
+    expect(turns.map(([get]) => get).sort()).toEqual(documents.map((id) => `get pending/${id}/original`).sort());
   });
 
   it('a file other than the one announced is refused as such, before its type or pixels are checked (#97)', async () => {
@@ -104,54 +140,69 @@ describe('finishing uploads', () => {
     const first = complete(before);
     const id = await uploaded(await picture(800, 600));
     const waiting = complete(id);
-    await vi.waitFor(() => expect(queuedImages()).toBe(2));
+    await vi.waitFor(() => expect(queuedUploads()).toBe(2));
     await t.db.updateTable('upload').set({ status: 'deleted', deleted_at: a.clock.now() }).where('id', '=', id).execute();
     await storage.delete(`pending/${id}/original`);
     release();
     expect((await first).statusCode).toBe(200);
     expect((await waiting).json()).toMatchObject({ statusCode: 404, code: 'not_found' });
   });
-  it('a full queue refuses one more upload at once, with 503 and Retry-After; it can be finished later (#97)', async () => {
+  it('a full queue refuses one more upload at once, image or document, with 503 and Retry-After; it can be finished later (#97, #120)', async () => {
     const image = await picture(640, 480);
     const ids = [];
-    for (let i = 0; i <= QUEUE_LIMIT; i++) ids.push(await uploaded(image));
+    // Images and documents take places in the same queue.
+    for (let i = 0; i <= QUEUE_LIMIT; i++) ids.push(await (i % 2 ? uploaded(pdf(i), 'application/pdf') : uploaded(image)));
+    const document = await uploaded(PDF, 'application/pdf');
     const [first, ...rest] = ids;
     const refused = rest.pop()!;
     const release = storage.hold(`pending/${first}/original`);
-    const waiting = [complete(first!), ...rest.map((id) => complete(id))];
-    await vi.waitFor(() => expect(queuedImages()).toBe(QUEUE_LIMIT));
+    // The held one takes the turn first, so that none of the others can finish before the queue is full.
+    const holding = complete(first!);
+    await vi.waitFor(() => expect(queuedUploads()).toBe(1));
+    const waiting = [holding, ...rest.map((id) => complete(id))];
+    await vi.waitFor(() => expect(queuedUploads()).toBe(QUEUE_LIMIT));
     const busy = await complete(refused);
     expect(busy.statusCode).toBe(503);
     expect(busy.headers['retry-after']).toBe('10');
     expect(busy.json()).toEqual({ statusCode: 503, error: 'Service Unavailable', message: BUSY_MESSAGE, code: 'busy' });
+    // A document gets the same answer.
+    const busyDocument = await complete(document);
+    expect(busyDocument.statusCode).toBe(503);
+    expect(busyDocument.headers['retry-after']).toBe('10');
+    expect(busyDocument.json()).toEqual(busy.json());
     release();
     expect((await Promise.all(waiting)).map((r) => r.statusCode)).toEqual(Array.from({ length: QUEUE_LIMIT }, () => 200));
-    // The refused upload is untouched, and goes through when tried again.
-    expect(storage.log).not.toContain(`get pending/${refused}/original`);
+    // The refused uploads are untouched, and go through when tried again.
+    for (const id of [refused, document]) expect(storage.log).not.toContain(`get pending/${id}/original`);
     expect(UploadView.parse((await complete(refused)).json())).toMatchObject({ id: refused, status: 'ready' });
+    expect(UploadView.parse((await complete(document)).json())).toMatchObject({ id: document, kind: 'document', status: 'ready' });
   });
 
-  it('skips an upload whose request was closed while it waited, and frees its place at once (#97)', async () => {
+  it('skips an upload, image or document, whose request was closed while it waited, and frees its place at once (#97, #120)', async () => {
     await a.app.listen({ host: '127.0.0.1', port: 0 });
     const origin = `http://127.0.0.1:${portOf(a.app.server.address())}`;
     const image = await picture(640, 480);
     const first = await uploaded(image);
-    const left = await uploaded(image);
+    const left = [await uploaded(image), await uploaded(PDF, 'application/pdf')];
     const release = storage.hold(`pending/${first}/original`);
     const holding = complete(first);
-    await vi.waitFor(() => expect(queuedImages()).toBe(1));
-    // A real connection, closed by the client while its upload waits for the first one.
+    await vi.waitFor(() => expect(queuedUploads()).toBe(1));
+    // Real connections, closed by the client while their uploads wait for the first one.
     const closed = new AbortController();
-    const request = expect(fetch(`${origin}/api/uploads/${left}/complete`, { method: 'POST', headers: { cookie }, signal: closed.signal })).rejects.toThrow();
-    await vi.waitFor(() => expect(queuedImages()).toBe(2));
+    const requests = left.map((id) =>
+      expect(fetch(`${origin}/api/uploads/${id}/complete`, { method: 'POST', headers: { cookie }, signal: closed.signal })).rejects.toThrow(),
+    );
+    await vi.waitFor(() => expect(queuedUploads()).toBe(3));
     closed.abort();
-    await request;
-    await vi.waitFor(() => expect(queuedImages()).toBe(1));
+    await Promise.all(requests);
+    await vi.waitFor(() => expect(queuedUploads()).toBe(1));
     release();
     expect((await holding).statusCode).toBe(200);
-    expect(storage.log).not.toContain(`get pending/${left}/original`);
-    // Still waiting, so the next request finishes it.
-    expect(await t.db.selectFrom('upload').select('status').where('id', '=', left).executeTakeFirstOrThrow()).toEqual({ status: 'waiting' });
-    expect(UploadView.parse((await complete(left)).json())).toMatchObject({ id: left, status: 'ready' });
+    for (const id of left) {
+      expect(storage.log).not.toContain(`get pending/${id}/original`);
+      // Still waiting, so the next request finishes it.
+      expect(await t.db.selectFrom('upload').select('status').where('id', '=', id).executeTakeFirstOrThrow()).toEqual({ status: 'waiting' });
+      expect(UploadView.parse((await complete(id)).json())).toMatchObject({ id, status: 'ready' });
+    }
   });
 });

@@ -2,7 +2,17 @@ import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import { describe, expect, it, vi } from 'vitest';
 import { STORE_TIMEOUT_MS } from '../src/storage/images.js';
-import { CHECKSUM_MESSAGE, checkUpload, cropForReading, DISPLAY_MAX_PIXELS, processImage, type PendingUpload } from '../src/storage/process.js';
+import { NOT_A_PDF_MESSAGE } from '../src/storage/documents.js';
+import {
+  CHECKSUM_MESSAGE,
+  checkDocumentUpload,
+  checkUpload,
+  cropForReading,
+  DISPLAY_MAX_PIXELS,
+  processImage,
+  type PendingDocument,
+  type PendingUpload,
+} from '../src/storage/process.js';
 import { QueueFull, SerialQueue } from '../src/storage/serial-queue.js';
 import { GatedStorage } from './gated-storage.js';
 
@@ -33,6 +43,15 @@ function pending(storage: GatedStorage, name: string, body: Buffer, sha256 = sha
   storage.objects.set(`pending/${name}/original`, { body, contentType: 'image/jpeg' });
   return { link: `pending/${name}/original`, verified: `pending/${name}/verified`, display: `pending/${name}/display.webp`, sha256 };
 }
+
+/** A document upload whose file `body` is at its link in `storage`, announced as a PDF with `sha256`. */
+function pendingDocument(storage: GatedStorage, name: string, body: Buffer, sha256 = sha(body)): PendingDocument {
+  storage.objects.set(`pending/${name}/original`, { body, contentType: 'application/pdf' });
+  return { link: `pending/${name}/original`, verified: `pending/${name}/verified`, declared: 'application/pdf', sha256 };
+}
+
+/** A minimal invented PDF. */
+const PDF = Buffer.concat([Buffer.from('%PDF-1.4\n% Invented chronicle\n', 'latin1'), Buffer.alloc(2048, 0x20), Buffer.from('\n%%EOF\n')]);
 
 describe('SerialQueue', () => {
   it('runs tasks one at a time, in the order they were queued', async () => {
@@ -245,9 +264,16 @@ describe('image processing on a small server (issue #39)', () => {
         code: 'store_timeout',
         headers: { 'retry-after': '60' },
       });
-      // A reading's crop takes its turn in the same queue, and is given up the same way.
+      // A reading's crop and a document take their turns in the same queue, and are given up the same way (#120).
       const reading = expect(cropForReading(storage, crop.link, { left: 0, top: 0, width: 0.5, height: 0.5 })).rejects.toMatchObject({
         code: 'store_timeout',
+      });
+      const stalledDocument = pendingDocument(storage, 'chronicle', PDF);
+      storage.hold(stalledDocument.link);
+      const document = expect(checkDocumentUpload(storage, stalledDocument)).rejects.toMatchObject({
+        statusCode: 503,
+        code: 'store_timeout',
+        headers: { 'retry-after': '60' },
       });
       const next = checkUpload(storage, pending(storage, 'next', image));
       await vi.advanceTimersByTimeAsync(STORE_TIMEOUT_MS - 1);
@@ -257,11 +283,33 @@ describe('image processing on a small server (issue #39)', () => {
       expect(storage.signals.get(stalled.link)?.aborted).toBe(true); // the request to the store is aborted
       await vi.advanceTimersByTimeAsync(STORE_TIMEOUT_MS);
       await reading;
+      await vi.advanceTimersByTimeAsync(STORE_TIMEOUT_MS);
+      await document;
+      expect(storage.signals.get(stalledDocument.link)?.aborted).toBe(true);
       vi.useRealTimers();
       await expect(next).resolves.toMatchObject({ checked: { width: 800, height: 600 } });
     } finally {
       vi.useRealTimers();
       storage.releaseAll();
     }
+  });
+
+  it('checks a document in its turn: missing is null, refused writes nothing, checked writes its copy (#120)', async () => {
+    const storage = new GatedStorage();
+    const none: PendingDocument = { link: 'pending/none/original', verified: 'pending/none/verified', declared: 'application/pdf', sha256: sha(PDF) };
+    await expect(checkDocumentUpload(storage, none)).resolves.toBeNull();
+    await expect(checkDocumentUpload(storage, pendingDocument(storage, 'other', PDF, sha(Buffer.from('the file announced'))))).resolves.toMatchObject({
+      refused: { statusCode: 400, code: 'checksum', message: CHECKSUM_MESSAGE },
+    });
+    const doc = Buffer.concat([Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]), Buffer.alloc(512, 0)]);
+    await expect(checkDocumentUpload(storage, pendingDocument(storage, 'doc', doc))).resolves.toMatchObject({
+      refused: { statusCode: 415, code: 'unsupported_document', message: NOT_A_PDF_MESSAGE },
+    });
+    expect(storage.log.filter((l) => l.startsWith('put'))).toEqual([]);
+    await expect(checkDocumentUpload(storage, pendingDocument(storage, 'chronicle', PDF))).resolves.toEqual({
+      checked: { contentType: 'application/pdf', byteSize: PDF.length, sha256: sha(PDF) },
+    });
+    expect(storage.log.slice(-2)).toEqual(['get pending/chronicle/original', 'put pending/chronicle/verified']);
+    expect(storage.objects.get('pending/chronicle/verified')).toEqual({ body: PDF, contentType: 'application/pdf' });
   });
 });

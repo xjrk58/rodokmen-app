@@ -5,9 +5,9 @@ import { ApiProblem } from '../auth/problem.js';
 import type { Account, Upload } from '../db/types.js';
 import type { ProposalDeps } from '../proposals/service.js';
 import { uploadView } from '../proposals/views.js';
-import { checkDocument, DOCUMENT_TOO_LARGE_MESSAGE } from '../storage/documents.js';
+import { DOCUMENT_TOO_LARGE_MESSAGE } from '../storage/documents.js';
 import { uploadKeys } from '../storage/images.js';
-import { CHECKSUM_MESSAGE, checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
+import { checkDocumentUpload, checkUpload, TOO_LARGE_MESSAGE } from '../storage/process.js';
 
 /**
  * Uploads of images and documents for Proposals (evidence-media spec): a presigned PUT link into
@@ -62,38 +62,6 @@ async function refuse(deps: ProposalDeps, u: Upload, error: unknown): Promise<ne
 }
 
 /**
- * Finishes a document upload (evidence-media spec, "Documents on Sources"): the file must be the
- * PDF (or DOC) it was announced as and match its SHA-256. The checked bytes go where no upload
- * link reaches, as for images; a document has no display copy.
- */
-async function completeDocument(deps: ProposalDeps, u: Upload) {
-  const original = await deps.images.get(u.storage_key);
-  if (!original) return finishedElsewhere(deps, u);
-  const declared = isDocumentType(u.declared_type) ? u.declared_type : 'application/pdf';
-  let checked;
-  try {
-    checked = checkDocument(original, declared);
-    if (checked.sha256 !== u.declared_sha256) throw new ApiProblem(400, 'checksum', CHECKSUM_MESSAGE);
-  } catch (error) {
-    return refuse(deps, u, error);
-  }
-  const verified = uploadKeys(u.id).verified;
-  await deps.images.put(verified, original, checked.contentType);
-  const row = await deps.db
-    .updateTable('upload')
-    .set({ status: 'ready', storage_key: verified, content_type: checked.contentType, byte_size: checked.byteSize, sha256: checked.sha256 })
-    .where('id', '=', u.id)
-    .where('status', '=', 'waiting')
-    .returningAll()
-    .executeTakeFirst();
-  await deps.images.delete(u.storage_key).catch((e: unknown) => deps.log?.('could not delete an uploaded file after checking it', e));
-  if (row) return uploadView(row);
-  const current = await deps.db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
-  if (current.status === 'ready') return uploadView(current);
-  throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
-}
-
-/**
  * Aborts when the client goes away before its answer is sent, so that an upload still waiting
  * for its turn is skipped (#97). (Fastify's request.signal cannot tell: it also aborts as soon as
  * a request's body has been read.)
@@ -108,18 +76,24 @@ export function whenGone(reply: FastifyReply): AbortSignal {
 
 /**
  * Finishes an upload: checks the file, keeps the checked copy where the link cannot reach, and
- * makes an image's display copy. An image waiting for its turn is skipped when `gone` aborts.
+ * makes an image's display copy. A document is the PDF (or DOC) it was announced as (evidence-media
+ * spec, "Documents on Sources") and has no display copy. An upload waiting for its turn is skipped
+ * when `gone` aborts.
  */
 export async function completeUpload(deps: ProposalDeps, member: Account, id: string, gone?: AbortSignal): Promise<UploadView> {
   const u = await deps.db.selectFrom('upload').selectAll().where('id', '=', id).where('author_id', '=', member.id).executeTakeFirst();
   if (!u || u.status === 'deleted') throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
   if (u.status === 'ready') return uploadView(u);
-  if (u.kind === 'document') return completeDocument(deps, u);
   // The upload link stays valid for its 15 minutes, so the file it points at could still be
   // replaced. The bytes checked go where no link reaches, and only they are used. Loaded, checked
-  // and written in its turn, one upload at a time (memory, issues #39 and #97).
+  // and written in its turn, one upload at a time, images and documents alike (memory, issues
+  // #39, #97 and #120).
   const { verified } = uploadKeys(u.id);
-  const result = await checkUpload(deps.images, { link: u.storage_key, verified, display: u.display_key, sha256: u.declared_sha256 }, gone);
+  const pending = { link: u.storage_key, verified, sha256: u.declared_sha256 };
+  const result =
+    u.kind === 'document'
+      ? await checkDocumentUpload(deps.images, { ...pending, declared: isDocumentType(u.declared_type) ? u.declared_type : 'application/pdf' }, gone)
+      : await checkUpload(deps.images, { ...pending, display: u.display_key }, gone);
   if (!result) return finishedElsewhere(deps, u);
   if ('refused' in result) return refuse(deps, u, result.refused);
   const { checked } = result;
@@ -131,8 +105,7 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
       content_type: checked.contentType,
       byte_size: checked.byteSize,
       sha256: checked.sha256,
-      width: checked.width,
-      height: checked.height,
+      ...('width' in checked ? { width: checked.width, height: checked.height } : {}),
     })
     .where('id', '=', u.id)
     .where('status', '=', 'waiting')
@@ -144,6 +117,6 @@ export async function completeUpload(deps: ProposalDeps, member: Account, id: st
   // checked bytes, so the files written here are its files too), or refused it.
   const current = await deps.db.selectFrom('upload').selectAll().where('id', '=', u.id).executeTakeFirstOrThrow();
   if (current.status === 'ready') return uploadView(current);
-  for (const key of [verified, u.display_key]) await deps.images.delete(key).catch(() => undefined);
+  for (const key of u.kind === 'document' ? [verified] : [verified, u.display_key]) await deps.images.delete(key).catch(() => undefined);
   throw new ApiProblem(404, 'not_found', 'No upload of yours with this id.');
 }
