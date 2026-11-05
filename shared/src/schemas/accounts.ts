@@ -168,6 +168,19 @@ export const InvitationView = z
 
 export const InvitationList = z.object({ items: z.array(InvitationView) }).meta({ id: 'InvitationList' });
 
+/**
+ * The answer that creates an invitation: the only one that holds its link, since the server
+ * keeps only the token's hash (member-accounts spec, "Invitation link for the Owner's own WhatsApp").
+ */
+export const CreatedInvitation = InvitationView.safeExtend({
+  link: z.string().describe('The invitation link, the same as in the invitation email. It is shown only in this answer; only its hash is stored'),
+  shareText: z
+    .string()
+    .describe(
+      "The invitation as a message for the Owner to send from their own WhatsApp, in the invitation's language, with the link. Shown only in this answer",
+    ),
+}).meta({ id: 'CreatedInvitation' });
+
 export const TokenBody = z.object({ token: z.string().min(20).max(200) });
 
 /** What an invited relative sees before accepting. */
@@ -176,6 +189,10 @@ export const InvitationCheck = z
     status: InvitationStatus,
     language: UiLanguage,
     message: z.string().describe('What to do next, in the invitation language'),
+    email: z
+      .string()
+      .nullable()
+      .describe('The address the invitation went to, which becomes the account’s address and receives sign-in links; null unless the invitation is pending'),
   })
   .meta({ id: 'InvitationCheck' });
 
@@ -285,4 +302,6 @@ export type MemberView = z.infer<typeof MemberView>;
 export type UpdateMeBody = z.infer<typeof UpdateMeBody>;
 export type SessionView = z.infer<typeof SessionView>;
 export type InvitationView = z.infer<typeof InvitationView>;
+export type CreatedInvitation = z.infer<typeof CreatedInvitation>;
+export type InvitationCheck = z.infer<typeof InvitationCheck>;
 export type InvitationStatus = z.infer<typeof InvitationStatus>;

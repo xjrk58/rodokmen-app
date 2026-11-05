@@ -1,10 +1,10 @@
 import {
   ApiError,
   ChangeRoleBody,
+  CreatedInvitation,
   CreateInvitationBody,
   IdParams,
   InvitationList,
-  InvitationView,
   LinkPersonBody,
   Me,
   MemberList,
@@ -267,9 +267,10 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
     ...owner,
     schema: {
       tags: ['Members'],
-      summary: 'Invite a relative by email, in Czech or English (Owner only). The link works once for 7 days',
+      summary:
+        'Invite a relative by email, in Czech or English (Owner only). The link works once for 7 days. Only this answer holds it, with a message for the Owner to send it from their own WhatsApp too',
       body: CreateInvitationBody,
-      response: { 201: InvitationView, 400: ApiError, 409: ApiError, ...ownerOnly },
+      response: { 201: CreatedInvitation, 400: ApiError, 409: ApiError, ...ownerOnly },
     },
     handler: async (req, reply) => {
       reply.code(201);

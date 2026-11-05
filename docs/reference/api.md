@@ -67,6 +67,23 @@ Errors are JSON:
 | 429    | an Agent reached its hourly limit (`code` `rate_limited`), or a Member or Agent their scan readings of the day (`daily_limit`); `retryAt` and the `Retry-After` header say when to try again                                           |
 | 503    | finishing an upload: 8 uploads are already waiting to be checked (`busy`), or the image store did not answer within 30 seconds (`store_timeout`); the `Retry-After` header says when to try again, and the upload can be finished then |
 
+## Invitations
+
+Only the Owner invites ([How to invite a Member](../how-to/invite-a-member.md)).
+
+- `POST /api/invitations` with `email` and `language` (`cs` or `en`) sends the invitation email and answers 201 with a `CreatedInvitation`: the invitation (`id`, `email`, `language`, `status` `pending`, `createdAt`, `expiresAt`, `acceptedAt`) and:
+  - `link`, the invitation link `<PUBLIC_ORIGIN>/#invite/<token>`, the same as in the email;
+  - `shareText`, the invitation as a chat message in the invitation's language, for the Owner to send from their own WhatsApp. It names the inviter, holds the link on a line of its own, says that the link is valid for 7 days and works once, and names the invited address.
+
+  Only this answer holds the link: the server stores only the token's hash. An address that already belongs to a Member answers 409 `already_member`.
+
+- `GET /api/invitations` lists the invitations, newest first, without their links. `status` is `pending`, `accepted`, `expired` (after 7 days) or `revoked`.
+- `DELETE /api/invitations/{id}` withdraws an open invitation: its link stops working, however it was sent. 404 when the invitation is not open.
+- `POST /api/auth/invitation/check` with `token` (public) only reads. It answers `status`, `language`, `message` (what to do next, in the invitation's language) and `email`, the invited address while the invitation is pending and `null` otherwise. 404 `invitation_unknown` for a token that matches no invitation.
+- `POST /api/auth/invitation/accept` with `token`, `displayName` and `language` (public) is the only call that uses an invitation. It creates a Contributor and signs them in (201). A used, expired or withdrawn invitation answers 410 (`invitation_accepted`, `invitation_expired`, `invitation_revoked`), and an address that has become a Member's meanwhile 409 `already_member`.
+
+The token travels only in the link's fragment, which browsers and link previews do not send, so a `GET` of the link never reaches the server with the token.
+
 ## Finishing uploads
 
 `POST /api/uploads/{id}/complete` (and its Import batch twin) checks uploads one at a time in each API process, images and documents in the same queue, from loading the file to writing its checked copy (and an image's display copy). A document is not decoded, so its turn is short. At most 8 may wait or be checked at once; one more is refused at once with 503 `busy` and `Retry-After: 10`, and goes through when sent again. An upload whose request is closed while it waits is skipped and stays as it was. Sending a `complete` again, or several at once, is safe: once the upload is finished, each answers with it.

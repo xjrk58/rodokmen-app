@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertEmail, digestEmail, invitationEmail, outcomeEmail, signInLinkEmail } from '../src/mail/templates.js';
+import { alertEmail, digestEmail, invitationEmail, invitationShareText, outcomeEmail, signInLinkEmail } from '../src/mail/templates.js';
 
 const link = 'https://rodokmen.example/#invite/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq';
 
@@ -10,6 +10,11 @@ describe('invitation and sign-in emails in Czech and English', () => {
       const email = invitationEmail({ to: 'relative@example.test', language, inviterName: 'Petr Dvořák', link, days: 7 });
       await expect(`Subject: ${email.subject}\n\n${email.text}`).toMatchFileSnapshot(`__snapshots__/emails/invitation.${language}.txt`);
       await expect(email.html).toMatchFileSnapshot(`__snapshots__/emails/invitation.${language}.html`);
+    });
+
+    it(`renders the WhatsApp message of an invitation in ${language}`, async () => {
+      const text = invitationShareText({ email: 'relative@example.test', language, inviterName: 'Petr Dvořák', link, days: 7 });
+      await expect(text).toMatchFileSnapshot(`__snapshots__/emails/invitation-share.${language}.txt`);
     });
 
     it(`renders the sign-in link in ${language}`, async () => {
@@ -27,6 +32,17 @@ describe('invitation and sign-in emails in Czech and English', () => {
       expect(e.text).toContain(link);
       expect(e.html).toContain(link);
       expect(e.text).toMatch(/7 (dní|days)/);
+    }
+    // The WhatsApp message (member-accounts spec, "The WhatsApp message in the invitation's language").
+    const shareCs = invitationShareText({ email: 'x@example.test', language: 'cs', inviterName: 'Petr', link, days: 7 });
+    const shareEn = invitationShareText({ email: 'x@example.test', language: 'en', inviterName: 'Petr', link, days: 7 });
+    expect(shareCs).not.toBe(shareEn);
+    expect(shareCs).toContain('Platí 7 dní a dá se použít jen jednou');
+    for (const text of [shareCs, shareEn]) {
+      expect(text).toContain('Petr');
+      expect(text).toContain(`\n${link}\n`);
+      expect(text).toContain('x@example.test');
+      expect(text).toMatch(/7 (dní|days)/);
     }
     const signIn = signInLinkEmail({ to: 'x@example.test', language: 'cs', displayName: 'Jana', link, minutes: 15 });
     expect(signIn.text).toContain('15 minut');

@@ -1,5 +1,6 @@
-// add-family-view task 1.2 (family-view spec, "Sign-in in the app"), against the mocked API at
-// both viewports. Registering and using a real passkey with a virtual authenticator is in
+// add-family-view task 1.2 (family-view spec, "Sign-in in the app") and add-whatsapp-invitations
+// task 2.2 (family-view spec, "The invited address on the invitation page"), against the mocked
+// API at both viewports. Registering and using a real passkey with a virtual authenticator is in
 // server/test/passkeys.e2e.test.ts, against the real server.
 import { member, mockFamilyApi } from './family-api.js';
 import { P } from './family-data.js';
@@ -29,12 +30,17 @@ test('first visit from an invitation: name and language, then a passkey (or not 
   let signedIn = false;
   /** @type {unknown[]} */
   const accepted = [];
-  await mockFamilyApi(page, {
+  const calls = await mockFamilyApi(page, {
     me: null,
     extra: {
       'GET me': () => (signedIn ? { json: member('contributor') } : { status: 401, json: { code: 'unauthorized' } }),
       'POST auth/invitation/check': () => ({
-        json: { status: 'pending', language: 'en', message: 'The invitation is valid. Choose your name and language, then save a passkey.' },
+        json: {
+          status: 'pending',
+          language: 'en',
+          message: 'The invitation is valid. Choose your name and language, then save a passkey.',
+          email: 'marta@example.test',
+        },
       }),
       'POST auth/invitation/accept': (_m, _u, body) => {
         accepted.push(body);
@@ -47,6 +53,13 @@ test('first visit from an invitation: name and language, then a passkey (or not 
   await expect(page.getByTestId('invite-form')).toBeVisible();
   // The token leaves the address at once.
   await expect(page).toHaveURL(/#invite$/);
+  // The invited address, before accepting.
+  await expect(page.getByTestId('invite-address')).toContainText("Your account's address: marta@example.test");
+  // Opening the link only checked the invitation: a link preview, or a second visit, uses nothing up.
+  await page.goto('about:blank');
+  await page.goto(`./#invite/${TOKEN}`);
+  await expect(page.getByTestId('invite-form')).toBeVisible();
+  expect(calls.filter((c) => c.startsWith('POST auth/invitation/'))).toEqual(['POST auth/invitation/check', 'POST auth/invitation/check']);
   await page.getByTestId('invite-name').fill('Marta');
   await page.getByTestId('invite-language').selectOption('en');
   await page.getByTestId('accept-invitation').click();
@@ -66,6 +79,28 @@ test('an invitation already used says so, and offers nothing else', async ({ pag
   await page.goto(`./#invite/${TOKEN}`);
   await expect(page.getByTestId('sign-in-status')).toHaveText('This invitation has already been used.');
   await expect(page.getByTestId('invite-form')).toHaveCount(0);
+  await expect(page.getByTestId('invite-address')).toHaveCount(0);
+});
+
+test('mistyped address: the page shows the invited address before accepting, and says to ask for a new invitation if it is not theirs', async ({ page }) => {
+  const calls = await mockFamilyApi(page, {
+    me: null,
+    extra: {
+      'POST auth/invitation/check': () => ({
+        json: { status: 'pending', language: 'en', message: 'The invitation is valid.', email: 'marta@exmaple.test' },
+      }),
+    },
+  });
+  await page.goto(`./#invite/${TOKEN}`);
+  const address = page.getByTestId('invite-address');
+  await expect(address).toContainText("Your account's address: marta@exmaple.test");
+  await expect(address).toContainText(
+    'Rodokmen will send sign-in links to this address. If it is not yours, do not accept: ask the Owner for a new invitation.',
+  );
+  // Shown above the form, so it is read before accepting.
+  const [addressBox, acceptBox] = await Promise.all([address.boundingBox(), page.getByTestId('accept-invitation').boundingBox()]);
+  expect(addressBox && acceptBox && addressBox.y < acceptBox.y).toBe(true);
+  expect(calls.some((c) => c.startsWith('POST auth/invitation/accept'))).toBe(false);
 });
 
 test('shared link, signed in with an emailed link: the address opened first opens after signing in', async ({ page }) => {

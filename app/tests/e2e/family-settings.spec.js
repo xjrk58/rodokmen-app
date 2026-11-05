@@ -1,5 +1,6 @@
-// add-family-view task 2.4 (family-view spec, "Owner settings in the app") and default-to-czech
-// task 1.3: every Member's own settings, and the Owner's Member management, against the mocked API.
+// add-family-view task 2.4 (family-view spec, "Owner settings in the app"), default-to-czech
+// task 1.3 and add-whatsapp-invitations task 2.1 (family-view spec, "Sending an invitation through
+// WhatsApp"): every Member's own settings, and the Owner's Member management, against the mocked API.
 import { member, mockFamilyApi } from './family-api.js';
 import { ID, P, summary } from './family-data.js';
 import { expect, test } from './fixtures.js';
@@ -122,12 +123,24 @@ test.describe("Member's setting", () => {
   });
 });
 
-test('inviting a cousin: the Owner enters an email and language, and sees the invitation pending until it is accepted', async ({ page }) => {
+const INVITE_TOKEN = 'invented-whatsapp-token-0123456789abcdef';
+const LINK = `https://rodokmen.example/#invite/${INVITE_TOKEN}`;
+const SHARE_TEXT = [
+  'Hello, Eliska Invented invites you to Rodokmen, our family’s shared family tree.',
+  `Accept the invitation with this link. It is valid for 7 days and works only once, so please do not forward it:\n${LINK}`,
+  'The same invitation came by email to cousin@example.test.',
+].join('\n\n');
+
+/**
+ * The Owner's Settings, with an answer to a new invitation that holds its link and message once.
+ * @param {import('@playwright/test').Page} page
+ */
+async function ownerInviting(page) {
   /** @type {InvitationView[]} */
   const invitations = [];
   /** @type {unknown[]} */
   const sent = [];
-  await mockFamilyApi(page, {
+  const calls = await mockFamilyApi(page, {
     me: member('owner'),
     extra: {
       'GET members': () => ({ json: { items: [{ ...memberView(900, 'Eliska', 'owner') }] } }),
@@ -146,18 +159,162 @@ test('inviting a cousin: the Owner enters an email and language, and sees the in
           acceptedAt: null,
         };
         invitations.unshift(view);
-        return { status: 201, json: view };
+        return { status: 201, json: { ...view, link: LINK, shareText: SHARE_TEXT } };
       },
     },
   });
+  return { invitations, sent, calls };
+}
+
+/**
+ * Invites a cousin in English, as the Owner does in Settings.
+ * @param {import('@playwright/test').Page} page
+ */
+async function inviteCousin(page) {
   await page.goto('./#settings');
   await page.getByTestId('invite-email').fill('cousin@example.test');
   await page.getByTestId('invite-language').selectOption('en');
   await page.getByTestId('send-invitation').click();
-  await expect(page.getByTestId('invite-status')).toHaveText('The invitation is on its way. It is valid for 7 days.');
+  await expect(page.getByTestId('invite-status')).toHaveText('The invitation is on its way by email. It is valid for 7 days.');
+}
+
+/**
+ * Whether a text is kept anywhere on the device: in localStorage, sessionStorage or any IndexedDB store.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} needle
+ */
+const keptOnDevice = (page, needle) =>
+  page.evaluate(async (text) => {
+    /** @template T @param {IDBRequest<T>} r @returns {Promise<T>} */
+    const done = (r) =>
+      new Promise(
+        (resolve, reject) => ((r.onsuccess = () => resolve(r.result)), (r.onerror = () => reject(new Error(r.error?.message ?? 'IndexedDB request failed')))),
+      );
+    const kept = [JSON.stringify(Object.entries(localStorage)), JSON.stringify(Object.entries(sessionStorage))];
+    for (const { name } of await indexedDB.databases()) {
+      if (!name) continue;
+      const db = await done(indexedDB.open(name));
+      for (const store of db.objectStoreNames) kept.push(JSON.stringify(await done(db.transaction(store).objectStore(store).getAll())));
+      db.close();
+    }
+    return kept.some((k) => k.includes(text));
+  }, needle);
+
+/**
+ * Nothing on the screen is wider than the screen.
+ * @param {import('@playwright/test').Page} page
+ */
+const fitsTheScreen = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+
+test('inviting a cousin: the Owner enters an email and language, and sees the invitation pending until it is accepted', async ({ page }) => {
+  const { sent } = await ownerInviting(page);
+  await inviteCousin(page);
   expect(sent).toEqual([{ email: 'cousin@example.test', language: 'en' }]);
   const row = page.locator('[data-testid="invitation"][data-email="cousin@example.test"]');
   await expect(row.getByTestId('invitation-status')).toHaveText('pending');
+});
+
+test.describe('sending an invitation through WhatsApp', () => {
+  test('phone with a share sheet: the share sheet gets the message ready, and closing it is no failure', async ({ page, external }) => {
+    await page.addInitScript(() => {
+      /** @type {ShareData[]} */
+      const shared = [];
+      Object.assign(window, { shared });
+      Object.defineProperty(navigator, 'canShare', { configurable: true, value: (/** @type {ShareData} */ data) => typeof data.text === 'string' });
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async (/** @type {ShareData} */ data) => {
+          shared.push(data);
+          // The first time, the Owner closes the share sheet without choosing an app.
+          if (shared.length === 1) throw new DOMException('Share canceled', 'AbortError');
+        },
+      });
+    });
+    await ownerInviting(page);
+    await inviteCousin(page);
+    const block = page.getByTestId('invitation-share');
+    await expect(block).toBeVisible();
+    await expect(block.getByTestId('invitation-message')).toHaveValue(SHARE_TEXT);
+    await expect(block).toContainText('The link is shown only now. To send it later, withdraw the invitation and invite again.');
+    await expect(block.getByTestId('invitation-whatsapp')).toBeFocused();
+    expect(await fitsTheScreen(page)).toBe(true);
+
+    await block.getByTestId('invitation-whatsapp').click();
+    await expect.poll(() => page.evaluate(() => /** @type {{ shared: ShareData[] }} */ (/** @type {unknown} */ (window)).shared.length)).toBe(1);
+    await expect(block.getByTestId('invitation-share-status')).toHaveText('');
+    await block.getByTestId('invitation-whatsapp').click();
+    // Only the text, with the link inside it: no url or title for a share target to drop.
+    await expect
+      .poll(() => page.evaluate(() => /** @type {{ shared: ShareData[] }} */ (/** @type {unknown} */ (window)).shared))
+      .toEqual([{ text: SHARE_TEXT }, { text: SHARE_TEXT }]);
+    await expect(block.getByTestId('invitation-share-status')).toHaveText('');
+    // No web address with the token was opened: nothing went to wa.me or any other WhatsApp server.
+    expect(external.filter((url) => /whatsapp|wa\.me/i.test(url) || url.includes(INVITE_TOKEN))).toEqual([]);
+  });
+
+  test('computer without a share sheet: no share button, and Copy the message puts it on the clipboard', async ({ page, external }) => {
+    await page.addInitScript(() => {
+      /** @type {string[]} */
+      const copied = [];
+      Object.assign(window, { copied });
+      // As in Firefox on a computer, or Chrome on Linux: no Web Share API.
+      Reflect.deleteProperty(Navigator.prototype, 'share');
+      Reflect.deleteProperty(Navigator.prototype, 'canShare');
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (/** @type {string} */ text) => void copied.push(text) } });
+    });
+    await ownerInviting(page);
+    await inviteCousin(page);
+    const block = page.getByTestId('invitation-share');
+    await expect(block).toContainText('copy the message and paste it into a chat with the relative');
+    await expect(block.getByTestId('invitation-whatsapp')).toHaveCount(0);
+    await expect(block.getByTestId('invitation-copy')).toBeFocused();
+    expect(await fitsTheScreen(page)).toBe(true);
+    await block.getByTestId('invitation-copy').click();
+    await expect(block.getByTestId('invitation-share-status')).toHaveText('Copied. Paste it into WhatsApp.');
+    expect(await page.evaluate(() => /** @type {{ copied: string[] }} */ (/** @type {unknown} */ (window)).copied)).toEqual([SHARE_TEXT]);
+    expect(external.filter((url) => /whatsapp|wa\.me/i.test(url) || url.includes(INVITE_TOKEN))).toEqual([]);
+  });
+
+  test('where copying is refused, the message is selected to copy by hand', async ({ page }) => {
+    await page.addInitScript(() => {
+      Reflect.deleteProperty(Navigator.prototype, 'share');
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: async () => {
+            throw new DOMException('Write permission denied.', 'NotAllowedError');
+          },
+        },
+      });
+    });
+    await ownerInviting(page);
+    await inviteCousin(page);
+    await page.getByTestId('invitation-copy').click();
+    await expect(page.getByTestId('invitation-share-status')).toHaveText('Copying did not work here. The message is selected: copy it by hand.');
+    const message = page.getByTestId('invitation-message');
+    await expect(message).toBeFocused();
+    expect(await message.evaluate((/** @type {HTMLTextAreaElement} */ m) => m.value.slice(m.selectionStart, m.selectionEnd))).toBe(SHARE_TEXT);
+  });
+
+  test('leaving the message: Done forgets the link, which was never kept on the device, and the invitation stays pending', async ({ page }) => {
+    const { calls } = await ownerInviting(page);
+    await inviteCousin(page);
+    await expect(page.getByTestId('invitation-share')).toBeVisible();
+    expect(await keptOnDevice(page, INVITE_TOKEN)).toBe(false);
+    await page.getByTestId('invitation-share-done').click();
+    await expect(page.getByTestId('invitation-share')).toHaveCount(0);
+    await expect(page.getByText(INVITE_TOKEN)).toHaveCount(0);
+    const row = page.locator('[data-testid="invitation"][data-email="cousin@example.test"]');
+    await expect(row.getByTestId('invitation-status')).toHaveText('pending');
+    await expect(row.getByRole('button', { name: 'Withdraw' })).toBeVisible();
+    // Leaving Settings and coming back shows the list only: the link is gone.
+    await page.getByTestId('tabbar-tree').click();
+    await page.getByTestId('tabbar-settings').click();
+    await expect(row.getByTestId('invitation-status')).toHaveText('pending');
+    await expect(page.getByTestId('invitation-share')).toHaveCount(0);
+    expect(await keptOnDevice(page, INVITE_TOKEN)).toBe(false);
+    expect(calls.filter((c) => c.startsWith('POST invitations'))).toHaveLength(1);
+  });
 });
 
 test('the Owner changes a role, disables and enables a Member, and links a Member to their Person', async ({ page }) => {
