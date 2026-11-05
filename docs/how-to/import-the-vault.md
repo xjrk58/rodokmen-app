@@ -65,7 +65,8 @@ pnpm --filter @rodokmen/server cli vault-import --vault ../rodokmen-data --repor
 
 It opens one Import batch named `Vault import <day>`, uploads the scans and documents, and submits the Proposals in
 order: the Vault provenance Source, Places, Parishes, Houses and registers, then each Source note with the Persons
-and facts it supports, then one Proposal per Person for what no Source note covers.
+and facts it supports (in parts when a note is too big for one Proposal, as a long register index is), then
+one Proposal per Person for what no Source note covers.
 
 ## 5. Review and accept the batch
 

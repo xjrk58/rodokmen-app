@@ -34,6 +34,10 @@ The importer SHALL offer a dry run that submits nothing. It reports how many rec
 ### Requirement: One Proposal per Source note
 The importer SHALL submit one Proposal for each Source note. That Proposal holds the Citation and its images, and everything the entry supports: the Persons first seen there, their Names, the Events with their Roles, Places and Houses, and the Family links. Places with their Houses, Parishes, Estates and registers SHALL be submitted first, as their own Proposals.
 
+#### Scenario: A Source note too big for one Proposal
+- **WHEN** the Proposal of a Source note would hold more operations than the API allows in one Proposal
+- **THEN** the importer submits it as consecutive Proposals under the limit, cut between Persons, each with a Citation: the note's Citation is created in the first and attached by a batch reference in the others
+
 #### Scenario: Baptism entry note
 - **WHEN** a Source note is cited by a child's birth and baptism and by both parents' notes
 - **THEN** one Proposal creates the baptism Event with child, father and mother Roles, links the parents' Family, and attaches the Citation with its scan
