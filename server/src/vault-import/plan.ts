@@ -1,4 +1,4 @@
-import type { Confidence } from '@rodokmen/shared';
+import { MAX_PROPOSAL_OPERATIONS, type Confidence } from '@rodokmen/shared';
 import type { Issue, IssueKind } from './reader.js';
 
 /**
@@ -83,6 +83,39 @@ export const CONFIDENCE_OF: Record<string, Confidence> = { confirmed: 'high', pr
 const ORDER: Confidence[] = ['very_low', 'low', 'normal', 'high', 'very_high'];
 /** The lower of two confidences (vault-import spec, "Confidence is carried over": the lowest wins). */
 export const lowest = (a: Confidence, b: Confidence): Confidence => (ORDER.indexOf(a) <= ORDER.indexOf(b) ? a : b);
+
+/**
+ * A Proposal too big for the server, as consecutive parts under the limit (vault-import spec, "One
+ * Proposal per Source note"). A part ends before a Person's first operation where it can, so that
+ * a Person stays with their facts and every part has a Citation. Later parts refer to earlier ones
+ * by batch reference, as any Proposal of the batch can. The files go up with the first part, and
+ * the note counts as imported once its last part is in.
+ */
+export function splitProposal(p: PlannedProposal, limit = MAX_PROPOSAL_OPERATIONS): PlannedProposal[] {
+  if (p.ops.length <= limit) return [p];
+  const parts: PlannedOp[][] = [];
+  let start = 0;
+  while (p.ops.length - start > limit) {
+    let cut = start + limit;
+    while (cut > start && p.ops[cut]!.op.op !== 'createPerson') cut--;
+    if (cut === start) cut = start + limit;
+    parts.push(p.ops.slice(start, cut));
+    start = cut;
+  }
+  parts.push(p.ops.slice(start));
+  return parts.map((ops, i) => {
+    const last = i === parts.length - 1;
+    return {
+      ...p,
+      key: `${p.key}#${i + 1}`,
+      note: `${p.note} (part ${i + 1} of ${parts.length})`,
+      path: last ? p.path : null,
+      hash: last ? p.hash : null,
+      ops,
+      files: i === 0 ? p.files : [],
+    };
+  });
+}
 
 /** Builds the Proposals of a plan in order, and collects what the dry run reports. */
 export class PlanBuilder {

@@ -5,7 +5,7 @@ import { mapLeads } from './map-leads.js';
 import { factsOf, marriagesOf } from './map-people.js';
 import { mapPlaces, type MapContext, type Municipality } from './map-places.js';
 import { citersOf, mapPersons, mapSources } from './map-sources.js';
-import { CONFIDENCE_OF, PlanBuilder, type Plan, type PlannedFile } from './plan.js';
+import { CONFIDENCE_OF, PlanBuilder, splitProposal, type Plan, type PlannedFile } from './plan.js';
 import { dateText, isValidDate, linkOf, textOf, type Vault, type VaultNote } from './reader.js';
 
 /**
@@ -173,5 +173,5 @@ export async function mapVault(vault: Vault, options: MapOptions): Promise<Plan>
   for (const i of b.issues) if (i.kind === 'unreadableFile' || i.kind === 'missingFile') listed.add(i.kind === 'missingFile' ? i.detail : i.path);
   for (const f of [...vault.files].sort()) if (!listed.has(f)) b.report('skippedFile', f, 'no note lists it');
   const comparisons = compare(vault, b, options);
-  return { proposals: b.proposals, leads, issues: b.issues, comparisons, records: Object.fromEntries(b.records) };
+  return { proposals: b.proposals.flatMap((p) => splitProposal(p)), leads, issues: b.issues, comparisons, records: Object.fromEntries(b.records) };
 }

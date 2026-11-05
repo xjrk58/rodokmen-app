@@ -11,6 +11,9 @@ import { ReaderInfo } from './reading.js';
 
 const text = (max: number) => z.string().max(max);
 
+/** The most operations one Proposal may hold. */
+export const MAX_PROPOSAL_OPERATIONS = 300;
+
 export const SubmitProposalBody = z
   .object({
     formatVersion: z.literal(OPERATIONS_VERSION).describe('Version of the operation set the Proposal was written for'),
@@ -20,7 +23,7 @@ export const SubmitProposalBody = z
       .describe('One key per Draft: a retried submit returns the same Proposal'),
     note: text(4000).nullable().default(null).describe("What the finding is, in the author's words"),
     direct: z.boolean().default(false).describe('Editors only: accept at once (a direct change)'),
-    operations: z.array(z.unknown()).min(1).max(300),
+    operations: z.array(z.unknown()).min(1).max(MAX_PROPOSAL_OPERATIONS),
     answersLeads: z
       .array(Id)
       .max(20)

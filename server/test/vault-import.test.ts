@@ -4,6 +4,7 @@ import {
   EventDetail,
   LeadDetail,
   LeadList,
+  MAX_PROPOSAL_OPERATIONS,
   PersonDetail,
   PersonSearchResult,
   PlaceDetail,
@@ -313,6 +314,38 @@ describe('the Vault importer', () => {
     const hits = (await get(`/api/persons?q=${encodeURIComponent('Tomáš Novák')}&limit=50`, PersonSearchResult)).items;
     expect(hits.filter((h) => h.person.displayName === 'Tomáš Novák' && h.person.birth === null)).toHaveLength(1);
     // A third run finds nothing new.
+    expect((await runImport(options())).run.submitted).toBe(0);
+  });
+
+  it('a Source note too big for one Proposal: the parts stay under the limit, cite the note, and go in as one batch', async () => {
+    const people = 80;
+    await writeFile(
+      join(vault, 'sources/n-vrbice-1810-index.md'),
+      `---\ntype: source\nregister: '[[n-vrbice-1784-1820]]'\ndate: 1810-01-01\nframe: 40\n---\n\n## Přepis\n\nAn invented index of baptisms.\n`,
+    );
+    for (let i = 0; i < people; i++)
+      await writeFile(
+        join(vault, `people/pavel-indexovy-${i}.md`),
+        `---\ntype: person\nname:\n  given: Pavel\n  surname: Indexový\nsex: M\nbirth: { date: 1810-01-01, source: "[[n-vrbice-1810-index]]" }\nliving: false\nconfidence: probable\ntags: [line/index]\n---\nInvented.\n`,
+      );
+    const before = await counts();
+    const run = await runImport(options());
+    const batch = run.run.batch!.id;
+    const { items } = await get(`/api/batches/${batch}/proposals?limit=100`, ProposalList);
+    expect(items.length).toBeGreaterThan(1);
+    expect(items[0]!.note).toContain('(part 1 of ');
+    for (const part of items) {
+      expect(part.operations.length).toBeLessThanOrEqual(MAX_PROPOSAL_OPERATIONS);
+      expect(part.operations.some((o) => o.operation.op === 'attachCitation' || o.operation.op === 'createCitation')).toBe(true);
+    }
+    const accept = await asOwner('POST', `/api/batches/${batch}/accept`, { proposals: items.length });
+    expect(accept.statusCode, accept.body).toBe(200);
+    expect((await counts()).persons).toBe(before.persons + people);
+    // The last Person, in the last part, cites the note whose Citation the first part created.
+    const last = await personByVault(`person:pavel-indexovy-${people - 1}`);
+    const citation = last.events.find((e) => e.event.type === 'birth')!.citations[0]!;
+    expect((await get(`/api/citations/${citation.id}`, CitationDetail)).transcription).toContain('An invented index of baptisms');
+    // The note counts as imported: a further run finds nothing new.
     expect((await runImport(options())).run.submitted).toBe(0);
   });
 
