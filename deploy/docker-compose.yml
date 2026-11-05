@@ -226,6 +226,10 @@ services:
       disable: true
     mem_limit: 128m
     memswap_limit: 192m
+    # On SIGTERM, as a deploy replaces the container, the watchdog starts no more checks and exits
+    # once a round still running has finished, after 5 s at most (server/src/ops/watchdog.ts),
+    # before Docker's SIGKILL. It is PID 1, so it must handle the signal itself (#122).
+    stop_grace_period: 10s
     networks: [rodokmen]
 
   # Nightly Backup, started by systemd (systemd/rodokmen-backup.timer):
