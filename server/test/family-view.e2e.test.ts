@@ -332,12 +332,14 @@ describe('the family screens in the app (Chromium, phone viewport, fixture Tree)
       const page = await phoneAs(relative, size);
       await page.goto(`${origin}/#people`);
       await page.getByTestId('people-search').fill(unrelated.surname);
-      // Once the search has answered (the whole list shows until then), every result has that surname in one of its Names.
+      // Once the search has answered (nothing or the whole list shows until then), every result has that surname in one of its Names.
       const fold = (x: string) => x.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
       await expect
-        .poll(async () => (await page.getByTestId('person-result').allTextContents()).every((x) => fold(x).includes(fold(unrelated.surname))))
+        .poll(async () => {
+          const results = await page.getByTestId('person-result').allTextContents();
+          return results.length > 0 && results.every((x) => fold(x).includes(fold(unrelated.surname)));
+        })
         .toBe(true);
-      expect(await page.getByTestId('person-result').count()).toBeGreaterThan(0);
       expect(await page.locator(`[data-testid="person-result"][data-id="${unrelated.id}"]`).count()).toBe(0);
       await page.getByTestId('include-unrelated').check();
       await page.locator(`[data-testid="person-result"][data-id="${unrelated.id}"]`).waitFor();

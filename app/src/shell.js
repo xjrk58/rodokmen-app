@@ -93,6 +93,33 @@ function leadScreen(route, me, cache) {
   return null;
 }
 
+/** @typedef {{ me: Me | null, offline: boolean }} SignedIn offline: `me` comes from the device because the server could not be reached */
+
+/** Forgets what this device keeps of the Member signed in. */
+async function forgetDevice() {
+  await clearCache();
+  forgetFocus();
+}
+
+/**
+ * Who is signed in: the server's answer, else (offline) the Member last signed in on this device.
+ * Asked before any text is shown, since the account's language may decide which language that is (#124).
+ * @returns {Promise<SignedIn>}
+ */
+export async function whoIsSignedIn() {
+  try {
+    return { me: await getMe(), offline: false };
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
+      // Not signed in, or the session has ended (perhaps from another device): nothing stays on this device.
+      if (await readCached('me')) await forgetDevice();
+      return { me: null, offline: false };
+    }
+    const cached = await readCached('me');
+    return { me: cached ? /** @type {Me} */ (cached.data) : null, offline: Boolean(cached) };
+  }
+}
+
 export class Shell {
   /**
    * @param {{ root: HTMLElement, onMember: (me: Me | null) => void, onRoute: (route: Route, screen: string) => void }} o
@@ -112,21 +139,14 @@ export class Shell {
     onLanguageChange(() => this.render());
   }
 
-  /** Who is signed in: the server's answer, else (offline) the Member last signed in on this device. */
-  async start() {
-    try {
-      this.setMe(await getMe());
-    } catch (error) {
-      if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
-        // Not signed in, or the session has ended (perhaps from another device): nothing stays on this device.
-        if (await readCached('me')) await this.forget();
-        this.setMe(null);
-      } else {
-        const cached = await readCached('me');
-        this.offline = Boolean(cached);
-        this.setMe(cached ? /** @type {Me} */ (cached.data) : null);
-      }
-    }
+  /**
+   * Takes who is signed in, and shows the screen the address names.
+   * @param {Promise<SignedIn>} signedIn whoIsSignedIn(), which app.js asks before anything is shown
+   */
+  async start(signedIn) {
+    const { me, offline } = await signedIn;
+    this.offline = offline;
+    this.setMe(me);
     await this.applyAccountLanguage();
     this.update();
   }
@@ -167,17 +187,12 @@ export class Shell {
     this.render();
   }
 
-  async forget() {
-    await clearCache();
-    forgetFocus();
-  }
-
   async signOut() {
     await apiSignOut().catch((error) => {
       // Offline the session cannot be ended on the server; this device forgets it all the same.
       if (!(error instanceof ApiError && error.offline)) throw error;
     });
-    await this.forget();
+    await forgetDevice();
     this.offline = false;
     this.setMe(null);
     this.go('');
