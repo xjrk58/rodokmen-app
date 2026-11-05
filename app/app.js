@@ -1,5 +1,5 @@
-// Rodokmen: entry point. Loads the language, finds out who is signed in (the tree is their
-// home screen, the map everyone else's), loads the reference data, then wires the map, search,
+// Rodokmen: entry point. Finds out who is signed in (the tree is their home screen, the map
+// everyone else's), loads the language, loads the reference data, then wires the map, search,
 // place sheet, layers panel, settings, the family screens and the work panel together.
 
 import { ArchiveIndex } from './src/archive-lookup.js';
