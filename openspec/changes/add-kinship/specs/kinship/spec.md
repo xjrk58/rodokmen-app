@@ -71,7 +71,7 @@ For kinship by birth or adoption, the app SHALL show the line and degree as the 
 - **THEN** the first is of the 4th degree and the second of the 5th, both in the collateral line
 
 ### Requirement: Line and degree of kinship by marriage
-For kinship by marriage, a partner's relative and a relative's partner SHALL take the line and degree of the relative concerned, as the Czech civil code counts affinity (§ 772), shown as kinship by marriage. Partners themselves, step-siblings, the parents of a child's partner, and foster parents and children SHALL be shown with no degree.
+For kinship by marriage, the kin of the reader's partner and the partners of the reader's kin SHALL take the line and degree of the kin concerned, as the Czech civil code counts affinity (§ 772), shown as kinship by marriage. Partners themselves, step-siblings, the parents of a child's partner, and foster parents and children SHALL be shown with no degree.
 
 #### Scenario: Brother-in-law
 - **WHEN** the Person is the brother of the reader's wife

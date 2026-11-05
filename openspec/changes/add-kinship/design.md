@@ -28,12 +28,12 @@ See proposal.md for why. What the change builds on:
 
 ## Decisions
 
-### Computed on the server from a graph kept in memory
+### Computed on the server from a copy of the Family links kept in memory
 
 Kinship is computed on the server by pure functions in `shared/`, from an in-memory copy of the Tree's Family links.
 
-- **The graph** (`server/src/tree/kinship.ts`): the Persons (id, sex), the Families (partners, and whether a marriage Event of both is recorded), the child links (Family, child, link type, the confidences of each parent link) and the partner links (confidences). `familyLinks()` gains the link type and the record ids it already has; one more query reads sex and the marriage flag. Everything is sorted by id when the graph is built, so the search visits links in a fixed order.
-- **Keyed by the state of the Tree**: the id of the newest `log_entry`, which every accepted change writes (a Proposal, a direct change, a merge, an undo, a Family root). A request reads that id with one indexed query. If it changed, the graph is rebuilt once, and requests that arrive meanwhile wait for the same rebuild. Each server slot keeps its own copy.
+- **The link copy** (`server/src/tree/kinship.ts`): the Persons (id, sex), the Families (partners, and whether a marriage Event of both is recorded), the child links (Family, child, link type, the confidences of each parent link) and the partner links (confidences). `familyLinks()` gains the link type and the record ids it already has; one more query reads sex and the marriage flag. Everything is sorted by id when the link copy is built, so the search visits links in a fixed order.
+- **Keyed by the state of the Tree**: the id of the newest `log_entry`, which every accepted change writes (a Proposal, a direct change, a merge, an undo, a Family root). A request reads that id with one indexed query. If it changed, the link copy is rebuilt once, and requests that arrive meanwhile wait for the same rebuild. Each server slot keeps its own copy.
 - **Size**: for 5,000 Persons, about 2,000 Families and 5,000 child links, a few MB in plain arrays, well inside 512 MB.
 
 Alternatives considered:
@@ -83,7 +83,7 @@ Alternatives considered: a bidirectional breadth-first search over all Family li
 `kinshipDegree` and `kinshipLine` in `shared/src/kinship.ts`:
 
 - **By birth** (civil code § 771): the direct line when `up` or `down` is 0, else collateral. The degree is `up + down`, the number of births, one per child link. An adoptive link counts as a birth: Czech law gives adoption the effect of kinship. The docs task cites the section after checking the current text of the civil code.
-- **By marriage** (§ 772): the line and degree of the part by birth, the relative married into.
+- **By marriage** (§ 772): the line and degree of the part by birth, the kin married into.
 - **None** for `self`, `partner`, `stepSibling`, `coParentInLaw` and `foster`, and for a connection.
 
 German law counts degrees the same way (BGB § 1589). English-speaking readers know another count, so the English and German texts say "degree (Czech law)", and the reference page explains it. The degree is shown in every language because the Owner asked for the degree as Czech law has it.
@@ -109,8 +109,8 @@ Czech, with `a` = `up` and `b` = `down`, and the forms for male, female and sex 
 | half | polorodý, polorodá before the term |
 | adoptive | one adoptive link alone: adoptivní otec, matka, syn, dcera; otherwise the term with "(přes osvojení)" |
 | partner | manžel, manželka with a recorded marriage; partner, partnerka without |
-| a partner's relative | parent: tchán, tchyně; sibling: švagr, švagrová; child: nevlastní syn, dcera, dítě; otherwise sešvagřený, sešvagřená |
-| a relative's partner | child's: zeť, snacha; sibling's: švagr, švagrová; parent's: nevlastní otec, matka; grandparent's: nevlastní děd, babička; uncle's or aunt's: přiženěný strýc, přivdaná teta; otherwise sešvagřený, sešvagřená |
+| a partner's kin | parent: tchán, tchyně; sibling: švagr, švagrová; child: nevlastní syn, dcera, dítě; otherwise sešvagřený, sešvagřená |
+| the partner of the reader's kin | child's: zeť, snacha; sibling's: švagr, švagrová; parent's: nevlastní otec, matka; grandparent's: nevlastní děd, babička; uncle's or aunt's: přiženěný strýc, přivdaná teta; otherwise sešvagřený, sešvagřená |
 | step-sibling | nevlastní bratr, sestra, sourozenec |
 | co-parent-in-law | svat, svatka |
 | foster | pěstoun, pěstounka; svěřený syn, svěřená dcera, svěřené dítě |
@@ -147,8 +147,8 @@ Each link on a path carries its confidences. `isPossiblePath` is true when one o
 
 - **Person page**: a section "Jak jste příbuzní" ("How you are related") under the name. It holds the term (with "možná" and the "?" mark when possible), the line and degree ("linie přímá, 3. stupeň"; "švagrovství, linie vedlejší, 2. stupeň"), the common ancestors with links, and "a 2 další cesty" ("and 2 more paths"), which opens the list. The page asks `GET /api/persons/{id}/kinship` alongside the Person and caches the answer as `kinship:<id>`, so it shows offline with the page's "as of".
 - **Search results and the people list**: the term after the life years, one line, cut with an ellipsis, in full in the accessible name.
-- **The tree**: a strip above the tree with the focus Person's term, line and degree, which opens the person page at the section. Each box's accessible name gains the term. A visible line in each box is left to the Owner (Open Questions, 7).
-- **Charts** (once #126 is built): a switch "Příbuzenství ke mně" ("Kinship to me") on the Chart screen, off by default and remembered on the device. With it on, the screen variant's Persons carry the short form and each card shows the term on one line. The Sheet variant's schema has no kinship field, and the SVG builder refuses a model with one, as it refuses an unreduced model.
+- **The tree**: a strip above the tree with the Focus Person's term, line and degree, which opens the person page at the section. Each box's accessible name gains the term. A visible line in each box is left to the Owner (Open Questions, 7).
+- **Charts** (once #126 is built): a switch "Příbuzenství ke mně" ("Kinship to me") on the Chart screen, off by default and remembered on the device. With it on, the app asks for the screen variant with `kinship=1`, its Persons carry the short form, and each card shows the term on one line. The option is new on both Chart routes, is refused with `sheet` (400), and adds nothing for a caller with no own Person. It stays out of the Chart's address, because the switch belongs to the device and the terms to the reader, so a shared link opens the same Chart with each Member's own kinship. `get_chart` never sends it, so an Agent's model stays what `add-tree-charts` says. Offline, a Chart shows kinship only if it was cached with it. The Sheet variant's schema has no kinship field, and the SVG builder refuses a model with one, as it refuses an unreduced model.
 - **The Member's own Person** reads "vy" ("you") in lists and in the tree.
 - **No own Person**: the section shows the prompt, with "Toto jsem já" ("This is me") for a Member, or a link to Settings for the Owner. Lists and the tree show nothing.
 
@@ -178,17 +178,17 @@ Today only the Owner links an account to a Person. The options:
 
 - Ids are compared by code units, never with `localeCompare`. Names never decide anything. Terms come from tables, not from `Intl`.
 - The ESLint block of `add-tree-charts`, which forbids `Math.random`, the clock, `localeCompare`, `toLocale*String` and `Intl.*` in the Chart modules, also covers `shared/src/kinship*.ts` and `shared/src/kinship-terms/`. Whichever change is built first writes the block.
-- A test gives the same graph shuffled and expects the same answer.
+- A test gives the same link copy shuffled and expects the same answer.
 - On small invented trees (seeded, up to 30 Persons), a naive search over every chain must find the same set of paths as `kinshipPaths`. This is the test of completeness, which is not proved.
 - Golden files: `shared/test/golden/kinship/<lang>.txt` lists every combination of `up` and `down` up to 8, each sex, half, adoptive, and each shape by marriage, with its term. Server golden files hold the fixture Tree's answers, with a fixed clock. They change only with `UPDATE_GOLDEN=1`, so a change shows in the PR's diff, and the native reviewer of #113 reads the Slovak and German ones.
 
 ### Privacy
 
-Every Member already sees the whole Tree, Living people included, and Agents read it too. Kinship is derived from Family links that are already shown, so it reveals nothing about a Living person that the reader could not see. An Export keeps a Living person's relationships, so even an Export would reveal nothing new, but no Export or Sheet carries kinship. The protection that is new is the Member's own Person: it is used only for that Member's own requests, and it is never in an answer to anyone else. The request to be linked is seen by the Member and the Owner only. Kinship follows the Living rule wherever Persons are shown or reduced, so #58 (125 years) and #59 change nothing here.
+Every Member already sees the whole Tree, Living people included, and Agents read it too. Kinship is derived from Family links that are already shown, so it reveals nothing about a Living person that the reader could not see. An Export keeps a Living person's relationships, so even an Export would reveal nothing new, but no Export or Sheet carries kinship. The protection that is new is the Member's own Person: it is used only for that Member's own requests, and it is never in an answer to anyone else. The request to be linked is seen by the Member and the Owner only. Kinship follows the Living rule wherever Persons are shown or reduced, so #58, which kept the Living rule at 100 years, and #59 change nothing here.
 
 ### Rules proved with LemmaScript
 
-Each rule is a pure function proved with `lsc check`, naming its requirement with `//@ contract`. Gathering the graph, the cache, the routes and the app are the unverified shell, and tests cover them.
+Each rule is a pure function proved with `lsc check`, naming its requirement with `//@ contract`. Gathering the link copy, the cache, the routes and the app are the unverified shell, and tests cover them.
 
 - **Degree and line** (`kinshipDegree`, `kinshipLine`, `shared/src/kinship.ts`; kinship "Line and degree of kinship by birth" and "Line and degree of kinship by marriage"). Proved: direct exactly when `up` or `down` is 0; the degree is `up + down`, equal to the number of child links on the part by birth; kinship by marriage takes the degree of its part by birth; null exactly for `self`, `partner`, `stepSibling`, `coParentInLaw` and `foster`. The ensures state the scenarios (3, 2, 3, 4 and 5; brother-in-law 2; daughter-in-law 1).
 - **Chains up** (`chainsUp`, `shared/src/kinship.ts`; kinship "Kinship is computed from Family links"). Proved in the manner of `reachFrom`: the start is at distance 0; within 12 generations, every followed parent of a Person at distance d is at distance d + 1 at most; every distance is realised by a chain of followed links, its `order` falling at each step; only birth and adoptive links are followed. The input holds Family links only, so no Role can relate anyone.

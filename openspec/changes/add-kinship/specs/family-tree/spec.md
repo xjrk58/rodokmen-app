@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Kinship in the tree
-For a Member with an own Person, the tree SHALL show the focus Person's kinship to that own Person in a strip above the tree, with its line and degree, leading to the list of paths on the person page. Each box SHALL carry its Person's kinship term in its accessible name. Changing the focus SHALL NOT change the Person the kinship is relative to.
+For a Member with an own Person, the tree SHALL show the Focus Person's kinship to that own Person in a strip above the tree, with its line and degree, leading to the list of paths on the person page. Each box SHALL carry its Person's kinship term in its accessible name. Changing the focus SHALL NOT change the Person the kinship is relative to.
 
 #### Scenario: Moving up a line
 - **WHEN** a Member taps his great-grandmother in the tree
