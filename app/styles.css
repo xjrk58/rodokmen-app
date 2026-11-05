@@ -1610,6 +1610,19 @@ body.signed-in .screen {
   flex-wrap: wrap;
   gap: 8px;
 }
+/* A new invitation's WhatsApp message, shown once under the invite form */
+.invitation-share textarea {
+  margin: 4px 0;
+  font-size: 15px;
+}
+.invitation-share p {
+  margin: 4px 0 8px;
+}
+/* The invited address on the invitation page: long addresses wrap */
+.invite-address p {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
 .confirm {
   background: #fbefed;
   border-color: #e2b3ad;

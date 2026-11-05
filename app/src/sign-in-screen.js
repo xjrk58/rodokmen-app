@@ -3,6 +3,12 @@
 // in with a passkey or asking for an emailed link (#sign-in, or any family address opened
 // without signing in, which then opens once signed in). The tokens are taken out of the
 // address at once, so they stay out of the history and of screenshots.
+//
+// Opening an invitation only checks it; only sending the form accepts it, so a link preview or a
+// second visit uses nothing up (member-accounts spec, "Opening an invitation link uses nothing
+// up"). The page shows the invited address before accepting, since a link that came through a
+// chat does not prove the relative reads it (family-view spec, "The invited address on the
+// invitation page").
 
 import { acceptInvitation, ApiError, checkInvitation, messageOf, requestEmailLink, verifyEmailLink } from './api.js';
 import { language, setLanguage, storedLanguage, t } from './i18n.js';
@@ -86,7 +92,7 @@ function PasskeyStep({ intro, done }) {
 
 /** @param {{ token: string, shell: Shell }} props */
 function Invitation({ token, shell }) {
-  const [check, setCheck] = useState(/** @type {{ status: string, message: string } | null} */ (null));
+  const [check, setCheck] = useState(/** @type {{ status: string, message: string, email?: string | null } | null} */ (null));
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [lang, setLang] = useState(/** @type {'cs' | 'en'} */ (language()));
@@ -119,6 +125,14 @@ function Invitation({ token, shell }) {
   if (step === 'passkey') return html`<${PasskeyStep} intro=${t('signIn.welcome')} done=${() => shell.go(takeAfterSignIn())} />`;
   return html`<form class="sign-in-form" data-testid="invite-form" onSubmit=${(/** @type {Event} */ e) => void accept(e)}>
     <p class="muted">${check.message}</p>
+    ${
+      check.email
+        ? html`<div class="invite-address" data-testid="invite-address">
+            <p><strong>${t('signIn.inviteAddress', { email: check.email })}</strong></p>
+            <p class="muted small">${t('signIn.inviteAddressWhy')}</p>
+          </div>`
+        : null
+    }
     <label class="field"
       ><span>${t('signIn.name')}</span>
       <input
