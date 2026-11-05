@@ -17,3 +17,13 @@ export async function fixtureVault(): Promise<{ path: string; remove: () => Prom
   await rename(join(path, 'persons'), join(path, 'people'));
   return { path, remove: () => rm(path, { recursive: true, force: true }) };
 }
+
+/**
+ * The Citations of the fixture baptism that cites its register note directly instead of an entry
+ * (#133), as [Source title, page, confidence] sorted: the register's at the Person's confidence,
+ * and the Vault provenance Citation with the note's path.
+ */
+export const REGISTER_CITED_BAPTISM = [
+  ['N Vrbice, Kamenná Lhota 1784–1820', null, 'normal'],
+  ['Vault (rodokmen-data)', 'people/viktorie-novakova-1804.md', 'low'],
+];

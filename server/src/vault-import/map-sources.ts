@@ -176,9 +176,33 @@ function residence(ctx: MapContext, p: PlannedProposal, note: VaultNote, r: Reco
 }
 
 /**
+ * A fact or marriage that cites a register note itself, not an entry note of it (#133): the Event
+ * also cites that register's Source, once per register and Person note, at the Person's
+ * confidence. The keys are its own, so a later run adds the Citation to an Event already imported
+ * (design, "Id map and re-runs"); the Vault provenance Citation stays beside it.
+ */
+function registerCitation(ctx: MapContext, p: PlannedProposal, note: VaultNote, source: unknown, eventKey: string): void {
+  const register = ctx.vault.byId.get(linkOf(source) ?? '');
+  if (register?.folder !== 'registers') return;
+  const key = `register-citation:${note.id}:${register.id}`;
+  ctx.b.create(p, key, 'citation', {
+    op: 'createCitation',
+    tempId: '',
+    sourceId: at(`register:${register.id}`),
+    page: null,
+    transcription: (note.frontmatterText.trim() || note.path).slice(0, 20_000),
+    readOn: ctx.readOn,
+    confidence: CONFIDENCE_OF[textOf(note.data.confidence)] ?? 'normal',
+    note: `Vault: ${note.path}`,
+  });
+  ctx.b.link(p, `cite:${eventKey}:${key}`, 'citation link', { op: 'attachCitation', citationId: at(key), eventId: at(eventKey) });
+}
+
+/**
  * One Proposal per Person for what no Source note covers (design, "Proposal order"): the Person
  * when no entry named them, facts and marriages without a Source note, residences and Family
- * links, each citing the Vault provenance Source with the note's path and low confidence.
+ * links, each citing the Vault provenance Source with the note's path and low confidence. A fact
+ * or marriage that cites a register note also cites the register (registerCitation).
  */
 export function mapPersons(ctx: MapContext): void {
   const { b } = ctx;
@@ -196,8 +220,8 @@ export function mapPersons(ctx: MapContext): void {
     if (adoptiveFather || adoptiveMother) childLink(ctx, p, ensureFamily(ctx, p, adoptiveFather, adoptiveMother), person, 'adoptive');
     if (facts.length || marriages.length || residences.length || p.ops.length > before) {
       const citationKey = vaultCitation(ctx, p, note);
-      for (const f of facts) factEvent(ctx, p, note, f, citationKey);
-      for (const m of marriages) marriageEvent(ctx, p, note, m, citationKey, null);
+      for (const f of facts) registerCitation(ctx, p, note, f.source, factEvent(ctx, p, note, f, citationKey));
+      for (const m of marriages) registerCitation(ctx, p, note, m.source, marriageEvent(ctx, p, note, m, citationKey, null));
       residences.forEach((r, i) => residence(ctx, p, note, r, i, citationKey, person));
     }
     if (p.ops.length === before) b.proposals.pop();

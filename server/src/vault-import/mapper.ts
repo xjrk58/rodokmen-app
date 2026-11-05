@@ -80,12 +80,18 @@ function sourceConfidences(people: VaultNote[], vault: Vault): Map<string, strin
   return out;
 }
 
-/** The Family links the Tree will have, with the confidences of their Citations (tree-model spec, "Relation follows the evidence"). */
+/**
+ * The Family links the Tree will have, with the confidences of their Citations (tree-model spec,
+ * "Relation follows the evidence"): a fact citing a register note has its Person's confidence.
+ */
 function familyLinks(people: VaultNote[], vault: Vault): FamilyLinkById[] {
   const confidences = sourceConfidences(people, vault);
-  const confidenceOf = (source: unknown) => confidences.get(linkOf(source) ?? '') ?? 'low';
   const links: FamilyLinkById[] = [];
   for (const n of people) {
+    const confidenceOf = (source: unknown) =>
+      vault.byId.get(linkOf(source) ?? '')?.folder === 'registers'
+        ? (CONFIDENCE_OF[textOf(n.data.confidence)] ?? 'normal')
+        : (confidences.get(linkOf(source) ?? '') ?? 'low');
     const births = factsOf(n).filter((f) => f.kind === 'birth' || f.kind === 'baptism');
     for (const parent of [n.data.father, n.data.mother, n.data.adoptive_father, n.data.adoptive_mother]) {
       const target = vault.byId.get(linkOf(parent) ?? '');

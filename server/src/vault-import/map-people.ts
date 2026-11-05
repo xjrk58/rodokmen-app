@@ -207,9 +207,9 @@ export function parentsOf(ctx: MapContext, p: PlannedProposal, note: VaultNote) 
 
 /**
  * A birth or baptism, death or burial of a Person, with its Roles: the child with father and
- * mother (so that the parents' link has the Event's Citation), or the deceased.
+ * mother (so that the parents' link has the Event's Citation), or the deceased. Returns its key.
  */
-export function factEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, fact: Fact, citationKey: string): void {
+export function factEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, fact: Fact, citationKey: string): string {
   const person = ensurePerson(ctx, p, note);
   const key = `event:${note.id}:${fact.kind}`;
   const { date, description } = eventDate(ctx, note, fact.date, `${fact.kind}.date`);
@@ -231,10 +231,11 @@ export function factEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, 
     role(ctx, p, key, person, 'deceased');
   }
   ctx.b.link(p, `cite:${key}:${citationKey}`, 'citation link', { op: 'attachCitation', citationId: at(citationKey), eventId: at(key) });
+  return key;
 }
 
-/** A marriage, once for both spouses who record it, with partner Roles and their Family. */
-export function marriageEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, m: Marriage, citationKey: string, sourceId: string | null): void {
+/** A marriage, once for both spouses who record it, with partner Roles and their Family. Returns its key. */
+export function marriageEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, m: Marriage, citationKey: string, sourceId: string | null): string {
   const person = ensurePerson(ctx, p, note);
   const spouse = linkOf(m.spouse) ? linkedPerson(ctx, p, note, m.spouse, `marriages.${m.index}.spouse`) : null;
   const pair = [person, spouse ?? `?${note.id}:${m.index}`].sort().join('+');
@@ -255,4 +256,5 @@ export function marriageEvent(ctx: MapContext, p: PlannedProposal, note: VaultNo
     ensureFamily(ctx, p, male ? person : spouse, male ? spouse : person);
   }
   ctx.b.link(p, `cite:${key}:${citationKey}`, 'citation link', { op: 'attachCitation', citationId: at(citationKey), eventId: at(key) });
+  return key;
 }
