@@ -1,0 +1,6 @@
+Dobrý den, Petr Dvořák vás zve do Rodokmenu, společného rodokmenu naší rodiny s mapou míst, odkud naši předkové pocházeli.
+
+Pozvánku přijmete tímto odkazem. Platí 7 dní a dá se použít jen jednou, proto ho prosím nikomu nepřeposílejte:
+https://rodokmen.example/#invite/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+
+Stejná pozvánka vám přišla e-mailem na relative@example.test. Na tuto adresu vám Rodokmen bude posílat odkazy k přihlášení. Pokud není vaše, pozvánku nepřijímejte a požádejte o novou správce Rodokmenu (Petr Dvořák).

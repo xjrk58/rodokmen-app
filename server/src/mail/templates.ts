@@ -77,6 +77,35 @@ export function invitationEmail(e: InvitationEmail): MailMessage {
   });
 }
 
+export interface InvitationShareText {
+  /** The invited address, where the invitation email went. */
+  email: string;
+  language: UiLanguage;
+  inviterName: string;
+  link: string;
+  days: number;
+}
+
+/**
+ * The invitation as a chat message, for the Owner to send from their own WhatsApp
+ * (member-accounts spec, "The WhatsApp message in the invitation's language"). Plain text: the
+ * link stands on its own line, so that the chat app makes it a link.
+ */
+export function invitationShareText(m: InvitationShareText): string {
+  if (m.language === 'cs') {
+    return [
+      `Dobrý den, ${m.inviterName} vás zve do Rodokmenu, společného rodokmenu naší rodiny s mapou míst, odkud naši předkové pocházeli.`,
+      `Pozvánku přijmete tímto odkazem. Platí ${m.days} dní a dá se použít jen jednou, proto ho prosím nikomu nepřeposílejte:\n${m.link}`,
+      `Stejná pozvánka vám přišla e-mailem na ${m.email}. Na tuto adresu vám Rodokmen bude posílat odkazy k přihlášení. Pokud není vaše, pozvánku nepřijímejte a požádejte o novou správce Rodokmenu (${m.inviterName}).`,
+    ].join('\n\n');
+  }
+  return [
+    `Hello, ${m.inviterName} invites you to Rodokmen, our family's shared family tree, with a map of the places our ancestors came from.`,
+    `Accept the invitation with this link. It is valid for ${m.days} days and works only once, so please do not forward it:\n${m.link}`,
+    `The same invitation came by email to ${m.email}. Rodokmen will send sign-in links to that address. If it is not yours, do not accept: ask ${m.inviterName} for a new invitation.`,
+  ].join('\n\n');
+}
+
 export interface SignInLinkEmail {
   to: string;
   language: UiLanguage;
