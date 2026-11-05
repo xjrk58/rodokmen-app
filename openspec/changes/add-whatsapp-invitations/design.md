@@ -74,7 +74,7 @@ The choice is to show the address to the relative, the one person who knows whet
 - The invitation page shows it above the form ("Your account's address: …"), says that Rodokmen sends sign-in links there, and asks the relative not to accept if it is not theirs but to ask the Owner for a new invitation.
 - The WhatsApp message names it too, so the relative can notice before even opening the link.
 
-What it means for later sign-in links: nothing changes. They go to the invited address, as for every Member. If a wrong address got through anyway, the Owner disables the Member, which ends their sessions and unused sign-in links, and invites the right address. No route changes a Member's address today. That is out of scope (proposal.md).
+What it means for later sign-in links: nothing changes. They go to the invited address, as for every Member. If a wrong address got through anyway, the Owner disables the Member, which ends their sessions and unused sign-in links, and invites the right address. No route changes a Member's address today. That is #152, out of scope here.
 
 Rejected alternatives:
 
@@ -94,7 +94,7 @@ Rejected alternatives:
 - The message asks the relative not to forward it. The invitation page shows the invited address, so whoever opens a forwarded link sees that it is meant for someone else.
 - The Owner sees every accepted invitation and the new Member's name in Settings, and disabling a Member ends their sessions at once. New Members are Contributors, so they cannot change the Tree without review.
 
-Telling the Owner by email when an invitation is accepted would shorten the time a wrong acceptance goes unnoticed. That is a separate backlog item.
+Telling the Owner by email when an invitation is accepted would shorten the time a wrong acceptance goes unnoticed. That is #151, a separate backlog item.
 
 ### The Settings block
 

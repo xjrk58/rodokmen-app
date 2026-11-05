@@ -25,7 +25,7 @@ Out of scope:
 - Invitations without an email address, and Members without one (Decision 1).
 - Opening `wa.me` or any other web address with the token in it (design.md, "Who sees the token").
 - Showing a pending invitation's link again later, or issuing a new link for the same invitation. The Owner withdraws it and invites again.
-- Correcting a Member's email address after accepting, telling the Owner when an invitation is accepted, and limiting how long a link lives in a chat after it is used. Each would be its own backlog item.
+- Correcting a Member's email address after accepting (#152), and telling the Owner when an invitation is accepted (#151). Each is its own backlog item.
 - Slovak and German texts, which come with `add-interface-languages` (#113): the message and the new interface texts exist in Czech and English, the interface languages on main.
 
 ## Capabilities
