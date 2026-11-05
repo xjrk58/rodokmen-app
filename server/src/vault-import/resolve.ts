@@ -25,9 +25,6 @@ export interface Resolved {
 
 export type Resolution = { kind: 'submit'; resolved: Resolved } | { kind: 'nothing' } | { kind: 'deferred'; reason: string };
 
-const CITATION_OPS = new Set(['createCitation', 'attachCitation']);
-const FACT_FREE = new Set(['setNotes', 'addLabel', 'removeLabel']);
-
 /** Whether a key was imported before (pending or accepted; a rejected one is offered again). */
 export function imported(state: RunState, key: string): boolean {
   const m = state.map.get(key);
@@ -71,7 +68,8 @@ export function resolveProposal(p: PlannedProposal, state: RunState): Resolution
     entries.push({ key: planned.key, kind: kindOf(planned.key), value: planned.value ?? null, tempId });
   }
   if (missing) return { kind: 'deferred', reason: missing };
-  const facts = ops.filter((o) => !CITATION_OPS.has(o.op) && !FACT_FREE.has(o.op));
-  if (facts.length === 0 && !ops.some((o) => FACT_FREE.has(o.op))) return { kind: 'nothing' };
+  // A Citation alone, attached to nothing, adds nothing. Attached to an Event already in the Tree, it
+  // is new evidence for it: a register Citation a later run adds to an imported baptism (#133).
+  if (ops.every((o) => o.op === 'createCitation')) return { kind: 'nothing' };
   return { kind: 'submit', resolved: { ops, entries } };
 }
