@@ -135,3 +135,12 @@ files.{$DOMAIN} {
 		respond 404
 	}
 }
+
+# www.<domain> only sends the browser on to the one domain (ADR 0007): passkeys belong to $DOMAIN,
+# so nothing is served here. Without this site a browser that adds "www" gets a TLS error. It
+# needs a DNS record like the other two (README.md, step 3), or Caddy keeps asking for its
+# certificate.
+www.{$DOMAIN} {
+	header -Server
+	redir https://{$DOMAIN}{uri} 308
+}

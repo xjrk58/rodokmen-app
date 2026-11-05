@@ -166,8 +166,10 @@ netcup's web interface, it is described generally: the exact menus may differ.
      swapon --show && free -h   # 2.0Gi of swap, and still there after a reboot
      ```
 3. **DNS** for `rodokmen.dev`, wherever its zone is hosted:
-   - `A` records for `rodokmen.dev` and `files.rodokmen.dev` → the VPS's IPv4 address, and `AAAA`
-     records → its IPv6 address if IPv6 works on the server;
+   - `A` records for `rodokmen.dev`, `files.rodokmen.dev` and `www.rodokmen.dev` → the VPS's IPv4
+     address, and `AAAA` records → its IPv6 address if IPv6 works on the server (`files` and `www`
+     may also be `CNAME`s of a name that has them). Caddy only redirects `www` to `rodokmen.dev`:
+     without its record Caddy keeps trying to get a certificate for it;
    - `.dev` is on the browsers' HSTS preload list: they only ever use HTTPS for it, so nothing
      opens until the certificates exist. Caddy obtains both on its first start (the first
      deploy), once DNS points at the VPS and ports 80 and 443 are open. So set DNS first, wait
@@ -218,7 +220,8 @@ netcup's web interface, it is described generally: the exact menus may differ.
     email to the Owner (any EU uptime service).
 11. **Checks to run once live** (they close the open tasks 6.2–7.3 of `add-tree-backend`):
     - `curl -sI http://rodokmen.dev/x` answers `308` with `Location: https://rodokmen.dev/x`,
-      and the same for `files.rodokmen.dev`;
+      and the same for `files.rodokmen.dev`; `curl -sI https://www.rodokmen.dev/x` answers `308`
+      with `Location: https://rodokmen.dev/x`;
       `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` is clean, and
       Caddy's log shows both certificates obtained (renewal is automatic; a staging dry run:
       set `acme_ca https://acme-staging-v02.api.letsencrypt.org/directory` on a test subdomain);
