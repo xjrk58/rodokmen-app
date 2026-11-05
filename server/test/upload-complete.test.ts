@@ -138,6 +138,7 @@ describe('finishing uploads', () => {
     const before = await uploaded(await picture(800, 600));
     const release = storage.hold(`pending/${before}/original`);
     const first = complete(before);
+    await vi.waitFor(() => expect(queuedUploads()).toBe(1));
     const id = await uploaded(await picture(800, 600));
     const waiting = complete(id);
     await vi.waitFor(() => expect(queuedUploads()).toBe(2));
