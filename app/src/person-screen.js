@@ -2,10 +2,12 @@
 // in with their Role, Place or House and date, the Families as partner and as child, and each
 // Citation with its confidence and images. It offers "Show in tree", the life path on the map,
 // "Propose a change" and the record's history, and to the Owner marking a Family root. Its Research
-// leads and suggested leads follow (research-leads spec, "Leads where people look"). It renders
+// leads and suggested leads follow (research-leads spec, "Leads where people look"), and for the
+// Owner and a Living person, erasing them (erasure spec, src/erase-person.js). It renders
 // from the device first and refreshes when online, with "as of" when the copy shown is not fresh.
 
 import { getCitation, getPerson, setFamilyRoot } from './api.js';
+import { ErasePerson } from './erase-person.js';
 import { lifeYears } from './hourglass-layout.js';
 import { has, t } from './i18n.js';
 import { PersonLeads } from './leads-screen.js';
@@ -251,5 +253,15 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     <h2>${t('person.families')}</h2>
     <${Families} person=${person} />
     <${PersonLeads} personId=${person.id} me=${me} cache=${cache} />
+    ${
+      me?.permissions.erase && person.living
+        ? html`<${ErasePerson}
+            personId=${person.id}
+            onErased=${() => {
+              location.hash = '#people';
+            }}
+          />`
+        : null
+    }
   </section>`;
 }
