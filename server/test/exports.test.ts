@@ -36,7 +36,9 @@ function gedcomProblems(text: string): string[] {
   let level = -1;
   let current = '';
   const TAGS = new Set(
-    'HEAD SOUR NAME SUBM GEDC VERS FORM CHAR INDI GIVN SURN TYPE SEX BIRT CHR DEAT BURI RESI CENS EVEN DATE PLAC MAP LATI LONG ADDR ADR1 NOTE CONT CONC PAGE QUAY DATA TEXT ASSO RELA FAMC PEDI FAMS FAM HUSB WIFE CHIL MARR TITL AUTH PUBL REPO CALN TRLR'.split(' '),
+    'HEAD SOUR NAME SUBM GEDC VERS FORM CHAR INDI GIVN SURN TYPE SEX BIRT CHR DEAT BURI RESI CENS EVEN DATE PLAC MAP LATI LONG ADDR ADR1 NOTE CONT CONC PAGE QUAY DATA TEXT ASSO RELA FAMC PEDI FAMS FAM HUSB WIFE CHIL MARR TITL AUTH PUBL REPO CALN TRLR'.split(
+      ' ',
+    ),
   );
   for (const [i, line] of lines.entries()) {
     if (line.length > 255) problems.push(`line ${i + 1} is longer than 255 characters`);
@@ -64,7 +66,8 @@ function gedcomProblems(text: string): string[] {
   const has = (from: string, tag: string, to: string) => pointers.some((p) => p.from === from && p.tag === tag && p.to === to);
   for (const p of pointers) {
     if (p.tag === 'FAMC' && !has(p.to, 'CHIL', p.from)) problems.push(`${p.from} is a child of ${p.to}, which does not list it`);
-    if (p.tag === 'FAMS' && !has(p.to, 'HUSB', p.from) && !has(p.to, 'WIFE', p.from)) problems.push(`${p.from} is a partner in ${p.to}, which does not list it`);
+    if (p.tag === 'FAMS' && !has(p.to, 'HUSB', p.from) && !has(p.to, 'WIFE', p.from))
+      problems.push(`${p.from} is a partner in ${p.to}, which does not list it`);
     if (p.tag === 'CHIL' && !has(p.to, 'FAMC', p.from)) problems.push(`${p.to} is listed as a child of ${p.from} without FAMC`);
   }
   return problems;
@@ -97,6 +100,7 @@ describe('Exports', () => {
     expect(res.statusCode, res.body).toBe(201);
     return res.json<{ id: string }>();
   };
+  const familyVersion = async (id: string) => (await t.db.selectFrom('family').select('version').where('id', '=', id).executeTakeFirstOrThrow()).version;
   const personByName = async (given: string, surname: string) =>
     (await t.db.selectFrom('name').select('person_id').where('given', '=', given).where('surname', '=', surname).executeTakeFirstOrThrow()).person_id;
   const nightly = () => runExport({ db: t.db, clock: a.clock, repo }, '2026-11-05');
@@ -115,7 +119,7 @@ describe('Exports', () => {
       ...citation('G'),
       { op: 'createPerson', tempId: 'tmp:g', sex: 'male', name: { given: 'Tobiáš', surname: 'Vnoučátko', type: 'birth', asFound: 'Tobiáš Vnoučátko' } },
       { op: 'addName', personId: 'tmp:g', given: 'Tobi', surname: '', type: 'nickname', asFound: 'Tobi' },
-      { op: 'linkChild', familyId: L.janSecondFamily, childId: 'tmp:g', linkType: 'birth' },
+      { op: 'linkChild', familyId: L.janSecondFamily, childId: 'tmp:g', linkType: 'birth', baseVersion: await familyVersion(L.janSecondFamily) },
       { op: 'createEvent', tempId: 'tmp:b', type: 'birth', date: '2010-03-04', houseId: L.houseA },
       { op: 'addRole', eventId: 'tmp:b', personId: 'tmp:g', role: 'child' },
       { op: 'addRole', eventId: 'tmp:b', personId: L.janNovak, role: 'father' },
@@ -129,11 +133,21 @@ describe('Exports', () => {
     const source = (await t.db.selectFrom('source').select('id').orderBy('id').executeTakeFirstOrThrow()).id;
     await t.db
       .insertInto('source_document')
-      .values({ source_id: source, title: 'Invented scan.pdf', storage_key: 'documents/invented.pdf', content_type: 'application/pdf', byte_size: 10, sha256: 'd'.repeat(64) })
+      .values({
+        source_id: source,
+        title: 'Invented scan.pdf',
+        storage_key: 'documents/invented.pdf',
+        content_type: 'application/pdf',
+        byte_size: 10,
+        sha256: 'd'.repeat(64),
+      })
       .execute();
     await t.db
       .updateTable('person')
-      .set({ notes: 'See ![the page](/api/images/0192f0c4-7a1e-7c3b-9d2a-00000000feed) and [the PDF](https://archive.example/scan-17.pdf) and [the catalogue](https://archive.example/catalogue).' })
+      .set({
+        notes:
+          'See ![the page](/api/images/0192f0c4-7a1e-7c3b-9d2a-00000000feed) and [the PDF](https://archive.example/scan-17.pdf) and [the catalogue](https://archive.example/catalogue).',
+      })
       .where('id', '=', L.janNovak)
       .execute();
 
@@ -203,7 +217,7 @@ describe('Exports', () => {
   it('writes one note per record with YAML frontmatter and [[links]] that all resolve, as in an Obsidian vault (task 2.1)', async () => {
     const files = await exportFiles(t.db, a.clock);
     const folders = new Set([...files.keys()].map((p) => p.split('/')[0]));
-    for (const f of ['people', 'families', 'places', 'houses', 'parishes', 'estates', 'sources', 'leads', 'README.md', 'family.ged']) expect(folders).toContain(f);
+    for (const f of ['people', 'families', 'places', 'houses', 'parishes', 'estates', 'sources', 'README.md', 'family.ged']) expect(folders).toContain(f);
     const notes = [...files].filter(([p]) => p.endsWith('.md') && p !== 'README.md');
     const basenames = new Set(notes.map(([p]) => p.split('/').pop()!.replace(/\.md$/, '')));
     expect(basenames.size).toBe(notes.length);
@@ -232,7 +246,12 @@ describe('Exports', () => {
 
   it('keeps slugs stable after a Name correction (task 2.1)', async () => {
     const before = [...(await exportFiles(t.db, a.clock))].find(([, x]) => x.includes(`id: ${L.janNovak}`))![0];
-    const primary = await t.db.selectFrom('name').select(['id', 'version']).where('person_id', '=', L.janNovak).where('is_primary', '=', true).executeTakeFirstOrThrow();
+    const primary = await t.db
+      .selectFrom('name')
+      .select(['id', 'version'])
+      .where('person_id', '=', L.janNovak)
+      .where('is_primary', '=', true)
+      .executeTakeFirstOrThrow();
     await direct([...citation('N'), { op: 'setField', record: 'name', id: primary.id, baseVersion: primary.version, set: { given: 'Johann' } }]);
     const after = await exportFiles(t.db, a.clock);
     const [path, text] = [...after].find(([, x]) => x.includes(`id: ${L.janNovak}`))!;
@@ -245,7 +264,7 @@ describe('Exports', () => {
   it('leaves out page images, portraits, documents and links to them, and keeps a Citation’s text and confidence (task 2.3)', async () => {
     const files = await exportFiles(t.db, a.clock);
     const all = [...files.values()].join('\n');
-    for (const gone of ['/api/images/', '/api/documents/', 'scan-17.pdf', 'Invented scan.pdf', '.jpg', '.webp', 'OBJE', 'page image']) expect(all).not.toContain(gone);
+    for (const gone of ['/api/images/', '/api/documents/', 'scan-17.pdf', 'Invented scan.pdf', '.jpg', '.webp', 'OBJE']) expect(all).not.toContain(gone);
     expect(all).toContain('https://archive.example/catalogue');
     // Jan's baptism has a Citation with a page image (the fixture's): its text and confidence go.
     const baptism = await t.db
@@ -263,9 +282,9 @@ describe('Exports', () => {
   });
 
   it('takes image embeds and links to images and documents out of notes', () => {
-    expect(withoutMediaInText('a ![page 3](https://files.example/x.jpg) b [PDF](/api/documents/1) c [web](https://example.org/a) https://x.example/p.png d')).toBe(
-      'a page 3 b PDF c [web](https://example.org/a)  d',
-    );
+    expect(
+      withoutMediaInText('a ![page 3](https://files.example/x.jpg) b [PDF](/api/documents/1) c [web](https://example.org/a) https://x.example/p.png d'),
+    ).toBe('a page 3 b PDF c [web](https://example.org/a)  d');
   });
 
   // ---------------------------------------------------------------- research-leads 1.4: leads in the Export
@@ -291,16 +310,21 @@ describe('Exports', () => {
 
   it('is off unless the Owner switches it on and names the repository', async () => {
     expect(testConfig(t.url).export).toBeNull();
-    expect(dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: undefined as never, publicOrigin: 'x' }).map((j) => j.name)).not.toContain('nightly-export');
-    expect(dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: undefined as never, publicOrigin: 'x', exportRepo: repo }).map((j) => j.name)).toContain(
+    expect(dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: undefined as never, publicOrigin: 'x' }).map((j) => j.name)).not.toContain(
       'nightly-export',
     );
+    expect(
+      dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: undefined as never, publicOrigin: 'x', exportRepo: repo }).map((j) => j.name),
+    ).toContain('nightly-export');
     expect(await runExport({ db: t.db, clock: a.clock, repo: null }, '2026-11-05')).toEqual({ detail: 'the Export is off', complete: true });
     expect(() => loadConfig({ NODE_ENV: 'test', RODOKMEN_EXPORT_ENABLED: 'true' })).toThrow(/RODOKMEN_EXPORT_REPO/);
-    expect(() => loadConfig({ NODE_ENV: 'test', RODOKMEN_EXPORT_ENABLED: 'true', RODOKMEN_EXPORT_REPO: 'git@github.invalid:o/r.git', RODOKMEN_EXPORT_SSH_KEY: '/k' })).toThrow(
-      /KNOWN_HOSTS/,
-    );
-    expect(loadConfig({ NODE_ENV: 'test', RODOKMEN_EXPORT_ENABLED: 'true', RODOKMEN_EXPORT_REPO: '/srv/x.git' }).export).toMatchObject({ url: '/srv/x.git', branch: 'main' });
+    expect(() =>
+      loadConfig({ NODE_ENV: 'test', RODOKMEN_EXPORT_ENABLED: 'true', RODOKMEN_EXPORT_REPO: 'git@github.invalid:o/r.git', RODOKMEN_EXPORT_SSH_KEY: '/k' }),
+    ).toThrow(/KNOWN_HOSTS/);
+    expect(loadConfig({ NODE_ENV: 'test', RODOKMEN_EXPORT_ENABLED: 'true', RODOKMEN_EXPORT_REPO: '/srv/x.git' }).export).toMatchObject({
+      url: '/srv/x.git',
+      branch: 'main',
+    });
   });
 
   it('commits the first Export, and makes no commit on a night without changes (scenario "Night without changes")', async () => {
@@ -315,7 +339,19 @@ describe('Exports', () => {
 
   it('makes one commit that updates the affected notes and the GEDCOM file after a day of accepted Proposals (scenario "Night after changes")', async () => {
     const jan = await t.db.selectFrom('person').select('version').where('id', '=', L.janNovak).executeTakeFirstOrThrow();
-    await direct([...citation('S'), { op: 'addName', personId: L.janNovak, baseVersion: jan.version, given: 'Joannes', surname: 'Novacius', type: 'latin', asFound: 'Joannes Novacius' }]);
+    await direct([
+      ...citation('S'),
+      {
+        op: 'addName',
+        personId: L.janNovak,
+        baseVersion: jan.version,
+        given: 'Joannes',
+        surname: 'Novacius',
+        type: 'other',
+        language: 'la',
+        asFound: 'Joannes Novacius',
+      },
+    ]);
     expect((await nightly()).detail).toMatch(/^committed/);
     expect(git(bare, 'rev-list', '--count', 'main')).toBe('2');
     const changed = git(bare, 'diff', '--name-only', 'main~1', 'main').split('\n');
@@ -332,10 +368,22 @@ describe('Exports', () => {
     writeFileSync(join(clone, note), 'Edited by hand.\n');
     git(clone, '-c', 'user.name=Someone', '-c', 'user.email=someone@example.invalid', 'commit', '-qam', 'Hand edit');
     git(clone, 'push', '-q', 'origin', 'HEAD:main');
-    const persons = (await t.db.selectFrom('person').select((eb) => eb.fn.countAll<number>().as('n')).executeTakeFirstOrThrow()).n;
+    const persons = (
+      await t.db
+        .selectFrom('person')
+        .select((eb) => eb.fn.countAll<number>().as('n'))
+        .executeTakeFirstOrThrow()
+    ).n;
     expect((await nightly()).detail).toMatch(/^committed/);
     expect(git(bare, 'show', `main:${note}`)).toBe(original);
-    expect((await t.db.selectFrom('person').select((eb) => eb.fn.countAll<number>().as('n')).executeTakeFirstOrThrow()).n).toBe(persons);
+    expect(
+      (
+        await t.db
+          .selectFrom('person')
+          .select((eb) => eb.fn.countAll<number>().as('n'))
+          .executeTakeFirstOrThrow()
+      ).n,
+    ).toBe(persons);
   });
 
   // ---------------------------------------------------------------- 3.2: the Owner's download

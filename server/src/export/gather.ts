@@ -334,7 +334,7 @@ export async function gatherExport(db: Db, clock: Clock): Promise<ExportTree> {
         hasBirthYear: false,
         events: [],
         facts: [
-          { key: 'type', value: p.type, detail: '' },
+          { key: 'placeType', value: p.type, detail: '' },
           ...pn.map((n) => ({ key: 'name', value: n.name, detail: [n.language, periodText(n.period_from, n.period_to)].filter(Boolean).join(', ') })),
           ...location(p),
           ...(p.municipality_code ? [{ key: 'municipality', value: p.municipality_name ?? '', detail: p.municipality_code }] : []),
@@ -424,7 +424,7 @@ export async function gatherExport(db: Db, clock: Clock): Promise<ExportTree> {
     // A Family account given by a Living person does not say who gave it (exports spec, "Living people are reduced in every Export").
     const giverLiving = s.account_given_by_person_id !== null && (living.get(s.account_given_by_person_id) ?? true);
     const facts: ExportFact[] = [
-      { key: 'type', value: s.type, detail: '' },
+      { key: 'sourceType', value: s.type, detail: '' },
       { key: 'title', value: s.title, detail: '' },
       ...(s.repository ? [{ key: 'repository', value: s.repository, detail: '' }] : []),
       ...(s.reference ? [{ key: 'reference', value: s.reference, detail: '' }] : []),

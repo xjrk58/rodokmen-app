@@ -47,6 +47,8 @@ describe('what a role may do', () => {
       markFamilyRoots: false,
       acceptBatch: false,
       manageSettings: false,
+      erase: false,
+      downloadExport: false,
     });
     expect(permissionsFor('owner').inviteMembers).toBe(true);
     expect(permissionsFor('owner').markFamilyRoots).toBe(true);
@@ -58,6 +60,12 @@ describe('what a role may do', () => {
     // Only the Owner switches scan reading on (scan-reading spec, "The Owner switches it on").
     expect(permissionsFor('owner').manageSettings).toBe(true);
     expect(permissionsFor('editor').manageSettings).toBe(false);
+    // Only the Owner erases a Living person and downloads the GEDCOM file (erasure and exports specs).
+    for (const action of ['erase', 'downloadExport'] as const) {
+      expect(permissionsFor('owner')[action]).toBe(true);
+      expect(permissionsFor('editor')[action]).toBe(false);
+      expect(permissionsFor('contributor')[action]).toBe(false);
+    }
   });
 });
 
