@@ -1,5 +1,18 @@
 import { IsoDay, WebUrl, type Confidence } from '@rodokmen/shared';
-import { childLink, ensureFamily, ensurePerson, eventDate, eventWhere, factEvent, factsOf, marriageEvent, marriagesOf, parentsOf, role } from './map-people.js';
+import {
+  childLink,
+  citesSourceNote,
+  ensureFamily,
+  ensurePerson,
+  eventDate,
+  eventWhere,
+  factEvent,
+  factsOf,
+  marriageEvent,
+  marriagesOf,
+  parentsOf,
+  role,
+} from './map-people.js';
 import { linked, unmapped, vaultCitation, type MapContext } from './map-places.js';
 import { at, CONFIDENCE_OF, lowest, type PlannedFile, type PlannedProposal } from './plan.js';
 import { dateText, linkOf, textOf, type VaultNote } from './reader.js';
@@ -149,12 +162,6 @@ export function mapSources(ctx: MapContext, citers: Map<string, Citers>): void {
   }
 }
 
-/** Whether a fact or marriage cites a Source note that exists. */
-const sourced = (ctx: MapContext, source: unknown) => {
-  const s = linkOf(source);
-  return s !== null && ctx.vault.byId.get(s)?.folder === 'sources';
-};
-
 /** A residence: the Person lived at a House or Place, in a period. */
 function residence(ctx: MapContext, p: PlannedProposal, note: VaultNote, r: Record<string, unknown>, i: number, citationKey: string, person: string): void {
   const from = dateText(r.from);
@@ -207,8 +214,8 @@ function registerCitation(ctx: MapContext, p: PlannedProposal, note: VaultNote, 
 export function mapPersons(ctx: MapContext): void {
   const { b } = ctx;
   for (const note of ctx.vault.notes.filter((n) => n.folder === 'people')) {
-    const facts = factsOf(note).filter((f) => !sourced(ctx, f.source));
-    const marriages = marriagesOf(note).filter((m) => !sourced(ctx, m.source));
+    const facts = factsOf(note).filter((f) => !citesSourceNote(ctx, f.source));
+    const marriages = marriagesOf(note).filter((m) => !citesSourceNote(ctx, m.source));
     const residences = (Array.isArray(note.data.residences) ? note.data.residences : []).filter(
       (r): r is Record<string, unknown> => !!r && typeof r === 'object',
     );

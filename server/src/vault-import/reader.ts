@@ -46,6 +46,7 @@ export type IssueKind =
   | 'confidenceDisagreement'
   | 'livingDiffers'
   | 'relationDiffers'
+  | 'marriageDiffers'
   | 'skippedFile';
 
 /** Something the dry run reports: what, where, and the field or value concerned. */

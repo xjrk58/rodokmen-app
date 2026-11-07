@@ -179,5 +179,12 @@ export async function mapVault(vault: Vault, options: MapOptions): Promise<Plan>
   for (const i of b.issues) if (i.kind === 'unreadableFile' || i.kind === 'missingFile') listed.add(i.kind === 'missingFile' ? i.detail : i.path);
   for (const f of [...vault.files].sort()) if (!listed.has(f)) b.report('skippedFile', f, 'no note lists it');
   const comparisons = compare(vault, b, options);
-  return { proposals: b.proposals.flatMap((p) => splitProposal(p)), leads, issues: b.issues, comparisons, records: Object.fromEntries(b.records) };
+  return {
+    proposals: b.proposals.flatMap((p) => splitProposal(p)),
+    leads,
+    issues: b.issues,
+    mergedMarriages: b.mergedMarriages,
+    comparisons,
+    records: Object.fromEntries(b.records),
+  };
 }

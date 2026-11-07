@@ -69,10 +69,23 @@ export interface PlannedLead {
   searches: PlannedSearch[];
 }
 
+/**
+ * A marriage both spouses record without a Source note (#149): one Event under `key`. An importer
+ * before #149 gave the second spouse's note an Event of its own, `earlierKey`, so a Tree imported
+ * then holds both; the report lists them.
+ */
+export interface MergedMarriage {
+  key: string;
+  earlierKey: string;
+  /** The two Person notes: the one that creates the Event, then the other. */
+  paths: [string, string];
+}
+
 export interface Plan {
   proposals: PlannedProposal[];
   leads: PlannedLead[];
   issues: Issue[];
+  mergedMarriages: MergedMarriage[];
   /** What the Vault says against what the Tree will compute, for the report. */
   comparisons: { living: number; relation: number };
   /** Records to create, by kind of record. */
@@ -122,6 +135,7 @@ export class PlanBuilder {
   readonly proposals: PlannedProposal[] = [];
   readonly issues: Issue[] = [];
   readonly records = new Map<string, number>();
+  readonly mergedMarriages: MergedMarriage[] = [];
   /** Every key planned so far, with the Proposal that creates it. */
   private readonly created = new Map<string, PlannedProposal>();
 

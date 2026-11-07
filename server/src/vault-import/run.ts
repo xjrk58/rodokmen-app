@@ -274,12 +274,17 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     uploads: 0,
     leads: { created: 0, waiting: 0, unchanged: 0 },
     changed: { updated: 0, notUpdated: [] },
+    duplicateMarriages: [],
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.
   for (const p of plan.proposals) {
     const before = p.path ? state.map.get(`note:${p.path}`) : undefined;
     if (p.path && before && before.noteHash !== p.hash) summary.changed.notUpdated.push(p.path);
   }
+  // Marriages an earlier importer gave two Events (#149): both are in the Tree, and stay there.
+  for (const m of plan.mergedMarriages)
+    if (imported(state, m.key) && imported(state, m.earlierKey))
+      summary.duplicateMarriages.push({ paths: m.paths, keep: state.map.get(m.key)?.recordId ?? null, other: state.map.get(m.earlierKey)?.recordId ?? null });
   const r: Run = { options, client, vault, plan, state, summary, batch: null };
   await proposals(r);
   await leads(r);

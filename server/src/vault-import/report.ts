@@ -20,6 +20,8 @@ export interface RunSummary {
   leads: { created: number; waiting: number; unchanged: number };
   /** Notes changed since the run that imported them. */
   changed: { updated: number; notUpdated: string[] };
+  /** Marriages an earlier importer gave two Events (#149), with the record ids of the Event to keep and of the other (null while pending). */
+  duplicateMarriages: Array<{ paths: [string, string]; keep: string | null; other: string | null }>;
 }
 
 export interface Counts {
@@ -48,6 +50,7 @@ const ISSUE_TITLES: Record<IssueKind, string> = {
   confidenceDisagreement: 'Source notes cited with different confidences (the lowest is used)',
   livingDiffers: 'Persons whose Living status in the Vault differs from the computed one',
   relationDiffers: 'Persons whose relation to the family in the Vault differs from the computed one',
+  marriageDiffers: 'Marriages both spouses record without a Source note, with another date or Place (two Events)',
 };
 
 const ISSUE_ORDER: IssueKind[] = [
@@ -66,6 +69,7 @@ const ISSUE_ORDER: IssueKind[] = [
   'confidenceDisagreement',
   'livingDiffers',
   'relationDiffers',
+  'marriageDiffers',
 ];
 
 /** What an issue is about, without where: the field name, or the kind of value, for counting. */
@@ -78,7 +82,7 @@ export function issueKey(i: Issue): string {
         .replace(/\.\d+\./, '.n.')
         .trim() || 'link'
     );
-  if (i.kind === 'badDate') return i.detail.split(':')[0]!.replace(/\.\d+/, '.n').trim();
+  if (i.kind === 'badDate' || i.kind === 'marriageDiffers') return i.detail.split(':')[0]!.replace(/\.\d+/, '.n').trim();
   if (i.kind === 'unmappedValue') return i.detail.split(':')[0]!.trim();
   if (i.kind === 'missingFile' || i.kind === 'unreadableFile' || i.kind === 'skippedFile') return (i.path.split('.').at(-1) ?? '').toLowerCase();
   if (i.kind === 'livingDiffers' || i.kind === 'relationDiffers' || i.kind === 'confidenceDisagreement') return i.detail;
@@ -144,6 +148,18 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
       `Updated: ${run.changed.updated}. Changed but not updated: ${run.changed.notUpdated.length}.`,
       '',
       ...run.changed.notUpdated.map((k) => `- ${k}`),
+      '',
+    );
+  if (run.duplicateMarriages.length)
+    lines.push(
+      `## Marriage Events imported twice (${run.duplicateMarriages.length})`,
+      '',
+      'An importer before #149 gave a marriage both spouses record without a Source note one Event in each spouse’s',
+      'Proposal. The first Event now carries both notes’ Citations; the other stays, as no Proposal can remove an Event.',
+      '',
+      ...run.duplicateMarriages.map(
+        (d) => `- ${d.paths[0]} and ${d.paths[1]}: keep Event ${d.keep ?? '(pending)'}; the other is Event ${d.other ?? '(pending)'}`,
+      ),
       '',
     );
   for (const kind of ISSUE_ORDER) {

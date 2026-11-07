@@ -135,7 +135,7 @@ describe('the Vault importer', () => {
     dry = await runImport(options({ dryRun: true }));
     expect(await counts()).toEqual(before);
     expect(dry.run.submitted).toBe(dry.plan.proposals.length);
-    expect(dry.counts.records).toMatchObject({ person: 6, place: 2, parish: 1, house: 1, source: 4, image: 2, document: 2, event: 9, family: 2 });
+    expect(dry.counts.records).toMatchObject({ person: 6, place: 2, parish: 1, house: 1, source: 4, image: 2, document: 2, event: 10, family: 2 });
     expect(dry.counts.proposals).toEqual({ vault: 1, place: 2, parish: 1, house: 1, register: 2, source: 3, person: 5 });
     expect(dry.report).toContain('A dry run: nothing was submitted, uploaded or created.');
   });
@@ -245,6 +245,23 @@ describe('the Vault importer', () => {
     expect(links.map((l) => [l.a === tomas ? 'father' : 'mother', isWeak(l)]).sort()).toEqual([
       ['father', false],
       ['mother', false],
+    ]);
+  });
+
+  it('a marriage both spouses record without a Source note: one Event with both partner Roles, citing each note (#149)', async () => {
+    const marriagesOf = async (key: string) => (await personByVault(key)).events.filter((e) => e.event.type === 'marriage');
+    const [marriage, ...more] = await marriagesOf('person:marie-svobodova-1775');
+    expect(more).toEqual([]);
+    expect((await marriagesOf('person:tomas-novak-1770')).map((e) => e.event.id)).toEqual([marriage!.event.id]);
+    expect(marriage!.event).toMatchObject({ date: '1799-11-20' });
+    expect(marriage!.citations.map((c) => [c.sourceTitle, c.page, c.confidence]).sort()).toEqual([
+      ['Vault (rodokmen-data)', 'people/marie-svobodova-1775.md', 'low'],
+      ['Vault (rodokmen-data)', 'people/tomas-novak-1770.md', 'low'],
+    ]);
+    const event = await get(`/api/events/${marriage!.event.id}`, EventDetail);
+    expect(event.roles.map((r) => [r.role, r.person.displayName]).sort()).toEqual([
+      ['partner', 'Marie Nováková'],
+      ['partner', 'Tomáš Novák'],
     ]);
   });
 

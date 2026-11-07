@@ -50,7 +50,9 @@ folder) and never paste it into an issue or a pull request. It lists:
 - every field the Tree has no place for, and every value that could not be mapped, by field;
 - every link to a missing note, every date that is not valid EDTF, every file that is missing or cannot be read;
 - the Persons the Tree will see as Living while the Vault says otherwise (a Person with no dates is Living);
-- the Persons whose relation to the family will differ from their Vault tags.
+- the Persons whose relation to the family will differ from their Vault tags;
+- the marriages both spouses record without a Source note but with different dates or Places, which become two
+  Events.
 
 Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left.
 
@@ -92,6 +94,11 @@ the next run gives each such Person note a small Proposal that adds the register
 the run's batch as in step 5. Those Events then carry a Citation at the Person's confidence, so a probable or
 confirmed parent or partner link no longer makes anyone a Possible relative. An Event whose Proposal is still pending
 waits, listed in the report, until a run after it is accepted.
+
+An import made before #149 gave a marriage both spouses record without a Source note two Events, one from each
+spouse's note. The next run attaches the second note's Citation to the first Event, and the report lists each such
+pair under **Marriage Events imported twice**, with the Event to keep and the other one. The app cannot merge two
+Events yet (#154), so leave the other one for now: it does no harm, as the partner link rests on both.
 
 ## Afterwards
 

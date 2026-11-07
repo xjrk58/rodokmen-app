@@ -49,6 +49,14 @@ Every fact the importer submits SHALL carry a Citation. A fact with its own Sour
 - **WHEN** a Person note has a death date but no `source` for it
 - **THEN** the death Event cites the Vault Source with the page `people/<id>.md` and low confidence
 
+#### Scenario: A marriage both spouses record without a Source note
+- **WHEN** two spouses' Person notes both record their marriage with the same date and Place and no Source note
+- **THEN** one marriage Event has both partner Roles and cites the Vault Source once with each note's path
+
+#### Scenario: Spouses who disagree
+- **WHEN** two spouses' Person notes record their marriage without a Source note and with different dates or Places
+- **THEN** each note gives a marriage Event of its own, and the dry run lists the pair
+
 ### Requirement: A fact citing a register note cites the register
 A fact whose `source` links a register note instead of an entry note SHALL cite that register's Source as well as the Vault Source. There SHALL be one such Citation per register and Person note, with no page, the note path in its note, the Person note's frontmatter as transcription, and the Person's confidence.
 
@@ -101,6 +109,10 @@ The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL sub
 #### Scenario: Register Citation after an earlier import
 - **WHEN** an earlier import gave a baptism that cites a register note only its Citation of the Vault Source, and the Owner runs the importer again
 - **THEN** it submits one Proposal for that Person note, which creates the register Citation and attaches it to the baptism already in the Tree and does nothing else; once it is accepted the parent links that rest on the baptism are strong, and a further run submits nothing
+
+#### Scenario: Marriage imported twice
+- **WHEN** an earlier import gave a marriage both spouses record without a Source note one Event per spouse, and the Owner runs the importer again
+- **THEN** the second spouse's Citation is attached to the first Event, no Event is created or removed, and the report lists both Events for the Owner
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.
