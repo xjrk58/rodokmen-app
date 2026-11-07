@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ExportRepoConfig } from './export/repo.js';
 
 /**
  * The default reader: Claude Opus 5.5, which reads images and answers in a JSON schema
@@ -71,8 +72,39 @@ const Env = z
     /** Watchdog: URL to poll, and the backup status file written by deploy/backup/backup.sh. */
     WATCHDOG_URL: z.string().optional(),
     BACKUP_STATUS_FILE: z.string().optional(),
+
+    /**
+     * The nightly Export to rodokmen-export (exports spec): off unless switched on, because it
+     * sends the Tree out of the server. On, it needs the repository and, for SSH, the deploy key
+     * and a known_hosts file (deploy/README.md, "Nightly Export").
+     */
+    RODOKMEN_EXPORT_ENABLED: bool.default(false),
+    RODOKMEN_EXPORT_REPO: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
+    RODOKMEN_EXPORT_BRANCH: z
+      .string()
+      .trim()
+      .regex(/^[A-Za-z0-9._/-]+$/)
+      .default('main'),
+    RODOKMEN_EXPORT_SSH_KEY: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
+    RODOKMEN_EXPORT_KNOWN_HOSTS: z
+      .string()
+      .trim()
+      .optional()
+      .transform((v) => (v ? v : undefined)),
   })
   .superRefine((env, ctx) => {
+    if (env.RODOKMEN_EXPORT_ENABLED && !env.RODOKMEN_EXPORT_REPO)
+      ctx.addIssue({ code: 'custom', path: ['RODOKMEN_EXPORT_REPO'], message: 'required when RODOKMEN_EXPORT_ENABLED is true: the repository to push to' });
+    if (env.RODOKMEN_EXPORT_ENABLED && env.RODOKMEN_EXPORT_SSH_KEY && !env.RODOKMEN_EXPORT_KNOWN_HOSTS)
+      ctx.addIssue({ code: 'custom', path: ['RODOKMEN_EXPORT_KNOWN_HOSTS'], message: 'required with RODOKMEN_EXPORT_SSH_KEY: the host keys SSH checks' });
     if (env.NODE_ENV !== 'production') return;
     const need = (key: keyof typeof env, why: string) => {
       if (env[key] === undefined || env[key] === '') ctx.addIssue({ code: 'custom', path: [key], message: `required in production: ${why}` });
@@ -126,6 +158,8 @@ export interface Config {
   watchdog: { url: string; backupStatusFile: string | undefined };
   /** Scan reading: the API key (null when not configured), the model and its effort. */
   scanReading: { apiKey: string | null; model: string; effort: 'low' | 'medium' | 'high' | 'xhigh' | 'max' };
+  /** The nightly Export's repository; null while the Export is off (the default). */
+  export: ExportRepoConfig | null;
 }
 
 export function loadConfig(source: Record<string, string | undefined> = process.env): Config {
@@ -178,5 +212,15 @@ export function loadConfig(source: Record<string, string | undefined> = process.
     },
     watchdog: { url: e.WATCHDOG_URL ?? `${publicOrigin}/api/health`, backupStatusFile: e.BACKUP_STATUS_FILE },
     scanReading: { apiKey: e.ANTHROPIC_API_KEY ?? null, model: e.RODOKMEN_SCAN_MODEL, effort: e.RODOKMEN_SCAN_EFFORT },
+    export:
+      e.RODOKMEN_EXPORT_ENABLED && e.RODOKMEN_EXPORT_REPO
+        ? {
+            url: e.RODOKMEN_EXPORT_REPO,
+            branch: e.RODOKMEN_EXPORT_BRANCH,
+            sshKey: e.RODOKMEN_EXPORT_SSH_KEY ?? null,
+            knownHosts: e.RODOKMEN_EXPORT_KNOWN_HOSTS ?? null,
+            author: { name: 'Rodokmen', email: `export@${origin.hostname}` },
+          }
+        : null,
   };
 }

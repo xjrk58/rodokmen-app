@@ -334,6 +334,8 @@ export interface ProposalTable {
   batch_position: Generated<number | null>;
   /** For a Proposal drafted from scan readings: ReaderInfo (the readings, and the values still marked "read by AI"). */
   reader: NullableJson;
+  /** Set when its entry in the log involved an erased Person (erasure spec): it then shows "erased record". */
+  erased_at: Generated<Date | null>;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -370,6 +372,24 @@ export interface LogChangeTable {
   record_id: string;
   before: SnapshotJson;
   after: SnapshotJson;
+  /** For a change erasure turned into a marker: the records that stay which it pointed at. */
+  erased_refs: ColumnType<string[], string[] | undefined, string[]>;
+}
+
+/** An erased Person's id and when (erasure spec, "Restores keep erased people erased"). */
+export interface ErasureTable {
+  person_id: string;
+  erased_at: Timestamp;
+  /** When the Export's history was replaced after this erasure; null until then. */
+  export_replaced_at: Timestamp | null;
+}
+
+/** The slug of an exported record, kept once given (exports design, "Export layout"). */
+export interface ExportSlugTable {
+  record_id: string;
+  kind: 'person' | 'family' | 'place' | 'house' | 'parish' | 'estate' | 'source' | 'lead';
+  slug: string;
+  created_at: CreatedAt;
 }
 
 export interface JobRunTable {
@@ -442,6 +462,8 @@ export interface Database {
   lead_suggestion: LeadSuggestionTable;
   scan_reading_setting: ScanReadingSettingTable;
   reading: ReadingTable;
+  erasure: ErasureTable;
+  export_slug: ExportSlugTable;
 }
 
 export type Proposal = Selectable<ProposalTable>;

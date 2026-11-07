@@ -35,6 +35,8 @@ export const ACTIONS = [
   'markFamilyRoots',
   'acceptBatch',
   'manageSettings',
+  'erase',
+  'downloadExport',
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -51,6 +53,8 @@ export function permissionsFor(role: z.infer<typeof AccountRole>) {
     markFamilyRoots: mayDo(role, 'markFamilyRoots'),
     acceptBatch: mayDo(role, 'acceptBatch'),
     manageSettings: mayDo(role, 'manageSettings'),
+    erase: mayDo(role, 'erase'),
+    downloadExport: mayDo(role, 'downloadExport'),
   };
 }
 
@@ -66,6 +70,8 @@ export const Permissions = z
     markFamilyRoots: z.boolean().describe('Mark and unmark Family roots (the Owner)'),
     acceptBatch: z.boolean().describe('Accept a whole Import batch at once (the Owner)'),
     manageSettings: z.boolean().describe('Change the Tree’s settings, such as scan reading (the Owner)'),
+    erase: z.boolean().describe('Erase a Living person from the Tree, the log and the Exports (the Owner)'),
+    downloadExport: z.boolean().describe('Download the GEDCOM file of the Tree (the Owner)'),
   })
   .meta({ id: 'Permissions' });
 
