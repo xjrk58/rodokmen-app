@@ -31,6 +31,7 @@ import type {
   VaultImportMapTable,
 } from './vault-import-types.js';
 import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
+import type { ErasureTable, ExportSlugTable } from './export-types.js';
 
 export type { UploadTable } from './vault-import-types.js';
 
@@ -334,6 +335,8 @@ export interface ProposalTable {
   batch_position: Generated<number | null>;
   /** For a Proposal drafted from scan readings: ReaderInfo (the readings, and the values still marked "read by AI"). */
   reader: NullableJson;
+  /** Set when its entry in the log involved an erased Person (erasure spec): it then shows "erased record". */
+  erased_at: Generated<Date | null>;
   created_at: CreatedAt;
   updated_at: Generated<Date>;
 }
@@ -370,6 +373,8 @@ export interface LogChangeTable {
   record_id: string;
   before: SnapshotJson;
   after: SnapshotJson;
+  /** For a change erasure turned into a marker: the records that stay which it pointed at. */
+  erased_refs: ColumnType<string[], string[] | undefined, string[]>;
 }
 
 export interface JobRunTable {
@@ -442,6 +447,8 @@ export interface Database {
   lead_suggestion: LeadSuggestionTable;
   scan_reading_setting: ScanReadingSettingTable;
   reading: ReadingTable;
+  erasure: ErasureTable;
+  export_slug: ExportSlugTable;
 }
 
 export type Proposal = Selectable<ProposalTable>;

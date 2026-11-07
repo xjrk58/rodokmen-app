@@ -11,9 +11,10 @@ Rodokmen is a private family Tree for one extended family, together with a publi
 - **The relation to the family**: from the Family roots the Owner marks, every Person is a Relative, a Possible relative or an Unrelated person, worked out from the evidence.
 - **Research leads**: Members and Agents write down the next steps of the research and every search, found or not; a Proposal names the leads it answers, and the gap finder suggests leads for gaps in the Relatives' records, with the register and years to check.
 - **Agents and MCP**: in Settings, the Owner gives an AI assistant its own Agent account and tokens; through the MCP server it searches the Tree, submits Proposals and keeps Research leads, and nothing else.
+- **Exports and erasure**: the Owner downloads the Tree as a GEDCOM file, and can switch on a nightly Export of Markdown notes and GEDCOM to a private repository; in every Export Living people keep only their name, sex, relationships and birth year, and no image leaves the server. At a Living relative's request, the Owner erases them from the Tree, its history and the Export's history, and every restore erases them again.
 - **Hosting**: one EU server, deploys that switch only to a healthy release without failing a request, nightly encrypted Backups with a monthly restore test, and email alerts.
 
-In progress: the one-time import of the Vault ([#17](https://github.com/xjrk58/rodokmen-app/issues/17): the importer and Import batches work, the import itself is still to come) and scan reading ([#18](https://github.com/xjrk58/rodokmen-app/issues/18)). Planned: Exports and erasure ([#19](https://github.com/xjrk58/rodokmen-app/issues/19)), and Country packs beyond the Czech lands ([#67](https://github.com/xjrk58/rodokmen-app/issues/67)).
+In progress: the one-time import of the Vault ([#17](https://github.com/xjrk58/rodokmen-app/issues/17): the importer and Import batches work, the import itself is still to come) and scan reading ([#18](https://github.com/xjrk58/rodokmen-app/issues/18)). Planned: Country packs beyond the Czech lands ([#67](https://github.com/xjrk58/rodokmen-app/issues/67)).
 
 ## This repo is public
 

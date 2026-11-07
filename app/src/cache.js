@@ -123,6 +123,24 @@ export async function writeCached(key, data) {
   }
 }
 
+/**
+ * Whether the server answered that the record does not exist (any more).
+ * @param {unknown} error
+ */
+export const isGone = (error) => error instanceof ApiError && error.status === 404;
+
+/**
+ * Drops one record from the cache.
+ * @param {string} key
+ */
+async function dropCached(key) {
+  try {
+    await run('readwrite', (s) => s.delete(key));
+  } catch (error) {
+    console.warn('The offline copy could not be removed.', error);
+  }
+}
+
 /** Empties the cache (signing out, or a session that ended). */
 export async function clearCache() {
   try {
@@ -151,6 +169,8 @@ export async function loadThrough(key, fetcher, show, options) {
     fresh = await fetcher();
   } catch (error) {
     if (cached && error instanceof ApiError && error.offline) return;
+    // A record the server no longer has (erased, merged away, undone) leaves the device too.
+    if (options.cache && isGone(error)) await dropCached(key);
     throw error;
   }
   if (options.signal?.aborted) return;

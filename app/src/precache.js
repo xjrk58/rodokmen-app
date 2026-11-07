@@ -15,6 +15,7 @@ export const PRECACHE = [
   'src/document-fields.js',
   'src/dom.js',
   'src/drafts.js',
+  'src/erase-person.js',
   'src/family-map.js',
   'src/focus.js',
   'src/gazetteer.js',

@@ -6,3 +6,5 @@ src/leads.ts
 src/gaps.ts
 src/reading.ts
 src/matching.ts
+src/export.ts
+src/erasure.ts
