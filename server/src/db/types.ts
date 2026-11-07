@@ -31,6 +31,7 @@ import type {
   VaultImportMapTable,
 } from './vault-import-types.js';
 import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
+import type { ErasureTable, ExportSlugTable } from './export-types.js';
 
 export type { UploadTable } from './vault-import-types.js';
 
@@ -374,22 +375,6 @@ export interface LogChangeTable {
   after: SnapshotJson;
   /** For a change erasure turned into a marker: the records that stay which it pointed at. */
   erased_refs: ColumnType<string[], string[] | undefined, string[]>;
-}
-
-/** An erased Person's id and when (erasure spec, "Restores keep erased people erased"). */
-export interface ErasureTable {
-  person_id: string;
-  erased_at: Timestamp;
-  /** When the Export's history was replaced after this erasure; null until then. */
-  export_replaced_at: Timestamp | null;
-}
-
-/** The slug of an exported record, kept once given (exports design, "Export layout"). */
-export interface ExportSlugTable {
-  record_id: string;
-  kind: 'person' | 'family' | 'place' | 'house' | 'parish' | 'estate' | 'source' | 'lead';
-  slug: string;
-  created_at: CreatedAt;
 }
 
 export interface JobRunTable {

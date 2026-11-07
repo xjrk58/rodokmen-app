@@ -1,6 +1,7 @@
 import type { ExportCitation, ExportEvent, ExportRecord, LeadView } from '@rodokmen/shared';
 import { stringify } from 'yaml';
-import type { ExportTree, RecordKind } from './gather.js';
+import type { ExportTree } from './gather.js';
+import { isRecordKind, type RecordKind } from './records.js';
 
 /**
  * The Markdown Export (exports spec, "Nightly Export to rodokmen-export"; design, "Export
@@ -281,10 +282,9 @@ export function markdownFiles(tree: ExportTree, slugs: ReadonlyMap<string, strin
   const files = new Map<string, string>([['README.md', README]]);
   for (const r of tree.records) {
     const slug = slugs.get(r.id);
-    if (!slug) continue;
-    const kind = r.kind as RecordKind;
-    const text = kind === 'person' ? personNote(ctx, r) : kind === 'family' ? familyNote(ctx, r) : genericNote(ctx, r);
-    files.set(`${FOLDERS[kind]}/${slug}.md`, text);
+    if (!slug || !isRecordKind(r.kind)) continue;
+    const text = r.kind === 'person' ? personNote(ctx, r) : r.kind === 'family' ? familyNote(ctx, r) : genericNote(ctx, r);
+    files.set(`${FOLDERS[r.kind]}/${slug}.md`, text);
   }
   for (const l of tree.leads) {
     const slug = slugs.get(l.id);
@@ -295,12 +295,19 @@ export function markdownFiles(tree: ExportTree, slugs: ReadonlyMap<string, strin
 
 /** What each record's slug is made from: a Person's name and birth year, a Place's name … */
 export function slugBases(tree: ExportTree): Array<{ kind: RecordKind | 'lead'; id: string; base: string }> {
+  const lead: RecordKind | 'lead' = 'lead';
   return [
-    ...tree.records.map((r) => ({
-      kind: r.kind as RecordKind,
-      id: r.id,
-      base: r.kind === 'person' ? `${tree.titles.get(r.id) ?? ''} ${r.hasBirthYear ? r.birthYear : ''}` : (tree.titles.get(r.id) ?? r.kind),
-    })),
-    ...tree.leads.map((l) => ({ kind: 'lead' as const, id: l.id, base: `lead ${l.question}` })),
+    ...tree.records.flatMap((r) =>
+      isRecordKind(r.kind)
+        ? [
+            {
+              kind: r.kind,
+              id: r.id,
+              base: r.kind === 'person' ? `${tree.titles.get(r.id) ?? ''} ${r.hasBirthYear ? r.birthYear : ''}` : (tree.titles.get(r.id) ?? r.kind),
+            },
+          ]
+        : [],
+    ),
+    ...tree.leads.map((l) => ({ kind: lead, id: l.id, base: `lead ${l.question}` })),
   ];
 }

@@ -241,6 +241,8 @@ netcup's web interface, it is described generally: the exact menus may differ.
       (`docker compose stop api-blue api-green`, then start the active one again), and run the
       backup with a wrong `RESTIC_PASSWORD` (`docker compose --profile jobs run --rm -e
 RESTIC_PASSWORD=wrong backup`); both alerts must arrive by email.
+12. **Nightly Export (when you want it):** it is off until you create the private repository
+    `rodokmen-export`, its deploy key and the settings in `.env` ("Nightly Export" below).
 
 ## Configuration reference
 
@@ -264,6 +266,10 @@ RESTIC_PASSWORD=wrong backup`); both alerts must arrive by email.
 | `ANTHROPIC_API_KEY`                                | optional; the Anthropic API key for scan reading ("Scan reading" below). Without it, it cannot be switched on  |
 | `RODOKMEN_SCAN_MODEL`                              | optional; the model that reads scans (default `claude-opus-5-5`)                                               |
 | `RODOKMEN_SCAN_EFFORT`                             | optional; how much effort the model spends on a reading: `low`, `medium`, `high` (default), `xhigh` or `max`   |
+| `RODOKMEN_EXPORT_ENABLED`                          | optional, default `false`: the nightly Export stays off until this is `true` ("Nightly Export" below)          |
+| `RODOKMEN_EXPORT_REPO`, `RODOKMEN_EXPORT_BRANCH`   | the repository (`git@github.com:<owner>/rodokmen-export.git`) and branch (default `main`) of the Export        |
+| `RODOKMEN_EXPORT_SSH_KEY`                          | the deploy key inside the container: `/run/rodokmen-export/deploy_key`                                         |
+| `RODOKMEN_EXPORT_KNOWN_HOSTS`                      | GitHub's host keys inside the container: `/run/rodokmen-export/known_hosts`; required with the key             |
 
 Set by `docker-compose.yml`, not in `.env`: `NODE_ENV=production`, `HOST`, `PORT=3000`,
 `APP_DIR=/srv/app`, `TRUST_PROXY=true`, `PUBLIC_ORIGIN=https://$DOMAIN`, `DATABASE_URL`, the image
@@ -380,7 +386,8 @@ Every night at 02:30 Prague time (`systemd/rodokmen-backup.timer`) the `backup` 
 - dumps the database (`pg_dump -Fc`) and counts the records of every table in the same snapshot
   (`counts.json`);
 - copies every image out of Garage with rclone and the read-only key, and counts the files;
-- writes both into restic at the second provider (encrypted, deduplicated);
+- writes the list of erasures, ids and dates only (`erasures.tsv`, see Erasure below);
+- writes all of it into restic at the second provider (encrypted, deduplicated);
 - keeps 30 daily and 12 monthly snapshots (`restic forget --keep-daily 30 --keep-monthly 12 --prune`)
   and runs `restic check`;
 - writes `/status/backup.json`, which the watchdog reads.
@@ -396,7 +403,12 @@ Owner, when any of these is off:
 
 - every table's record count, loaded into a throwaway PostGIS container, against `counts.json`;
 - the number of image files against the number the Backup copied;
-- every image of the Tree in the restored database (original and display copy) has its file.
+- every image of the Tree in the restored database (original and display copy) has its file;
+- after that, every Person on the newest list of erasures is erased again (`erasures reapply`),
+  and none may remain.
+
+Run by hand with `snapshot` set to an older snapshot's id, it checks that a Backup taken before an
+erasure comes back without the erased Person.
 
 **Rebuilding after a loss** (new VPS, same steps 2–7 above, with the same `.env` and
 `backup.env`; the backup image brings restic, rclone and the PostgreSQL tools):
@@ -414,8 +426,44 @@ docker compose --env-file .env --profile jobs run --rm --entrypoint bash backup 
 ./scripts/storage-init.sh
 ```
 
-then deploy as usual. (Once erasure exists, `add-exports-and-erasure`, the erasure list is
-reapplied before the API accepts requests.)
+then deploy as usual. Before it answers any request, the API erases again every Person on the
+list of erasures that the restored database still holds. When restoring an older snapshot than
+the latest, bring in the newest list first ([Restore from a Backup](../docs/how-to/restore-from-a-backup.md)).
+
+## Nightly Export
+
+Every night at 04:00 Prague time the API can push a one-way Export of the Tree to the private
+repository `rodokmen-export`: one Markdown note per record and `family.ged`, Living people
+reduced to name, sex, relationships and birth year, no images (exports spec,
+[Exports reference](../docs/reference/exports.md)). It commits only when something changed, and
+after an erasure it replaces the branch's history with a single commit.
+
+It is **off** until the Owner switches it on, because it sends the family's data out of the
+server. The Owner's steps are in [Set up the nightly Export](../docs/how-to/set-up-the-nightly-export.md):
+
+- a private repository `rodokmen-export` on GitHub, empty;
+- a deploy key with write access to that repository alone, made on the VPS in
+  `/opt/rodokmen/export/` (`deploy_key`, owned by uid 1000, mode 600) with GitHub's host keys in
+  `known_hosts`. Docker mounts the folder read-only at `/run/rodokmen-export` in both API slots;
+  `deploy.sh` makes it, and the deploy's `rsync` never touches it;
+- in `.env`: `RODOKMEN_EXPORT_ENABLED=true`, `RODOKMEN_EXPORT_REPO`, `RODOKMEN_EXPORT_SSH_KEY`
+  and `RODOKMEN_EXPORT_KNOWN_HOSTS`, then a deploy.
+
+The API container needs outbound SSH (port 22) to `github.com`. A failed night is retried, as
+every daily job, and its reason is in `job_run` (`job = 'nightly-export'`). `node dist/cli.js
+export run` in the active API slot runs it at once.
+
+GitHub may keep commits that are no longer reachable in its caches for a while after an erasure;
+GitHub Support can purge them if a relative asks.
+
+## Erasure
+
+At a Living relative's request, the Owner erases them in the app (their page, **Erase this
+person**), or with `POST /api/persons/{id}/erase` ([Erase a Living person](../docs/how-to/erase-a-living-person.md)).
+Erasure rewrites the log, the one exception to append-only (ADR 0006). The erased ids are kept,
+without other data, in the table `erasure` and in each Backup's `erasures.tsv`; the API erases
+again whoever a restored database still holds before it answers any request. Backups older than
+an erasure are not rewritten; they age out within 12 months.
 
 ## Agents and the MCP server
 

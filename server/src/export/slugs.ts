@@ -1,6 +1,6 @@
 import { foldForSearch } from '@rodokmen/shared';
 import type { Db } from '../db/db.js';
-import type { ExportSlugTable } from '../db/types.js';
+import type { ExportSlugTable } from '../db/export-types.js';
 
 /**
  * Slugs of exported records (exports design, "Export layout"): made once from the record's name,

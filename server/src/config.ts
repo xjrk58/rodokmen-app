@@ -212,15 +212,18 @@ export function loadConfig(source: Record<string, string | undefined> = process.
     },
     watchdog: { url: e.WATCHDOG_URL ?? `${publicOrigin}/api/health`, backupStatusFile: e.BACKUP_STATUS_FILE },
     scanReading: { apiKey: e.ANTHROPIC_API_KEY ?? null, model: e.RODOKMEN_SCAN_MODEL, effort: e.RODOKMEN_SCAN_EFFORT },
-    export:
-      e.RODOKMEN_EXPORT_ENABLED && e.RODOKMEN_EXPORT_REPO
-        ? {
-            url: e.RODOKMEN_EXPORT_REPO,
-            branch: e.RODOKMEN_EXPORT_BRANCH,
-            sshKey: e.RODOKMEN_EXPORT_SSH_KEY ?? null,
-            knownHosts: e.RODOKMEN_EXPORT_KNOWN_HOSTS ?? null,
-            author: { name: 'Rodokmen', email: `export@${origin.hostname}` },
-          }
-        : null,
+    export: exportConfig(e, origin.hostname),
+  };
+}
+
+/** The nightly Export's repository, or null while it is off (the default). */
+function exportConfig(e: z.infer<typeof Env>, hostname: string): ExportRepoConfig | null {
+  if (!e.RODOKMEN_EXPORT_ENABLED || !e.RODOKMEN_EXPORT_REPO) return null;
+  return {
+    url: e.RODOKMEN_EXPORT_REPO,
+    branch: e.RODOKMEN_EXPORT_BRANCH,
+    sshKey: e.RODOKMEN_EXPORT_SSH_KEY ?? null,
+    knownHosts: e.RODOKMEN_EXPORT_KNOWN_HOSTS ?? null,
+    author: { name: 'Rodokmen', email: `export@${hostname}` },
   };
 }

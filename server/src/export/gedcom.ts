@@ -98,12 +98,9 @@ interface Places {
   house(id: string): { placeId: string; number: string } | undefined;
 }
 
-function eventDetail(e: ExportEvent, places: Places): string[] {
+/** Where an Event happened: its Place (or its House's), with the coordinates, and the House number as an address. */
+function whereLines(e: ExportEvent, places: Places): string[] {
   const out: string[] = [];
-  if (e.type === 'other' && e.typeDetail) out.push(...lines(2, 'TYPE', e.typeDetail));
-  const date = e.date ? gedcomDate(e.date) : null;
-  if (date) out.push(`2 DATE ${date}`);
-  else if (e.date) out.push(...lines(2, 'NOTE', `Date: ${e.date}`));
   const house = e.houseId ? places.house(e.houseId) : undefined;
   const placeId = e.placeId || house?.placeId;
   const placeName = placeId ? places.name(placeId) : undefined;
@@ -113,6 +110,16 @@ function eventDetail(e: ExportEvent, places: Places): string[] {
     if (loc) out.push('3 MAP', `4 LATI ${loc.lat >= 0 ? 'N' : 'S'}${Math.abs(loc.lat)}`, `4 LONG ${loc.lon >= 0 ? 'E' : 'W'}${Math.abs(loc.lon)}`);
   }
   if (house?.number) out.push(...lines(2, 'ADDR', `čp. ${house.number}${placeName ? `, ${placeName}` : ''}`), ...lines(3, 'ADR1', `čp. ${house.number}`));
+  return out;
+}
+
+function eventDetail(e: ExportEvent, places: Places): string[] {
+  const out: string[] = [];
+  if (e.type === 'other' && e.typeDetail) out.push(...lines(2, 'TYPE', e.typeDetail));
+  const date = e.date ? gedcomDate(e.date) : null;
+  if (date) out.push(`2 DATE ${date}`);
+  else if (e.date) out.push(...lines(2, 'NOTE', `Date: ${e.date}`));
+  out.push(...whereLines(e, places));
   if (e.description) out.push(...lines(2, 'NOTE', e.description));
   if (e.notes) out.push(...lines(2, 'NOTE', e.notes));
   for (const c of e.citations) out.push(...citation(2, c));
@@ -134,37 +141,48 @@ function individualTag(e: ExportEvent, role: string): string | null {
 const NAME_TYPES: Record<string, string> = { birth: 'birth', married: 'married', nickname: 'aka', latin: 'aka', german: 'aka', other: 'aka' };
 const PEDI: Record<string, string> = { birth: 'birth', adoptive: 'adopted', foster: 'foster' };
 
-function individual(r: ExportRecord, places: Places, exported: ReadonlySet<string>): string[] {
-  const out = [`0 ${xref('I', r.id)} INDI`];
-  r.names.forEach((n, i) => {
-    out.push(...lines(1, 'NAME', `${n.given} /${n.surname.replace(/\//g, ' ')}/`.trim()));
-    if (n.given) out.push(...lines(2, 'GIVN', n.given));
-    if (n.surname) out.push(...lines(2, 'SURN', n.surname));
-    if (i > 0 && NAME_TYPES[n.type]) out.push(`2 TYPE ${NAME_TYPES[n.type]}`);
-    for (const c of n.citations) out.push(...citation(2, c));
-  });
-  out.push(`1 SEX ${r.sex === 'male' ? 'M' : r.sex === 'female' ? 'F' : 'U'}`);
-  if (r.living) {
-    // The reduction keeps the birth year and nothing else of the birth.
-    if (r.hasBirthYear) out.push('1 BIRT', `2 DATE ${r.birthYear}`);
-  } else {
-    for (const e of r.events) {
-      const role = e.roles.find((x) => x.personId === r.id)?.role ?? '';
-      const tag = individualTag(e, role);
-      if (tag === null) continue;
-      out.push(`1 ${tag}`, ...eventDetail(e, places));
-      // A residence, census or other Event can name several people: say which part this one had.
-      if ((tag === 'RESI' || tag === 'CENS' || tag === 'EVEN') && role && role !== 'other') out.push(...lines(2, 'NOTE', `Role: ${role}`));
-    }
-    // Godparents, witnesses and priests of their baptism, birth, death or burial.
-    for (const e of r.events) {
-      const principal = e.roles.some((x) => x.personId === r.id && individualTag(e, x.role) !== null && (x.role === 'child' || x.role === 'deceased'));
-      if (!principal) continue;
-      for (const a of e.roles)
-        if ((a.role === 'godparent' || a.role === 'witness' || a.role === 'priest') && a.personId !== r.id && exported.has(a.personId))
-          out.push(`1 ASSO ${xref('I', a.personId)}`, ...lines(2, 'RELA', `${a.role} (${e.type})`));
-    }
+function nameLines(r: ExportRecord): string[] {
+  return r.names.flatMap((n, i) => [
+    ...lines(1, 'NAME', `${n.given} /${n.surname.replace(/\//g, ' ')}/`.trim()),
+    ...(n.given ? lines(2, 'GIVN', n.given) : []),
+    ...(n.surname ? lines(2, 'SURN', n.surname) : []),
+    ...(i > 0 && NAME_TYPES[n.type] ? [`2 TYPE ${NAME_TYPES[n.type]}`] : []),
+    ...n.citations.flatMap((c) => citation(2, c)),
+  ]);
+}
+
+/** The Events of a Person who is not Living, under the tag their Role gives them. */
+function eventLines(r: ExportRecord, places: Places): string[] {
+  const out: string[] = [];
+  for (const e of r.events) {
+    const role = e.roles.find((x) => x.personId === r.id)?.role ?? '';
+    const tag = individualTag(e, role);
+    if (tag === null) continue;
+    out.push(`1 ${tag}`, ...eventDetail(e, places));
+    // A residence, census or other Event can name several people: say which part this one had.
+    if ((tag === 'RESI' || tag === 'CENS' || tag === 'EVEN') && role && role !== 'other') out.push(...lines(2, 'NOTE', `Role: ${role}`));
   }
+  return out;
+}
+
+/** Godparents, witnesses and priests of their baptism, birth, death or burial. */
+function associationLines(r: ExportRecord, exported: ReadonlySet<string>): string[] {
+  const out: string[] = [];
+  for (const e of r.events) {
+    const principal = e.roles.some((x) => x.personId === r.id && (x.role === 'child' || x.role === 'deceased') && individualTag(e, x.role) !== null);
+    if (!principal) continue;
+    for (const a of e.roles)
+      if ((a.role === 'godparent' || a.role === 'witness' || a.role === 'priest') && a.personId !== r.id && exported.has(a.personId))
+        out.push(`1 ASSO ${xref('I', a.personId)}`, ...lines(2, 'RELA', `${a.role} (${e.type})`));
+  }
+  return out;
+}
+
+function individual(r: ExportRecord, places: Places, exported: ReadonlySet<string>): string[] {
+  const out = [`0 ${xref('I', r.id)} INDI`, ...nameLines(r), `1 SEX ${r.sex === 'male' ? 'M' : r.sex === 'female' ? 'F' : 'U'}`];
+  // A Living person: the reduction keeps the birth year and nothing else of the birth.
+  if (r.living && r.hasBirthYear) out.push('1 BIRT', `2 DATE ${r.birthYear}`);
+  if (!r.living) out.push(...eventLines(r, places), ...associationLines(r, exported));
   for (const rel of r.relations) {
     if (rel.rel === 'childOf') {
       out.push(`1 FAMC ${xref('F', rel.target)}`);

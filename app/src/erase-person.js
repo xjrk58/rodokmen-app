@@ -11,9 +11,24 @@ import { html, useEffect, useState } from './ui.js';
 /** @typedef {import('./types.js').ErasurePreview} ErasurePreview */
 
 /**
+ * The erase section of a person page: only for the Owner, and only when the Person is Living.
+ * After the erasure it goes to the People list.
+ * @param {{ me: import('./types.js').Me | null, person: import('./types.js').PersonDetail }} props
+ */
+export function EraseSection({ me, person }) {
+  if (!me?.permissions.erase || !person.living) return null;
+  return html`<${ErasePerson}
+    personId=${person.id}
+    onErased=${() => {
+      location.hash = '#people';
+    }}
+  />`;
+}
+
+/**
  * @param {{ personId: string, onErased: () => void }} props
  */
-export function ErasePerson({ personId, onErased }) {
+function ErasePerson({ personId, onErased }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState(/** @type {ErasurePreview | null} */ (null));
   const [typed, setTyped] = useState('');

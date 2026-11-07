@@ -2,7 +2,8 @@ import { ApiError, EraseBody, ErasurePreview, ErasureResult, IdParams } from '@r
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
-import { erasePerson, erasurePreview, type ErasureDeps } from '../erasure/service.js';
+import { erasurePreview } from '../erasure/preview.js';
+import { erasePerson, type ErasureDeps } from '../erasure/service.js';
 import { gedcomOfTree } from '../export/run.js';
 
 const ownerOnly = { 401: ApiError, 403: ApiError };

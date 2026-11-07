@@ -113,7 +113,10 @@ export function isMediaLink(link: ExportLink): boolean {
   return link.kind === 'image' || link.kind === 'document';
 }
 
-/** Whether any of the links points at an image or a document. */
+/**
+ * Whether any of the links points at an image or a document.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function hasMedia(links: readonly ExportLink[]): boolean {
   //@ verify
   return links.some((link) => isMediaLink(link));

@@ -44,12 +44,25 @@ You need `/opt/rodokmen/.env` and `/opt/rodokmen/backup.env` as they were, from 
    docker compose --env-file .env --profile jobs run --rm --entrypoint restic backup snapshots --host rodokmen --tag nightly
    ```
 
+   If you restored an older snapshot, bring in the newest list of erasures, so that the people erased since are erased again. It holds ids and dates only:
+
+   ```sh
+   docker compose --env-file .env --profile jobs run --rm --entrypoint bash backup -c '
+     restic dump --host rodokmen --tag nightly latest /work/db/erasures.tsv > /tmp/erasures.tsv &&
+     psql -v ON_ERROR_STOP=1 -d rodokmen -c "create table if not exists erasure (person_id uuid primary key, erased_at timestamptz not null, export_replaced_at timestamptz)" \
+       -c "create temp table newest (person_id uuid, erased_at timestamptz)" \
+       -c "\copy newest from /tmp/erasures.tsv" \
+       -c "insert into erasure (person_id, erased_at) select person_id, erased_at from newest on conflict do nothing"'
+   ```
+
 6. Take the write access away from the Backup's key again: `./scripts/storage-init.sh`.
-7. Deploy as usual: run the `deploy` workflow in GitHub Actions. It starts Caddy and the API, and the API migrates the restored database if the release is newer than the Backup.
-8. Check: `https://<domain>/api/health` answers `{"status":"ok","database":"ok",…}`, you can sign in with your passkey, and a page image opens on a Person you know has one.
+7. Deploy as usual: run the `deploy` workflow in GitHub Actions. It starts Caddy and the API. The API migrates the restored database if the release is newer than the Backup, and erases again every Person on the list of erasures before it answers any request.
+8. Check: `https://<domain>/api/health` answers `{"status":"ok","database":"ok",…}`, you can sign in with your passkey, and a page image opens on a Person you know has one. The API's log says `erased again Persons a restored Backup still held` when it erased anyone again.
 
 ## Check that the latest Backup restores
 
-The `backup-restore-test` workflow does this every month. To run it now: in GitHub, open **Actions**, then **backup-restore-test**, then **Run workflow**. It restores the latest snapshot into a throwaway database and compares every table's record count and the number of image files with what production had when the Backup was taken. If anything differs, the run fails and the Owner gets an email.
+The `backup-restore-test` workflow does this every month. To run it now: in GitHub, open **Actions**, then **backup-restore-test**, then **Run workflow**. It restores the latest snapshot into a throwaway database and compares every table's record count and the number of image files with what production had when the Backup was taken. Then it erases again every Person on the newest list of erasures that the restore still holds, and checks that none remains. If anything differs, the run fails and the Owner gets an email.
 
 To see it fail on purpose, run it with **empty_table** set to a table such as `person`, or with **remove_image** ticked.
+
+To check that an older Backup, taken before an erasure, comes back without the erased Person, run it with **snapshot** set to that snapshot's id.

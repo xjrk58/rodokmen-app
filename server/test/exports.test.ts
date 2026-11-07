@@ -2,22 +2,27 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { type OperationInput } from '@rodokmen/shared';
+import type { OperationInput } from '@rodokmen/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { z } from 'zod';
 import { loadConfig } from '../src/config.js';
 import type { Account } from '../src/db/types.js';
-import { gatherExport, withoutMediaInText, yearOf } from '../src/export/gather.js';
+import { gatherExport } from '../src/export/gather.js';
+import { withoutMediaInText, yearOf } from '../src/export/records.js';
 import { gedcomDate, gedcomFile } from '../src/export/gedcom.js';
 import type { ExportRepoConfig } from '../src/export/repo.js';
 import { exportFiles, runExport } from '../src/export/run.js';
 import { generateFixture } from '../src/fixture/generate.js';
 import { dailyJobs } from '../src/jobs/daily.js';
+import { MemoryImageStorage } from '../src/storage/images.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { createMember, ensureOwner, makeApp, signIn, testConfig, type TestApp } from './helpers.js';
 import { citation, newKey } from './proposal-testbed.js';
 
 const L = generateFixture().landmarks;
+/** What every note's frontmatter has: the record's id in the Tree, and its type. */
+const Frontmatter = z.object({ id: z.uuid(), type: z.string().min(1) });
 
 /** Runs git in a folder and returns its output. */
 const git = (dir: string, ...args: string[]) =>
@@ -29,36 +34,8 @@ const git = (dir: string, ...args: string[]) =>
  * that Family links agree both ways. Returns the problems found.
  */
 function gedcomProblems(text: string): string[] {
-  const problems: string[] = [];
   const lines = text.split('\n').filter((l) => l !== '');
-  const defined = new Map<string, string>();
-  const pointers: Array<{ from: string; tag: string; to: string }> = [];
-  let level = -1;
-  let current = '';
-  const TAGS = new Set(
-    'HEAD SOUR NAME SUBM GEDC VERS FORM CHAR INDI GIVN SURN TYPE SEX BIRT CHR DEAT BURI RESI CENS EVEN DATE PLAC MAP LATI LONG ADDR ADR1 NOTE CONT CONC PAGE QUAY DATA TEXT ASSO RELA FAMC PEDI FAMS FAM HUSB WIFE CHIL MARR TITL AUTH PUBL REPO CALN TRLR'.split(
-      ' ',
-    ),
-  );
-  for (const [i, line] of lines.entries()) {
-    if (line.length > 255) problems.push(`line ${i + 1} is longer than 255 characters`);
-    const m = /^(\d+) (?:(@[A-Z0-9]+@) )?([A-Z0-9_]+)(?: (.*))?$/.exec(line);
-    if (!m) {
-      problems.push(`line ${i + 1} is not a GEDCOM line: ${line}`);
-      continue;
-    }
-    const [, lv, id, tag, value] = m;
-    const n = Number(lv);
-    if (n > level + 1) problems.push(`line ${i + 1} jumps from level ${level} to ${n}`);
-    level = n;
-    if (!TAGS.has(tag!)) problems.push(`line ${i + 1}: tag ${tag} is not one this writer should use`);
-    if (n === 0) {
-      current = id ?? tag!;
-      if (id) defined.set(id, tag!);
-    }
-    if (value && /^@[A-Z0-9]+@$/.test(value)) pointers.push({ from: current, tag: tag!, to: value });
-    if (value && /(^|[^@])@([^@]|$)/.test(value) && !/^@[A-Z0-9]+@$/.test(value)) problems.push(`line ${i + 1}: an @ in a value is not doubled`);
-  }
+  const { problems, defined, pointers } = lineProblems(lines);
   if (lines[0] !== '0 HEAD') problems.push('the file does not start with 0 HEAD');
   if (lines[lines.length - 1] !== '0 TRLR') problems.push('the file does not end with 0 TRLR');
   if (!lines.includes('2 VERS 5.5.1') || !lines.includes('1 CHAR UTF-8')) problems.push('the header does not say GEDCOM 5.5.1 in UTF-8');
@@ -71,6 +48,40 @@ function gedcomProblems(text: string): string[] {
     if (p.tag === 'CHIL' && !has(p.to, 'FAMC', p.from)) problems.push(`${p.to} is listed as a child of ${p.from} without FAMC`);
   }
   return problems;
+}
+
+const TAGS = new Set(
+  'HEAD SOUR NAME SUBM GEDC VERS FORM CHAR INDI GIVN SURN TYPE SEX BIRT CHR DEAT BURI RESI CENS EVEN DATE PLAC MAP LATI LONG ADDR ADR1 NOTE CONT CONC PAGE QUAY DATA TEXT ASSO RELA FAMC PEDI FAMS FAM HUSB WIFE CHIL MARR TITL AUTH PUBL REPO CALN TRLR'.split(
+    ' ',
+  ),
+);
+
+/** Line by line: syntax, length, levels, tags and doubled @; and the records defined and the pointers between them. */
+function lineProblems(lines: readonly string[]) {
+  const problems: string[] = [];
+  const defined = new Set<string>();
+  const pointers: Array<{ from: string; tag: string; to: string }> = [];
+  let level = -1;
+  let current = '';
+  for (const [i, line] of lines.entries()) {
+    if (line.length > 255) problems.push(`line ${i + 1} is longer than 255 characters`);
+    const m = /^(\d+) (?:(@[A-Z0-9]+@) )?([A-Z0-9_]+)(?: (.*))?$/.exec(line);
+    if (!m) {
+      problems.push(`line ${i + 1} is not a GEDCOM line: ${line}`);
+      continue;
+    }
+    const [, lv = '', id, tag = '', value = ''] = m;
+    const n = Number(lv);
+    if (n > level + 1) problems.push(`line ${i + 1} jumps from level ${level} to ${n}`);
+    level = n;
+    if (!TAGS.has(tag)) problems.push(`line ${i + 1}: tag ${tag} is not one this writer should use`);
+    if (n === 0) current = id ?? tag;
+    if (n === 0 && id) defined.add(id);
+    const pointer = /^@[A-Z0-9]+@$/.test(value);
+    if (pointer) pointers.push({ from: current, tag, to: value });
+    if (!pointer && /(^|[^@])@([^@]|$)/.test(value)) problems.push(`line ${i + 1}: an @ in a value is not doubled`);
+  }
+  return { problems, defined, pointers };
 }
 
 /** The block of lines of one GEDCOM record. */
@@ -225,8 +236,7 @@ describe('Exports', () => {
     for (const [path, text] of notes) {
       const m = /^---\n([\s\S]*?)\n---\n/.exec(text);
       expect(m, path).not.toBeNull();
-      const front = parse(m![1]!) as { id?: string; type?: string };
-      expect(front.id, path).toMatch(/^[0-9a-f-]{36}$/);
+      expect(Frontmatter.safeParse(parse(m![1]!)).success, path).toBe(true);
       for (const link of text.matchAll(/\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/g)) if (!basenames.has(link[1]!)) broken.push(`${path} → ${link[1]}`);
     }
     expect(broken).toEqual([]);
@@ -310,11 +320,13 @@ describe('Exports', () => {
 
   it('is off unless the Owner switches it on and names the repository', async () => {
     expect(testConfig(t.url).export).toBeNull();
-    expect(dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: undefined as never, publicOrigin: 'x' }).map((j) => j.name)).not.toContain(
-      'nightly-export',
-    );
     expect(
-      dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: undefined as never, publicOrigin: 'x', exportRepo: repo }).map((j) => j.name),
+      dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: new MemoryImageStorage(a.clock), publicOrigin: 'x' }).map((j) => j.name),
+    ).not.toContain('nightly-export');
+    expect(
+      dailyJobs({ db: t.db, clock: a.clock, mailer: a.mailer, images: new MemoryImageStorage(a.clock), publicOrigin: 'x', exportRepo: repo }).map(
+        (j) => j.name,
+      ),
     ).toContain('nightly-export');
     expect(await runExport({ db: t.db, clock: a.clock, repo: null }, '2026-11-05')).toEqual({ detail: 'the Export is off', complete: true });
     expect(() => loadConfig({ NODE_ENV: 'test', RODOKMEN_EXPORT_ENABLED: 'true' })).toThrow(/RODOKMEN_EXPORT_REPO/);

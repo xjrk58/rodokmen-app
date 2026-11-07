@@ -23,6 +23,8 @@ Running Rodokmen:
 - [Mark Family roots and link Members to their Persons](how-to/mark-family-roots.md): tell Rodokmen where the family starts and who each Member is.
 - [Import the Vault](how-to/import-the-vault.md): the Owner's one-time import of the Vault as an Import batch, from the dry run to accepting the batch.
 - [Switch scan reading on](how-to/switch-on-scan-reading.md): the Owner's API key, the switch and the daily limit, watching the use, and switching it off.
+- [Set up the nightly Export](how-to/set-up-the-nightly-export.md): the private `rodokmen-export` repository, its deploy key, switching the Export on and off, and the GEDCOM download.
+- [Erase a Living person](how-to/erase-a-living-person.md): the Owner removes a Living relative at their request, and what to check afterwards.
 - [Run the reader benchmark](how-to/run-the-reader-benchmark.md): compare Claude models and Transkribus on invented or public-domain pages, to choose the model that reads scans.
 
 Researching:
@@ -52,6 +54,7 @@ Developing:
 - [MCP tools](reference/mcp-tools.md): what an assistant with an Agent token can call.
 - [Roles and actions](reference/roles-and-actions.md): what Agents, Contributors, Editors and the Owner may do.
 - [Research leads](reference/research-leads.md): the lead routes and fields, search records, suggested leads, the register coverage of a Source and when the gap finder runs.
+- [Exports and erasure](reference/exports.md): what every Export holds, the Markdown layout and the GEDCOM mapping, the nightly Export, the routes, and what erasure removes.
 - [Scan reading](reference/scan-reading.md): the reading routes, the daily limit, what a reading holds, how read names are matched, the failures, what is sent, and the settings.
 - [Map data files](reference/app-data.md): the files in `app/data/`.
 - [Licences](reference/licences.md): the licence of the code, and of each bundled data file and vendored library, with the credit each asks for.
@@ -65,7 +68,7 @@ Developing:
 
 - [The architecture](explanation/architecture.md): one TypeScript codebase, one database, one domain, and how the parts fit. The diagrams are in [C4 architecture](architecture/README.md), also as [Mermaid](architecture/generated/mermaid.md).
 - [Proposals and review](explanation/proposals-and-review.md): why every change to the Tree is a reviewed Proposal, and why the Vault import comes as Import batches.
-- [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, Living people, images, the Vault and this public repo.
+- [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, Living people in Exports, erasure, images, the Vault and this public repo.
 - [The relation to the family](explanation/relation-to-the-family.md): Relatives, Possible relatives and Unrelated people, and why they are computed from the evidence.
 - [Research leads](explanation/research-leads.md): why leads sit beside the Tree and change without review, how the gap finder picks gaps, registers and years, and what is proved.
 - [Scan reading](explanation/scan-reading.md): why the server reads scans with Anthropic's API, what is sent and what is not, and why a person decides every value and who each name is.
