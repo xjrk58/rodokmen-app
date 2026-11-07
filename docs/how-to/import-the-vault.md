@@ -47,7 +47,8 @@ folder) and never paste it into an issue or a pull request. It lists:
 
 - how many notes of each folder were read, and the folders and files not imported;
 - how many records of each kind would be created, and the Proposals planned;
-- every field the Tree has no place for, and every value that could not be mapped, by field;
+- every field the Tree has no place for, and every value that could not be mapped, by field (the import keeps them
+  as lines below the research notes of their record, or in a register entry's Citation note);
 - every link to a missing note, every date that is not valid EDTF, every file that is missing or cannot be read;
 - the Persons the Tree will see as Living while the Vault says otherwise (a Person with no dates is Living);
 - the Persons whose relation to the family will differ from their Vault tags;
@@ -94,6 +95,12 @@ the next run gives each such Person note a small Proposal that adds the register
 the run's batch as in step 5. Those Events then carry a Citation at the Person's confidence, so a probable or
 confirmed parent or partner link no longer makes anyone a Possible relative. An Event whose Proposal is still pending
 waits, listed in the report, until a run after it is accepted.
+
+An import made before #134 left out the fields the Tree has no place for, such as a Person's occupation. The next run
+adds them below the research notes of each record whose notes still hold exactly what that import wrote, in a small
+Proposal per record. Notes you changed in the app since are left as they are, and the report lists their lines under
+**Fields not mapped, on records imported before #134**. It also lists the evidence classes of register entries,
+which belong in their Citation's note: no Proposal can change that without new evidence yet (#157).
 
 An import made before #136 kept the first 4,000 characters of a long log or plan note in its Research lead. The
 next run gives such a lead the whole note, if the lead still holds exactly what that run wrote. A lead you changed

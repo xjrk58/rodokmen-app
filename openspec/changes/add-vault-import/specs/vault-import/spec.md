@@ -83,11 +83,19 @@ Vault tags that the Tree derives SHALL NOT be imported as Labels: `obec/…` fol
 - **THEN** the Person gets the Label `line/novak` only
 
 ### Requirement: Note bodies become research notes
-The body of each Vault note SHALL become the research notes of the record it describes, unchanged. The body of a Source note SHALL also become its Citation's transcription.
+The body of each Vault note SHALL become the research notes of the record it describes, unchanged. The body of a Source note SHALL also become its Citation's transcription. Below the body, under "From the Vault, not mapped:", the research notes SHALL keep each field the Tree has no place for, one line each as written. A register entry has no research notes, so its lines SHALL go in its Citation's note, below the note path.
 
 #### Scenario: Transcription kept
 - **WHEN** a Source note body holds the Latin text of a baptism entry
 - **THEN** the Citation's transcription and the Source record's research notes both hold that text
+
+#### Scenario: Field the Tree has no place for
+- **WHEN** a Person note has `occupation: [sedlák]` and a body
+- **THEN** the Person's research notes hold the body unchanged and, below it, the line `occupation: sedlák`, and the dry run still lists the field
+
+#### Scenario: Evidence class of a register entry
+- **WHEN** a Source note of a register entry has `evidence: A`
+- **THEN** its Citation's note holds `Evidence class: A` below the note path
 
 ### Requirement: Scans and documents are uploaded
 Images listed in a Source note's `scans` SHALL be uploaded as that Citation's images. PDF files SHALL be attached as documents to the Source. DOC files SHALL be converted to PDF once and attached the same way, keeping the original file as well. Files the importer can't read SHALL be listed in the report and skipped.
@@ -124,6 +132,10 @@ A record an earlier run wrote and a newer importer writes otherwise, such as a l
 #### Scenario: Lead cut by an earlier import
 - **WHEN** an earlier import gave the lead of a long log note the first 4,000 characters of the note, and the Owner runs the importer again
 - **THEN** the lead gets the whole note if it still holds exactly those 4,000 characters, and otherwise the report lists it and the lead stays as it is
+
+#### Scenario: Research notes imported before the fields not mapped
+- **WHEN** an earlier import wrote a record's research notes without the fields the Tree has no place for, and the Owner runs the importer again
+- **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since, and the Citation notes of register entries, are listed in the report and stay as they are
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.

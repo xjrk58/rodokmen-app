@@ -23,6 +23,12 @@ export interface RunSummary {
   changed: { updated: number; notUpdated: string[] };
   /** Marriages an earlier importer gave two Events (#149), with the record ids of the Event to keep and of the other (null while pending). */
   duplicateMarriages: Array<{ paths: [string, string]; keep: string | null; other: string | null }>;
+  /**
+   * Fields the Tree has no place for, on records an earlier importer wrote without them (#134):
+   * added to research notes that still held what it wrote; not added to notes changed since, nor
+   * to register entries' Citation notes.
+   */
+  updates: { added: number; notUpdated: Array<{ path: string; lines: string[]; why: 'changed' | 'citation' }> };
 }
 
 export interface Counts {
@@ -119,6 +125,64 @@ export function countsOf(vault: Vault, plan: Plan): Counts {
 
 const table = (rows: Array<[string, number | string]>) => rows.map(([k, v]) => `| ${k} | ${v} |`).join('\n');
 
+/** Leads an earlier importer cut at 4,000 characters (#136): made whole, or listed as changed since. */
+function cutLeads(run: RunSummary): string[] {
+  if (!run.leads.updated && !run.leads.notUpdated.length) return [];
+  return [
+    `Leads an earlier run cut at 4,000 characters (#136): ${run.dryRun ? 'would get' : 'got'} the whole note: ${run.leads.updated};`,
+    `changed in the app since, so left as they are (add the rest of the note by hand): ${run.leads.notUpdated.length}.`,
+    '',
+    ...run.leads.notUpdated.map((path) => `- ${path}`),
+    '',
+  ];
+}
+
+/** Fields the Tree has no place for, on records an earlier importer wrote without them (#134). */
+function fieldsNotMapped(run: RunSummary): string[] {
+  if (!run.updates.added && !run.updates.notUpdated.length) return [];
+  const list = (why: 'changed' | 'citation') => run.updates.notUpdated.filter((u) => u.why === why).map((u) => `- ${u.path}: ${u.lines.join('; ')}`);
+  const changed = list('changed');
+  const citations = list('citation');
+  return [
+    '## Fields not mapped, on records imported before #134',
+    '',
+    `Research notes ${run.dryRun ? 'that would get' : 'that got'} the fields the Tree has no place for: ${run.updates.added}.`,
+    '',
+    ...(changed.length
+      ? [
+          `Research notes changed in the app since the import, left as they are (${changed.length}); add these lines by hand if you want them:`,
+          '',
+          ...changed,
+          '',
+        ]
+      : []),
+    ...(citations.length
+      ? [
+          `Register entries whose Citation note an earlier import wrote (${citations.length}): no Proposal can change a Citation's note without new evidence (#157), so these lines are kept here only:`,
+          '',
+          ...citations,
+          '',
+        ]
+      : []),
+  ];
+}
+
+/** Marriages an earlier importer gave two Events (#149): both stay in the Tree. */
+function duplicateMarriages(run: RunSummary): string[] {
+  if (!run.duplicateMarriages.length) return [];
+  return [
+    `## Marriage Events imported twice (${run.duplicateMarriages.length})`,
+    '',
+    'An importer before #149 gave a marriage both spouses record without a Source note one Event in each spouse’s',
+    'Proposal. The first Event now carries both notes’ Citations; the other stays, as no Proposal can remove an Event (#154).',
+    '',
+    ...run.duplicateMarriages.map(
+      (d) => `- ${d.paths[0]} and ${d.paths[1]}: keep Event ${d.keep ?? '(pending)'}; the other is Event ${d.other ?? '(pending)'}`,
+    ),
+    '',
+  ];
+}
+
 /** The report as Markdown: counts first, then every issue with the note it was found in. */
 export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): string {
   const c = countsOf(vault, plan);
@@ -141,14 +205,7 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
     `${run.dryRun ? '' : `Created: ${run.leads.created}; waiting for the batch to be accepted: ${run.leads.waiting}; already imported: ${run.leads.unchanged}.`}`,
     '',
   );
-  if (run.leads.updated || run.leads.notUpdated.length)
-    lines.push(
-      `Leads an earlier run cut at 4,000 characters (#136): ${run.dryRun ? 'would get' : 'got'} the whole note: ${run.leads.updated};`,
-      `changed in the app since, so left as they are (add the rest of the note by hand): ${run.leads.notUpdated.length}.`,
-      '',
-      ...run.leads.notUpdated.map((path) => `- ${path}`),
-      '',
-    );
+  lines.push(...cutLeads(run));
   lines.push('## Differences', '', `Living: ${c.comparisons.living}. Relation to the family: ${c.comparisons.relation}.`, '');
   if (run.changed.updated || run.changed.notUpdated.length)
     lines.push(
@@ -159,18 +216,7 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
       ...run.changed.notUpdated.map((k) => `- ${k}`),
       '',
     );
-  if (run.duplicateMarriages.length)
-    lines.push(
-      `## Marriage Events imported twice (${run.duplicateMarriages.length})`,
-      '',
-      'An importer before #149 gave a marriage both spouses record without a Source note one Event in each spouse’s',
-      'Proposal. The first Event now carries both notes’ Citations; the other stays, as no Proposal can remove an Event.',
-      '',
-      ...run.duplicateMarriages.map(
-        (d) => `- ${d.paths[0]} and ${d.paths[1]}: keep Event ${d.keep ?? '(pending)'}; the other is Event ${d.other ?? '(pending)'}`,
-      ),
-      '',
-    );
+  lines.push(...fieldsNotMapped(run), ...duplicateMarriages(run));
   for (const kind of ISSUE_ORDER) {
     const title = ISSUE_TITLES[kind];
     const list = plan.issues.filter((i) => i.kind === kind);

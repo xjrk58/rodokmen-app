@@ -197,6 +197,8 @@ describe('the Vault importer', () => {
     expect(jan.familiesAsChild[0]!.partners.map((p) => p.displayName).sort()).toEqual(['Marie Nováková', 'Tomáš Novák']);
     const citation = await get(`/api/citations/${baptism.citations[0]!.id}`, CitationDetail);
     expect(citation).toMatchObject({ page: 'frame 12', readOn: '2026-10-01', source: { title: 'N Vrbice, Kamenná Lhota 1784–1820', reference: '123-4' } });
+    // A register entry has no research notes: its evidence class goes in the Citation's note, below the path (#134).
+    expect(citation.note).toBe('Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12\nEvidence class: A');
     expect(citation.images).toHaveLength(1);
     expect(citation.images[0]!.kind).toBe('page');
   });
@@ -225,7 +227,10 @@ describe('the Vault importer', () => {
       ['Nowak', 'other', null],
       ['Johann Nowak', 'other', null],
     ]);
-    expect(jan.notes).toBe('Baptism found; the death is known from the family only. Check the death register of 1850.');
+    // The field the Tree has no place for is kept below the note's body (#134).
+    expect(jan.notes).toBe(
+      'Baptism found; the death is known from the family only. Check the death register of 1850.\n\nFrom the Vault, not mapped:\n- occupation: sedlák',
+    );
     const marie = await personByVault('person:marie-svobodova-1775');
     expect(marie.names.map((n) => [n.given, n.surname, n.type])).toEqual([
       ['Marie', 'Nováková', 'married'],
@@ -287,6 +292,8 @@ describe('the Vault importer', () => {
     ]);
     const place = await get(`/api/places/${await recordOf('place:kamenna-lhota')}`, PlaceDetail);
     expect(place).toMatchObject({ name: 'Kamenná Lhota', municipality: null, location: { lat: 49.61, lon: 15.32 } });
+    // A note without a body: the district no Municipality matches and the English name are its research notes (#134).
+    expect(place.notes).toBe('From the Vault, not mapped:\n- district: Invented District\n- names.en: Stone Lhota');
     expect(place.parishes.map((p) => p.parish.name)).toEqual(['Vrbice']);
     expect(place.houses[0]!.numbers.map((n) => n.number)).toEqual(['12', '12a']);
   });
@@ -296,6 +303,7 @@ describe('the Vault importer', () => {
     const source = await get(`/api/sources/${sources.items[0]!.id}`, SourceDetail);
     expect(source).toMatchObject({ type: 'family_account', familyAccount: { givenOn: '1936' } });
     expect(source.notes).toContain('A typescript of 1936');
+    expect(source.notes).toMatch(/\n\nFrom the Vault, not mapped:\n- Evidence class: C$/);
     expect(source.documents.map((d) => [d.title, d.original?.contentType ?? null])).toEqual([
       ['rod-novaku.pdf', null],
       ['rod-novaku.doc', 'application/msword'],

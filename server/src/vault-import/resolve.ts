@@ -60,6 +60,9 @@ export function resolveProposal(p: PlannedProposal, state: RunState): Resolution
   let n = 0;
   for (const planned of p.ops) {
     if (imported(state, planned.key) || state.submitted.has(planned.key)) continue;
+    // The research notes of a record an earlier run imported may have changed in the app since: a later
+    // run writes them only where they hold what that run wrote, and checks that first (run.ts, #134).
+    if (planned.op.op === 'setNotes' && isAt(planned.op.id) && imported(state, planned.op.id.slice(1))) continue;
     const creates = 'tempId' in planned.op;
     const tempId = creates ? `tmp:k${++n}` : null;
     if (tempId) temps.set(planned.key, tempId);

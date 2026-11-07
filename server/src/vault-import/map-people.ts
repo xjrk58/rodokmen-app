@@ -1,5 +1,5 @@
 import { foldForSearch } from '@rodokmen/shared';
-import { linked, notesOf, unmapped, type MapContext } from './map-places.js';
+import { keep, linked, notesOf, unmapped, type MapContext } from './map-places.js';
 import { at, type PlannedProposal } from './plan.js';
 import { dateText, isRecord, isValidDate, linkOf, type VaultNote } from './reader.js';
 
@@ -113,7 +113,10 @@ export function ensurePerson(ctx: MapContext, p: PlannedProposal, note: VaultNot
     given = '?';
   }
   const sex = note.data.sex === 'M' ? 'male' : note.data.sex === 'F' ? 'female' : 'unknown';
-  if (note.data.sex !== undefined && sex === 'unknown') b.report('unmappedValue', note.path, `people.sex: ${JSON.stringify(note.data.sex)}`);
+  if (note.data.sex !== undefined && sex === 'unknown') {
+    b.report('unmappedValue', note.path, `people.sex: ${JSON.stringify(note.data.sex)}`);
+    keep(ctx, note, 'sex', note.data.sex);
+  }
   b.create(p, key, 'person', {
     op: 'createPerson',
     tempId: '',
@@ -142,8 +145,8 @@ export function ensurePerson(ctx: MapContext, p: PlannedProposal, note: VaultNot
     }),
   );
   for (const label of labelsOf(note)) b.link(p, `label:${note.id}:${foldForSearch(label)}`, 'label', { op: 'addLabel', personId: at(key), label });
-  notesOf(ctx, p, 'person', key, note);
   unmapped(ctx, note, KNOWN);
+  notesOf(ctx, p, 'person', key, note);
   return key;
 }
 

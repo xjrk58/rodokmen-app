@@ -148,7 +148,7 @@ export async function mapVault(vault: Vault, options: MapOptions): Promise<Plan>
   const b = new PlanBuilder();
   b.issues.push(...vault.issues);
   const readOn = vault.commit?.date ?? options.today.toISOString().slice(0, 10);
-  const ctx: MapContext = { b, vault, municipalities: options.municipalities, readOn, parishSeats: new Map() };
+  const ctx: MapContext = { b, vault, municipalities: options.municipalities, readOn, parishSeats: new Map(), kept: new Map() };
   // The Vault provenance Source (design, "Vault provenance Source"): given by the Owner, dated with the Vault's commit.
   const p = b.proposal('vault', 'vault', 'The Vault (rodokmen-data) as a Family account Source', null);
   b.create(p, 'vault-source', 'source', {
@@ -184,6 +184,7 @@ export async function mapVault(vault: Vault, options: MapOptions): Promise<Plan>
     leads,
     issues: b.issues,
     mergedMarriages: b.mergedMarriages,
+    updates: b.updates,
     comparisons,
     records: Object.fromEntries(b.records),
   };

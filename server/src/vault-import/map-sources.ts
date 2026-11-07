@@ -13,7 +13,7 @@ import {
   parentsOf,
   role,
 } from './map-people.js';
-import { linked, unmapped, vaultCitation, type MapContext } from './map-places.js';
+import { keep, linked, notesOf, unmapped, vaultCitation, type MapContext } from './map-places.js';
 import { at, CONFIDENCE_OF, lowest, type PlannedFile, type PlannedProposal } from './plan.js';
 import { dateText, linkOf, textOf, type VaultNote } from './reader.js';
 
@@ -105,7 +105,10 @@ function citationPage(note: VaultNote): string | null {
 /** A Source of its own for a Source note outside the registers: a family document or memory, a gravestone, a web page. */
 function ownSource(ctx: MapContext, p: PlannedProposal, note: VaultNote, accessed: string | null): string {
   const kind = textOf(note.data.kind) || 'other';
-  if (!OWN_SOURCE[kind]) ctx.b.report('unmappedValue', note.path, `sources.kind: ${kind}`);
+  if (!OWN_SOURCE[kind]) {
+    ctx.b.report('unmappedValue', note.path, `sources.kind: ${kind}`);
+    if (textOf(note.data.kind)) keep(ctx, note, 'kind', kind);
+  }
   const type = OWN_SOURCE[kind] ?? 'other';
   const url = WebUrl.safeParse(note.data.url);
   const key = `source:${note.id}`;
@@ -120,7 +123,7 @@ function ownSource(ctx: MapContext, p: PlannedProposal, note: VaultNote, accesse
         ? { givenBy: 'not recorded in the Vault', givenByPersonId: null, givenOn: dateText(note.data.date) ?? accessed ?? ctx.readOn }
         : null,
   });
-  if (note.body.trim()) ctx.b.link(p, `notes:${key}`, 'notes', { op: 'setNotes', record: 'source', id: at(key), notes: note.body });
+  notesOf(ctx, p, 'source', key, note);
   return key;
 }
 
@@ -131,6 +134,14 @@ function citation(ctx: MapContext, p: PlannedProposal, note: VaultNote, confiden
   const accessed = dateText(note.data.accessed);
   const url = WebUrl.safeParse(note.data.url);
   const sourceKey = register ? `register:${register.id}` : ownSource(ctx, p, note, accessed);
+  // A register entry has no research notes: what the Tree has no place for goes in its Citation's note, below the path (#134).
+  const before = [`Vault: ${note.path}`, url.success && register ? `Scan: ${url.data}` : null].filter(Boolean).join('\n');
+  const lines = register ? (ctx.kept.get(note.path) ?? []) : [];
+  let citationNote = [before, ...lines].join('\n');
+  if (citationNote.length > 4000) {
+    ctx.b.report('unmappedValue', note.path, "sources: no room in the Citation's note for the fields the Tree has no place for");
+    citationNote = before;
+  }
   ctx.b.create(p, key, 'citation', {
     op: 'createCitation',
     tempId: '',
@@ -140,8 +151,20 @@ function citation(ctx: MapContext, p: PlannedProposal, note: VaultNote, confiden
     transcription: (note.body.trim() || note.frontmatterText.trim() || note.path).slice(0, 20_000),
     readOn: accessed && IsoDay.safeParse(accessed).success ? accessed : ctx.readOn,
     confidence,
-    note: [`Vault: ${note.path}`, url.success && register ? `Scan: ${url.data}` : null].filter(Boolean).join('\n'),
+    note: citationNote,
   });
+  if (citationNote !== before)
+    ctx.b.updates.push({
+      key: `vault-fields:${key}`,
+      recordKey: key,
+      record: 'citation',
+      field: 'note',
+      before,
+      after: citationNote,
+      freshKey: key,
+      path: note.path,
+      lines,
+    });
   files(ctx, p, note, key, sourceKey, register !== null);
   return key;
 }
@@ -155,10 +178,10 @@ export function mapSources(ctx: MapContext, citers: Map<string, Citers>): void {
   for (const note of notes) {
     const who = citers.get(note.id);
     const p = ctx.b.proposal('source', `source-note:${note.id}`, `Vault: ${note.path}`, note);
+    unmapped(ctx, note, KNOWN);
     const citationKey = citation(ctx, p, note, confidenceOf(ctx, note, who));
     for (const { person, fact } of who?.facts ?? []) factEvent(ctx, p, person, fact, citationKey);
     for (const { person, marriage } of who?.marriages ?? []) marriageEvent(ctx, p, person, marriage, citationKey, note.id);
-    unmapped(ctx, note, KNOWN);
   }
 }
 

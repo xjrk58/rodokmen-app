@@ -83,11 +83,31 @@ export interface MergedMarriage {
   paths: [string, string];
 }
 
+/**
+ * A value an importer before #134 wrote without the fields the Tree has no place for: research
+ * notes (`notes`), or a register entry's Citation note (`note`). A fresh import writes `after` with
+ * the operation `freshKey`; on a Tree imported before, a later run writes it only while the record
+ * still holds `before` (run.ts), and records that under `key`.
+ */
+export interface PlannedUpdate {
+  key: string;
+  recordKey: string;
+  record: 'person' | 'place' | 'house' | 'parish' | 'source' | 'citation';
+  field: 'notes' | 'note';
+  before: string | null;
+  after: string;
+  freshKey: string;
+  /** The note, and the lines `after` adds, for the report. */
+  path: string;
+  lines: string[];
+}
+
 export interface Plan {
   proposals: PlannedProposal[];
   leads: PlannedLead[];
   issues: Issue[];
   mergedMarriages: MergedMarriage[];
+  updates: PlannedUpdate[];
   /** What the Vault says against what the Tree will compute, for the report. */
   comparisons: { living: number; relation: number };
   /** Records to create, by kind of record. */
@@ -138,6 +158,7 @@ export class PlanBuilder {
   readonly issues: Issue[] = [];
   readonly records = new Map<string, number>();
   readonly mergedMarriages: MergedMarriage[] = [];
+  readonly updates: PlannedUpdate[] = [];
   /** Every key planned so far, with the Proposal that creates it. */
   private readonly created = new Map<string, PlannedProposal>();
 

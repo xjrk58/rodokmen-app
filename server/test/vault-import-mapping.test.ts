@@ -48,6 +48,32 @@ describe('mapping the fixture Vault', () => {
     expect(p.leads.find((l) => l.path === 'log/2026-10-20-registers.md')!.earlierReason).toBeNull();
   });
 
+  it('fields the Tree has no place for: kept below the body of the research notes, or in a register entry’s Citation note (#134)', async () => {
+    const p = await plan();
+    const op = (key: string) => ops(p).find((o) => o.key === key)!.op;
+    expect(op('notes:person:jan-novak-1801')).toMatchObject({
+      notes: 'Baptism found; the death is known from the family only. Check the death register of 1850.\n\nFrom the Vault, not mapped:\n- occupation: sedlák',
+    });
+    expect(op('notes:parish:vrbice')).toMatchObject({
+      notes: 'The invented parish of Vrbice kept the registers of Vrbice and Kamenná Lhota.\n\nFrom the Vault, not mapped:\n- denomination: římskokatolická',
+    });
+    expect(op('citation:n-vrbice-1801-f12')).toMatchObject({
+      note: 'Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12\nEvidence class: A',
+    });
+    // The dry run still lists both fields.
+    expect(p.issues).toContainEqual({ kind: 'unmappedField', path: 'people/jan-novak-1801.md', detail: 'people.occupation' });
+    expect(p.issues).toContainEqual({ kind: 'unmappedField', path: 'sources/n-vrbice-1801-f12.md', detail: 'sources.evidence' });
+    // What an importer before #134 wrote instead, for a Tree imported then: the body alone, or nothing.
+    expect(p.updates.map((u) => [u.recordKey, u.field, u.before === null ? null : u.before.slice(0, 20), u.lines])).toEqual([
+      ['place:kamenna-lhota', 'notes', null, ['district: Invented District', 'names.en: Stone Lhota']],
+      ['parish:vrbice', 'notes', 'The invented parish ', ['denomination: římskokatolická']],
+      ['citation:n-vrbice-1801-f12', 'note', 'Vault: sources/n-vrb', ['Evidence class: A']],
+      ['person:jan-novak-1801', 'notes', 'Baptism found; the d', ['occupation: sedlák']],
+      ['source:rod-novaku', 'notes', '# Rod Nováků (invent', ['Evidence class: C']],
+    ]);
+    for (const u of p.updates) expect(op(u.freshKey)).toMatchObject(u.field === 'notes' ? { notes: u.after } : { note: u.after });
+  });
+
   describe('a marriage both spouses record without a Source note (#149)', () => {
     const marriages = (p: Plan) => ops(p).filter((o) => o.op.op === 'createEvent' && o.op.type === 'marriage' && o.key.includes(':vault:'));
 

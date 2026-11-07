@@ -241,6 +241,58 @@ async function proposals(r: Run): Promise<void> {
   }
 }
 
+const NotesOf = z.object({ version: z.number().int(), notes: z.string().nullable() });
+
+/**
+ * What an importer before #134 wrote without the fields the Tree has no place for (plan.updates).
+ * A record this run creates, or a run since #134 created, has them already. Research notes that
+ * still hold exactly what the earlier run wrote get them, each in a Proposal of its own with the
+ * version read, so a change made after this run is a conflict for the Owner to resolve. Notes
+ * changed in the app since are left alone and listed, and so are register entries' Citation notes:
+ * a Proposal that changes a Citation's note needs new evidence, which the importer does not have.
+ */
+async function updates(r: Run): Promise<void> {
+  const planned = new Map(r.plan.proposals.flatMap((p) => p.ops.map((o) => [o.key, o.value] as const)));
+  for (const [index, u] of r.plan.updates.entries()) {
+    if (r.state.submitted.has(u.freshKey)) continue;
+    const fresh = r.state.map.get(u.freshKey);
+    const value = planned.get(u.freshKey);
+    if (fresh && value !== undefined && fresh.noteHash === sha256(Buffer.from(value))) continue;
+    const before = r.state.map.get(u.recordKey);
+    if (!before || !imported(r.state, u.recordKey) || imported(r.state, u.key)) continue;
+    if (!before.recordId) {
+      r.summary.deferred.push({ key: u.key, reason: `${u.recordKey} waits for an earlier Import batch to be accepted` });
+      continue;
+    }
+    if (u.record === 'citation') {
+      r.summary.updates.notUpdated.push({ path: u.path, lines: u.lines, why: 'citation' });
+      continue;
+    }
+    const current = NotesOf.parse(await r.client.get(`/api/${ROUTES[u.record]}/${before.recordId}`));
+    if (current.notes === u.after) continue;
+    if (current.notes !== u.before) {
+      r.summary.updates.notUpdated.push({ path: u.path, lines: u.lines, why: 'changed' });
+      continue;
+    }
+    r.summary.updates.added++;
+    if (r.options.dryRun) {
+      r.summary.submitted++;
+      continue;
+    }
+    const b = await openBatch(r);
+    const view = ProposalView.parse(
+      await r.client.send('POST', `/api/batches/${b.id}/proposals`, {
+        formatVersion: OPERATIONS_VERSION,
+        idempotencyKey: `vault-${b.id.slice(-12)}-u${index}`,
+        note: `Vault: ${u.path} (fields the Tree has no place for)`,
+        operations: [{ op: 'setNotes', record: u.record, id: before.recordId, baseVersion: current.version, notes: u.after }],
+      }),
+    );
+    r.summary.submitted++;
+    await record(r, [{ key: u.key, kind: 'notes', noteHash: sha256(Buffer.from(u.after)), batchId: b.id, proposalId: view.id, tempId: null, recordId: null }]);
+  }
+}
+
 const LeadReason = z.object({ version: z.number().int(), reason: z.string() });
 
 /**
@@ -302,6 +354,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     leads: { created: 0, waiting: 0, unchanged: 0, updated: 0, notUpdated: [] },
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
+    updates: { added: 0, notUpdated: [] },
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.
   for (const p of plan.proposals) {
@@ -314,6 +367,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
       summary.duplicateMarriages.push({ paths: m.paths, keep: state.map.get(m.key)?.recordId ?? null, other: state.map.get(m.earlierKey)?.recordId ?? null });
   const r: Run = { options, client, vault, plan, state, summary, batch: null };
   await proposals(r);
+  await updates(r);
   await leads(r);
   summary.batch = r.batch ? { id: r.batch.id, name: r.batch.name } : null;
   return { vault, plan, run: summary, counts: countsOf(vault, plan), report: reportMarkdown(vault, plan, summary) };

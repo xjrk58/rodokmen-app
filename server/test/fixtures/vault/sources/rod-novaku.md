@@ -3,6 +3,7 @@ type: source
 kind: family-document
 date: 1936
 accessed: 2026-10-05
+evidence: C
 scans:
   - attachments/documents/rod-novaku.pdf
   - attachments/documents/rod-novaku.doc
