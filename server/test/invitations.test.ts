@@ -1,4 +1,4 @@
-import { InvitationList, InvitationView, Me, SignedIn } from '@rodokmen/shared';
+import { CreatedInvitation, InvitationCheck, InvitationList, InvitationView, Me, SignedIn } from '@rodokmen/shared';
 import { z } from 'zod';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { hashToken } from '../src/auth/sessions.js';
@@ -60,7 +60,7 @@ describe('invitations', () => {
     expect(stored.token_hash.toString('utf8')).not.toContain(token);
 
     const check = await post('/api/auth/invitation/check', { token });
-    expect(check.json()).toMatchObject({ status: 'pending', language: 'en' });
+    expect(check.json()).toMatchObject({ status: 'pending', language: 'en', email: 'cousin.marta@example.test' });
 
     a.clock.advance(6 * DAY);
     const accepted = await post('/api/auth/invitation/accept', { token, displayName: 'Marta', language: 'cs' });
@@ -93,7 +93,12 @@ describe('invitations', () => {
     const token = tokenFromEmail(a.mailer.lastTo('late@example.test')!.text);
     a.clock.advance(7 * DAY + MINUTE);
     const check = await post('/api/auth/invitation/check', { token });
-    expect(check.json()).toEqual({ status: 'expired', language: 'cs', message: 'Platnost pozvánky vypršela. Požádejte správce Rodokmenu o novou.' });
+    expect(check.json()).toEqual({
+      status: 'expired',
+      language: 'cs',
+      message: 'Platnost pozvánky vypršela. Požádejte správce Rodokmenu o novou.',
+      email: null,
+    });
     const res = await post('/api/auth/invitation/accept', { token, displayName: 'Late', language: 'cs' });
     expect(res.statusCode).toBe(410);
     expect(res.json()).toMatchObject({ code: 'invitation_expired', message: 'Platnost pozvánky vypršela. Požádejte správce Rodokmenu o novou.' });
@@ -136,5 +141,83 @@ describe('invitations', () => {
     expect((await invite(owner.email, 'en')).statusCode).toBe(409);
     const list = await a.app.inject({ method: 'GET', url: '/api/invitations', headers: { cookie: ownerCookie } });
     expect(InvitationList.parse(list.json()).items.find((i) => i.id === created.id)!.status).toBe('revoked');
+  });
+
+  // member-accounts spec, "Invitation link for the Owner's own WhatsApp" and "One invitation, whichever way its link travels".
+  describe("the link for the Owner's own WhatsApp", () => {
+    it('the link comes back once: in the answer that creates the invitation, the same as in the email, and never in the list', async () => {
+      const created = await invite('whatsapp.cousin@example.test', 'en');
+      expect(created.statusCode).toBe(201);
+      const view = CreatedInvitation.parse(created.json());
+      const token = tokenFromEmail(a.mailer.lastTo('whatsapp.cousin@example.test')!.text);
+      expect(view.link).toBe(`${a.config.publicOrigin}/#invite/${token}`);
+      // The message: the inviter, the link on its own line, 7 days, once, and the invited address.
+      expect(view.shareText).toContain(owner.display_name);
+      expect(view.shareText).toContain(`\n${view.link}\n`);
+      expect(view.shareText).toContain('valid for 7 days and works only once');
+      expect(view.shareText).toContain('whatsapp.cousin@example.test');
+
+      const list = await a.app.inject({ method: 'GET', url: '/api/invitations', headers: { cookie: ownerCookie } });
+      expect(list.statusCode).toBe(200);
+      const listed = InvitationList.parse(list.json()).items.find((i) => i.id === view.id)!;
+      expect(listed.status).toBe('pending');
+      // Neither the link nor the token is in any later answer: only the token's hash is stored.
+      const raw = z
+        .object({ items: z.array(z.looseObject({ id: z.string() })) })
+        .parse(list.json())
+        .items.find((i) => i.id === view.id);
+      expect(raw).not.toHaveProperty('link');
+      expect(raw).not.toHaveProperty('shareText');
+      expect(list.body).not.toContain(token);
+    });
+
+    it('Czech message: the Owner picks Czech and the message is in Czech', async () => {
+      const view = CreatedInvitation.parse((await invite('teta@example.test', 'cs')).json());
+      expect(view.shareText).toContain('vás zve do Rodokmenu');
+      expect(view.shareText).toContain('Platí 7 dní a dá se použít jen jednou');
+      expect(view.shareText).toContain('teta@example.test');
+      expect(view.shareText).toContain(view.link);
+    });
+
+    it('accepted through WhatsApp: the emailed link is the same one, and is then refused as already used', async () => {
+      const view = CreatedInvitation.parse((await invite('both.ways@example.test', 'en')).json());
+      const viaWhatsApp = tokenFromEmail(view.shareText);
+      expect((await post('/api/auth/invitation/accept', { token: viaWhatsApp, displayName: 'Both', language: 'en' })).statusCode).toBe(201);
+      const viaEmail = tokenFromEmail(a.mailer.lastTo('both.ways@example.test')!.text);
+      const again = await post('/api/auth/invitation/accept', { token: viaEmail, displayName: 'Both again', language: 'en' });
+      expect(again.statusCode).toBe(410);
+      expect(errorOf(again).code).toBe('invitation_accepted');
+      // A used invitation no longer names its address.
+      expect(InvitationCheck.parse((await post('/api/auth/invitation/check', { token: viaEmail })).json())).toMatchObject({ status: 'accepted', email: null });
+    });
+
+    it('withdrawn after sending: the link that went through WhatsApp is refused', async () => {
+      const view = CreatedInvitation.parse((await invite('withdrawn.chat@example.test', 'en')).json());
+      expect((await a.app.inject({ method: 'DELETE', url: `/api/invitations/${view.id}`, headers: { cookie: ownerCookie } })).statusCode).toBe(204);
+      const res = await post('/api/auth/invitation/accept', { token: tokenFromEmail(view.shareText), displayName: 'W', language: 'en' });
+      expect(res.statusCode).toBe(410);
+      expect(res.json()).toMatchObject({ code: 'invitation_revoked', message: 'This invitation was withdrawn. Ask the Owner for a new one.' });
+      expect(InvitationCheck.parse((await post('/api/auth/invitation/check', { token: tokenFromEmail(view.shareText) })).json()).email).toBeNull();
+    });
+
+    it('expired WhatsApp link: refused after 7 days', async () => {
+      const view = CreatedInvitation.parse((await invite('late.chat@example.test', 'en')).json());
+      a.clock.advance(7 * DAY + MINUTE);
+      const res = await post('/api/auth/invitation/accept', { token: tokenFromEmail(view.link), displayName: 'L', language: 'en' });
+      expect(res.statusCode).toBe(410);
+      expect(errorOf(res).code).toBe('invitation_expired');
+    });
+
+    it('the link is lost: the Owner withdraws the invitation and invites again, and only the new link works', async () => {
+      const first = CreatedInvitation.parse((await invite('lost.link@example.test', 'cs')).json());
+      expect((await a.app.inject({ method: 'DELETE', url: `/api/invitations/${first.id}`, headers: { cookie: ownerCookie } })).statusCode).toBe(204);
+      const second = CreatedInvitation.parse((await invite('lost.link@example.test', 'cs')).json());
+      expect(second.link).not.toBe(first.link);
+      expect(a.mailer.messages.filter((m) => m.to === 'lost.link@example.test')).toHaveLength(2);
+      expect(errorOf(await post('/api/auth/invitation/accept', { token: tokenFromEmail(first.link), displayName: 'L', language: 'cs' })).code).toBe(
+        'invitation_revoked',
+      );
+      expect((await post('/api/auth/invitation/accept', { token: tokenFromEmail(second.link), displayName: 'L', language: 'cs' })).statusCode).toBe(201);
+    });
   });
 });

@@ -1,13 +1,15 @@
 // Settings (family-view spec, "Owner settings in the app"): every Member's own language,
 // passkeys and sessions, and sign-out; for the Owner also the Family roots, the family
-// (invitations, roles, disabling and enabling Members, and the link from each Member to their
-// Person), the Agents (src/settings-agents.js) and scan reading (src/settings-scan-reading.js).
+// (invitations, with a new one's WhatsApp message in src/settings-invitation.js, roles,
+// disabling and enabling Members, and the link from each Member to their Person), the Agents
+// (src/settings-agents.js) and scan reading (src/settings-scan-reading.js).
 // Other Members see nothing about anyone else.
 
 import * as API from './api.js';
 import { LANGUAGES, language, t } from './i18n.js';
 import { formatTime, PersonLine, useDebounced } from './screen-parts.js';
 import { AgentsSection } from './settings-agents.js';
+import { InvitationShare } from './settings-invitation.js';
 import { ScanReadingSection } from './settings-scan-reading.js';
 import { Status, useAction, useLoad } from './settings-parts.js';
 import { html, useEffect, useState } from './ui.js';
@@ -18,6 +20,7 @@ import { registerPasskey } from './webauthn.js';
 /** @typedef {import('./types.js').MemberView} MemberView */
 /** @typedef {import('./types.js').MemberRole} MemberRole */
 /** @typedef {import('./types.js').InvitationView} InvitationView */
+/** @typedef {import('./types.js').CreatedInvitation} CreatedInvitation */
 /** @typedef {import('./types.js').PersonSummary} PersonSummary */
 /** @typedef {{ me: Me, chooseLanguage: (lang: 'cs' | 'en') => Promise<void>, signOut: () => Promise<void>, refreshMe: () => Promise<void> }} SettingsProps */
 
@@ -211,11 +214,14 @@ function FamilySection({ me }) {
   const invitations = useLoad((signal) => API.listInvitations(signal));
   const [email, setEmail] = useState('');
   const [lang, setLang] = useState(/** @type {'cs' | 'en'} */ ('cs'));
+  // The invitation just created, with its link: in this state only, until Done (src/settings-invitation.js).
+  const [created, setCreated] = useState(/** @type {CreatedInvitation | null} */ (null));
   const [text, error, run] = useAction();
   const send = (/** @type {Event} */ e) => {
     e.preventDefault();
+    setCreated(null);
     void run(async () => {
-      await API.invite({ email, language: lang });
+      setCreated(await API.invite({ email, language: lang }));
       setEmail('');
       invitations.reload();
     }, t('settings.invited'));
@@ -246,6 +252,7 @@ function FamilySection({ me }) {
       <button type="submit" class="button primary" data-testid="send-invitation">${t('settings.sendInvitation')}</button>
     </form>
     <${Status} text=${text} error=${error} testid="invite-status" />
+    ${created ? html`<${InvitationShare} invitation=${created} onDone=${() => setCreated(null)} />` : null}
     <ul class="plain-list" data-testid="invitations">
       ${(invitations.data?.items ?? []).map(
         (i) =>

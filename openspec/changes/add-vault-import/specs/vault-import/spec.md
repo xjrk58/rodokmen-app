@@ -49,6 +49,13 @@ Every fact the importer submits SHALL carry a Citation. A fact with its own Sour
 - **WHEN** a Person note has a death date but no `source` for it
 - **THEN** the death Event cites the Vault Source with the page `people/<id>.md` and low confidence
 
+### Requirement: A fact citing a register note cites the register
+A fact whose `source` links a register note instead of an entry note SHALL cite that register's Source as well as the Vault Source. There SHALL be one such Citation per register and Person note, with no page, the note path in its note, the Person note's frontmatter as transcription, and the Person's confidence.
+
+#### Scenario: Fact citing a register note
+- **WHEN** a Person note with `confidence: probable`, a father and a mother has a baptism whose `source` is the register note `[[n-vrbice-1784-1820]]`, not an entry note
+- **THEN** the baptism cites that register's Source with normal confidence and no page, beside its Citation of the Vault Source, and the parent links that rest on the baptism are strong
+
 ### Requirement: Confidence is carried over
 The importer SHALL set each Citation's confidence from the Vault: confirmed becomes high, probable becomes normal, and hypothesis becomes low. When Persons citing the same Source note disagree, the Citation SHALL get the lowest of their values, and the dry run SHALL list the disagreement.
 
@@ -85,11 +92,15 @@ The importer SHALL NOT copy the Vault's `living` field. The Tree computes Living
 - **THEN** the dry run lists the Person, and the Tree treats them as not Living
 
 ### Requirement: Re-runs submit only what is new
-The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL submit only notes that are new or changed since the last accepted import, and SHALL never create a second Person for an id it has already imported.
+The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL submit only notes that are new or changed since the last accepted import, and SHALL never create a second Person for an id it has already imported. A record a note gives that an earlier run did not import, such as a Citation an earlier version of the importer did not create, SHALL come in on the next run and refer to the records already imported.
 
 #### Scenario: Second run after edits
 - **WHEN** the Owner adds one Person note to the Vault and runs the importer again
 - **THEN** one new Proposal is submitted and no existing Person is duplicated
+
+#### Scenario: Register Citation after an earlier import
+- **WHEN** an earlier import gave a baptism that cites a register note only its Citation of the Vault Source, and the Owner runs the importer again
+- **THEN** it submits one Proposal for that Person note, which creates the register Citation and attaches it to the baptism already in the Tree and does nothing else; once it is accepted the parent links that rest on the baptism are strong, and a further run submits nothing
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.

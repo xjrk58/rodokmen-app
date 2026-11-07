@@ -183,7 +183,7 @@ export const listMembers = (signal) => api('members', { signal });
 /** @param {AbortSignal} [signal] @returns {Promise<import('./types.js').InvitationList>} */
 export const listInvitations = (signal) => api('invitations', { signal });
 
-/** @param {{ email: string, language: 'cs' | 'en' }} body @returns {Promise<import('./types.js').InvitationView>} */
+/** Invites by email; only this answer holds the link, with its WhatsApp message. @param {{ email: string, language: 'cs' | 'en' }} body @returns {Promise<import('./types.js').CreatedInvitation>} */
 export const invite = (body) => api('invitations', { method: 'POST', body });
 
 /** @param {string} id @returns {Promise<null>} */

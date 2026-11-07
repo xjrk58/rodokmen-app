@@ -1,2 +1,2 @@
 // Written by scripts/stamp-version.mjs: package version + hash of the precached files.
-export const APP_VERSION = '0.1.0+c588cf8674';
+export const APP_VERSION = '0.1.0+a14e98ec55';

@@ -8,11 +8,23 @@ The map runs on public reference data alone: districts, Municipalities, archives
 
 ## The Tree is for invited Members
 
-There are no public pages of the Tree and no self-registration. The Owner invites each Member by email, and Members sign in with passkeys or emailed links, never passwords. Every API request except the health check and the sign-in steps needs a Member's session or an Agent's token, and a refused request reveals nothing, not even whether a record exists.
+There are no public pages of the Tree and no self-registration. The Owner invites each Member by email, and may send the same invitation link from their own WhatsApp too. Members sign in with passkeys or emailed links, never passwords. Every API request except the health check and the sign-in steps needs a Member's session or an Agent's token, and a refused request reveals nothing, not even whether a record exists.
 
 Inside, every Member sees the whole Tree. Rodokmen deliberately has no per-person permissions: it serves one extended family that shares its history, and rules about who may see which cousin would be hard to get right and harder to explain. The roles decide who may change the Tree, not who may read it ([Roles and actions](../reference/roles-and-actions.md)).
 
 Pending Proposals are the exception: other Members see a change only once an Editor accepts it ([Proposals and review](proposals-and-review.md)).
+
+## Invitation links in chats
+
+An invitation link makes whoever holds it a Member, so it is treated like a password that works once. The server keeps only a hash of its token. That is why the link can be shown only once, in the answer that creates the invitation, and why losing it means withdrawing the invitation and inviting again. The invitation email always goes out as well, so there is never an invitation whose link nobody has.
+
+Many relatives read WhatsApp more often than email, so the Owner may send the same link from their own WhatsApp. Rodokmen itself sends nothing to WhatsApp: there is no WhatsApp Business account, no Meta account and no phone number on the server, so no new company handles family data. On a phone the app hands the message to the phone's share sheet, which passes it to WhatsApp on the device, and WhatsApp sends it end to end encrypted. On a computer the Owner copies the message and pastes it. The app never opens WhatsApp's web address (`wa.me/?text=…`), because that would put the whole message, token included, in an address sent to a web server outside the family, and into the browser's history.
+
+The token sits in the link's fragment, the part after `#`, which browsers never send to a server. So when WhatsApp fetches the link to show a preview, our server sees only a request for the app's front page, the same for everyone. Opening the link only checks the invitation. Only accepting it, with a name typed into the form, uses it up, so neither a preview nor a second look spends it.
+
+A link that came through a chat does not prove that the relative reads the invited mailbox, as an emailed link does. A mistyped address would become the account's address, and later sign-in links would go to a stranger. So the invitation page shows the relative the address before they accept, and asks them not to accept if it is not theirs. The relative is the one person who knows.
+
+Anyone who holds the link can accept it, and a chat message is easier to forward than an email and is kept in backups. That risk is accepted, because the link works only once and only for 7 days, the message asks the relative not to forward it, the page shows whose address it is, and the Owner sees every new Member and can disable one at once.
 
 ## Living people
 

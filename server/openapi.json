@@ -3972,6 +3972,64 @@
           "items"
         ]
       },
+      "CreatedInvitationInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "email": {
+            "type": "string"
+          },
+          "language": {
+            "$ref": "#/components/schemas/UiLanguageInput"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvitationStatusInput"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link": {
+            "type": "string",
+            "description": "The invitation link, the same as in the invitation email. It is shown only in this answer; only its hash is stored"
+          },
+          "shareText": {
+            "type": "string",
+            "description": "The invitation as a message for the Owner to send from their own WhatsApp, in the invitation's language, with the link. Shown only in this answer"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "language",
+          "status",
+          "createdAt",
+          "expiresAt",
+          "acceptedAt",
+          "link",
+          "shareText"
+        ]
+      },
       "InvitationCheckInput": {
         "type": "object",
         "properties": {
@@ -3984,12 +4042,20 @@
           "message": {
             "type": "string",
             "description": "What to do next, in the invitation language"
+          },
+          "email": {
+            "description": "The address the invitation went to, which becomes the account’s address and receives sign-in links; null unless the invitation is pending",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "status",
           "language",
-          "message"
+          "message",
+          "email"
         ]
       },
       "AcceptInvitationBodyInput": {
@@ -13826,6 +13892,65 @@
         ],
         "additionalProperties": false
       },
+      "CreatedInvitation": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "email": {
+            "type": "string"
+          },
+          "language": {
+            "$ref": "#/components/schemas/UiLanguage"
+          },
+          "status": {
+            "$ref": "#/components/schemas/InvitationStatus"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "acceptedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "link": {
+            "type": "string",
+            "description": "The invitation link, the same as in the invitation email. It is shown only in this answer; only its hash is stored"
+          },
+          "shareText": {
+            "type": "string",
+            "description": "The invitation as a message for the Owner to send from their own WhatsApp, in the invitation's language, with the link. Shown only in this answer"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "language",
+          "status",
+          "createdAt",
+          "expiresAt",
+          "acceptedAt",
+          "link",
+          "shareText"
+        ],
+        "additionalProperties": false
+      },
       "InvitationCheck": {
         "type": "object",
         "properties": {
@@ -13838,12 +13963,20 @@
           "message": {
             "type": "string",
             "description": "What to do next, in the invitation language"
+          },
+          "email": {
+            "description": "The address the invitation went to, which becomes the account’s address and receives sign-in links; null unless the invitation is pending",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
           "status",
           "language",
-          "message"
+          "message",
+          "email"
         ],
         "additionalProperties": false
       },
@@ -25423,7 +25556,7 @@
         }
       },
       "post": {
-        "summary": "Invite a relative by email, in Czech or English (Owner only). The link works once for 7 days",
+        "summary": "Invite a relative by email, in Czech or English (Owner only). The link works once for 7 days. Only this answer holds it, with a message for the Owner to send it from their own WhatsApp too",
         "tags": [
           "Members"
         ],
@@ -25443,7 +25576,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InvitationView"
+                  "$ref": "#/components/schemas/CreatedInvitation"
                 }
               }
             }

@@ -1,9 +1,18 @@
-import { INVITATION_DAYS, SIGN_IN_LINK_MINUTES, type InvitationStatus, type InvitationView, type MemberRole, type UiLanguage } from '@rodokmen/shared';
+import {
+  INVITATION_DAYS,
+  SIGN_IN_LINK_MINUTES,
+  type CreatedInvitation,
+  type InvitationCheck,
+  type InvitationStatus,
+  type InvitationView,
+  type MemberRole,
+  type UiLanguage,
+} from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import type { Mailer } from '../mail/mailer.js';
-import { invitationEmail, signInLinkEmail } from '../mail/templates.js';
+import { invitationEmail, invitationShareText, signInLinkEmail } from '../mail/templates.js';
 import type { Clock } from '../clock.js';
 import { ApiProblem } from './problem.js';
 import { createSession, endAllSessions, hashToken, newToken, type SessionOptions } from './sessions.js';
@@ -47,14 +56,21 @@ export function invitationView(
 
 // ---------------------------------------------------------------- invitations
 
-/** Only the Owner invites. The link works once and expires after INVITATION_DAYS. */
-export async function createInvitation(deps: AccountDeps, owner: Account, emailInput: string, language: UiLanguage): Promise<InvitationView> {
+/**
+ * Only the Owner invites. The link works once and expires after INVITATION_DAYS. The answer is
+ * the only place besides the email that holds the link, with a message for the Owner to send it
+ * from their own WhatsApp too (member-accounts spec, "Invitation link for the Owner's own
+ * WhatsApp"): only the token's hash is stored, so no later answer can show it again.
+ */
+export async function createInvitation(deps: AccountDeps, owner: Account, emailInput: string, language: UiLanguage): Promise<CreatedInvitation> {
   const email = normaliseEmail(emailInput);
   const existing = await deps.db.selectFrom('account').select('id').where('email', '=', email).executeTakeFirst();
   if (existing) throw new ApiProblem(409, 'already_member', 'This address already belongs to a Member.');
   const { token, hash } = newToken();
   const now = deps.clock.now();
   const expiresAt = new Date(now.getTime() + INVITATION_DAYS * 86_400_000);
+  // The token stays in the fragment, which no browser or link preview sends to a server.
+  const link = `${deps.publicOrigin}/#invite/${token}`;
   // Sent inside the transaction: if the email cannot go out, no invitation is left that nobody has the link to.
   const row = await deps.db.transaction().execute(async (tx) => {
     const inserted = await tx
@@ -62,12 +78,14 @@ export async function createInvitation(deps: AccountDeps, owner: Account, emailI
       .values({ token_hash: hash, email, language, invited_by: owner.id, created_at: now, expires_at: expiresAt })
       .returningAll()
       .executeTakeFirstOrThrow();
-    await deps.mailer.send(
-      invitationEmail({ to: email, language, inviterName: owner.display_name, link: `${deps.publicOrigin}/#invite/${token}`, days: INVITATION_DAYS }),
-    );
+    await deps.mailer.send(invitationEmail({ to: email, language, inviterName: owner.display_name, link, days: INVITATION_DAYS }));
     return inserted;
   });
-  return invitationView(row, now);
+  return {
+    ...invitationView(row, now),
+    link,
+    shareText: invitationShareText({ email, language, inviterName: owner.display_name, link, days: INVITATION_DAYS }),
+  };
 }
 
 export async function listInvitations(deps: AccountDeps): Promise<InvitationView[]> {
@@ -110,11 +128,16 @@ export function invitationMessage(status: InvitationStatus, language: UiLanguage
   return INVITATION_MESSAGES[status][language];
 }
 
-export async function checkInvitation(deps: AccountDeps, token: string) {
+/**
+ * Only reads: opening an invitation link, however often, uses nothing up (member-accounts spec,
+ * "Opening an invitation link uses nothing up"). A pending invitation names its address, so that
+ * the relative sees it before accepting ("The invited address is named before accepting").
+ */
+export async function checkInvitation(deps: AccountDeps, token: string): Promise<InvitationCheck> {
   const row = await deps.db.selectFrom('invitation').selectAll().where('token_hash', '=', hashToken(token)).executeTakeFirst();
   if (!row) throw new ApiProblem(404, 'invitation_unknown', 'This invitation link is not valid. Ask the Owner for a new one.');
   const status = invitationStatus(row, deps.clock.now());
-  return { status, language: row.language, message: invitationMessage(status, row.language) };
+  return { status, language: row.language, message: invitationMessage(status, row.language), email: status === 'pending' ? row.email : null };
 }
 
 /**

@@ -16,11 +16,12 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
+import { familyLinks, isWeak } from '../src/tree/relation.js';
 import type { Municipality } from '../src/vault-import/map-places.js';
 import { readVault } from '../src/vault-import/reader.js';
 import { runImport, type ImportOptions, type ImportResult } from '../src/vault-import/run.js';
 import { bearer, createAgentWithToken, ensureOwner, signIn } from './helpers.js';
-import { fixtureVault } from './fixture-vault.js';
+import { fixtureVault, REGISTER_CITED_BAPTISM } from './fixture-vault.js';
 import { startLiveServer, type LiveServer } from './live-server.js';
 
 /**
@@ -116,6 +117,7 @@ describe('the Vault importer', () => {
         'people',
         'people',
         'people',
+        'people',
         'places',
         'places',
         'plans',
@@ -133,8 +135,8 @@ describe('the Vault importer', () => {
     dry = await runImport(options({ dryRun: true }));
     expect(await counts()).toEqual(before);
     expect(dry.run.submitted).toBe(dry.plan.proposals.length);
-    expect(dry.counts.records).toMatchObject({ person: 5, place: 2, parish: 1, house: 1, source: 4, image: 2, document: 2, event: 8, family: 2 });
-    expect(dry.counts.proposals).toEqual({ vault: 1, place: 2, parish: 1, house: 1, register: 2, source: 3, person: 4 });
+    expect(dry.counts.records).toMatchObject({ person: 6, place: 2, parish: 1, house: 1, source: 4, image: 2, document: 2, event: 9, family: 2 });
+    expect(dry.counts.proposals).toEqual({ vault: 1, place: 2, parish: 1, house: 1, register: 2, source: 3, person: 5 });
     expect(dry.report).toContain('A dry run: nothing was submitted, uploaded or created.');
   });
 
@@ -159,8 +161,8 @@ describe('the Vault importer', () => {
     expect(dry.plan.issues).toContainEqual({ kind: 'livingDiffers', path: 'people/anna-kralova-1880.md', detail: 'Vault: Living; the Tree: not Living' });
     // A Person with neither birth nor death recorded is Living (tree-model spec): three more differ.
     expect(dry.plan.comparisons.living).toBe(4);
-    // With no Family root everyone is Unrelated: the four without nepribuzny differ.
-    expect(dry.plan.comparisons.relation).toBe(4);
+    // With no Family root everyone is Unrelated: the five without nepribuzny differ.
+    expect(dry.plan.comparisons.relation).toBe(5);
     expect(dry.plan.issues).toContainEqual({ kind: 'relationDiffers', path: 'people/jan-novak-1801.md', detail: 'Vault: relative; the Tree: unrelated' });
   });
 
@@ -228,6 +230,21 @@ describe('the Vault importer', () => {
     expect(marie.names.map((n) => [n.given, n.surname, n.type])).toEqual([
       ['Marie', 'Nováková', 'married'],
       ['Marie', 'Svobodová', 'birth'],
+    ]);
+  });
+
+  it("a fact that cites a register note: the baptism cites the register at the Person's confidence, beside the Vault, and the father link is strong (#133)", async () => {
+    const viktorie = await personByVault('person:viktorie-novakova-1804');
+    const baptism = viktorie.events.find((e) => e.event.type === 'baptism')!;
+    expect(baptism.citations.map((c) => [c.sourceTitle, c.page, c.confidence]).sort()).toEqual(REGISTER_CITED_BAPTISM);
+    const citation = await get(`/api/citations/${baptism.citations.find((c) => c.page === null)!.id}`, CitationDetail);
+    expect(citation).toMatchObject({ note: 'Vault: people/viktorie-novakova-1804.md', source: { reference: '123-4' } });
+    expect(citation.transcription).toContain("source: '[[n-vrbice-1784-1820]]'");
+    const tomas = await recordOf('person:tomas-novak-1770');
+    const links = (await familyLinks(s.t.db)).filter((l) => l.kind === 'parent' && l.b === viktorie.id);
+    expect(links.map((l) => [l.a === tomas ? 'father' : 'mother', isWeak(l)]).sort()).toEqual([
+      ['father', false],
+      ['mother', false],
     ]);
   });
 

@@ -86,6 +86,13 @@ The importer keeps a map from Vault keys to the records it created, on the serve
 is new: a new note becomes a new Proposal, and nothing is created twice. A note changed since it was imported is
 listed in the report under **Changed notes**; change those records in the app.
 
+A later run also brings what a newer importer makes of notes already imported, attached to the records already in
+the Tree. An import made before #133 gave a fact that cites a register note directly only the Vault's Citation;
+the next run gives each such Person note a small Proposal that adds the register's Citation to their Events. Accept
+the run's batch as in step 5. Those Events then carry a Citation at the Person's confidence, so a probable or
+confirmed parent or partner link no longer makes anyone a Possible relative. An Event whose Proposal is still pending
+waits, listed in the report, until a run after it is accepted.
+
 ## Afterwards
 
 Freeze the Vault (task 4.3 of [`add-vault-import`](../../openspec/changes/add-vault-import/tasks.md)): a last

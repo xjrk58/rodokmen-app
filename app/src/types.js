@@ -94,13 +94,14 @@
 /** @typedef {import('../../shared/src/schemas/accounts.js').MemberView} MemberView */
 /** @typedef {import('../../shared/src/schemas/accounts.js').MemberRole} MemberRole */
 /** @typedef {import('../../shared/src/schemas/accounts.js').InvitationView} InvitationView */
+/** @typedef {import('../../shared/src/schemas/accounts.js').CreatedInvitation} CreatedInvitation */
 /** @typedef {import('../../shared/src/schemas/accounts.js').SessionView} SessionView */
 /** @typedef {import('../../shared/src/schemas/accounts.js').UpdateMeBody} UpdateMeBody */
 /** @typedef {{ items: import('../../shared/src/schemas/accounts.js').MemberView[] }} MemberList */
 /** @typedef {{ items: import('../../shared/src/schemas/accounts.js').InvitationView[] }} InvitationList */
 /** @typedef {{ items: import('../../shared/src/schemas/accounts.js').SessionView[] }} SessionList */
 /** @typedef {{ items: { id: string, name: string, createdAt: string, lastUsedAt: string | null, backedUp: boolean }[] }} PasskeyList */
-/** @typedef {{ status: import('../../shared/src/schemas/accounts.js').InvitationStatus, language: 'cs' | 'en', message: string }} InvitationCheck */
+/** @typedef {import('../../shared/src/schemas/accounts.js').InvitationCheck} InvitationCheck */
 /** @typedef {{ ok: true, member: Me }} SignedIn */
 /** @typedef {import('../../shared/src/schemas/accounts.js').AgentView} AgentView */
 /** @typedef {import('../../shared/src/schemas/accounts.js').AgentTokenView} AgentTokenView */

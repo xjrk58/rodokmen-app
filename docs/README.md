@@ -20,6 +20,7 @@ Running Rodokmen:
 - [Deploy to netcup and go live](how-to/go-live.md): the Owner's steps, still in the deploy guide for now.
 - [Restore from a Backup](how-to/restore-from-a-backup.md): rebuild the server after a loss, or check that a Backup restores.
 - [Connect an AI assistant through MCP](how-to/connect-an-assistant.md): create an Agent and its token, and connect the assistant.
+- [Invite a Member](how-to/invite-a-member.md): invite a relative by email, also send the link from your own WhatsApp, and withdraw an invitation.
 - [Mark Family roots and link Members to their Persons](how-to/mark-family-roots.md): tell Rodokmen where the family starts and who each Member is.
 - [Import the Vault](how-to/import-the-vault.md): the Owner's one-time import of the Vault as an Import batch, from the dry run to accepting the batch.
 - [Switch scan reading on](how-to/switch-on-scan-reading.md): the Owner's API key, the switch and the daily limit, watching the use, and switching it off.

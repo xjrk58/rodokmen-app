@@ -48,6 +48,7 @@ export const PRECACHE = [
   'src/screen-parts.js',
   'src/search-box.js',
   'src/settings-agents.js',
+  'src/settings-invitation.js',
   'src/settings-parts.js',
   'src/settings-scan-reading.js',
   'src/settings-screen.js',
