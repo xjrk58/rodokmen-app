@@ -1,5 +1,6 @@
 export * from './edtf.js';
 export * from './living.js';
+export * from './presumed-death.js';
 export * from './rules.js';
 export * from './leads.js';
 export * from './gaps.js';

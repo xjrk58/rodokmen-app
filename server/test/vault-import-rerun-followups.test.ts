@@ -23,9 +23,9 @@ import { fixtureVault, longLog } from './fixture-vault.js';
 import { startLiveServer, type LiveServer } from './live-server.js';
 
 /**
- * A later run over a Tree imported before the follow-ups of the Owner's real import: fields the Tree
- * has no place for (#134), long log notes (#136) and a marriage both spouses record without a Source
- * note (#149). The importer before them is this importer with its plan turned back into what the
+ * A later run over a Tree imported before the follow-ups of the Owner's real import: presumed deaths
+ * (#132), fields the Tree has no place for (#134), long log notes (#136) and a marriage both spouses
+ * record without a Source note (#149). The importer before them is this importer with its plan turned back into what the
  * earlier one planned; the second run is this importer as it is.
  */
 const before = vi.hoisted(() => ({ fix: false }));
@@ -44,6 +44,11 @@ function before149(plan: Plan): void {
     const first = p.ops.findIndex((o) => o.key.includes(m.key));
     p.ops = [...p.ops.slice(0, first), ...created.map(rekey), ...p.ops.slice(first).map((o) => (o.key.includes(m.key) ? rekey(o) : o))];
   }
+}
+
+/** The plan of the importer before #132: no presumed death. */
+function before132(plan: Plan): void {
+  for (const p of plan.proposals) p.ops = p.ops.filter((o) => !o.key.includes(':presumed-death'));
 }
 
 /** The plan of the importer before #134: research notes held the note's body alone (none without one), and a Citation's note the path. */
@@ -69,6 +74,7 @@ vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
     mapVault: async (...args: Parameters<typeof mapper.mapVault>) => {
       const plan = await mapper.mapVault(...args);
       if (!before.fix) {
+        before132(plan);
         before134(plan);
         before136(plan);
         before149(plan);
@@ -80,7 +86,7 @@ vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
 
 const MUNICIPALITIES: Municipality[] = [{ code: '572128', name: 'Vrbice', district: 'Jičín', lat: 50.38, lon: 15.39 }];
 
-describe('a later run over a Tree imported before the follow-ups (#134, #136, #149)', () => {
+describe('a later run over a Tree imported before the follow-ups (#132, #134, #136, #149)', () => {
   let s: LiveServer;
   let token: string;
   let owner: Account;
@@ -166,6 +172,30 @@ describe('a later run over a Tree imported before the follow-ups (#134, #136, #1
       operations: [{ op: 'setNotes', record: 'parish', id: parish.id, baseVersion: parish.version, notes: `${parish.notes}\n\nAsk the parish office.` }],
     });
     expect(direct.statusCode, direct.body).toBe(201);
+    // No presumed deaths: Tomáš, Marie and Ludmila have no dates of their own, so the Tree has them Living ...
+    for (const key of ['person:tomas-novak-1770', 'person:marie-svobodova-1775', 'person:ludmila-vesela-1805']) expect((await person(key)).living).toBe(true);
+    // ... until the Owner records Ludmila's death, from a family memory.
+    const death = await asOwner('POST', '/api/proposals', {
+      formatVersion: OPERATIONS_VERSION,
+      idempotencyKey: 'owner-ludmila-death',
+      direct: true,
+      operations: [
+        {
+          op: 'createCitation',
+          tempId: 'tmp:c',
+          sourceId: await recordOf('vault-source'),
+          page: null,
+          transcription: 'Died in Vrbice in 1870, the family says (invented).',
+          readOn: '2026-11-01',
+          confidence: 'low',
+          note: null,
+        },
+        { op: 'createEvent', tempId: 'tmp:e', type: 'death', date: '1870', placeId: null, houseId: null, description: null },
+        { op: 'addRole', eventId: 'tmp:e', personId: await recordOf('person:ludmila-vesela-1805'), role: 'deceased', roleDetail: null },
+        { op: 'attachCitation', citationId: 'tmp:c', eventId: 'tmp:e' },
+      ],
+    });
+    expect(death.statusCode, death.body).toBe(201);
   });
 
   it('a later run submits only what the fixes add, and its batch is accepted whole', async () => {
@@ -176,6 +206,20 @@ describe('a later run over a Tree imported before the follow-ups (#134, #136, #1
     expect(second.run.submitted).toBe(dry.run.submitted);
     expect(second.run.deferred).toEqual([]);
     await acceptBatch(second.run.batch!.id, second.run.submitted);
+  });
+
+  it('Persons the Tree still has Living get their presumed death; one with a death added since is left out and listed (#132)', async () => {
+    for (const run of [dry, second]) expect(run.run.presumedNotLiving).toEqual(['people/ludmila-vesela-1805.md']);
+    expect(second.report).toContain('- people/ludmila-vesela-1805.md');
+    for (const key of ['person:tomas-novak-1770', 'person:marie-svobodova-1775']) {
+      const p = await person(key);
+      expect(p.living).toBe(false);
+      expect(p.events.filter((e) => e.event.type === 'death').map((e) => [e.event.date, e.event.description?.slice(0, 40)])).toEqual([
+        [null, 'Died, date unknown: born by 1787-11-20 a'],
+      ]);
+    }
+    const ludmila = await person('person:ludmila-vesela-1805');
+    expect(ludmila.events.filter((e) => e.event.type === 'death').map((e) => e.event.date)).toEqual(['1870']);
   });
 
   it('research notes that hold what the import wrote get the fields not mapped; those changed since, and Citation notes, are listed (#134)', async () => {

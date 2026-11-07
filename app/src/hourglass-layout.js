@@ -357,15 +357,19 @@ function boundsOf(nodes) {
 }
 
 /**
- * The life years of a Person for a box: "1801–1850", "* 1936", "† 1850" or "".
- * @param {{ birth: string | null, death: string | null }} p
+ * The life years of a Person for a box: "1801–1850", "* 1936", "† 1850", or "".
+ * A death without a date (a presumed one, #132) shows as "†" alone, or "1801–†" after a birth year.
+ * `died` says a death or burial is recorded; without it, a Person with no birth date who is not
+ * Living has one, as the Living rule says only a recorded death makes them so.
+ * @param {{ birth: string | null, death: string | null, living?: boolean, died?: boolean }} p
  */
 export function lifeYears(p) {
   const year = (/** @type {string | null} */ d) => (d ? (/\d{4}/.exec(d)?.[0] ?? d) : null);
   const b = year(p.birth);
   const d = year(p.death);
+  const died = p.died === true || (p.birth === null && p.living === false);
   if (b && d) return `${b}–${d}`;
-  if (b) return `* ${b}`;
+  if (b) return died ? `${b}–†` : `* ${b}`;
   if (d) return `† ${d}`;
-  return '';
+  return died ? '†' : '';
 }

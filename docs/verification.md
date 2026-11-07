@@ -50,6 +50,7 @@ this page with `node scripts/verification-trace.mjs`.
 | tree-model: Relation follows the evidence | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
 | tree-model: Relation to the family is computed | openspec/changes/add-vault-import/specs/tree-model/spec.md | `relationLevels` | shared/src/relation.ts | see below |
 | tree-model: Research notes on records | openspec/changes/add-vault-import/specs/tree-model/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
+| vault-import: Presumed death when birth is provably long ago | openspec/changes/add-vault-import/specs/vault-import/spec.md | `presumedDead` | shared/src/presumed-death.ts | see below |
 
 ## Assumed, not proved
 
@@ -64,6 +65,8 @@ A verified function's `requires` are proved wherever a verified function calls i
   - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)`; `s.kind === 'before' ==> isValidDay(s.end.last)`; `s.kind === 'after' ==> isValidDay(s.start.first)`
 - `isLivingOn` (shared/src/living.ts):
   - its requires, where unverified code calls it (`isLiving`): `1 <= today.month && today.month <= 12 && 1 <= today.day && today.day <= 31`; `forall(i: nat, i < birthLatest.length ==> 1 <= birthLatest[i].month && birthLatest[i].month <= 12 && 1 <= birthLatest[i].day && birthLatest[i].day <= 31)`
+- `presumedDead` (shared/src/presumed-death.ts):
+  - its requires, where unverified code calls it (`presumeDeaths`): `hasDeath.length === count && ownBirth.length === count && chains.length === count`
 - `relationLevels` (shared/src/relation.ts):
   - its requires, where unverified code calls it (`relationsOf`): `isRoot.length === count`; `forall(i: nat, i < links.length ==> 0 <= links[i].a && links[i].a < count && 0 <= links[i].b && links[i].b < count)`
 - `detectConflict` (shared/src/rules.ts):
@@ -83,6 +86,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 - shared/src/gaps.ts: `gapKey`, `maxInt`, `minInt`, `isBirthGap`, `isParentsGap`, `isMarriageGap`, `fits`, `anyFits`, `hasSuggestion`, `gapSuggestions`, `isRealGap`
 - shared/src/leads.ts: `isLeadStatus`, `isFoundBy`
 - shared/src/matching.ts: `sharesOne`, `nameMatches`, `houseMatches`, `yearsMatch`, `placeMatches`, `matchReasons`, `scoreOf`, `fullMatch`, `isSuggested`
+- shared/src/presumed-death.ts: `anchorBound`, `endsAt`, `isStep`, `checkChain`
 - shared/src/reading.ts: `copyToSend`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
 - shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
@@ -92,6 +96,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
 - shared/proofs/src/edtf.dfy: `JSStringLtAsymmetric`, `JSStringLtTotal`, `JSStringLtTransitive`, `compareByEarliest_transitive`
+- shared/proofs/src/presumed-death.dfy: `ChainNeedsFactOrLink`, `ChainBoundsBirth`
 - shared/proofs/src/relation.dfy: `ReachedIsLeast`, `EvidenceOnlyAdds`, `CitationAddedKeepsStrength`
 - shared/proofs/src/rules.dfy: assertions only
 
@@ -99,6 +104,19 @@ Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
 Where a proof covers less than its requirement, exactly what it does and does not prove.
 
+- **Presumed death** (`presumedDead`, shared/src/presumed-death.ts; vault-import "Presumed death when birth is provably
+  long ago"). Proved, for any Persons, facts, parent links and offered chains: a Person is presumed dead only if they have
+  no death or burial and no birth or baptism date of their own, and the chain offered for them ends at them, starts at a
+  fact of its first Person (a birth, a marriage at 12 or older, or a parent's death at most a year before the birth), takes
+  each further step along a parent link by one of the bounds (a parent at least 12 years older, a child at most 60 years
+  after the mother), and bounds their birth before the cutoff; with no fact and no parent link, nobody is presumed dead
+  ("No dates, no relatives"). The lemma `ChainBoundsBirth` in presumed-death.dfy proves such a chain sound: for any
+  birth days that keep the bounds, everyone on it was born on or before the chain's value for them. Not proved: the search
+  for the tightest bounds and the chains behind them (`presumeDeaths`; the proved check accepts or refuses what it
+  offers, so a mistake there can only leave a death unpresumed), the facts the importer reads from the Vault
+  (server/src/vault-import/map-presumed.ts: the latest days of EDTF dates, the marriages of either spouse's note, fathers
+  and mothers), and that the cutoff is the day 125 years before the run; shared/test/presumed-death.test.ts and
+  server/test/vault-import-mapping.test.ts test those.
 - **The gap finder** (`suggestGaps`, shared/src/gaps.ts; research-leads "Gap finder suggests leads"). Proved, for any
   Persons, marriages, registers, decided keys and margin: every suggestion is a real gap of its kind (a Relative with no
   birth or baptism Citation; a Relative with unknown parents and a known Parish and years; a Relative's marriage with
@@ -207,9 +225,10 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   when a proof chains several.
 
 Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/gaps.ts,
-shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/reading.ts, shared/src/relation.ts and
-shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
-(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of relation.ts and gaps.ts
-compare two plain integers, emitted in their order; gaps.ts, leads.ts, matching.ts and reading.ts have no optionals at
-all: unknown years, houses, Places and Sources are a flag and 0, or the empty string), and the generated `.dfy.gen`
-was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.
+shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts,
+shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or
+in a specification (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of
+relation.ts, gaps.ts and presumed-death.ts compare two plain integers, emitted in their order; gaps.ts, leads.ts,
+matching.ts, presumed-death.ts and reading.ts have no optionals at all: unknown years, houses, Places and Sources are a
+flag and 0, or the empty string, and a Person without a chain has an empty one), and the generated `.dfy.gen` was read
+for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.

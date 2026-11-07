@@ -27,6 +27,8 @@ export interface MapContext {
   parishSeats: Map<string, string>;
   /** By note path, the fields and values the Tree has no place for, as lines to keep (#134). */
   kept: Map<string, string[]>;
+  /** By Person note id, the description of the death Event the bounds presume (#132). */
+  presumed: Map<string, string>;
 }
 
 /** The Vault's words for a Place's kind, folded, and the Tree's type for each. */

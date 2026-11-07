@@ -15,6 +15,8 @@ export interface RunState {
   submitted: Map<string, { proposalId: string; tempId: string | null }>;
   /** Uploaded files: Vault path (or path.pdf for a converted DOC) → upload id. */
   uploads: Map<string, string>;
+  /** Keys this run leaves out although they are new: presumed deaths of Persons no longer Living in the Tree (#132). */
+  skip?: Set<string>;
 }
 
 export interface Resolved {
@@ -59,7 +61,7 @@ export function resolveProposal(p: PlannedProposal, state: RunState): Resolution
   const walkRecord = (entries: Array<[string, unknown]>): Record<string, unknown> => Object.fromEntries(entries.map(([k, x]) => [k, walk(x)]));
   let n = 0;
   for (const planned of p.ops) {
-    if (imported(state, planned.key) || state.submitted.has(planned.key)) continue;
+    if (imported(state, planned.key) || state.submitted.has(planned.key) || state.skip?.has(planned.key)) continue;
     // The research notes of a record an earlier run imported may have changed in the app since: a later
     // run writes them only where they hold what that run wrote, and checks that first (run.ts, #134).
     if (planned.op.op === 'setNotes' && isAt(planned.op.id) && imported(state, planned.op.id.slice(1))) continue;

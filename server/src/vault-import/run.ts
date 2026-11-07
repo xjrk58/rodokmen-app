@@ -241,6 +241,33 @@ async function proposals(r: Run): Promise<void> {
   }
 }
 
+const Living = z.object({ living: z.boolean() });
+
+/**
+ * A presumed death (#132) for a Person an earlier run imported is submitted only while the Tree
+ * still treats them as Living: a death, burial or birth date added in the app since decides, and
+ * the presumed death is left out (with its Role and Citation) and listed.
+ */
+async function checkPresumed(r: Run): Promise<void> {
+  for (const p of r.plan.proposals) {
+    const event = p.ops.find((o) => o.key.endsWith(':presumed-death') && o.op.op === 'createEvent');
+    if (!event || imported(r.state, event.key)) continue;
+    const personKey = `person:${event.key.slice('event:'.length, -':presumed-death'.length)}`;
+    const id = r.state.map.get(personKey)?.recordId;
+    if (!id || !imported(r.state, personKey)) continue;
+    let living = false;
+    try {
+      living = Living.parse(await r.client.get(`/api/persons/${id}`)).living;
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+    }
+    if (living) continue;
+    r.state.skip ??= new Set();
+    for (const o of p.ops) if (o.key.includes(event.key)) r.state.skip.add(o.key);
+    r.summary.presumedNotLiving.push(p.path ?? personKey);
+  }
+}
+
 const NotesOf = z.object({ version: z.number().int(), notes: z.string().nullable() });
 
 /**
@@ -355,6 +382,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
     updates: { added: 0, notUpdated: [] },
+    presumedNotLiving: [],
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.
   for (const p of plan.proposals) {
@@ -366,6 +394,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     if (imported(state, m.key) && imported(state, m.earlierKey))
       summary.duplicateMarriages.push({ paths: m.paths, keep: state.map.get(m.key)?.recordId ?? null, other: state.map.get(m.earlierKey)?.recordId ?? null });
   const r: Run = { options, client, vault, plan, state, summary, batch: null };
+  await checkPresumed(r);
   await proposals(r);
   await updates(r);
   await leads(r);

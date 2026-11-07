@@ -29,6 +29,8 @@ export interface RunSummary {
    * to register entries' Citation notes.
    */
   updates: { added: number; notUpdated: Array<{ path: string; lines: string[]; why: 'changed' | 'citation' }> };
+  /** Persons an earlier run imported whose presumed death (#132) is left out, as the Tree no longer treats them as Living. */
+  presumedNotLiving: string[];
 }
 
 export interface Counts {
@@ -58,6 +60,7 @@ const ISSUE_TITLES: Record<IssueKind, string> = {
   livingDiffers: 'Persons whose Living status in the Vault differs from the computed one',
   relationDiffers: 'Persons whose relation to the family in the Vault differs from the computed one',
   marriageDiffers: 'Marriages both spouses record without a Source note, with another date or Place (two Events)',
+  presumedDeath: 'Persons presumed dead: the bounds prove them born more than 125 years before the run (a death Event without a date)',
 };
 
 const ISSUE_ORDER: IssueKind[] = [
@@ -74,6 +77,7 @@ const ISSUE_ORDER: IssueKind[] = [
   'missingFile',
   'unreadableFile',
   'confidenceDisagreement',
+  'presumedDeath',
   'livingDiffers',
   'relationDiffers',
   'marriageDiffers',
@@ -167,6 +171,19 @@ function fieldsNotMapped(run: RunSummary): string[] {
   ];
 }
 
+/** Presumed deaths left out of a later run (#132): the Tree no longer treats the Person as Living. */
+function presumedNotLiving(run: RunSummary): string[] {
+  if (!run.presumedNotLiving.length) return [];
+  return [
+    `## Presumed deaths left out (${run.presumedNotLiving.length})`,
+    '',
+    'These Persons were imported before #132 and are no longer Living in the Tree (a death, burial or birth was added since), so no death is presumed for them:',
+    '',
+    ...run.presumedNotLiving.map((path) => `- ${path}`),
+    '',
+  ];
+}
+
 /** Marriages an earlier importer gave two Events (#149): both stay in the Tree. */
 function duplicateMarriages(run: RunSummary): string[] {
   if (!run.duplicateMarriages.length) return [];
@@ -216,7 +233,7 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
       ...run.changed.notUpdated.map((k) => `- ${k}`),
       '',
     );
-  lines.push(...fieldsNotMapped(run), ...duplicateMarriages(run));
+  lines.push(...presumedNotLiving(run), ...fieldsNotMapped(run), ...duplicateMarriages(run));
   for (const kind of ISSUE_ORDER) {
     const title = ISSUE_TITLES[kind];
     const list = plan.issues.filter((i) => i.kind === kind);

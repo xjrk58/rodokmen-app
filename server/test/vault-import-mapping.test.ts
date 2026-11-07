@@ -35,6 +35,34 @@ describe('mapping the fixture Vault', () => {
     await vault.remove();
   });
 
+  it('presumed death: a son’s baptism or a marriage bounds the birth; married in 1925 or no dates and no relatives, left alone (#132)', async () => {
+    const person = (id: string, more: string) =>
+      writeFile(join(vault.path, `people/${id}.md`), `---\ntype: person\nname:\n  given: Invented\n  surname: ${id}\nliving: false\n${more}---\n`);
+    await person('anna-novakova-1900', "marriages:\n  - date: 1925-06-01\n    place: '[[vrbice]]'\n");
+    await person('nikdo-1800', '');
+    const p = await plan();
+    const presumed = Object.fromEntries(p.issues.filter((i) => i.kind === 'presumedDeath').map((i) => [i.path, i.detail]));
+    expect(Object.keys(presumed)).toEqual(['people/ludmila-vesela-1805.md', 'people/marie-svobodova-1775.md', 'people/tomas-novak-1770.md']);
+    expect(presumed['people/ludmila-vesela-1805.md']).toBe(
+      'Died, date unknown: born by 1813-02-01 at the latest (married 1825-02-01, at least 12 years old), more than 125 years before 2026-11-02.',
+    );
+    // The new notes are left alone, and the dry run lists them as Living in the Tree while the Vault says not.
+    expect(p.issues).toContainEqual({ kind: 'livingDiffers', path: 'people/anna-novakova-1900.md', detail: 'Vault: not Living; the Tree: Living' });
+    expect(p.issues).toContainEqual({ kind: 'livingDiffers', path: 'people/nikdo-1800.md', detail: 'Vault: not Living; the Tree: Living' });
+    // The Event, in the Person's own Proposal, with its Role and the Vault Citation of the note.
+    const tomas = p.proposals.find((x) => x.path === 'people/tomas-novak-1770.md')!;
+    expect(tomas.ops.filter((o) => o.key.includes('presumed-death')).map((o) => o.op.op)).toEqual(['createEvent', 'addRole', 'attachCitation']);
+  });
+
+  it('presumed death through a child: a father whose son was baptized in 1801 is born by 1789 (#132)', async () => {
+    await edit('people/tomas-novak-1770.md', "marriages:\n  - spouse: '[[marie-svobodova-1775]]'\n    date: 1799-11-20\n    place: '[[vrbice]]'\n", '');
+    await edit('people/marie-svobodova-1775.md', "marriages:\n  - spouse: '[[tomas-novak-1770]]'\n    date: 1799-11-20\n    place: '[[vrbice]]'\n", '');
+    const p = await plan();
+    expect(p.issues.find((i) => i.kind === 'presumedDeath' && i.path === 'people/tomas-novak-1770.md')!.detail).toBe(
+      'Died, date unknown: born by 1789-03-12 at the latest (Jan Novák baptized 1801-03-12; a parent of Jan Novák, at least 12 years older), more than 125 years before 2026-11-02.',
+    );
+  });
+
   it('a long log note: its lead keeps the whole note, and knows the first 4,000 characters an earlier run kept (#136)', async () => {
     await writeFile(join(vault.path, 'log/2026-10-25-long.md'), longLog('A long invented session'));
     const p = await plan();

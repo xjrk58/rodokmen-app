@@ -14,6 +14,7 @@ import {
   role,
 } from './map-people.js';
 import { keep, linked, notesOf, unmapped, vaultCitation, type MapContext } from './map-places.js';
+import { presumedDeath } from './map-presumed.js';
 import { at, CONFIDENCE_OF, lowest, type PlannedFile, type PlannedProposal } from './plan.js';
 import { dateText, linkOf, textOf, type VaultNote } from './reader.js';
 
@@ -248,11 +249,12 @@ export function mapPersons(ctx: MapContext): void {
     const { father, mother, adoptiveFather, adoptiveMother } = parentsOf(ctx, p, note);
     if (father || mother) childLink(ctx, p, ensureFamily(ctx, p, father, mother), person, 'birth');
     if (adoptiveFather || adoptiveMother) childLink(ctx, p, ensureFamily(ctx, p, adoptiveFather, adoptiveMother), person, 'adoptive');
-    if (facts.length || marriages.length || residences.length || p.ops.length > before) {
+    if (facts.length || marriages.length || residences.length || ctx.presumed.has(note.id) || p.ops.length > before) {
       const citationKey = vaultCitation(ctx, p, note);
       for (const f of facts) registerCitation(ctx, p, note, f.source, factEvent(ctx, p, note, f, citationKey));
       for (const m of marriages) registerCitation(ctx, p, note, m.source, marriageEvent(ctx, p, note, m, citationKey, null));
       residences.forEach((r, i) => residence(ctx, p, note, r, i, citationKey, person));
+      presumedDeath(ctx, p, note, person, citationKey);
     }
     if (p.ops.length === before) b.proposals.pop();
   }

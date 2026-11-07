@@ -135,8 +135,9 @@ describe('the Vault importer', () => {
     dry = await runImport(options({ dryRun: true }));
     expect(await counts()).toEqual(before);
     expect(dry.run.submitted).toBe(dry.plan.proposals.length);
-    expect(dry.counts.records).toMatchObject({ person: 6, place: 2, parish: 1, house: 1, source: 4, image: 2, document: 2, event: 10, family: 2 });
-    expect(dry.counts.proposals).toEqual({ vault: 1, place: 2, parish: 1, house: 1, register: 2, source: 3, person: 5 });
+    // Three of the events are presumed deaths (#132), one of them in a Proposal of Ludmila's own.
+    expect(dry.counts.records).toMatchObject({ person: 6, place: 2, parish: 1, house: 1, source: 4, image: 2, document: 2, event: 13, family: 2 });
+    expect(dry.counts.proposals).toEqual({ vault: 1, place: 2, parish: 1, house: 1, register: 2, source: 3, person: 6 });
     expect(dry.report).toContain('A dry run: nothing was submitted, uploaded or created.');
   });
 
@@ -159,8 +160,14 @@ describe('the Vault importer', () => {
 
   it('Vault says Living, dates say otherwise: the dry run lists the Person; relations differ while no Family root is marked', () => {
     expect(dry.plan.issues).toContainEqual({ kind: 'livingDiffers', path: 'people/anna-kralova-1880.md', detail: 'Vault: Living; the Tree: not Living' });
-    // A Person with neither birth nor death recorded is Living (tree-model spec): three more differ.
-    expect(dry.plan.comparisons.living).toBe(4);
+    // A Person with neither birth nor death recorded is Living (tree-model spec), unless the bounds presume a
+    // death (#132): the three without dates are presumed dead, so the Tree agrees with the Vault on them.
+    expect(dry.plan.comparisons.living).toBe(1);
+    expect(dry.plan.issues.filter((i) => i.kind === 'presumedDeath').map((i) => i.path)).toEqual([
+      'people/ludmila-vesela-1805.md',
+      'people/marie-svobodova-1775.md',
+      'people/tomas-novak-1770.md',
+    ]);
     // With no Family root everyone is Unrelated: the five without nepribuzny differ.
     expect(dry.plan.comparisons.relation).toBe(5);
     expect(dry.plan.issues).toContainEqual({ kind: 'relationDiffers', path: 'people/jan-novak-1801.md', detail: 'Vault: relative; the Tree: unrelated' });
@@ -270,6 +277,25 @@ describe('the Vault importer', () => {
     ]);
   });
 
+  it('presumed death: no dates of his own, married in 1799, so born by 1787: an undated death citing the Vault, and not Living (#132)', async () => {
+    const tomas = await personByVault('person:tomas-novak-1770');
+    expect(tomas.living).toBe(false);
+    const deaths = tomas.events.filter((e) => e.event.type === 'death');
+    expect(deaths.map((e) => [e.role, e.event.date, e.event.description])).toEqual([
+      [
+        'deceased',
+        null,
+        'Died, date unknown: born by 1787-11-20 at the latest (married 1799-11-20, at least 12 years old), more than 125 years before 2026-11-02.',
+      ],
+    ]);
+    expect(deaths[0]!.citations).toEqual([
+      expect.objectContaining({ sourceTitle: 'Vault (rodokmen-data)', page: 'people/tomas-novak-1770.md', confidence: 'low' }),
+    ]);
+    // Jan has a death of his own, and Viktorie a baptism date: the Living rule decides for them.
+    expect((await personByVault('person:jan-novak-1801')).events.filter((e) => e.event.type === 'death' && e.event.date === null)).toEqual([]);
+    expect((await personByVault('person:viktorie-novakova-1804')).events.filter((e) => e.event.type === 'death')).toEqual([]);
+  });
+
   it('line tag: obec/… and nepribuzny are derived, line/novak becomes a Label; the Tree computes Living itself', async () => {
     const anna = await personByVault('person:anna-kralova-1880');
     expect(anna.labels).toEqual(['line/novak']);
@@ -346,7 +372,16 @@ describe('the Vault importer', () => {
     expect(after.proposals).toBe(before.proposals + 1);
     expect(after.batches).toBe(before.batches + 1);
     const [proposal] = (await get(`/api/batches/${second.run.batch!.id}/proposals`, ProposalList)).items;
-    expect(proposal!.operations.map((o) => o.operation.op)).toEqual(['createPerson', 'addLabel', 'linkChild', 'createCitation']);
+    // No dates of his own, but born at most 60 years after his mother, who married in 1799: a presumed death (#132).
+    expect(proposal!.operations.map((o) => o.operation.op)).toEqual([
+      'createPerson',
+      'addLabel',
+      'linkChild',
+      'createCitation',
+      'createEvent',
+      'addRole',
+      'attachCitation',
+    ]);
     // It links into the Family already in the Tree, not a new one.
     const link = proposal!.operations[2]!.operation;
     expect(link.op === 'linkChild' ? link.familyId : '').toMatch(/^[0-9a-f-]{36}$/);

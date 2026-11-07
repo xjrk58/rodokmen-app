@@ -111,6 +111,29 @@ The importer SHALL NOT copy the Vault's `living` field. The Tree computes Living
 - **WHEN** a Vault Person has `living: true` and a recorded death
 - **THEN** the dry run lists the Person, and the Tree treats them as not Living
 
+### Requirement: Presumed death when birth is provably long ago
+A Person with no death or burial and no birth or baptism date of their own SHALL get a death Event without a date, citing the Vault Source, when a chain of these bounds proves them born more than 125 years before the run: at least 12 years before their own marriage; a parent at least 12 years before their child; a child at most a year after a parent's death and at most 60 years after their mother. Its description SHALL state the chain; the dry run SHALL list them.
+
+#### Scenario: Married long ago, no dates of his own
+- **WHEN** a Person note records a marriage in 1803 and no birth, baptism, death or burial
+- **THEN** the Person gets a death Event without a date whose description says born by 1791 at the latest, and the Tree does not treat them as Living
+
+#### Scenario: A child's birth tightens the bound
+- **WHEN** that Person's son was born in 1801
+- **THEN** the description says born by 1789 at the latest
+
+#### Scenario: Married within 125 years
+- **WHEN** a Person note records a marriage in 1925 and no other date
+- **THEN** no death Event is added, and the Tree treats the Person as Living
+
+#### Scenario: No dates, no relatives
+- **WHEN** a Person note has no date and no parent, child or spouse
+- **THEN** no death Event is added
+
+#### Scenario: Presumed death after an earlier import
+- **WHEN** an earlier import gave such a Person no death Event, and the Owner runs the importer again
+- **THEN** the run submits the death Event for them if the Tree still treats them as Living, and leaves them out otherwise
+
 ### Requirement: Re-runs submit only what is new
 The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL submit only notes that are new or changed since the last accepted import, and SHALL never create a second Person for an id it has already imported. A record a note gives that an earlier run did not import, such as a Citation an earlier version of the importer did not create, SHALL come in on the next run and refer to the records already imported.
 
