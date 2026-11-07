@@ -63,6 +63,8 @@ export interface PlannedLead {
   hash: string;
   question: string;
   reason: string;
+  /** What an importer before #136 wrote as the reason, cut at 4,000 characters; null when that was the whole note. */
+  earlierReason: string | null;
   personKeys: string[];
   placeKeys: string[];
   status: 'open' | 'found' | 'not_found';

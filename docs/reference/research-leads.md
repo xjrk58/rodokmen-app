@@ -26,7 +26,7 @@ Every route also answers 401 without a session or token, 403 when the role may n
 | Field                              | Type                                         | Notes                                                                 |
 | ---------------------------------- | -------------------------------------------- | --------------------------------------------------------------------- |
 | `question`                         | text, 1 to 1,000 characters                  | required                                                              |
-| `reason`                           | text, 1 to 4,000 characters                  | required: why, and what is known so far                               |
+| `reason`                           | text, 1 to 20,000 characters                 | required: why, and what is known so far (a whole research log fits)   |
 | `archive`                          | text up to 400, or null                      | the archive to look in                                                |
 | `sourceId` (shown as `source`)     | id of a Source, or null                      | the register to check                                                 |
 | `years`                            | `{ from, to }`, or null                      | years 1 to 9999, `from` ≤ `to`; one year has `from` equal to `to`     |

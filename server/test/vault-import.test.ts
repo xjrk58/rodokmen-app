@@ -177,7 +177,7 @@ describe('the Vault importer', () => {
     });
     expect(batches.items[0]!.vaultCommit).toBeNull();
     // Leads wait for the batch: their Persons are not in the Tree yet.
-    expect(first.run.leads).toEqual({ created: 0, waiting: 2, unchanged: 0 });
+    expect(first.run.leads).toEqual({ created: 0, waiting: 2, unchanged: 0, updated: 0, notUpdated: [] });
     const accept = await asOwner('POST', `/api/batches/${batches.items[0]!.id}/accept`, { proposals: first.run.submitted });
     expect(accept.statusCode, accept.body).toBe(200);
     expect(accept.json()).toMatchObject({ failed: [], blocked: [] });
@@ -305,7 +305,7 @@ describe('the Vault importer', () => {
   it('negative search in a log: a Research lead exists, closed as not found, with that search record; the plan is an open lead', async () => {
     const leadsRun = await runImport(options());
     expect(leadsRun.run.submitted).toBe(0);
-    expect(leadsRun.run.leads).toEqual({ created: 2, waiting: 0, unchanged: 0 });
+    expect(leadsRun.run.leads).toEqual({ created: 2, waiting: 0, unchanged: 0, updated: 0, notUpdated: [] });
     const list = await get('/api/leads?limit=50', LeadList);
     const log = list.items.find((l) => l.question === 'Baptism of Tomáš Novák')!;
     expect(log.status).toBe('not_found');

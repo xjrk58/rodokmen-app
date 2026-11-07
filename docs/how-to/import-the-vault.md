@@ -95,6 +95,11 @@ the run's batch as in step 5. Those Events then carry a Citation at the Person's
 confirmed parent or partner link no longer makes anyone a Possible relative. An Event whose Proposal is still pending
 waits, listed in the report, until a run after it is accepted.
 
+An import made before #136 kept the first 4,000 characters of a long log or plan note in its Research lead. The
+next run gives such a lead the whole note, if the lead still holds exactly what that run wrote. A lead you changed
+in the app since is left as it is and listed in the report under **Research leads**: add the rest of the note by
+hand if you want it.
+
 An import made before #149 gave a marriage both spouses record without a Source note two Events, one from each
 spouse's note. The next run attaches the second note's Citation to the first Event, and the report lists each such
 pair under **Marriage Events imported twice**, with the Event to keep and the other one. The app cannot merge two

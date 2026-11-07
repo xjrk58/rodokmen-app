@@ -17,7 +17,8 @@ export interface RunSummary {
   unchanged: number;
   deferred: Array<{ key: string; reason: string }>;
   uploads: number;
-  leads: { created: number; waiting: number; unchanged: number };
+  /** Leads created, waiting for their records, already imported; and those an earlier run cut that get the whole note (#136), or not, as changed since. */
+  leads: { created: number; waiting: number; unchanged: number; updated: number; notUpdated: string[] };
   /** Notes changed since the run that imported them. */
   changed: { updated: number; notUpdated: string[] };
   /** Marriages an earlier importer gave two Events (#149), with the record ids of the Event to keep and of the other (null while pending). */
@@ -140,6 +141,14 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
     `${run.dryRun ? '' : `Created: ${run.leads.created}; waiting for the batch to be accepted: ${run.leads.waiting}; already imported: ${run.leads.unchanged}.`}`,
     '',
   );
+  if (run.leads.updated || run.leads.notUpdated.length)
+    lines.push(
+      `Leads an earlier run cut at 4,000 characters (#136): ${run.dryRun ? 'would get' : 'got'} the whole note: ${run.leads.updated};`,
+      `changed in the app since, so left as they are (add the rest of the note by hand): ${run.leads.notUpdated.length}.`,
+      '',
+      ...run.leads.notUpdated.map((path) => `- ${path}`),
+      '',
+    );
   lines.push('## Differences', '', `Living: ${c.comparisons.living}. Relation to the family: ${c.comparisons.relation}.`, '');
   if (run.changed.updated || run.changed.notUpdated.length)
     lines.push(

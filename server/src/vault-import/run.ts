@@ -15,7 +15,7 @@ import {
   type ImportMapEntry,
 } from '@rodokmen/shared';
 import { z } from 'zod';
-import { apiClient, loadMap, sha256, type Client } from './client.js';
+import { ApiError, apiClient, loadMap, sha256, type Client } from './client.js';
 import { mapVault } from './mapper.js';
 import type { Municipality } from './map-places.js';
 import type { Plan, PlannedFile, PlannedLead } from './plan.js';
@@ -241,11 +241,38 @@ async function proposals(r: Run): Promise<void> {
   }
 }
 
+const LeadReason = z.object({ version: z.number().int(), reason: z.string() });
+
+/**
+ * A lead an importer before #136 created from a long note holds its first 4,000 characters. It gets
+ * the whole note when it still holds exactly what that run wrote, at the version read; a lead
+ * changed since in the app is listed for the Owner instead. Returns whether it was updated.
+ */
+async function wholeReason(r: Run, lead: PlannedLead): Promise<boolean> {
+  const id = r.state.map.get(lead.key)?.recordId;
+  if (!id || lead.earlierReason === null) return false;
+  const current = LeadReason.parse(await r.client.get(`/api/leads/${id}`));
+  if (current.reason === lead.reason) return false;
+  if (current.reason !== lead.earlierReason) {
+    r.summary.leads.notUpdated.push(lead.path);
+    return false;
+  }
+  try {
+    if (!r.options.dryRun) await r.client.send('PATCH', `/api/leads/${id}`, { baseVersion: current.version, reason: lead.reason });
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 409) throw error;
+    r.summary.leads.notUpdated.push(lead.path);
+    return false;
+  }
+  r.summary.leads.updated++;
+  return true;
+}
+
 /** Research leads need their Persons and Places in the Tree: they are created once the batch is accepted (a later run). */
 async function leads(r: Run): Promise<void> {
   for (const lead of r.plan.leads) {
     if (imported(r.state, lead.key)) {
-      r.summary.leads.unchanged++;
+      if (!(await wholeReason(r, lead))) r.summary.leads.unchanged++;
       continue;
     }
     const body = leadBody(lead, r.state);
@@ -272,7 +299,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     unchanged: 0,
     deferred: [],
     uploads: 0,
-    leads: { created: 0, waiting: 0, unchanged: 0 },
+    leads: { created: 0, waiting: 0, unchanged: 0, updated: 0, notUpdated: [] },
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
   };

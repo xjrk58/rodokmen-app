@@ -139,7 +139,7 @@ function LeadSummary({ lead }) {
       <h1 data-testid="lead-title">${lead.question}</h1>
       <${StatusChip} status=${lead.status} />
     </header>
-    <p>${lead.reason}</p>
+    <p class="lead-reason" data-testid="lead-reason">${lead.reason}</p>
     ${where ? html`<p data-testid="lead-where"><strong>${t('leads.where')}</strong> ${where}</p>` : null}
     ${
       lead.persons.length

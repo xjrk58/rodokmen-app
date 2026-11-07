@@ -20,6 +20,10 @@ Each note in `plans/` SHALL become an open Research lead. Each search a `log/` n
 - **WHEN** a log note says registers N 1784–1820 pages 1–60 were searched for a baptism and nothing was found
 - **THEN** a Research lead exists, closed as not found, with that search record
 
+#### Scenario: Long log note
+- **WHEN** a log note holds 10,000 characters
+- **THEN** its Research lead's reason holds all of them
+
 ### Requirement: Dry run before anything is submitted
 The importer SHALL offer a dry run that submits nothing. It reports how many records of each kind would be created and the planned Proposals. It also lists every field or value it can't map, every link to a missing note, every date that is not valid EDTF, and every image it can't read.
 
@@ -113,6 +117,13 @@ The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL sub
 #### Scenario: Marriage imported twice
 - **WHEN** an earlier import gave a marriage both spouses record without a Source note one Event per spouse, and the Owner runs the importer again
 - **THEN** the second spouse's Citation is attached to the first Event, no Event is created or removed, and the report lists both Events for the Owner
+
+### Requirement: Re-runs change only what an earlier run wrote
+A record an earlier run wrote and a newer importer writes otherwise, such as a lead's reason an earlier importer cut short, SHALL be changed by a later run only while it holds exactly what that run wrote. Otherwise the record SHALL stay as it is, and the report SHALL list it for the Owner.
+
+#### Scenario: Lead cut by an earlier import
+- **WHEN** an earlier import gave the lead of a long log note the first 4,000 characters of the note, and the Owner runs the importer again
+- **THEN** the lead gets the whole note if it still holds exactly those 4,000 characters, and otherwise the report lists it and the lead stays as it is
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.

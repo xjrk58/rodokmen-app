@@ -22,7 +22,7 @@ export class ApiError extends Error {
 export interface Client {
   /** The JSON answer; callers check it with the shared schemas. */
   get(path: string): Promise<unknown>;
-  send(method: 'POST' | 'PUT', path: string, body: unknown): Promise<unknown>;
+  send(method: 'POST' | 'PUT' | 'PATCH', path: string, body: unknown): Promise<unknown>;
   /** PUTs a file to a presigned upload link. */
   put(url: string, headers: Record<string, string>, body: Buffer): Promise<void>;
 }

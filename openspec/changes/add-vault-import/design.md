@@ -75,6 +75,8 @@ A marriage both spouses record without a Source note (#149) came in as two Event
 ### Research leads after acceptance
 The leads of `plans/` and `log/` link Persons, Places and registers that exist only once the batch is accepted, and leads are written directly, not proposed. So the importer creates them on the run after acceptance; until then the report counts them as waiting.
 
+A lead's reason holds the whole note (#136): up to 20,000 characters, like a Citation's transcription, which the longest log and plan notes in the Vault fit. An importer before #136 kept the first 4,000. On a later run, a lead that still holds exactly those gets the whole note, written with the version the importer read (leads are written at once, and the lead's history shows the change). A lead changed in the app since is left as it is, and the report lists it. The lead screen keeps a reason's line breaks.
+
 ### Import batches have their own limit
 An Agent may submit 60 Proposals and make 1,000 other requests an hour. The Vault holds about 4,700 Proposals and 400 files, so an Agent's requests to its Import batches (opening one, submitting into it, its uploads and the id map) count against a window of their own of 10,000 an hour (agent-access requirement "Import batches have their own limit"). Only its author adds to a batch, and nothing changes in the Tree before review.
 

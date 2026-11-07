@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mapVault, type MapOptions } from '../src/vault-import/mapper.js';
 import type { Plan } from '../src/vault-import/plan.js';
 import { readVault } from '../src/vault-import/reader.js';
-import { fixtureVault } from './fixture-vault.js';
+import { fixtureVault, longLog } from './fixture-vault.js';
 
 /**
  * What the importer plans for the invented fixture Vault, without a server: the mapping rules of
@@ -33,6 +33,19 @@ describe('mapping the fixture Vault', () => {
   });
   afterEach(async () => {
     await vault.remove();
+  });
+
+  it('a long log note: its lead keeps the whole note, and knows the first 4,000 characters an earlier run kept (#136)', async () => {
+    await writeFile(join(vault.path, 'log/2026-10-25-long.md'), longLog('A long invented session'));
+    const p = await plan();
+    const lead = p.leads.find((l) => l.path === 'log/2026-10-25-long.md')!;
+    const body = longLog('x').split('---\n').slice(2).join('---\n').trim();
+    expect(body.length).toBeGreaterThan(10_000);
+    expect(lead.reason).toBe(body);
+    expect(lead.earlierReason).toBe(body.slice(0, 4000).trim());
+    expect(p.issues.filter((i) => i.path === 'log/2026-10-25-long.md')).toEqual([]);
+    // A short note's lead is as an earlier run made it.
+    expect(p.leads.find((l) => l.path === 'log/2026-10-20-registers.md')!.earlierReason).toBeNull();
   });
 
   describe('a marriage both spouses record without a Source note (#149)', () => {
