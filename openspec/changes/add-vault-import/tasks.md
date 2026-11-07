@@ -62,9 +62,11 @@ The Owner's decision on #64: a Name carries a BCP 47 language tag instead of one
 
 ## 4. Import day
 
-- [ ] 4.1 Owner marks Family roots, then runs the dry run on the real Vault in a private session; verify the report has no unmapped fields left that the Owner hasn't accepted
+- [x] 4.1 Owner marks Family roots, then runs the dry run on the real Vault in a private session; verify the report has no unmapped fields left that the Owner hasn't accepted
   - Note: a first dry run on the real Vault was made against a local server with an empty Tree; its report is with the Owner, outside the repository. Left open: the Owner reviews the report and marks the Family roots first (or passes them with `--root`), then runs the dry run again.
-- [ ] 4.2 Owner runs the real import, samples and accepts the batch; verify Tree counts match the dry run and the log names the importing Agent
+  - Note (2026-11-05): dry runs on the real Vault in a private session, with the Owner's Family roots passed by `--root` because the Tree was empty. What the report still listed was either accepted by the Owner or filed as #132–#137 (#149 came later). The Owner marks the roots in the app after the import.
+- [x] 4.2 Owner runs the real import, samples and accepts the batch; verify Tree counts match the dry run and the log names the importing Agent
+  - Note (2026-11-05 to 07): three accepted batches of 208, 4,601 and 44 Proposals, and one run for the Research leads. The first run stopped at the API's limit of 300 operations per Proposal (#142 splits big notes). The second waited out the hourly limit on Import batch requests once. The third added the register Citations of #133 to Events already in the Tree. The Tree's counts match the dry run: 4,141 Persons, 5,589 Names, 8,298 imported Events, 255 Families, 594 images, 2 documents, 550 Labels and 16 Research leads. All 4,853 import log entries name the importing Agent. Some notes are held back for privacy, for a later run.
 - [ ] 4.3 Freeze the Vault: final README note, GitHub archive or branch protection, and agents pointed to the API and MCP; verify a push to `rodokmen-data` is refused
 
 ## Workflow follow-up
