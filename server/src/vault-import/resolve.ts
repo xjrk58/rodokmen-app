@@ -15,7 +15,7 @@ export interface RunState {
   submitted: Map<string, { proposalId: string; tempId: string | null }>;
   /** Uploaded files: Vault path (or path.pdf for a converted DOC) → upload id. */
   uploads: Map<string, string>;
-  /** Keys this run leaves out although they are new: presumed deaths of Persons no longer Living in the Tree (#132). */
+  /** Keys this run leaves out although they are new: presumed deaths of Persons the Tree has a death or birth date for now (#132). */
   skip?: Set<string>;
 }
 

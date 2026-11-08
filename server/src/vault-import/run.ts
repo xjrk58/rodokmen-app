@@ -10,6 +10,7 @@ import {
   Operation,
   OPERATIONS_VERSION,
   ProposalView,
+  tryParseEdtf,
   UploadTicket,
   UploadView,
   type ImportMapEntry,
@@ -241,12 +242,24 @@ async function proposals(r: Run): Promise<void> {
   }
 }
 
-const Living = z.object({ living: z.boolean() });
+const PersonFacts = z.object({
+  living: z.boolean(),
+  events: z.array(z.object({ role: z.string(), event: z.object({ type: z.string(), date: z.string().nullable() }) })),
+});
+
+/** Whether the Tree has a birth or baptism of the Person whose date bounds their birth, as the Living rule reads it. */
+const birthDated = (person: z.infer<typeof PersonFacts>) =>
+  person.events.some((e) => {
+    if (e.role !== 'child' || (e.event.type !== 'birth' && e.event.type !== 'baptism') || e.event.date === null) return false;
+    const parsed = tryParseEdtf(e.event.date);
+    return parsed.ok && parsed.value.latest !== null;
+  });
 
 /**
  * A presumed death (#132) for a Person an earlier run imported is submitted only while the Tree
- * still treats them as Living: a death, burial or birth date added in the app since decides, and
- * the presumed death is left out (with its Role and Citation) and listed.
+ * still treats them as Living and has no birth date for them, as the import left them. A death,
+ * burial or birth date added in the app since decides instead: the presumed death is left out,
+ * with its Role and Citation, and listed.
  */
 async function checkPresumed(r: Run): Promise<void> {
   for (const p of r.plan.proposals) {
@@ -255,16 +268,17 @@ async function checkPresumed(r: Run): Promise<void> {
     const personKey = `person:${event.key.slice('event:'.length, -':presumed-death'.length)}`;
     const id = r.state.map.get(personKey)?.recordId;
     if (!id || !imported(r.state, personKey)) continue;
-    let living = false;
+    let asImported = false;
     try {
-      living = Living.parse(await r.client.get(`/api/persons/${id}`)).living;
+      const person = PersonFacts.parse(await r.client.get(`/api/persons/${id}`));
+      asImported = person.living && !birthDated(person);
     } catch (error) {
       if (!(error instanceof ApiError) || error.status !== 404) throw error;
     }
-    if (living) continue;
+    if (asImported) continue;
     r.state.skip ??= new Set();
     for (const o of p.ops) if (o.key.includes(event.key)) r.state.skip.add(o.key);
-    r.summary.presumedNotLiving.push(p.path ?? personKey);
+    r.summary.presumedLeftOut.push(p.path ?? personKey);
   }
 }
 
@@ -382,7 +396,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
     updates: { added: 0, notUpdated: [] },
-    presumedNotLiving: [],
+    presumedLeftOut: [],
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.
   for (const p of plan.proposals) {

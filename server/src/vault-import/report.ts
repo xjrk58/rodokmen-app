@@ -29,8 +29,8 @@ export interface RunSummary {
    * to register entries' Citation notes.
    */
   updates: { added: number; notUpdated: Array<{ path: string; lines: string[]; why: 'changed' | 'citation' }> };
-  /** Persons an earlier run imported whose presumed death (#132) is left out, as the Tree no longer treats them as Living. */
-  presumedNotLiving: string[];
+  /** Persons an earlier run imported whose presumed death (#132) is left out: the Tree has a death, burial or birth date for them now. */
+  presumedLeftOut: string[];
 }
 
 export interface Counts {
@@ -171,15 +171,15 @@ function fieldsNotMapped(run: RunSummary): string[] {
   ];
 }
 
-/** Presumed deaths left out of a later run (#132): the Tree no longer treats the Person as Living. */
-function presumedNotLiving(run: RunSummary): string[] {
-  if (!run.presumedNotLiving.length) return [];
+/** Presumed deaths left out of a later run (#132): the Tree has a death, burial or birth date for the Person now. */
+function presumedLeftOut(run: RunSummary): string[] {
+  if (!run.presumedLeftOut.length) return [];
   return [
-    `## Presumed deaths left out (${run.presumedNotLiving.length})`,
+    `## Presumed deaths left out (${run.presumedLeftOut.length})`,
     '',
-    'These Persons were imported before #132 and are no longer Living in the Tree (a death, burial or birth was added since), so no death is presumed for them:',
+    'These Persons were imported before #132, and the Tree has a death, burial or birth date for them since, so no death is presumed for them:',
     '',
-    ...run.presumedNotLiving.map((path) => `- ${path}`),
+    ...run.presumedLeftOut.map((path) => `- ${path}`),
     '',
   ];
 }
@@ -233,7 +233,7 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
       ...run.changed.notUpdated.map((k) => `- ${k}`),
       '',
     );
-  lines.push(...presumedNotLiving(run), ...fieldsNotMapped(run), ...duplicateMarriages(run));
+  lines.push(...presumedLeftOut(run), ...fieldsNotMapped(run), ...duplicateMarriages(run));
   for (const kind of ISSUE_ORDER) {
     const title = ISSUE_TITLES[kind];
     const list = plan.issues.filter((i) => i.kind === kind);

@@ -132,7 +132,7 @@ A Person with no death or burial and no birth or baptism date of their own SHALL
 
 #### Scenario: Presumed death after an earlier import
 - **WHEN** an earlier import gave such a Person no death Event, and the Owner runs the importer again
-- **THEN** the run submits the death Event for them if the Tree still treats them as Living, and leaves them out otherwise
+- **THEN** the run submits the death Event for them if the Tree still has them as the import left them (Living, with no birth date), and otherwise leaves it out and lists them
 
 ### Requirement: Re-runs submit only what is new
 The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL submit only notes that are new or changed since the last accepted import, and SHALL never create a second Person for an id it has already imported. A record a note gives that an earlier run did not import, such as a Citation an earlier version of the importer did not create, SHALL come in on the next run and refer to the records already imported.

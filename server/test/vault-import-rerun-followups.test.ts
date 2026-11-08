@@ -174,7 +174,7 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect(direct.statusCode, direct.body).toBe(201);
     // No presumed deaths: Tomáš, Marie and Ludmila have no dates of their own, so the Tree has them Living ...
     for (const key of ['person:tomas-novak-1770', 'person:marie-svobodova-1775', 'person:ludmila-vesela-1805']) expect((await person(key)).living).toBe(true);
-    // ... until the Owner records Ludmila's death, from a family memory.
+    // ... until the Owner records Ludmila's death, and a baptism for Marie, from a family memory.
     const death = await asOwner('POST', '/api/proposals', {
       formatVersion: OPERATIONS_VERSION,
       idempotencyKey: 'owner-ludmila-death',
@@ -193,6 +193,9 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
         { op: 'createEvent', tempId: 'tmp:e', type: 'death', date: '1870', placeId: null, houseId: null, description: null },
         { op: 'addRole', eventId: 'tmp:e', personId: await recordOf('person:ludmila-vesela-1805'), role: 'deceased', roleDetail: null },
         { op: 'attachCitation', citationId: 'tmp:c', eventId: 'tmp:e' },
+        { op: 'createEvent', tempId: 'tmp:b', type: 'baptism', date: '1940', placeId: null, houseId: null, description: null },
+        { op: 'addRole', eventId: 'tmp:b', personId: await recordOf('person:marie-svobodova-1775'), role: 'child', roleDetail: null },
+        { op: 'attachCitation', citationId: 'tmp:c', eventId: 'tmp:b' },
       ],
     });
     expect(death.statusCode, death.body).toBe(201);
@@ -208,18 +211,18 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     await acceptBatch(second.run.batch!.id, second.run.submitted);
   });
 
-  it('Persons the Tree still has Living get their presumed death; one with a death added since is left out and listed (#132)', async () => {
-    for (const run of [dry, second]) expect(run.run.presumedNotLiving).toEqual(['people/ludmila-vesela-1805.md']);
-    expect(second.report).toContain('- people/ludmila-vesela-1805.md');
-    for (const key of ['person:tomas-novak-1770', 'person:marie-svobodova-1775']) {
-      const p = await person(key);
-      expect(p.living).toBe(false);
-      expect(p.events.filter((e) => e.event.type === 'death').map((e) => [e.event.date, e.event.description?.slice(0, 40)])).toEqual([
-        [null, 'Died, date unknown: born by 1787-11-20 a'],
-      ]);
-    }
-    const ludmila = await person('person:ludmila-vesela-1805');
-    expect(ludmila.events.filter((e) => e.event.type === 'death').map((e) => e.event.date)).toEqual(['1870']);
+  it('a Person the Tree has as the import left them gets the presumed death; one given a death or a birth date since is left out and listed (#132)', async () => {
+    for (const run of [dry, second]) expect(run.run.presumedLeftOut).toEqual(['people/ludmila-vesela-1805.md', 'people/marie-svobodova-1775.md']);
+    expect(second.report).toContain('- people/ludmila-vesela-1805.md\n- people/marie-svobodova-1775.md');
+    const tomas = await person('person:tomas-novak-1770');
+    expect(tomas.living).toBe(false);
+    expect(tomas.events.filter((e) => e.event.type === 'death').map((e) => [e.event.date, e.event.description?.slice(0, 40)])).toEqual([
+      [null, 'Died, date unknown: born by 1787-11-20 a'],
+    ]);
+    // The Owner's facts decide: Ludmila's death of 1870, and Marie, baptized in 1940, stays Living with no death.
+    expect((await person('person:ludmila-vesela-1805')).events.filter((e) => e.event.type === 'death').map((e) => e.event.date)).toEqual(['1870']);
+    const marie = await person('person:marie-svobodova-1775');
+    expect([marie.living, marie.events.filter((e) => e.event.type === 'death')]).toEqual([true, []]);
   });
 
   it('research notes that hold what the import wrote get the fields not mapped; those changed since, and Citation notes, are listed (#134)', async () => {
