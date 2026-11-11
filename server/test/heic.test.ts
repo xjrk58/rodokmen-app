@@ -95,6 +95,14 @@ describe('HEIC photos (issue #147)', () => {
     expect(results.flatMap((r) => (r.status === 'fulfilled' ? [r.value.height] : []))).toEqual([4032, 90, 4032]);
   });
 
+  it("leaves sharp's one thread and small cache as they were: loading sharp in the worker must not reset them", async () => {
+    // sharp sets its default cache whenever it is loaded, and libvips's settings are the whole process's.
+    await processImage(fixture('rotated.heic'));
+    expect(sharp.concurrency()).toBe(1);
+    const cache = sharp.cache();
+    expect([cache.memory.max, cache.files.max, cache.items.max]).toEqual([16, 0, 10]);
+  });
+
   it('stops a decode that takes longer than HEIC_DECODE_TIMEOUT_MS, and refuses the image', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {

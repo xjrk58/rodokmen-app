@@ -9,13 +9,25 @@
  * copied out. A full copy would add 3 bytes a pixel to the 6 the decoder holds at its peak.
  *
  * Only Node's modules, sharp and libheif-js are imported, and only TypeScript that Node can strip:
- * under Vitest this file runs as it is, outside Vite. That is also why cropBox, which process.ts
- * uses for the other image types, is defined here.
+ * under Vitest this file runs as it is, outside Vite. That is also why limitSharp and cropBox,
+ * which process.ts uses as well, are defined here.
  */
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { isMainThread, parentPort, workerData } from 'node:worker_threads';
 import sharp from 'sharp';
+
+/**
+ * sharp's settings for the 4 GB server (issue #39, deploy/README.md, "Memory"): libvips decodes
+ * with one thread, and keeps only a small cache of operations, since each upload is decoded once.
+ * They are libvips's, for the whole process, and sharp sets its default cache again in every
+ * thread that loads it, so this worker sets them again after loading sharp, as process.ts does
+ * for the API's own thread.
+ */
+export function limitSharp(): void {
+  sharp.concurrency(1);
+  sharp.cache({ memory: 16, items: 10, files: 0 });
+}
 
 /** The part of an image the Member marked, as shares of its width and height (as it is shown, after rotation). */
 export interface Crop {
@@ -170,6 +182,7 @@ async function answer(job: HeicJob): Promise<HeicAnswer> {
 
 // Only as the worker heic.ts starts; imported anywhere else (process.ts, for cropBox), it does nothing.
 if (!isMainThread && parentPort && isJob(workerData)) {
+  limitSharp();
   const result = await answer(workerData);
   parentPort.postMessage(result, 'pixels' in result ? [result.pixels] : []);
 }

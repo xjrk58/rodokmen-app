@@ -5,7 +5,7 @@ import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
 import { checkDocument, type CheckedDocument } from './documents.js';
 import { decodeHeic, HEIC_MAX_PIXELS, HeicRefused } from './heic.js';
-import { cropBox, type Crop } from './heic-worker.js';
+import { cropBox, limitSharp, type Crop } from './heic-worker.js';
 import { STORE_TIMEOUT_MS, type ImageStorage } from './images.js';
 import { QueueFull, SerialQueue } from './serial-queue.js';
 
@@ -21,9 +21,9 @@ export const DISPLAY_MAX_PIXELS = 2000;
 export const SHARP_MAX_INPUT_PIXELS = 0x3fff * 0x3fff;
 
 // Memory on the 4 GB server (issue #39, deploy/README.md, "Memory"): libvips decodes with one
-// thread, and keeps only a small cache of operations, since each upload is decoded once.
-sharp.concurrency(1);
-sharp.cache({ memory: 16, items: 10, files: 0 });
+// thread, and keeps only a small cache of operations, since each upload is decoded once. The HEIC
+// worker sets the same again after loading sharp (#147).
+limitSharp();
 
 /**
  * The most uploads (images and documents) and crops that may wait for their turn or be in it, in

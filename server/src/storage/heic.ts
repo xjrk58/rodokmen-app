@@ -16,7 +16,7 @@ import type { Crop, HeicAnswer, HeicJob } from './heic-worker.js';
 /**
  * The most pixels a HEIC may have. sharp reads JPEG, PNG and WebP a strip at a time, but a HEIC is
  * decoded whole, with about 6 bytes a pixel at the decoder's peak: 48 megapixels (an iPhone's
- * largest, "HEIF Max") took 363 MB above an idle process, which keeps an API slot within its
+ * largest, "HEIF Max") took 375 MB above an idle process, which keeps an API slot within its
  * 512 MB (deploy/README.md, "Memory"; server/scripts/heic-memory.ts). This allows a little more,
  * and refuses before decoding a file that claims more, as sharp's own limit does for the others.
  */

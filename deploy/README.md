@@ -119,13 +119,12 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   or crop is copied out. A HEIC may therefore have at most 50 million pixels (iPhones take 12, 24
   or, with "HEIF Max", 48), checked from its header before decoding. Measured with
   `server/scripts/heic-memory.ts` (one Node process with `MALLOC_ARENA_MAX=2`, not the Compose
-  stack), above what the process held before: 12 megapixels 143 MB in 0.6 s, 24 megapixels 220 MB,
-  48 megapixels 363 MB in 1.4 s (up to 412 MB over five in a row), and the worst case, 48 megapixels
-  at 10 bits a colour, 434 MB. In a slot idle at about 61 MB, an iPhone's largest photo stays under
+  stack), above what the process held before: 12 megapixels 146 MB in 0.6 s, 24 megapixels 209 MB,
+  48 megapixels 375 MB in 1.3 s (up to 404 MB over five in a row), and the worst case, 48 megapixels
+  at 10 bits a colour, 435 MB. In a slot idle at about 61 MB, an iPhone's largest photo stays under
   the 512 MB limit; the 10-bit worst case comes close to it (about 495 MB), with the swap allowance
-  behind it. Each decode
-  is stopped after 60 seconds. Between turns the process keeps up to about 95 MB more than before,
-  which does not grow further after a few HEICs.
+  behind it. Each decode is stopped after 60 seconds. Between turns the process keeps up to about
+  95 MB more than before, which does not grow further after a few HEICs.
 - **How it was measured** (#39): this Compose file locally, every service on 2 CPUs, the invented
   fixture Tree and 2.8 GB of images. While a full first-night Backup ran, four large images went
   through upload, check and accept at once (two 25 MB JPEGs, a 196-megapixel PNG and a
