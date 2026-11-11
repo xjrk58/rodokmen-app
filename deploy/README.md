@@ -122,7 +122,8 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   stack), above what the process held before: 12 megapixels 143 MB in 0.6 s, 24 megapixels 220 MB,
   48 megapixels 363 MB in 1.4 s (up to 412 MB over five in a row), and the worst case, 48 megapixels
   at 10 bits a colour, 434 MB. In a slot idle at about 61 MB, an iPhone's largest photo stays under
-  the 512 MB limit; the 10-bit worst case reaches it and leans on the swap allowance. Each decode
+  the 512 MB limit; the 10-bit worst case comes close to it (about 495 MB), with the swap allowance
+  behind it. Each decode
   is stopped after 60 seconds. Between turns the process keeps up to about 95 MB more than before,
   which does not grow further after a few HEICs.
 - **How it was measured** (#39): this Compose file locally, every service on 2 CPUs, the invented
