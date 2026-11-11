@@ -79,7 +79,7 @@ SOFTWARE.
 
 iPhone photos in HEIC are decoded by [libheif-js](https://github.com/catdad-experiments/libheif-js), an npm dependency of the server (issue [#147](https://github.com/xjrk58/rodokmen-app/issues/147)). Its WebAssembly file holds [libheif](https://github.com/strukturag/libheif) and the HEVC decoder [libde265](https://github.com/strukturag/libde265), both under the [LGPL-3.0](https://spdx.org/licenses/LGPL-3.0-or-later.html), and the AV1 decoder dav1d ([BSD-2-Clause](https://spdx.org/licenses/BSD-2-Clause.html)). The package's own licence is the LGPL-3.0; it ships libheif's licence file, not those of libde265 and dav1d. It is not in this repo: pnpm installs it, unchanged, and the server image built by the deploy workflow carries it in `node_modules/`, where the server loads it at run time as separate files, so it can be replaced by another build.
 
-HEVC, the compression inside HEIC, is covered by patents licensed through patent pools, which is why sharp's prebuilt libvips leaves HEVC out. This page does not say whether a family hosting Rodokmen needs such a licence; that question is open for the Owner on issue #147.
+HEVC, the compression inside HEIC, is covered by patents licensed through patent pools, which is why sharp's prebuilt libvips leaves HEVC out. This page does not say whether a family hosting Rodokmen needs such a licence: what was found is in [#161](https://github.com/xjrk58/rodokmen-app/issues/161), a decision for the Owner.
 
 ## Not bundled
 
