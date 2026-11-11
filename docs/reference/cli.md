@@ -84,7 +84,7 @@ Package scripts, with `pnpm --filter <package> <script>`:
 | `@rodokmen/app`    | `build-data`               | rebuilds the map data in `app/data/` from its sources                                                                                            |
 | `@rodokmen/app`    | `check-links`              | checks every portal URL in `app/data/archives.json`                                                                                              |
 | `@rodokmen/app`    | `vendor`                   | copies Leaflet, Preact and htm into `app/vendor/`                                                                                                |
-| `@rodokmen/app`    | `test:unit`, `test:e2e`    | the app's unit tests and Playwright tests                                                                                                        |
+| `@rodokmen/app`    | `test:unit`, `test:e2e`    | unit and Playwright tests; Playwright serves the app on a free port per run (`PORT` picks one, `REUSE_SERVER=1` reuses a server)                 |
 
 ## Other scripts
 
