@@ -235,7 +235,7 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
     schema: {
       tags: ['Images'],
       summary:
-        'Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted, or refused with a message). Images and documents are checked one at a time; 503 with Retry-After when too many are waiting or the image store did not answer in time',
+        'Finish an upload: the server checks the file, keeps the checked copy where the upload link cannot reach, and makes its WebP display copy (HEIC is converted). Images and documents are checked one at a time; 503 with Retry-After when too many are waiting or the image store did not answer in time',
       params: IdParams,
       response: { 200: UploadView, 400: ApiError, 404: ApiError, 409: ApiError, 413: ApiError, 415: ApiError, 503: ApiError, ...signedIn },
     },
