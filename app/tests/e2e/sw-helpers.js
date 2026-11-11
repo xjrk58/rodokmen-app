@@ -8,11 +8,11 @@ import { copySite } from '../../scripts/site-files.mjs';
 import { APP_DIR } from './data.js';
 import { expect } from './fixtures.js';
 
-/** Copies the deployed files of app/ (scripts/site-files.mjs) to a temporary directory. */
+/** Copies the deployed files of app/ (scripts/site-files.mjs) to a temporary directory, stamped as the build stamps them. */
 export async function copyApp() {
   const dir = await mkdtemp(join(tmpdir(), 'rodokmen-app-'));
-  await copySite(dir, APP_DIR);
-  return { dir, remove: () => rm(dir, { recursive: true, force: true }) };
+  const version = await copySite(dir, APP_DIR);
+  return { dir, version, remove: () => rm(dir, { recursive: true, force: true }) };
 }
 
 /** @param {string} root */

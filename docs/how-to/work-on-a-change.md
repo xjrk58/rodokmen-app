@@ -36,8 +36,9 @@ Depending on what you changed:
 
 - the API: `pnpm --filter @rodokmen/server openapi` regenerates `server/openapi.json`;
 - a proved rule: [run the proofs and regenerate the verification page](run-the-proofs.md);
-- the architecture: [regenerate the C4 diagrams](regenerate-the-c4-diagrams.md);
-- files of the app: `node app/scripts/stamp-version.mjs`.
+- the architecture: [regenerate the C4 diagrams](regenerate-the-c4-diagrams.md).
+
+Files of the app need no new version stamp: it is written when the site is built or served ([Offline and the app](../explanation/offline.md#updates-never-interrupt-reading)).
 
 ## 4. Update the docs
 
