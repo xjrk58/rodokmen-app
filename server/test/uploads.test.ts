@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { crc32, deflateSync } from 'node:zlib';
 import { ProposalView, UploadTicket, UploadView, type OperationInput } from '@rodokmen/shared';
 import sharp from 'sharp';
@@ -6,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { DailyScheduler } from '../src/jobs/daily.js';
 import { createImageStorage, MemoryImageStorage } from '../src/storage/images.js';
-import { HEIC_MESSAGE, processImage, SHARP_MAX_INPUT_PIXELS, sniffImageType, TOO_MANY_PIXELS_MESSAGE } from '../src/storage/process.js';
+import { processImage, SHARP_MAX_INPUT_PIXELS, sniffImageType, TOO_MANY_PIXELS_MESSAGE } from '../src/storage/process.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
 import { createMember, DAY, ensureOwner, errorOf, makeApp, signIn, TestClock, testConfig, type TestApp } from './helpers.js';
 
@@ -18,15 +19,18 @@ async function picture(format: 'jpeg' | 'png' | 'webp', width = 3000, height = 2
   return img[format]().toBuffer();
 }
 
-/** The start of a HEIC file (ISO-BMFF `ftyp` box with the `heic` brand) whose image data cannot be decoded. */
-function heicContainer(): Buffer {
-  const ftyp = Buffer.alloc(24);
-  ftyp.writeUInt32BE(24, 0);
-  ftyp.write('ftypheic', 4, 'latin1');
-  ftyp.writeUInt32BE(0, 12);
-  ftyp.write('mif1heic', 16, 'latin1');
-  return Buffer.concat([ftyp, Buffer.alloc(2048, 0x11)]);
+/** An invented HEIC of test/fixtures/heic/ (make.py there says how each was made; none is a photo). */
+const heicFixture = (name: string) => readFileSync(new URL(`fixtures/heic/${name}`, import.meta.url));
+
+/** The colour of the pixel at x, y of an encoded image. */
+async function colourAt(image: Buffer, x: number, y: number): Promise<number[]> {
+  const { data, info } = await sharp(image).raw().toBuffer({ resolveWithObject: true });
+  const at = (y * info.width + x) * info.channels;
+  return [...data.subarray(at, at + 3)];
 }
+
+/** Each channel of `actual` within `slack` of `expected` (HEVC and WebP are lossy). */
+const near = (actual: number[], expected: number[], slack = 24) => actual.every((v, i) => Math.abs(v - expected[i]!) <= slack);
 
 /** A PNG of width × height pixels with the given IHDR depth and colour type, and image data. */
 function png(width: number, height: number, depthAndColour: [number, number], data: Buffer): Buffer {
@@ -125,13 +129,47 @@ describe('images: uploads, display copies, privacy and deletion', () => {
     expect(most).toBe(1);
   });
 
-  it('refuses a HEIC photo it cannot convert, with a message that says what to do', async () => {
-    const heic = heicContainer();
-    expect(sniffImageType(heic)).toBe('image/heic');
-    await expect(processImage(heic)).rejects.toMatchObject({ statusCode: 415, code: 'heic_unsupported' });
-    const res = await upload(author, heic, 'image/heic');
-    expect(res.statusCode).toBe(415);
-    expect(res.json()).toMatchObject({ code: 'heic_unsupported', message: HEIC_MESSAGE });
+  it('converts an iPhone photo in HEIC into the usual copies: the original kept, a WebP display copy, upright (issue #147)', async () => {
+    // 12 megapixels in tiles of 512 pixels, stored landscape and turned to a portrait by its irot box, as an iPhone writes it.
+    const original = heicFixture('portrait-12mp.heic');
+    expect(sniffImageType(original)).toBe('image/heic');
+    const res = await upload(author, original, 'image/heic');
+    expect(res.statusCode, res.body).toBe(200);
+    const view = UploadView.parse(res.json());
+    expect(view).toMatchObject({ status: 'ready', contentType: 'image/heic', width: 3024, height: 4032, byteSize: original.length });
+    expect(storage.objects.get(`pending/${view.id}/verified`)!.body.equals(original)).toBe(true);
+    expect(storage.objects.has(`pending/${view.id}/original`)).toBe(false);
+    const display = storage.objects.get(`pending/${view.id}/display.webp`)!;
+    expect(display.contentType).toBe('image/webp');
+    expect(await sharp(display.body).metadata()).toMatchObject({ format: 'webp', width: 1500, height: 2000 });
+
+    // Turned once, not twice: the file has EXIF orientation 6 as well, which must not be applied on top of irot.
+    const small = await upload(author, heicFixture('rotated.heic'), 'image/heic');
+    const turned = UploadView.parse(small.json());
+    expect(turned).toMatchObject({ status: 'ready', width: 64, height: 96 });
+    const copy = storage.objects.get(`pending/${turned.id}/display.webp`)!.body;
+    // Stored landscape with a blue top-left quarter; upright, that quarter is at the top right.
+    expect(near(await colourAt(copy, 48, 10), [40, 40, 200])).toBe(true);
+    expect(near(await colourAt(copy, 10, 10), [200, 40, 40])).toBe(true);
+  });
+
+  it('refuses a damaged HEIC as an unreadable image and deletes its file (issue #147)', async () => {
+    const whole = heicFixture('rotated.heic');
+    const cut = whole.subarray(0, 300);
+    const scrambled = Buffer.concat([whole.subarray(0, 32), Buffer.alloc(2048, 0x11)]);
+    for (const damaged of [cut, scrambled]) {
+      expect(sniffImageType(damaged)).toBe('image/heic');
+      const ticket = UploadTicket.parse(
+        (await call(author, 'POST', '/api/uploads', { contentType: 'image/heic', byteSize: damaged.length, sha256: sha(damaged) })).json(),
+      );
+      await putAtLink(ticket.putUrl, damaged, 'image/heic');
+      const res = await call(author, 'POST', `/api/uploads/${ticket.upload.id}/complete`);
+      expect(res.statusCode).toBe(415);
+      const { code, message } = errorOf(res);
+      expect(code).toBe('image_unreadable');
+      expect(message).toMatch(/^This image could not be read \(.+\)\. Try another copy of it\.$/);
+      expect([...storage.objects.keys()].filter((k) => k.startsWith(`pending/${ticket.upload.id}/`))).toEqual([]);
+    }
   });
 
   it('an upload to the link after the check changes neither the kept nor the shown image, nor the accepted one (issue #52)', async () => {
