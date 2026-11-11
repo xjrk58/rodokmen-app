@@ -35,7 +35,7 @@ A conflict is an operation whose base version differs from the current version. 
 Undo builds the inverse operations from the logged before-snapshots and applies them as a new, auto-accepted Proposal. Fields changed since then are shown to the Editor first, as in conflict review.
 
 ### Drafts on the device
-Drafts live in IndexedDB together with their photos as blobs. The app shows a storage estimate and warns before the browser's quota is reached. On submit, the photos upload first (each to a presigned URL in a `pending/` prefix of the bucket), and then the Proposal is created. An interrupted submit can be retried without duplicates thanks to an idempotency key per Draft.
+Drafts live in IndexedDB together with their photos as blobs. A Draft keeps each photo as taken, at full size: the original is what gets uploaded, and the server makes the display copy (see Images). The app shows a storage estimate and warns before the browser's quota is reached. On submit, the photos upload first (each to a presigned URL in a `pending/` prefix of the bucket), and then the Proposal is created. An interrupted submit can be retried without duplicates thanks to an idempotency key per Draft.
 
 ### Images
 The server makes a 2,000-pixel WebP display copy with `sharp` and keeps the original. HEIC is converted on upload, and if conversion fails the upload is refused with a clear message. Accepting a Proposal moves its images from `pending/` to their final prefix. A daily job deletes images of rejected Proposals after 30 days.
@@ -45,7 +45,8 @@ A daily job at 18:00 Prague time sends the Editor digests. Outcome emails are se
 
 ## Risks / Trade-offs
 
-- [Browsers may evict IndexedDB on low storage] → the app requests persistent storage, warns about unsubmitted Drafts older than 7 days, and keeps Drafts small by compressing photos to their display size plus the original.
+- [Browsers may evict IndexedDB on low storage] → the app requests persistent storage, warns about unsubmitted Drafts older than 7 days, and warns before the quota is reached.
+- [Full-size photos fill a phone's storage faster in a reading room] → accepted (#29): the original has to stay on the phone until it is uploaded, and a compressed copy beside it would add to the storage, not save it. The quota warning tells the Member in time.
 - [Review fatigue for a single Editor] → the digest groups by author, and accepting needs one tap once the changes are read.
 - [The operation set grows over time] → operations are versioned in `shared/`, and an unknown operation is rejected rather than guessed.
 
