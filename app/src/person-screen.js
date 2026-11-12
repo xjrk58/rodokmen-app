@@ -201,14 +201,15 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
   const primary = person.names.find((n) => n.primary) ?? person.names[0];
   const name = primary ? `${primary.given} ${primary.surname}`.trim() : '';
   const birth = person.events.find((e) => e.role === 'child' && (e.event.type === 'birth' || e.event.type === 'baptism'))?.event.date ?? null;
-  const death = person.events.find((e) => e.role === 'deceased')?.event.date ?? null;
+  const deceased = person.events.find((e) => e.role === 'deceased');
+  const death = deceased?.event.date ?? null;
   const marks = personMarks(person);
   return html`<section class="screen-body person-page" data-testid="person-screen" data-id=${person.id}>
     <header class="person-head">
       ${person.portraits[0] ? html`<img class="portrait" src=${person.portraits[0].url} alt="" />` : null}
       <div>
         <h1 data-testid="person-title">${name}</h1>
-        <p class="muted">${lifeYears({ birth, death })} <${Marks} marks=${marks} /></p>
+        <p class="muted">${lifeYears({ birth, death, died: deceased !== undefined })} <${Marks} marks=${marks} /></p>
       </div>
     </header>
     <${AsOf} asOf=${loaded.asOf} />

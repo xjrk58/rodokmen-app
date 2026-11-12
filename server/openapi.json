@@ -8377,7 +8377,7 @@
           "reason": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 4000,
+            "maxLength": 20000,
             "description": "Why, and what is known so far"
           },
           "archive": {
@@ -8510,7 +8510,7 @@
           "reason": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 4000,
+            "maxLength": 20000,
             "description": "Why, and what is known so far"
           },
           "archive": {
@@ -18291,7 +18291,7 @@
           "reason": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 4000,
+            "maxLength": 20000,
             "description": "Why, and what is known so far"
           },
           "archive": {
@@ -18435,7 +18435,7 @@
           "reason": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 4000,
+            "maxLength": 20000,
             "description": "Why, and what is known so far"
           },
           "archive": {

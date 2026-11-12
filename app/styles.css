@@ -1767,6 +1767,11 @@ body.signed-in .screen {
   align-items: baseline;
   gap: 6px 12px;
 }
+/* A reason can be a whole research log (#136): its line breaks are kept. */
+.lead-reason {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .field-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

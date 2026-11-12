@@ -20,6 +20,10 @@ Each note in `plans/` SHALL become an open Research lead. Each search a `log/` n
 - **WHEN** a log note says registers N 1784–1820 pages 1–60 were searched for a baptism and nothing was found
 - **THEN** a Research lead exists, closed as not found, with that search record
 
+#### Scenario: Long log note
+- **WHEN** a log note holds 10,000 characters
+- **THEN** its Research lead's reason holds all of them
+
 ### Requirement: Dry run before anything is submitted
 The importer SHALL offer a dry run that submits nothing. It reports how many records of each kind would be created and the planned Proposals. It also lists every field or value it can't map, every link to a missing note, every date that is not valid EDTF, and every image it can't read.
 
@@ -49,6 +53,14 @@ Every fact the importer submits SHALL carry a Citation. A fact with its own Sour
 - **WHEN** a Person note has a death date but no `source` for it
 - **THEN** the death Event cites the Vault Source with the page `people/<id>.md` and low confidence
 
+#### Scenario: A marriage both spouses record without a Source note
+- **WHEN** two spouses' Person notes both record their marriage with the same date and Place and no Source note
+- **THEN** one marriage Event has both partner Roles and cites the Vault Source once with each note's path
+
+#### Scenario: Spouses who disagree
+- **WHEN** two spouses' Person notes record their marriage without a Source note and with different dates or Places
+- **THEN** each note gives a marriage Event of its own, and the dry run lists the pair
+
 ### Requirement: A fact citing a register note cites the register
 A fact whose `source` links a register note instead of an entry note SHALL cite that register's Source as well as the Vault Source. There SHALL be one such Citation per register and Person note, with no page, the note path in its note, the Person note's frontmatter as transcription, and the Person's confidence.
 
@@ -71,11 +83,19 @@ Vault tags that the Tree derives SHALL NOT be imported as Labels: `obec/…` fol
 - **THEN** the Person gets the Label `line/novak` only
 
 ### Requirement: Note bodies become research notes
-The body of each Vault note SHALL become the research notes of the record it describes, unchanged. The body of a Source note SHALL also become its Citation's transcription.
+The body of each Vault note SHALL become the research notes of the record it describes, unchanged. The body of a Source note SHALL also become its Citation's transcription. Below the body, under "From the Vault, not mapped:", the research notes SHALL keep each field the Tree has no place for, one line each as written. A register entry has no research notes, so its lines SHALL go in its Citation's note, below the note path.
 
 #### Scenario: Transcription kept
 - **WHEN** a Source note body holds the Latin text of a baptism entry
 - **THEN** the Citation's transcription and the Source record's research notes both hold that text
+
+#### Scenario: Field the Tree has no place for
+- **WHEN** a Person note has `occupation: [sedlák]` and a body
+- **THEN** the Person's research notes hold the body unchanged and, below it, the line `occupation: sedlák`, and the dry run still lists the field
+
+#### Scenario: Evidence class of a register entry
+- **WHEN** a Source note of a register entry has `evidence: A`
+- **THEN** its Citation's note holds `Evidence class: A` below the note path
 
 ### Requirement: Scans and documents are uploaded
 Images listed in a Source note's `scans` SHALL be uploaded as that Citation's images. PDF files SHALL be attached as documents to the Source. DOC files SHALL be converted to PDF once and attached the same way, keeping the original file as well. Files the importer can't read SHALL be listed in the report and skipped.
@@ -91,6 +111,29 @@ The importer SHALL NOT copy the Vault's `living` field. The Tree computes Living
 - **WHEN** a Vault Person has `living: true` and a recorded death
 - **THEN** the dry run lists the Person, and the Tree treats them as not Living
 
+### Requirement: Presumed death when birth is provably long ago
+A Person with no death or burial and no birth or baptism date of their own SHALL get a death Event without a date, citing the Vault Source, when a chain of these bounds proves them born more than 125 years before the run: at least 12 years before their own marriage; a parent at least 12 years before their child; a child at most a year after a parent's death and at most 60 years after their mother. Its description SHALL state the chain; the dry run SHALL list them.
+
+#### Scenario: Married long ago, no dates of his own
+- **WHEN** a Person note records a marriage in 1803 and no birth, baptism, death or burial
+- **THEN** the Person gets a death Event without a date whose description says born by 1791 at the latest, and the Tree does not treat them as Living
+
+#### Scenario: A child's birth tightens the bound
+- **WHEN** that Person's son was born in 1801
+- **THEN** the description says born by 1789 at the latest
+
+#### Scenario: Married within 125 years
+- **WHEN** a Person note records a marriage in 1925 and no other date
+- **THEN** no death Event is added, and the Tree treats the Person as Living
+
+#### Scenario: No dates, no relatives
+- **WHEN** a Person note has no date and no parent, child or spouse
+- **THEN** no death Event is added
+
+#### Scenario: Presumed death after an earlier import
+- **WHEN** an earlier import gave such a Person no death Event, and the Owner runs the importer again
+- **THEN** the run submits the death Event for them if the Tree still has them as the import left them (Living, with no birth date), and otherwise leaves it out and lists them
+
 ### Requirement: Re-runs submit only what is new
 The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL submit only notes that are new or changed since the last accepted import, and SHALL never create a second Person for an id it has already imported. A record a note gives that an earlier run did not import, such as a Citation an earlier version of the importer did not create, SHALL come in on the next run and refer to the records already imported.
 
@@ -101,6 +144,21 @@ The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL sub
 #### Scenario: Register Citation after an earlier import
 - **WHEN** an earlier import gave a baptism that cites a register note only its Citation of the Vault Source, and the Owner runs the importer again
 - **THEN** it submits one Proposal for that Person note, which creates the register Citation and attaches it to the baptism already in the Tree and does nothing else; once it is accepted the parent links that rest on the baptism are strong, and a further run submits nothing
+
+#### Scenario: Marriage imported twice
+- **WHEN** an earlier import gave a marriage both spouses record without a Source note one Event per spouse, and the Owner runs the importer again
+- **THEN** the second spouse's Citation is attached to the first Event, no Event is created or removed, and the report lists both Events for the Owner
+
+### Requirement: Re-runs change only what an earlier run wrote
+A record an earlier run wrote and a newer importer writes otherwise, such as a lead's reason an earlier importer cut short, SHALL be changed by a later run only while it holds exactly what that run wrote. Otherwise the record SHALL stay as it is, and the report SHALL list it for the Owner.
+
+#### Scenario: Lead cut by an earlier import
+- **WHEN** an earlier import gave the lead of a long log note the first 4,000 characters of the note, and the Owner runs the importer again
+- **THEN** the lead gets the whole note if it still holds exactly those 4,000 characters, and otherwise the report lists it and the lead stays as it is
+
+#### Scenario: Research notes imported before the fields not mapped
+- **WHEN** an earlier import wrote a record's research notes without the fields the Tree has no place for, and the Owner runs the importer again
+- **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since, and the Citation notes of register entries, are listed in the report and stay as they are
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.

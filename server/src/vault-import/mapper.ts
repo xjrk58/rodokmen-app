@@ -2,6 +2,7 @@ import { isLiving, relationsOf, type FamilyLinkById } from '@rodokmen/shared';
 import { open } from 'node:fs/promises';
 import { join } from 'node:path';
 import { mapLeads } from './map-leads.js';
+import { presumedDeaths } from './map-presumed.js';
 import { factsOf, marriagesOf } from './map-people.js';
 import { mapPlaces, type MapContext, type Municipality } from './map-places.js';
 import { citersOf, mapPersons, mapSources } from './map-sources.js';
@@ -105,14 +106,14 @@ function familyLinks(people: VaultNote[], vault: Vault): FamilyLinkById[] {
   return links;
 }
 
-/** Whether the Tree will treat a Person as Living, from their dates (tree-model spec, "Living people are computed"). */
-function livingInTree(n: VaultNote, today: Date): boolean {
+/** Whether the Tree will treat a Person as Living, from their dates and a presumed death (tree-model spec, "Living people are computed"). */
+function livingInTree(n: VaultNote, today: Date, presumedDead: boolean): boolean {
   const facts = factsOf(n);
   const birthDates = facts
     .filter((f) => f.kind === 'birth' || f.kind === 'baptism')
     .map((f) => dateText(f.date))
     .map((d) => (d && isValidDate(d) ? d : null));
-  return isLiving({ birthDates, deathRecorded: facts.some((f) => f.kind === 'death' || f.kind === 'burial') }, today);
+  return isLiving({ birthDates, deathRecorded: presumedDead || facts.some((f) => f.kind === 'death' || f.kind === 'burial') }, today);
 }
 
 /**
@@ -120,11 +121,11 @@ function livingInTree(n: VaultNote, today: Date): boolean {
  * copied", "Tags become Labels or are derived"): Living from the dates against `living`, and the
  * relation the Tree computes from these Family roots and link confidences against the tags.
  */
-function compare(vault: Vault, b: PlanBuilder, options: MapOptions): Plan['comparisons'] {
+function compare(vault: Vault, b: PlanBuilder, options: MapOptions, presumed: ReadonlyMap<string, string>): Plan['comparisons'] {
   const people = vault.notes.filter((n) => n.folder === 'people');
   let living = 0;
   for (const n of people) {
-    const computed = livingInTree(n, options.today);
+    const computed = livingInTree(n, options.today, presumed.has(n.id));
     if (typeof n.data.living !== 'boolean' || n.data.living === computed) continue;
     living++;
     b.report('livingDiffers', n.path, `Vault: ${n.data.living ? 'Living' : 'not Living'}; the Tree: ${computed ? 'Living' : 'not Living'}`);
@@ -148,7 +149,18 @@ export async function mapVault(vault: Vault, options: MapOptions): Promise<Plan>
   const b = new PlanBuilder();
   b.issues.push(...vault.issues);
   const readOn = vault.commit?.date ?? options.today.toISOString().slice(0, 10);
-  const ctx: MapContext = { b, vault, municipalities: options.municipalities, readOn, parishSeats: new Map() };
+  const presumed = presumedDeaths(vault, options.today);
+  if (!presumed.settled)
+    b.report('unmappedValue', 'people/', 'people: the parent links contradict each other (someone is their own ancestor); no death is presumed from them');
+  const ctx: MapContext = {
+    b,
+    vault,
+    municipalities: options.municipalities,
+    readOn,
+    parishSeats: new Map(),
+    kept: new Map(),
+    presumed: presumed.descriptions,
+  };
   // The Vault provenance Source (design, "Vault provenance Source"): given by the Owner, dated with the Vault's commit.
   const p = b.proposal('vault', 'vault', 'The Vault (rodokmen-data) as a Family account Source', null);
   b.create(p, 'vault-source', 'source', {
@@ -178,6 +190,14 @@ export async function mapVault(vault: Vault, options: MapOptions): Promise<Plan>
   const listed = new Set(b.proposals.flatMap((p) => p.files.map((f) => f.path)));
   for (const i of b.issues) if (i.kind === 'unreadableFile' || i.kind === 'missingFile') listed.add(i.kind === 'missingFile' ? i.detail : i.path);
   for (const f of [...vault.files].sort()) if (!listed.has(f)) b.report('skippedFile', f, 'no note lists it');
-  const comparisons = compare(vault, b, options);
-  return { proposals: b.proposals.flatMap((p) => splitProposal(p)), leads, issues: b.issues, comparisons, records: Object.fromEntries(b.records) };
+  const comparisons = compare(vault, b, options, ctx.presumed);
+  return {
+    proposals: b.proposals.flatMap((p) => splitProposal(p)),
+    leads,
+    issues: b.issues,
+    mergedMarriages: b.mergedMarriages,
+    updates: b.updates,
+    comparisons,
+    records: Object.fromEntries(b.records),
+  };
 }

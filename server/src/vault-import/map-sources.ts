@@ -1,6 +1,20 @@
 import { IsoDay, WebUrl, type Confidence } from '@rodokmen/shared';
-import { childLink, ensureFamily, ensurePerson, eventDate, eventWhere, factEvent, factsOf, marriageEvent, marriagesOf, parentsOf, role } from './map-people.js';
-import { linked, unmapped, vaultCitation, type MapContext } from './map-places.js';
+import {
+  childLink,
+  citesSourceNote,
+  ensureFamily,
+  ensurePerson,
+  eventDate,
+  eventWhere,
+  factEvent,
+  factsOf,
+  marriageEvent,
+  marriagesOf,
+  parentsOf,
+  role,
+} from './map-people.js';
+import { keep, linked, notesOf, unmapped, vaultCitation, type MapContext } from './map-places.js';
+import { presumedDeath } from './map-presumed.js';
 import { at, CONFIDENCE_OF, lowest, type PlannedFile, type PlannedProposal } from './plan.js';
 import { dateText, linkOf, textOf, type VaultNote } from './reader.js';
 
@@ -92,7 +106,10 @@ function citationPage(note: VaultNote): string | null {
 /** A Source of its own for a Source note outside the registers: a family document or memory, a gravestone, a web page. */
 function ownSource(ctx: MapContext, p: PlannedProposal, note: VaultNote, accessed: string | null): string {
   const kind = textOf(note.data.kind) || 'other';
-  if (!OWN_SOURCE[kind]) ctx.b.report('unmappedValue', note.path, `sources.kind: ${kind}`);
+  if (!OWN_SOURCE[kind]) {
+    ctx.b.report('unmappedValue', note.path, `sources.kind: ${kind}`);
+    if (textOf(note.data.kind)) keep(ctx, note, 'kind', kind);
+  }
   const type = OWN_SOURCE[kind] ?? 'other';
   const url = WebUrl.safeParse(note.data.url);
   const key = `source:${note.id}`;
@@ -107,7 +124,7 @@ function ownSource(ctx: MapContext, p: PlannedProposal, note: VaultNote, accesse
         ? { givenBy: 'not recorded in the Vault', givenByPersonId: null, givenOn: dateText(note.data.date) ?? accessed ?? ctx.readOn }
         : null,
   });
-  if (note.body.trim()) ctx.b.link(p, `notes:${key}`, 'notes', { op: 'setNotes', record: 'source', id: at(key), notes: note.body });
+  notesOf(ctx, p, 'source', key, note);
   return key;
 }
 
@@ -118,6 +135,14 @@ function citation(ctx: MapContext, p: PlannedProposal, note: VaultNote, confiden
   const accessed = dateText(note.data.accessed);
   const url = WebUrl.safeParse(note.data.url);
   const sourceKey = register ? `register:${register.id}` : ownSource(ctx, p, note, accessed);
+  // A register entry has no research notes: what the Tree has no place for goes in its Citation's note, below the path (#134).
+  const before = [`Vault: ${note.path}`, url.success && register ? `Scan: ${url.data}` : null].filter(Boolean).join('\n');
+  const lines = register ? (ctx.kept.get(note.path) ?? []) : [];
+  let citationNote = [before, ...lines].join('\n');
+  if (citationNote.length > 4000) {
+    ctx.b.report('unmappedValue', note.path, "sources: no room in the Citation's note for the fields the Tree has no place for");
+    citationNote = before;
+  }
   ctx.b.create(p, key, 'citation', {
     op: 'createCitation',
     tempId: '',
@@ -127,8 +152,20 @@ function citation(ctx: MapContext, p: PlannedProposal, note: VaultNote, confiden
     transcription: (note.body.trim() || note.frontmatterText.trim() || note.path).slice(0, 20_000),
     readOn: accessed && IsoDay.safeParse(accessed).success ? accessed : ctx.readOn,
     confidence,
-    note: [`Vault: ${note.path}`, url.success && register ? `Scan: ${url.data}` : null].filter(Boolean).join('\n'),
+    note: citationNote,
   });
+  if (citationNote !== before)
+    ctx.b.updates.push({
+      key: `vault-fields:${key}`,
+      recordKey: key,
+      record: 'citation',
+      field: 'note',
+      before,
+      after: citationNote,
+      freshKey: key,
+      path: note.path,
+      lines,
+    });
   files(ctx, p, note, key, sourceKey, register !== null);
   return key;
 }
@@ -142,18 +179,12 @@ export function mapSources(ctx: MapContext, citers: Map<string, Citers>): void {
   for (const note of notes) {
     const who = citers.get(note.id);
     const p = ctx.b.proposal('source', `source-note:${note.id}`, `Vault: ${note.path}`, note);
+    unmapped(ctx, note, KNOWN);
     const citationKey = citation(ctx, p, note, confidenceOf(ctx, note, who));
     for (const { person, fact } of who?.facts ?? []) factEvent(ctx, p, person, fact, citationKey);
     for (const { person, marriage } of who?.marriages ?? []) marriageEvent(ctx, p, person, marriage, citationKey, note.id);
-    unmapped(ctx, note, KNOWN);
   }
 }
-
-/** Whether a fact or marriage cites a Source note that exists. */
-const sourced = (ctx: MapContext, source: unknown) => {
-  const s = linkOf(source);
-  return s !== null && ctx.vault.byId.get(s)?.folder === 'sources';
-};
 
 /** A residence: the Person lived at a House or Place, in a period. */
 function residence(ctx: MapContext, p: PlannedProposal, note: VaultNote, r: Record<string, unknown>, i: number, citationKey: string, person: string): void {
@@ -207,8 +238,8 @@ function registerCitation(ctx: MapContext, p: PlannedProposal, note: VaultNote, 
 export function mapPersons(ctx: MapContext): void {
   const { b } = ctx;
   for (const note of ctx.vault.notes.filter((n) => n.folder === 'people')) {
-    const facts = factsOf(note).filter((f) => !sourced(ctx, f.source));
-    const marriages = marriagesOf(note).filter((m) => !sourced(ctx, m.source));
+    const facts = factsOf(note).filter((f) => !citesSourceNote(ctx, f.source));
+    const marriages = marriagesOf(note).filter((m) => !citesSourceNote(ctx, m.source));
     const residences = (Array.isArray(note.data.residences) ? note.data.residences : []).filter(
       (r): r is Record<string, unknown> => !!r && typeof r === 'object',
     );
@@ -218,11 +249,12 @@ export function mapPersons(ctx: MapContext): void {
     const { father, mother, adoptiveFather, adoptiveMother } = parentsOf(ctx, p, note);
     if (father || mother) childLink(ctx, p, ensureFamily(ctx, p, father, mother), person, 'birth');
     if (adoptiveFather || adoptiveMother) childLink(ctx, p, ensureFamily(ctx, p, adoptiveFather, adoptiveMother), person, 'adoptive');
-    if (facts.length || marriages.length || residences.length || p.ops.length > before) {
+    if (facts.length || marriages.length || residences.length || ctx.presumed.has(note.id) || p.ops.length > before) {
       const citationKey = vaultCitation(ctx, p, note);
       for (const f of facts) registerCitation(ctx, p, note, f.source, factEvent(ctx, p, note, f, citationKey));
       for (const m of marriages) registerCitation(ctx, p, note, m.source, marriageEvent(ctx, p, note, m, citationKey, null));
       residences.forEach((r, i) => residence(ctx, p, note, r, i, citationKey, person));
+      presumedDeath(ctx, p, note, person, citationKey);
     }
     if (p.ops.length === before) b.proposals.pop();
   }

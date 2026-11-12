@@ -31,16 +31,30 @@ export const KNOWN_ISSUES = [
 // What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
 export const SWAP_CHECK = [
   'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/gaps.ts,',
-  'shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/reading.ts, shared/src/relation.ts and',
-  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
-  '(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of relation.ts and gaps.ts',
-  'compare two plain integers, emitted in their order; gaps.ts, leads.ts, matching.ts and reading.ts have no optionals at',
-  'all: unknown years, houses, Places and Sources are a flag and 0, or the empty string), and the generated `.dfy.gen`',
-  'was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
+  'shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts,',
+  'shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or',
+  'in a specification (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of',
+  'relation.ts, gaps.ts and presumed-death.ts compare two plain integers, emitted in their order; gaps.ts, leads.ts,',
+  'matching.ts, presumed-death.ts and reading.ts have no optionals at all: unknown years, houses, Places and Sources are a',
+  'flag and 0, or the empty string, and a Person without a chain has an empty one), and the generated `.dfy.gen` was read',
+  'for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
 ];
 
 // Exactly what a proof covers where that is less than its requirement, written by hand: update it with the proof.
 export const SCOPES = [
+  `**Presumed death** (\`presumedDead\`, shared/src/presumed-death.ts; vault-import "Presumed death when birth is provably
+  long ago"). Proved, for any Persons, facts, parent links and offered chains: a Person is presumed dead only if they have
+  no death or burial and no birth or baptism date of their own, and the chain offered for them ends at them, starts at a
+  fact of its first Person (a birth, a marriage at 12 or older, or a parent's death at most a year before the birth), takes
+  each further step along a parent link by one of the bounds (a parent at least 12 years older, a child at most 60 years
+  after the mother), and bounds their birth before the cutoff; with no fact and no parent link, nobody is presumed dead
+  ("No dates, no relatives"). The lemma \`ChainBoundsBirth\` in presumed-death.dfy proves such a chain sound: for any
+  birth days that keep the bounds, everyone on it was born on or before the chain's value for them. Not proved: the search
+  for the tightest bounds and the chains behind them (\`presumeDeaths\`; the proved check accepts or refuses what it
+  offers, so a mistake there can only leave a death unpresumed), the facts the importer reads from the Vault
+  (server/src/vault-import/map-presumed.ts: the latest days of EDTF dates, the marriages of either spouse's note, fathers
+  and mothers), and that the cutoff is the day 125 years before the run; shared/test/presumed-death.test.ts and
+  server/test/vault-import-mapping.test.ts test those.`,
   `**The gap finder** (\`suggestGaps\`, shared/src/gaps.ts; research-leads "Gap finder suggests leads"). Proved, for any
   Persons, marriages, registers, decided keys and margin: every suggestion is a real gap of its kind (a Relative with no
   birth or baptism Citation; a Relative with unknown parents and a known Parish and years; a Relative's marriage with

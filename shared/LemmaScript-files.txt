@@ -6,3 +6,4 @@ src/leads.ts
 src/gaps.ts
 src/reading.ts
 src/matching.ts
+src/presumed-death.ts

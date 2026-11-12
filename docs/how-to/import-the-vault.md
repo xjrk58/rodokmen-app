@@ -47,10 +47,17 @@ folder) and never paste it into an issue or a pull request. It lists:
 
 - how many notes of each folder were read, and the folders and files not imported;
 - how many records of each kind would be created, and the Proposals planned;
-- every field the Tree has no place for, and every value that could not be mapped, by field;
+- every field the Tree has no place for, and every value that could not be mapped, by field (the import keeps them
+  as lines below the research notes of their record, or in a register entry's Citation note);
 - every link to a missing note, every date that is not valid EDTF, every file that is missing or cannot be read;
-- the Persons the Tree will see as Living while the Vault says otherwise (a Person with no dates is Living);
-- the Persons whose relation to the family will differ from their Vault tags.
+- the Persons presumed dead, with the bound on their birth: they have no dates of their own, but their marriages and
+  their relatives' dates prove them born more than 125 years before the run, so they get a death Event without a date
+  (shown as "†");
+- the Persons the Tree will see as Living while the Vault says otherwise (a Person with no dates is Living, unless a
+  death is presumed);
+- the Persons whose relation to the family will differ from their Vault tags;
+- the marriages both spouses record without a Source note but with different dates or Places, which become two
+  Events.
 
 Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left.
 
@@ -92,6 +99,27 @@ the next run gives each such Person note a small Proposal that adds the register
 the run's batch as in step 5. Those Events then carry a Citation at the Person's confidence, so a probable or
 confirmed parent or partner link no longer makes anyone a Possible relative. An Event whose Proposal is still pending
 waits, listed in the report, until a run after it is accepted.
+
+An import made before #132 presumed no deaths. The next run adds a death Event without a date to each Person the
+bounds prove born more than 125 years ago, in a small Proposal per Person, so the Tree stops treating them as Living. A
+Person you have since given a death, burial or birth date in the app is left out and listed under **Presumed deaths left
+out**.
+
+An import made before #134 left out the fields the Tree has no place for, such as a Person's occupation. The next run
+adds them below the research notes of each record whose notes still hold exactly what that import wrote, in a small
+Proposal per record. Notes you changed in the app since are left as they are, and the report lists their lines under
+**Fields not mapped, on records imported before #134**. It also lists the evidence classes of register entries,
+which belong in their Citation's note: no Proposal can change that without new evidence yet (#157).
+
+An import made before #136 kept the first 4,000 characters of a long log or plan note in its Research lead. The
+next run gives such a lead the whole note, if the lead still holds exactly what that run wrote. A lead you changed
+in the app since is left as it is and listed in the report under **Research leads**: add the rest of the note by
+hand if you want it.
+
+An import made before #149 gave a marriage both spouses record without a Source note two Events, one from each
+spouse's note. The next run attaches the second note's Citation to the first Event, and the report lists each such
+pair under **Marriage Events imported twice**, with the Event to keep and the other one. The app cannot merge two
+Events yet (#154), so leave the other one for now: it does no harm, as the partner link rests on both.
 
 ## Afterwards
 

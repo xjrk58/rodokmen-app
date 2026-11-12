@@ -119,3 +119,13 @@ test('life years: both, birth only, death only, none', () => {
   assert.equal(lifeYears({ birth: null, death: '../1805' }), '† 1805');
   assert.equal(lifeYears({ birth: null, death: null }), '');
 });
+
+test('life years: a death without a date shows as † (#132)', () => {
+  // A summary with no birth date that is not Living has a death recorded: the Living rule says so.
+  assert.equal(lifeYears({ birth: null, death: null, living: false }), '†');
+  assert.equal(lifeYears({ birth: null, death: null, living: true }), '');
+  // With a birth year, only a recorded death says so: born long ago is not Living either.
+  assert.equal(lifeYears({ birth: '1801', death: null, living: false }), '* 1801');
+  assert.equal(lifeYears({ birth: '1801', death: null, living: false, died: true }), '1801–†');
+  assert.equal(lifeYears({ birth: null, death: null, died: true }), '†');
+});
