@@ -6,10 +6,17 @@
 # database has its files (original and display copy) in the restore. Exits non-zero on any
 # difference.
 #
+# It also writes the newest list of erasures (db/erasures.tsv of the latest snapshot, whichever
+# snapshot is restored) to $RESTORE_DIR/erasures.tsv and says how many erased Persons the
+# restored database still holds. The workflow then erases them again with the server's
+# `erasures reapply --list` and checks that none remains (erasure spec, "Restores keep erased
+# people erased"); keep the scratch database for that with KEEP_SCRATCH=1.
+#
 # Environment:
 #   RESTIC_REPOSITORY RESTIC_PASSWORD (+ repository credentials)
 #   PGHOST PGUSER PGPASSWORD         a throwaway PostgreSQL + PostGIS server (never production)
 #   SCRATCH_DB (rodokmen_restore)  RESTORE_DIR (temporary)  BACKUP_HOST (rodokmen)
+#   SNAPSHOT (latest)                the snapshot to restore: an id, or latest
 #   WORK_DIR (/work)                 the directory the Backup was taken from
 #   EMPTY_TABLE                      optional: deliberately empty this table in the scratch
 #                                    restore before comparing, to see the test fail
@@ -22,13 +29,15 @@ SCRATCH_DB=${SCRATCH_DB:-rodokmen_restore}
 BACKUP_HOST=${BACKUP_HOST:-rodokmen}
 WORK_DIR=${WORK_DIR:-/work}
 RESTORE_DIR=${RESTORE_DIR:-$(mktemp -d)}
+SNAPSHOT=${SNAPSHOT:-latest}
 log() { printf '%s %s\n' "$(date -u +%FT%TZ)" "$*"; }
 
 [[ "$SCRATCH_DB" =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "bad SCRATCH_DB"; exit 2; }
+[[ "$SNAPSHOT" =~ ^(latest|[0-9a-f]{8,64})$ ]] || { echo "bad SNAPSHOT"; exit 2; }
 
-log "restoring the latest snapshot into $RESTORE_DIR"
+log "restoring the snapshot $SNAPSHOT into $RESTORE_DIR"
 restic snapshots --host "$BACKUP_HOST" --tag nightly --latest 1
-restic restore latest --host "$BACKUP_HOST" --tag nightly --target "$RESTORE_DIR"
+restic restore "$SNAPSHOT" --host "$BACKUP_HOST" --tag nightly --target "$RESTORE_DIR"
 root="$RESTORE_DIR$WORK_DIR"
 [ -f "$root/db/rodokmen.dump" ] && [ -f "$root/db/counts.json" ] || { echo "the snapshot has no dump or counts under $WORK_DIR"; exit 1; }
 expected=$(cat "$root/db/counts.json")
@@ -37,6 +46,17 @@ log "loading the dump into the scratch database $SCRATCH_DB"
 dropdb --if-exists "$SCRATCH_DB"
 createdb "$SCRATCH_DB"
 pg_restore --no-owner --no-privileges --exit-on-error --dbname "$SCRATCH_DB" "$root/db/rodokmen.dump"
+
+# The newest list of erasures, from the latest snapshot (empty in Backups taken before erasure existed).
+restic dump --host "$BACKUP_HOST" --tag nightly latest "$WORK_DIR/db/erasures.tsv" > "$RESTORE_DIR/erasures.tsv" 2>/dev/null || : > "$RESTORE_DIR/erasures.tsv"
+erased=$(grep -cE '^[0-9a-f-]{36}' "$RESTORE_DIR/erasures.tsv" || true)
+if [ "$erased" -gt 0 ] && [ "$(psql -qAtX -v ON_ERROR_STOP=1 -d "$SCRATCH_DB" -c "select to_regclass('public.person') is not null")" = t ]; then
+  ids=$(grep -oE '^[0-9a-f-]{36}' "$RESTORE_DIR/erasures.tsv" | sed "s/.*/'&'/" | paste -sd, -)
+  held=$(psql -qAtX -v ON_ERROR_STOP=1 -d "$SCRATCH_DB" -c "select count(*) from person where id in ($ids)")
+  log "the list holds $erased erasures; the restored database still holds $held of those Persons, to be erased again"
+else
+  log "the list holds $erased erasures"
+fi
 
 if [ -n "${EMPTY_TABLE:-}" ]; then
   [[ "$EMPTY_TABLE" =~ ^[a-z_][a-z0-9_]*$ ]] || { echo "bad EMPTY_TABLE"; exit 2; }

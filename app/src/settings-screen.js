@@ -338,6 +338,15 @@ export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
     ${me.permissions.markFamilyRoots ? html`<${FamilyRootsSection} refreshMe=${refreshMe} />` : null}
     ${me.role === 'owner' ? html`<${FamilySection} me=${me} /><${AgentsSection} />` : null}
     ${me.permissions.manageSettings ? html`<${ScanReadingSection} />` : null}
+    ${
+      me.permissions.downloadExport
+        ? html`<section class="card" data-testid="settings-export">
+            <h2>${t('settings.export')}</h2>
+            <p class="muted small">${t('settings.exportText')}</p>
+            <a class="button" href=${API.GEDCOM_DOWNLOAD} download="family.ged" data-testid="gedcom-download">${t('settings.exportDownload')}</a>
+          </section>`
+        : null
+    }
     <section class="card">
       <h2>${t('settings.about')}</h2>
       <p class="muted small">${t('settings.version', { version: APP_VERSION })}</p>

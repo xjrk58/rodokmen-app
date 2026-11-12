@@ -324,7 +324,7 @@ describe('Research leads', () => {
     expect((await call(editor, 'POST', `/api/proposals/${mergeProposal.id}/undo`, { choices: [], note: null })).statusCode).toBe(200);
   });
 
-  describe('Living people in Exports and on erasure (task 1.4: the rule and its entry; the Export and erasure come with add-exports-and-erasure)', () => {
+  describe('Living people in Exports and on erasure (task 1.4: the entries; the Export and erasure call them, see exports.test.ts and erasure.test.ts)', () => {
     it('an Export keeps no link to a Living person, and leaves out a lead about Living people only', async () => {
       const living = await t.db.selectFrom('person').select('id').where('id', '=', L.undated).executeTakeFirstOrThrow();
       const both = await write(contributor, { question: 'Living and not', reason: 'R', personIds: [living.id, L.janNovak] });

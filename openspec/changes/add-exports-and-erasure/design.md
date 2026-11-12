@@ -36,6 +36,19 @@ These pure functions in `shared/` are proved with `lsc check` (ADR 0009). Each l
 - **The log rewrite** (erasure: Erasure reaches the log): proved: every entry about the Person becomes a marker holding only "erased" and the time, and no other entry changes.
 - **Reapplying erasures** (erasure: Restores keep erased people erased): proved: after reapplying the list no erased id remains, and nothing else is removed.
 
+## As built (issue #19)
+
+Choices made while building, within the specs:
+
+- **One record shape.** Every record kind is an `ExportRecord` (shared/src/export.ts); `exportRecord` is the view both writers write, so "for any record" in the proofs means every kind. Image and document links are links of kind `image` or `document`; the gatherer decides which links those are and takes image embeds out of notes.
+- **Events with Living people.** An Event in which a Living person has any Role is left out of every record, not only theirs: a parent's or partner's note would otherwise give the exact birth or marriage date the reduction hides. A Family with a Living partner or child keeps its partners and children but not its notes. A Family account given by a Living person says "a Living relative". When in doubt the Export leaves out more.
+- **Leads** are exported as notes in `leads/`, through `leadsForExport` (research-leads task 1.4).
+- **Slugs** are unique across folders, so a `[[slug]]` link names one note.
+- **Erasure also removes** the Citations attached only to what goes (their transcription names the Person), Families left with nobody, Persons merged into the erased one, and their entries in the importer's map. Citations of Events others share stay, with their transcriptions; the Owner corrects those, as the erasure guide says.
+- **The log rewrite** marks every change that mentions a removed record, and records which records that stay it pointed at (`log_change.erased_refs`), so that their history still lists the entry as "erased record". The Proposal behind such an entry, and any Proposal whose operations name a removed record, loses its operations, notes and reader marks (`proposal.erased_at`); a pending one is closed. Its undo is refused.
+- **Reapplying** runs when the API starts, before it listens, and in `erasures reapply`. Each Backup keeps the list (`db/erasures.tsv`), so a restore of an older Backup takes the newest list; the monthly restore test erases again with it.
+- **Off by default.** The nightly Export runs only with `RODOKMEN_EXPORT_ENABLED=true` and a repository, since production holds the Owner's real Tree.
+
 ## Risks / Trade-offs
 
 - [Erasure removes evidence other people relied on] → only Living people can be erased, and the confirmation lists which Events will disappear.

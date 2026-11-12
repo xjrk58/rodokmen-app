@@ -40,7 +40,7 @@ lemma mayDecide_ensures(role: string)
 
 function isOwnerAction(action: string): bool
 {
-  ((((action == "manageAccounts") || (action == "markFamilyRoots")) || (action == "acceptBatch")) || (action == "manageSettings"))
+  ((((((action == "manageAccounts") || (action == "markFamilyRoots")) || (action == "acceptBatch")) || (action == "manageSettings")) || (action == "erase")) || (action == "downloadExport"))
 }
 
 function mayDo(role: string, action: string): bool
@@ -74,6 +74,8 @@ lemma mayDo_ensures(role: string, action: string)
   ensures ((role == "agent") ==> (action == "markFamilyRoots") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "acceptBatch") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "manageSettings") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "erase") ==> !(mayDo(role, action)))
+  ensures ((role == "agent") ==> (action == "downloadExport") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> (action == "decideSuggestions") ==> !(mayDo(role, action)))
   ensures ((role == "agent") ==> mayDo(role, action) ==> mayDo("contributor", action))
   ensures ((action == "writeLeads") ==> (mayDo(role, action) == ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner"))))
@@ -84,6 +86,8 @@ lemma mayDo_ensures(role: string, action: string)
   ensures ((action == "acceptBatch") ==> (mayDo(role, action) == (role == "owner")))
   ensures ((role == "editor") ==> (action == "acceptBatch") ==> (!(mayDo(role, action)) && mayDo(role, "accept")))
   ensures ((action == "manageSettings") ==> (mayDo(role, action) == (role == "owner")))
+  ensures ((action == "erase") ==> (mayDo(role, action) == (role == "owner")))
+  ensures ((action == "downloadExport") ==> (mayDo(role, action) == (role == "owner")))
   ensures (mayDo(role, action) ==> ((((role == "agent") || (role == "contributor")) || (role == "editor")) || (role == "owner")))
 {
 }

@@ -3,10 +3,13 @@ name: backup-restore-test
 # Monthly restore test (operations spec): restores the latest Backup from the second provider
 # into a throwaway PostGIS container, checks that the record counts and the number of image files
 # match production at Backup time and that every image of the Tree has its files, and emails the
-# Owner if not (deploy/backup/restore-check.sh).
+# Owner if not (deploy/backup/restore-check.sh). Then it erases again every Person on the newest
+# list of erasures that the restore still holds, with the server's `erasures reapply`, and fails
+# if one remains (erasure spec, "Restores keep erased people erased").
 #
 # To see it fail on purpose, run it by hand with "empty_table" set (for example "person"), or
-# with "remove_image" ticked (one restored image file is deleted before comparing).
+# with "remove_image" ticked (one restored image file is deleted before comparing). To restore a
+# Backup taken before an erasure (scenario "Restore from an old Backup"), give its snapshot id.
 #
 # Secrets (environment "backups"): RESTIC_REPOSITORY, RESTIC_PASSWORD, BACKUP_S3_ACCESS_KEY_ID,
 # BACKUP_S3_SECRET_ACCESS_KEY, and for the alert: SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER,
@@ -24,6 +27,10 @@ on:
         description: Deliberately delete one restored image file (the test must then fail)
         type: boolean
         default: false
+      snapshot:
+        description: The snapshot to restore (an id from restic snapshots), for example one taken before an erasure
+        required: false
+        default: latest
 
 permissions:
   contents: read
@@ -58,15 +65,35 @@ jobs:
       SCRATCH_DB: rodokmen_restore
       EMPTY_TABLE: ${{ inputs.empty_table }}
       REMOVE_IMAGE: ${{ inputs.remove_image && '1' || '' }}
+      SNAPSHOT: ${{ inputs.snapshot || 'latest' }}
+      RESTORE_DIR: ${{ runner.temp }}/restore
+      KEEP_SCRATCH: '1'
     steps:
       - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
       - name: Install restic and the PostgreSQL 16 client
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q restic postgresql-client-16
           echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
-      - name: Restore the latest Backup and compare record and image counts
-        run: deploy/backup/restore-check.sh
+      - name: Restore the Backup and compare record and image counts
+        run: mkdir -p "$RESTORE_DIR" && deploy/backup/restore-check.sh
+      - run: pnpm install --frozen-lockfile --filter @rodokmen/server...
+      - name: Erase again the Persons on the newest list of erasures, and check none remains
+        env:
+          DATABASE_URL: postgres://restore:restore@localhost:5432/rodokmen_restore
+        run: |
+          pnpm --filter @rodokmen/server cli erasures reapply --list "$RESTORE_DIR/erasures.tsv"
+          remaining=$(psql -qAtX -v ON_ERROR_STOP=1 -d rodokmen_restore -c "select count(*) from person where id in (select person_id from erasure)")
+          echo "erased Persons left in the restore: $remaining"
+          test "$remaining" = 0
+      - name: Drop the scratch database
+        if: always()
+        run: dropdb --if-exists rodokmen_restore
       - name: Alert the Owner
         if: failure()
         env:
