@@ -21,13 +21,7 @@ This guide shows you how to change which archive the map names for a place, or t
    pnpm --filter @rodokmen/app test:unit
    ```
 
-4. Stamp the new version, so that installed apps load the new data:
-
-   ```sh
-   node app/scripts/stamp-version.mjs
-   ```
-
-5. Check the portal links:
+4. Check the portal links:
 
    ```sh
    node app/scripts/check-links.mjs
@@ -35,7 +29,7 @@ This guide shows you how to change which archive the map names for a place, or t
 
    Each archive gets a line; `ok` means the portal answered. A definite failure (a missing page, a host that no longer exists, a refused connection) makes it exit 1, naming the archive and URL. Timeouts, certificate-chain errors, 401, 403, 429 and lasting server errors are warnings: they usually mean the portal cannot be reached from where you are, not that the link is broken. Open those in a browser.
 
-6. Look at it: run `pnpm --filter @rodokmen/app serve`, open http://localhost:4173, search a Municipality in a district you changed, and check that its place sheet names the archive and opens the portal.
+5. Look at it: run `pnpm --filter @rodokmen/app serve`, open http://localhost:4173, search a Municipality in a district you changed, and check that its place sheet names the archive and opens the portal.
 
 A pull request that changes `archives.json` runs the same link check in the `archive-links` workflow, which also runs every Monday.
 
@@ -43,6 +37,6 @@ A pull request that changes `archives.json` runs the same link check in the `arc
 
 1. Edit `app/data/layers.json`. Every URL must be `https://`. A viewer URL may contain `{name}` for the Municipality's name.
 2. If an overlay does not line up with the base map, set its `enabled` to `false` rather than removing it.
-3. Run `pnpm --filter @rodokmen/app test:unit` and `node app/scripts/stamp-version.mjs`.
+3. Run `pnpm --filter @rodokmen/app test:unit`.
 
 The server allows the hosts of the base map and the overlays in the app's Content-Security-Policy by itself, from this file.

@@ -2,16 +2,19 @@
 // The files of app/ that are deployed: the one list every deploy path and test
 // uses. deploy/Dockerfile and .github/workflows/pages-preview.yml copy them,
 // tests/e2e/sw-helpers.js serves a copy of them, and tests/unit/site-files.test.mjs
-// and precache.test.mjs check them against app/ and the precache.
+// and precache.test.mjs check them against app/ and the precache. A copy is
+// stamped with the release version of its files (scripts/stamp-version.mjs): app/
+// itself carries a placeholder, so the stamp is written here, where the site is built.
 //
 //   node scripts/site-files.mjs             print the files, one per line
-//   node scripts/site-files.mjs --copy DIR  copy them to DIR (created if needed)
+//   node scripts/site-files.mjs --copy DIR  copy them to DIR (created if needed), stamped
 //
-// Only Node's own modules: the Docker build runs this before installing app/.
+// Only Node's own modules and app/'s own files: the Docker build runs this before installing app/.
 import { copyFile, mkdir, readdir } from 'node:fs/promises';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { stampSite } from './stamp-version.mjs';
 
 export const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -65,9 +68,11 @@ export async function siteFiles(appDir = APP_DIR) {
 }
 
 /**
- * Copies the deployed files to `dest`, keeping their paths.
+ * Copies the deployed files to `dest`, keeping their paths, and stamps the copy
+ * with the release version of its files.
  * @param {string} dest
  * @param {string} [appDir]
+ * @returns {Promise<string>} the version
  */
 export async function copySite(dest, appDir = APP_DIR) {
   for (const file of await siteFiles(appDir)) {
@@ -75,13 +80,14 @@ export async function copySite(dest, appDir = APP_DIR) {
     await mkdir(dirname(to), { recursive: true });
     await copyFile(join(appDir, ...file.split('/')), to);
   }
+  return stampSite(dest);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { values } = parseArgs({ options: { copy: { type: 'string' } } });
   if (values.copy) {
-    await copySite(resolve(values.copy));
-    console.log(`Copied the site to ${values.copy}`);
+    const version = await copySite(resolve(values.copy));
+    console.log(`Copied the site to ${values.copy}, stamped ${version}`);
   } else {
     for (const file of await siteFiles()) console.log(file);
   }

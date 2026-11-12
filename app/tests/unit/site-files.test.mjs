@@ -49,11 +49,13 @@ test('--copy copies exactly the site', async () => {
   }
 });
 
-test('both deploy paths copy the site with scripts/site-files.mjs', async () => {
+test('both deploy paths copy the site with scripts/site-files.mjs, and check the stamp of the copy', async () => {
   const docker = await readFile(join(APP, '..', 'deploy', 'Dockerfile'), 'utf8');
   const pages = await readFile(join(APP, '..', '.github', 'workflows', 'pages-preview.yml'), 'utf8');
   assert.match(docker, /node app\/scripts\/site-files\.mjs --copy \/site/);
+  assert.match(docker, /node app\/scripts\/stamp-version\.mjs --check \/site/);
   assert.match(docker, /COPY --from=build \/site \/srv\/app/);
   assert.doesNotMatch(docker, /COPY --from=build \/repo\/app /);
   assert.match(pages, /node app\/scripts\/site-files\.mjs --copy _site/);
+  assert.match(pages, /node app\/scripts\/stamp-version\.mjs --check _site/);
 });

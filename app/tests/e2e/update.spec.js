@@ -1,7 +1,8 @@
 // Task 6.4: when a new version is deployed while the app is open, it shows
 // "New version, reload" and keeps the page until the reader taps it.
-import { readFile, writeFile } from 'node:fs/promises';
+import { appendFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { stampSite } from '../../scripts/stamp-version.mjs';
 import { municipality } from './data.js';
 import { expect, test } from './fixtures.js';
 import { cacheSizes, copyApp, serve, waitForServiceWorker } from './sw-helpers.js';
@@ -9,31 +10,29 @@ import { cacheSizes, copyApp, serve, waitForServiceWorker } from './sw-helpers.j
 test.use({ serviceWorkers: 'allow', locale: 'en-US' });
 
 /**
- * Simulates a deploy: a changed file and a new version stamp.
- * @param {string} dir
- * @param {string} version
+ * Simulates a deploy as the build makes one (#91): a changed precached file,
+ * and the site stamped again with the version of its files.
+ * @param {string} dir a copy of the site (copyApp)
+ * @returns {Promise<string>} the new version
  */
-async function deploy(dir, version) {
-  for (const [file, pattern, replacement] of [
-    ['sw.js', /const VERSION = '[^']*';/, `const VERSION = '${version}';`],
-    ['src/version.js', /export const APP_VERSION = '[^']*';/, `export const APP_VERSION = '${version}';`],
-  ]) {
-    const path = join(dir, /** @type {string} */ (file));
-    await writeFile(path, (await readFile(path, 'utf8')).replace(/** @type {RegExp} */ (pattern), /** @type {string} */ (replacement)));
-  }
+async function deploy(dir) {
+  await appendFile(join(dir, 'styles.css'), '\n/* a new deploy */\n');
+  return stampSite(dir);
 }
 
 test('a new deploy shows "New version, reload" and updates only when tapped', async ({ page }) => {
   const app = await copyApp();
   const server = await serve(app.dir);
   try {
-    await deploy(app.dir, 'test-1');
     await page.goto(server.url);
     await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
     await waitForServiceWorker(page);
     await expect(page.locator('#update-toast')).toBeHidden();
+    await page.locator('#settings-button').click();
+    await expect(page.locator('#app-version')).toHaveText(`Version ${app.version}`);
+    await page.keyboard.press('Escape');
 
-    for (const version of ['test-2', 'test-3']) {
+    for (let i = 0; i < 2; i++) {
       // The reader is looking at a place when the new version arrives.
       const m = municipality('Pardubice');
       await page.locator('#search-input').fill(m.name);
@@ -43,7 +42,7 @@ test('a new deploy shows "New version, reload" and updates only when tapped', as
         /** @type {any} */ (window).notReloaded = true;
       });
 
-      await deploy(app.dir, version);
+      const version = await deploy(app.dir);
       await page.evaluate(async () => {
         await (await navigator.serviceWorker.getRegistration())?.update();
       });
@@ -77,7 +76,6 @@ test('with two tabs open, "New version, reload" works in the second tab too', as
   const app = await copyApp();
   const server = await serve(app.dir);
   try {
-    await deploy(app.dir, 'test-1');
     await page.goto(server.url);
     await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
     await waitForServiceWorker(page);
@@ -85,7 +83,7 @@ test('with two tabs open, "New version, reload" works in the second tab too', as
     await second.goto(server.url);
     await expect(second.locator('body')).toHaveAttribute('data-ready', 'true');
 
-    await deploy(app.dir, 'test-2');
+    const version = await deploy(app.dir);
     await page.evaluate(async () => {
       await (await navigator.serviceWorker.getRegistration())?.update();
     });
@@ -105,7 +103,7 @@ test('with two tabs open, "New version, reload" works in the second tab too', as
     await expect(second.locator('body')).toHaveAttribute('data-ready', 'true');
     await expect(second.locator('#update-toast')).toBeHidden();
     await second.locator('#settings-button').click();
-    await expect(second.locator('#app-version')).toHaveText('Version test-2');
+    await expect(second.locator('#app-version')).toHaveText(`Version ${version}`);
   } finally {
     await server.close();
     await app.remove();
