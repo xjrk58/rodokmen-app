@@ -111,6 +111,20 @@ a deploy (both API slots) runs during the nightly Backup (#39).
   Measured in one API slot: a 25 MB JPEG of 48 megapixels takes about 75 MB above idle, a
   196-megapixel PNG about 130 MB. Before uploads took turns from loading on, four large images at
   once took up to 461 MB.
+- **HEIC** (iPhone photos, #147; `server/src/storage/heic.ts`): sharp cannot decode HEVC, so a
+  HEIC is decoded by libheif-js (libheif with libde265, compiled to WebAssembly) in a worker
+  thread started for it and stopped after, in the upload's turn. Unlike sharp, which reads a JPEG a
+  strip at a time, it decodes the whole image: about 6 bytes a pixel at its peak, plus some 45 MB
+  for the thread itself. sharp reads the decoded pixels where they are, and only the display copy
+  or crop is copied out. A HEIC may therefore have at most 50 million pixels (iPhones take 12, 24
+  or, with "HEIF Max", 48), checked from its header before decoding. Measured with
+  `server/scripts/heic-memory.ts` (one Node process with `MALLOC_ARENA_MAX=2`, not the Compose
+  stack), above what the process held before: 12 megapixels 146 MB in 0.6 s, 24 megapixels 209 MB,
+  48 megapixels 375 MB in 1.3 s (up to 404 MB over five in a row), and the worst case, 48 megapixels
+  at 10 bits a colour, 435 MB. In a slot idle at about 61 MB, an iPhone's largest photo stays under
+  the 512 MB limit; the 10-bit worst case comes close to it (about 495 MB), with the swap allowance
+  behind it. Each decode is stopped after 60 seconds. Between turns the process keeps up to about
+  95 MB more than before, which does not grow further after a few HEICs.
 - **How it was measured** (#39): this Compose file locally, every service on 2 CPUs, the invented
   fixture Tree and 2.8 GB of images. While a full first-night Backup ran, four large images went
   through upload, check and accept at once (two 25 MB JPEGs, a 196-megapixel PNG and a
