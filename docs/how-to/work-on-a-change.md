@@ -36,8 +36,9 @@ Depending on what you changed:
 
 - the API: `pnpm --filter @rodokmen/server openapi` regenerates `server/openapi.json`;
 - a proved rule: [run the proofs and regenerate the verification page](run-the-proofs.md);
-- the architecture: [regenerate the C4 diagrams](regenerate-the-c4-diagrams.md);
-- files of the app: `node app/scripts/stamp-version.mjs`.
+- the architecture: [regenerate the C4 diagrams](regenerate-the-c4-diagrams.md).
+
+Files of the app need no new version stamp: it is written when the site is built or served ([Offline and the app](../explanation/offline.md#updates-never-interrupt-reading)).
 
 ## 4. Update the docs
 
@@ -55,7 +56,7 @@ pnpm test:scripts
 
 If a check fails, see [Fix a failed check](fix-a-failed-check.md).
 
-The tests need PostgreSQL 16 with PostGIS and a role that may create databases, such as the container from the [tutorial](../tutorials/first-proposal.md); each run creates and drops its own databases. The app's browser tests need Chromium for Playwright: `pnpm --filter @rodokmen/app exec playwright install chromium`.
+The tests need PostgreSQL 16 with PostGIS and a role that may create databases, such as the container from the [tutorial](../tutorials/first-proposal.md); each run creates and drops its own databases. The app's browser tests need Chromium for Playwright: `pnpm --filter @rodokmen/app exec playwright install chromium`. Each run of them starts its own server on a free port, so two checkouts can run them at the same time.
 
 ## 6. Push and open the pull request
 

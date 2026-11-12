@@ -84,7 +84,7 @@ Package scripts, with `pnpm --filter <package> <script>`:
 | `@rodokmen/app`    | `build-data`               | rebuilds the map data in `app/data/` from its sources                                                                                            |
 | `@rodokmen/app`    | `check-links`              | checks every portal URL in `app/data/archives.json`                                                                                              |
 | `@rodokmen/app`    | `vendor`                   | copies Leaflet, Preact and htm into `app/vendor/`                                                                                                |
-| `@rodokmen/app`    | `test:unit`, `test:e2e`    | the app's unit tests and Playwright tests                                                                                                        |
+| `@rodokmen/app`    | `test:unit`, `test:e2e`    | unit and Playwright tests; Playwright serves the app on a free port per run (`PORT` picks one, `REUSE_SERVER=1` reuses a server)                 |
 
 ## Other scripts
 
@@ -93,8 +93,8 @@ Package scripts, with `pnpm --filter <package> <script>`:
 | `node scripts/audit.mjs [--issue [--dry-run]]`          | fails on a high or critical advisory in a production dependency; `--issue` opens or updates the GitHub issue ([Code checks](checks.md#the-audit-and-gitleaks-scripts))                                             |
 | `node app/scripts/build-data.mjs [--refresh]`           | rebuilds districts, the border, Municipalities and `municipalityOverrides`; `--refresh` downloads the sources again                                                                                                |
 | `node app/scripts/check-links.mjs [--extra "Name=URL"]` | exits 1 on a definite failure; timeouts, certificate-chain errors, 401, 403, 408, 429 and lasting server errors are warnings                                                                                       |
-| `node app/scripts/stamp-version.mjs [--check]`          | writes the release version into `app/sw.js` and `app/src/version.js`; `--check` exits 1 if it is stale                                                                                                             |
-| `node app/scripts/site-files.mjs [--copy DIR]`          | lists the deployed files of `app/`, or copies them to `DIR`                                                                                                                                                        |
+| `node app/scripts/stamp-version.mjs [--check DIR]`      | prints the release version of the files in `app/`; `--check DIR` exits 1 unless the built site in `DIR` carries the stamp of its own files ([why](../explanation/offline.md#updates-never-interrupt-reading))      |
+| `node app/scripts/site-files.mjs [--copy DIR]`          | lists the deployed files of `app/`, or copies them to `DIR` and stamps the copy with its release version in `sw.js` and `src/version.js`                                                                           |
 | `node app/scripts/make-icons.mjs`                       | renders the app icons from their SVG drawing                                                                                                                                                                       |
 | `docs/architecture/generate.sh`                         | validates the C4 model and regenerates every diagram (Docker)                                                                                                                                                      |
 | `deploy/scripts/deploy.sh <image>\|rollback`            | on the VPS: starts the image in the idle API slot; once it is healthy, points Caddy at it (`state/api-slot/`), waits until the old slot has answered its requests in flight (at most `DRAIN_SECONDS`) and stops it |

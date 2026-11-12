@@ -1,9 +1,12 @@
 // A minimal static file server for local use and tests. It serves a directory
 // under a base path (GitHub Pages serves the app under /rodokmen-app/) and
-// sends no-cache headers so every reload sees the files on disk.
+// sends no-cache headers so every reload sees the files on disk. With `stamp`,
+// sw.js and src/version.js go out stamped with the release version of the files
+// as they are at that moment (../stamp-version.mjs), as the built site would be.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { extname, join, normalize, relative, resolve, sep } from 'node:path';
+import { computeVersion, STAMPED_FILES, stampText } from '../stamp-version.mjs';
 
 export const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -20,10 +23,10 @@ export const MIME = {
 };
 
 /**
- * @param {{ root: string, port?: number, host?: string, base?: string }} options
+ * @param {{ root: string, port?: number, host?: string, base?: string, stamp?: boolean }} options
  * @returns {Promise<{ url: string, port: number, close: () => Promise<void> }>}
  */
-export async function startServer({ root: given, port = 0, host = '127.0.0.1', base = '/' }) {
+export async function startServer({ root: given, port = 0, host = '127.0.0.1', base = '/', stamp = false }) {
   // Absolute, so the check that a file lies inside it also holds for a relative root such as ".".
   const root = resolve(given);
   const prefix = base.endsWith('/') ? base : `${base}/`;
@@ -53,11 +56,13 @@ export async function startServer({ root: given, port = 0, host = '127.0.0.1', b
       }
       const info = await stat(file).catch(() => null);
       if (info?.isDirectory()) file = join(file, 'index.html');
-      const body = await readFile(file).catch(() => null);
+      let body = await readFile(file).catch(() => null);
       if (!body) {
         res.writeHead(404, { 'content-type': 'text/plain' }).end('Not found');
         return;
       }
+      const rel = relative(root, file).split(sep).join('/');
+      if (stamp && STAMPED_FILES.includes(rel)) body = Buffer.from(stampText(rel, body.toString('utf8'), await computeVersion(root)));
       res.writeHead(200, {
         'content-type': /** @type {Record<string, string>} */ (MIME)[extname(file)] ?? 'application/octet-stream',
         'cache-control': 'no-cache',

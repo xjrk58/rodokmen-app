@@ -334,8 +334,8 @@ workspace "Rodokmen" "A private, shared family Tree on a map of the Czech lands.
                     properties {
                         "openspec" "add-tree-backend / tree-model; add-proposals-and-review / evidence-media; add-vault-import / vault-import (PDF Source documents)"
                         "adr" "0002"
-                        "code" "server/src/storage/images.ts, server/src/storage/process.ts, server/src/storage/serial-queue.ts"
-                        "note" "The upload link is closed at /complete (issue #52); one check at a time fits the 4 GB VPS (issue #39). HEIC is not converted yet (add-proposals-and-review task 5.2)"
+                        "code" "server/src/storage/images.ts, server/src/storage/process.ts, server/src/storage/serial-queue.ts, server/src/storage/heic.ts, server/src/storage/heic-worker.ts"
+                        "note" "The upload link is closed at /complete (issue #52); one check at a time fits the 4 GB VPS (issue #39). HEIC is decoded by libheif-js (WebAssembly) in a worker thread for each decode (issue #147)"
                     }
                 }
                 notifications = component "Notifications and daily jobs" "Editors' digest at 18:00, outcome emails, and deleting images of rejected Proposals after 30 days." "In-process scheduler, Prague time" {

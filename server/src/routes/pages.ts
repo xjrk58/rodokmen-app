@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import type { FastifyInstance } from 'fastify';
 import { publicScope } from '../auth/plugin.js';
 import { appContentSecurityPolicy, readMapSources } from '../csp.js';
+import { checkoutStamp } from './app-stamp.js';
 
 /** The map app at the repo root, used when APP_DIR is not set. */
 export const DEFAULT_APP_DIR = fileURLToPath(new URL('../../../app/', import.meta.url));
@@ -30,6 +31,18 @@ export async function pageRoutes(app: FastifyInstance, options: { appDir: string
   });
 
   if (hasApp) {
+    // A checkout's app/ carries no version stamp; the server stamps it as it sends it (app-stamp.ts).
+    const stamp = await checkoutStamp(appDir);
+    if (stamp) {
+      for (const file of stamp.files) {
+        app.get(`/${file}`, { schema: { hide: true } }, async (_req, reply) =>
+          reply
+            .type('text/javascript; charset=utf-8')
+            .header('cache-control', 'no-cache')
+            .send(await stamp.stamped(file)),
+        );
+      }
+    }
     await app.register(fastifyStatic, {
       root: appDir,
       prefix: '/',
