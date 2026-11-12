@@ -1,8 +1,32 @@
 // Playwright runs the app from a local static server under /rodokmen-app/, the
 // path GitHub Pages uses, in a phone and a desktop viewport.
+//
+// Each run starts its own server on a free port and stops it when the run ends,
+// so runs from two checkouts at once never test each other's files (#143).
+// PORT picks the port instead. To test a server that is already running, for
+// debugging, set both PORT and REUSE_SERVER=1:
+//   pnpm serve --port 4173 --base /rodokmen-app/
+//   PORT=4173 REUSE_SERVER=1 pnpm test:e2e
+import { createServer } from 'node:net';
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = Number(process.env.PORT ?? 4173);
+/** @returns {Promise<number>} a TCP port that nothing listens on right now */
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const { port } = /** @type {import('node:net').AddressInfo} */ (server.address());
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+// The runner loads this file before it starts its workers, which load it again.
+// They inherit the runner's environment, so they all use the port picked here.
+process.env.PORT ??= String(await freePort());
+const PORT = Number(process.env.PORT);
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -28,6 +52,7 @@ export default defineConfig({
   webServer: {
     command: `node scripts/serve.mjs --port ${PORT} --base /rodokmen-app/`,
     url: `http://127.0.0.1:${PORT}/rodokmen-app/`,
-    reuseExistingServer: !process.env.CI,
+    // Never by default: a server already on the port may serve another checkout's files.
+    reuseExistingServer: process.env.REUSE_SERVER === '1',
   },
 });

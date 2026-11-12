@@ -28,17 +28,18 @@ jobs:
           node-version: 22
           package-manager-cache: false
 
-      # The service worker's precache version must match the files, or open
-      # apps would not be offered the new version.
-      - name: Check the version stamp
-        run: node app/scripts/stamp-version.mjs --check
-
-      # The deployed files of app/, as the Docker image has them (app/scripts/site-files.mjs).
+      # The deployed files of app/, as the Docker image has them (app/scripts/site-files.mjs),
+      # stamped with the release version of these files: app/ itself carries a placeholder (#91).
       - name: Assemble the site
         run: |
           node app/scripts/site-files.mjs --copy _site
           touch _site/.nojekyll
           find _site -type f | sort
+
+      # The service worker's precache version must match the files, or open
+      # apps would not be offered the new version.
+      - name: Check the version stamp
+        run: node app/scripts/stamp-version.mjs --check _site
 
       - uses: actions/configure-pages@v6
 

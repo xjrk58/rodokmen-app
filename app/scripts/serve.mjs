@@ -7,5 +7,6 @@ import { startServer } from './lib/static-server.mjs';
 
 const { values } = parseArgs({ options: { port: { type: 'string', default: '4173' }, base: { type: 'string', default: '/' }, root: { type: 'string' } } });
 const root = values.root ?? join(dirname(fileURLToPath(import.meta.url)), '..');
-const server = await startServer({ root, port: Number(values.port), base: values.base });
+// Stamped as the built site would be (scripts/stamp-version.mjs), so the service worker sees each change.
+const server = await startServer({ root, port: Number(values.port), base: values.base, stamp: true });
 console.log(`Serving ${root} at ${server.url}`);

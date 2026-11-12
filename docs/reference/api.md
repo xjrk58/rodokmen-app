@@ -86,7 +86,11 @@ The token travels only in the link's fragment, which browsers and link previews 
 
 ## Finishing uploads
 
-`POST /api/uploads/{id}/complete` (and its Import batch twin) checks uploads one at a time in each API process, images and documents in the same queue, from loading the file to writing its checked copy (and an image's display copy). A document is not decoded, so its turn is short. At most 8 may wait or be checked at once; one more is refused at once with 503 `busy` and `Retry-After: 10`, and goes through when sent again. An upload whose request is closed while it waits is skipped and stays as it was. Sending a `complete` again, or several at once, is safe: once the upload is finished, each answers with it.
+`POST /api/uploads/{id}/complete` (and its Import batch twin) checks uploads one at a time in each API process, images and documents in the same queue, from loading the file to writing its checked copy (and an image's display copy). A document is not decoded, so its turn is short.
+
+An image is JPEG, PNG, WebP or HEIC (HEIF), at most 25 MB. Its checked original is kept as it came, and its display copy is a WebP of at most 2,000 pixels on its longest side, turned upright. A HEIC is converted in its turn like the others (issue [#147](https://github.com/xjrk58/rodokmen-app/issues/147)): when the file holds several images, the display copy shows its primary one, the one a phone shows. A JPEG, PNG or WebP may have up to 268,402,689 pixels (16,383 × 16,383), a HEIC up to 50 million, because a HEIC is decoded whole; either limit is checked from the file's header, before decoding, and a file over it answers 413 `too_large`. A file that cannot be read answers 415 `image_unreadable`, HEIC or not.
+
+At most 8 uploads may wait or be checked at once; one more is refused at once with 503 `busy` and `Retry-After: 10`, and goes through when sent again. An upload whose request is closed while it waits is skipped and stays as it was. Sending a `complete` again, or several at once, is safe: once the upload is finished, each answers with it.
 
 ## Agent limits
 

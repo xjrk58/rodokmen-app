@@ -38,7 +38,7 @@ Undo builds the inverse operations from the logged before-snapshots and applies 
 Drafts live in IndexedDB together with their photos as blobs. The app shows a storage estimate and warns before the browser's quota is reached. On submit, the photos upload first (each to a presigned URL in a `pending/` prefix of the bucket), and then the Proposal is created. An interrupted submit can be retried without duplicates thanks to an idempotency key per Draft.
 
 ### Images
-The server makes a 2,000-pixel WebP display copy with `sharp` and keeps the original. HEIC is converted on upload, and if conversion fails the upload is refused with a clear message. Accepting a Proposal moves its images from `pending/` to their final prefix. A daily job deletes images of rejected Proposals after 30 days.
+The server makes a 2,000-pixel WebP display copy with `sharp` and keeps the original. HEIC is converted on upload (#147): the prebuilt `sharp` cannot decode HEVC, so libheif-js (libheif with libde265, compiled to WebAssembly) decodes the file's primary image, upright, in a worker thread started for each decode, in the same one-at-a-time turn as every other upload, and `sharp` makes the display copy from it. A HEIC is decoded whole, so it may have at most 50 million pixels (iPhones take up to 48), checked from its header; one that cannot be decoded is refused as an unreadable image. Accepting a Proposal moves its images from `pending/` to their final prefix. A daily job deletes images of rejected Proposals after 30 days.
 
 ### Notifications
 A daily job at 18:00 Prague time sends the Editor digests. Outcome emails are sent when the decision is made. Both use the email service from `add-tree-backend`.

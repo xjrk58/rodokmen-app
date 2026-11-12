@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto';
 import { IMAGE_MAX_BYTES, type DocumentContentType, type ImageContentType } from '@rodokmen/shared';
-import sharp from 'sharp';
+import sharp, { type Sharp } from 'sharp';
 import { ApiProblem } from '../auth/problem.js';
 import { messageOf } from '../errors.js';
 import { checkDocument, type CheckedDocument } from './documents.js';
+import { decodeHeic, HEIC_MAX_PIXELS, HeicRefused } from './heic.js';
+import { cropBox, limitSharp, type Crop } from './heic-worker.js';
 import { STORE_TIMEOUT_MS, type ImageStorage } from './images.js';
 import { QueueFull, SerialQueue } from './serial-queue.js';
 
@@ -19,9 +21,9 @@ export const DISPLAY_MAX_PIXELS = 2000;
 export const SHARP_MAX_INPUT_PIXELS = 0x3fff * 0x3fff;
 
 // Memory on the 4 GB server (issue #39, deploy/README.md, "Memory"): libvips decodes with one
-// thread, and keeps only a small cache of operations, since each upload is decoded once.
-sharp.concurrency(1);
-sharp.cache({ memory: 16, items: 10, files: 0 });
+// thread, and keeps only a small cache of operations, since each upload is decoded once. The HEIC
+// worker sets the same again after loading sharp (#147).
+limitSharp();
 
 /**
  * The most uploads (images and documents) and crops that may wait for their turn or be in it, in
@@ -93,17 +95,17 @@ export function sniffImageType(buf: Buffer): ImageType | null {
 
 export const TOO_LARGE_MESSAGE = 'Images can be at most 25 MB. Take the photo at a lower resolution or export a smaller copy.';
 export const TOO_MANY_PIXELS_MESSAGE = `Images can have at most about ${Math.round(SHARP_MAX_INPUT_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution or export a smaller copy.`;
+/** HEIC is decoded whole, so it may have fewer pixels than the other types (heic.ts, HEIC_MAX_PIXELS). */
+export const HEIC_TOO_MANY_PIXELS_MESSAGE = `HEIC photos can have at most ${Math.round(HEIC_MAX_PIXELS / 1_000_000)} million pixels. Take the photo at a lower resolution, or share it as JPEG.`;
 export const BUSY_MESSAGE = 'The server is checking other uploads just now. Try again in a few seconds.';
 export const STORE_TIMEOUT_MESSAGE = 'The image store did not answer in time. Try again in a minute.';
 export const CHECKSUM_MESSAGE = 'The uploaded file differs from the one announced. Upload it again.';
-export const HEIC_MESSAGE =
-  'This HEIC photo could not be converted. On an iPhone, set Settings → Camera → Formats → Most Compatible, or share the photo as JPEG, then add it again.';
 
 /**
  * Checks an uploaded original and makes its display copy: JPEG, PNG, WebP or HEIC up to
- * 25 MB and SHARP_MAX_INPUT_PIXELS. HEIC is converted here; when the image library cannot
- * decode it, the upload is refused with a message saying what to do. Size and type are checked at once;
- * the decode waits for the images before it (one at a time).
+ * 25 MB and SHARP_MAX_INPUT_PIXELS. HEIC is converted here (heic.ts), and refused like any
+ * other image when it cannot be read. Size and type are checked at once; the decode waits for
+ * the images before it (one at a time).
  */
 export async function processImage(original: Buffer): Promise<ProcessedImage> {
   const contentType = typeOf(original);
@@ -243,42 +245,44 @@ function typeOf(original: Buffer): ImageType {
   return contentType;
 }
 
-/** The display copy; every failure becomes an ApiProblem. */
-async function displayCopy(original: Buffer, contentType: ImageType, sha256 = sha256Of(original)): Promise<ProcessedImage> {
-  const heic = contentType === 'image/heic' || contentType === 'image/heif';
-  try {
-    // The header alone, without sharp's limit, so a file over it is told apart from an unreadable one.
-    const meta = await sharp(original, { failOn: 'error', limitInputPixels: false }).metadata();
-    if (!meta.width || !meta.height) throw new Error('no dimensions');
-    if (meta.width * meta.height > SHARP_MAX_INPUT_PIXELS) throw new ApiProblem(413, 'too_large', TOO_MANY_PIXELS_MESSAGE);
-    const image = sharp(original, { failOn: 'error' });
-    const rotated = (meta.orientation ?? 1) >= 5;
-    const display = await image
-      .rotate()
-      .resize({ width: DISPLAY_MAX_PIXELS, height: DISPLAY_MAX_PIXELS, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 82 })
-      .toBuffer();
-    return {
-      contentType,
-      byteSize: original.length,
-      sha256,
-      width: rotated ? meta.height : meta.width,
-      height: rotated ? meta.width : meta.height,
-      display,
-    };
-  } catch (error) {
-    if (error instanceof ApiProblem) throw error;
-    if (heic) throw new ApiProblem(415, 'heic_unsupported', HEIC_MESSAGE);
-    throw new ApiProblem(415, 'image_unreadable', `This image could not be read (${messageOf(error)}). Try another copy of it.`);
+/**
+ * `crop` of the image in `original` (or all of it), upright and at most DISPLAY_MAX_PIXELS on its
+ * longest side, ready to encode, and the size of the whole image as shown. Refused with 413 when
+ * the image has more pixels than its type allows, from the header alone, so that a file over the
+ * limit is told apart from an unreadable one. sharp reads JPEG, PNG and WebP itself and turns them
+ * by their EXIF orientation; HEIC and HEIF are decoded in a worker thread (heic.ts), which returns
+ * them upright and made smaller already. Any other failure is thrown as it is.
+ */
+async function reduced(original: Buffer, contentType: ImageType, crop?: Crop): Promise<{ image: Sharp; width: number; height: number }> {
+  if (contentType === 'image/heic' || contentType === 'image/heif') {
+    try {
+      const { width, height, pixels } = await decodeHeic(original, DISPLAY_MAX_PIXELS, crop);
+      return { image: sharp(pixels.data, { raw: { width: pixels.width, height: pixels.height, channels: pixels.channels } }), width, height };
+    } catch (error) {
+      if (error instanceof HeicRefused && error.tooManyPixels) throw new ApiProblem(413, 'too_large', HEIC_TOO_MANY_PIXELS_MESSAGE);
+      throw error;
+    }
   }
+  const meta = await sharp(original, { failOn: 'error', limitInputPixels: false }).metadata();
+  if (!meta.width || !meta.height) throw new Error('no dimensions');
+  if (meta.width * meta.height > SHARP_MAX_INPUT_PIXELS) throw new ApiProblem(413, 'too_large', TOO_MANY_PIXELS_MESSAGE);
+  const rotated = (meta.orientation ?? 1) >= 5;
+  const [width, height] = rotated ? [meta.height, meta.width] : [meta.width, meta.height];
+  const image = sharp(original, { failOn: 'error' }).rotate();
+  if (crop) image.extract(cropBox(crop, width, height));
+  return { image: image.resize({ width: DISPLAY_MAX_PIXELS, height: DISPLAY_MAX_PIXELS, fit: 'inside', withoutEnlargement: true }), width, height };
 }
 
-/** The part of an image the Member marked, as shares of its width and height (as it is shown, after EXIF rotation). */
-export interface Crop {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
+/** The display copy; every failure becomes an ApiProblem. */
+async function displayCopy(original: Buffer, contentType: ImageType, sha256 = sha256Of(original)): Promise<ProcessedImage> {
+  try {
+    const { image, width, height } = await reduced(original, contentType);
+    const display = await image.webp({ quality: 82 }).toBuffer();
+    return { contentType, byteSize: original.length, sha256, width, height, display };
+  } catch (error) {
+    if (error instanceof ApiProblem) throw error;
+    throw new ApiProblem(415, 'image_unreadable', `This image could not be read (${messageOf(error)}). Try another copy of it.`);
+  }
 }
 
 /**
@@ -291,24 +295,7 @@ export function cropForReading(images: ImageStorage, key: string, crop: Crop): P
   return inTurn(async () => {
     const original = await inTime((signal) => images.get(key, signal));
     if (!original) return null;
-    const meta = await sharp(original).metadata();
-    if (!meta.width || !meta.height) throw new Error('an image without dimensions');
-    const rotated = (meta.orientation ?? 1) >= 5;
-    const width = rotated ? meta.height : meta.width;
-    const height = rotated ? meta.width : meta.height;
-    const left = Math.min(width - 1, Math.max(0, Math.round(crop.left * width)));
-    const top = Math.min(height - 1, Math.max(0, Math.round(crop.top * height)));
-    const box = {
-      left,
-      top,
-      width: Math.max(1, Math.min(width - left, Math.round(crop.width * width))),
-      height: Math.max(1, Math.min(height - top, Math.round(crop.height * height))),
-    };
-    return sharp(original)
-      .rotate()
-      .extract(box)
-      .resize({ width: DISPLAY_MAX_PIXELS, height: DISPLAY_MAX_PIXELS, fit: 'inside', withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toBuffer();
+    const { image } = await reduced(original, typeOf(original), crop);
+    return image.webp({ quality: 85 }).toBuffer();
   });
 }
