@@ -5,7 +5,7 @@
 - [x] 1.1 Define the typed operations in `shared/` with validation and human-readable summaries in Czech and English; verify each operation's summary in a snapshot test
   - Note: `shared/src/schemas/proposals.ts` (closed set, `OPERATIONS_VERSION` 1, `checkOperations`, `describeOperations`); snapshot in `shared/test/__snapshots__/operation-summaries.txt`. Czech sentences use the "verb: object" form so names need no declension. `restoreRecord` is the server's own operation (undo) and is refused from Members; `mergePersons` is refused from Contributors.
 - [x] 1.2 Add Proposal tables (Proposal, operations, base versions, status, notes) and the submit route that enforces the evidence rule; verify that a Proposal without a Citation is refused and one with a Family account is accepted
-  - Note: migration `0004_proposals`; `POST /api/proposals`, verified in `server/test/proposals.test.ts` (refusal in the author's language, Family account accepted, idempotent retry). The evidence rule is `satisfiesEvidenceRule` in `shared/src/rules.ts`. Assumption: Proposals made only of merges or undo steps change no facts and need no Citation.
+  - Note: migration `0004_proposals`; `POST /api/proposals`, verified in `server/test/proposals.test.ts` (refusal in the author's language, Family account accepted, idempotent retry). The evidence rule is `satisfiesEvidenceRule` in `shared/src/rules.ts`. Proposals made only of merges or undo steps change no facts and need no Citation (confirmed on #29, in the proposals spec).
 - [x] 1.3 Implement apply-in-one-transaction with base-version checks and log snapshots; verify with a test that a failing last operation leaves the Tree unchanged
   - Note: verified with a failing last operation (a duplicate Role) and with a rule checked at commit (a Name without given name or surname); counts and the log are unchanged and the Proposal stays pending.
 - [x] 1.4 Make Editors' direct changes auto-accepted Proposals; verify the typo scenario shows in the record history under the Editor
@@ -35,7 +35,7 @@
 - [x] 4.1 Build the "Propose" flows for the common findings (baptism or birth, marriage, death or burial, a new Name, a correction) with Citation entry; verify the baptism-entry scenario end to end
   - Note: verified end to end in `server/test/app-proposals.e2e.test.ts`: the form in Chromium at phone size creates one Proposal with the child, the baptism, parent and godparent Roles, the link to the parents' existing Family, the Citation and its page image; accepted, the Tree holds all of it.
 - [x] 4.2 Store Drafts and their photos in IndexedDB with persistent storage requested, and submit with an idempotency key; verify the reading-room scenario in Playwright offline mode, including a retried submit that creates one Proposal
-  - Note: verified with Playwright offline mode (`context.setOffline`) in `server/test/app-proposals.e2e.test.ts`, including a submit whose answer is lost and a retry that leaves one Proposal. Drafts are written offline in an app opened online first; opening the app itself offline relies on the service worker from add-map-core and is not part of this test. Photos are stored as taken (no compression on the device).
+  - Note: verified with Playwright offline mode (`context.setOffline`) in `server/test/app-proposals.e2e.test.ts`, including a submit whose answer is lost and a retry that leaves one Proposal. Drafts are written offline in an app opened online first; opening the app itself offline relies on the service worker from add-map-core and is not part of this test. Photos are stored as taken (no compression on the device; confirmed on #29, in the design).
 - [x] 4.3 Show authors their Proposals with status and Editor notes; verify the rejected-with-note scenario from the author's side
 
 ## 5. Images
@@ -51,7 +51,7 @@
 - [x] 6.1 Send the daily Editor digest at 18:00 Prague time, skipping empty days; verify the quiet-day and busy-day scenarios with a fake clock
   - Note: `DailyScheduler` (`server/src/jobs/daily.ts`), run every minute by `main.ts`; verified with a fake clock, including DST, per-recipient delivery so a retry never sends twice, stale claims after a crash, and shutdown waiting for a running tick.
 - [x] 6.2 Send outcome emails in the author's language, with an opt-out; verify the rejected and muted scenarios
-  - Note: `PUT /api/me/notifications` and the switch on "My Proposals". Direct changes, merges and undos send no outcome email (the Editor is the author).
+  - Note: `PUT /api/me/notifications` and the switch on "My Proposals". Direct changes, merges and undos send no outcome email (the Editor is the author; confirmed on #29, in the notifications spec).
 
 ## Workflow follow-up
 

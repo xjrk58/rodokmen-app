@@ -14,11 +14,15 @@ A Proposal SHALL hold every change that one finding implies: new records, edits 
 - **THEN** one Proposal adds the child and the baptism Event, links the parents' Family and the godparents with their Roles, and attaches the Citation with its page image
 
 ### Requirement: Evidence is required
-A Proposal SHALL include at least one Citation. A Citation to a Family account Source counts as evidence.
+A Proposal SHALL include at least one Citation. A Citation to a Family account Source counts as evidence. An Editor's merge of two Persons and an Editor's undo change no facts, so they SHALL need no Citation; they are logged like any accepted Proposal.
 
 #### Scenario: Missing evidence
 - **WHEN** a Contributor tries to submit a Proposal without any Citation
 - **THEN** the app refuses and asks for the register entry, a document or a Family account
+
+#### Scenario: Merge and undo need no Citation
+- **WHEN** an Editor merges two records of the same man without adding a Citation, and later undoes the merge without one
+- **THEN** both take effect at once, and the history of the Person shows the merge and the undo
 
 ### Requirement: Proposals record what they were based on
 A Proposal SHALL record the version of every existing record it changes, as the Member saw it.
