@@ -38,6 +38,10 @@ A Living relative may also ask to leave the Tree completely. The Owner then eras
 
 What erasure cannot find stays: free text that names the Person, such as the transcription of a Citation other people share, a research note or a scan reading. The Owner reads and corrects those, as the erasure guide says.
 
+## Kinship and the Member's own Person
+
+Kinship ([Kinship](kinship.md)) is worked out from Family links that every Member and Agent already reads, so it says nothing about a Living person that the reader could not see in the tree. What is new is the Member's own Person: the server uses it only to answer that Member, and no answer, list or search result says which Person another Member's account is linked to. The routes take no account id. A Member's request to be linked is seen by that Member and the Owner only. Kinship is computed on each request and never stored, so it goes into no Export, and a printed Sheet never shows it either.
+
 ## Images stay private
 
 Each Citation can hold an image of the register page it cites, and Persons can hold portraits (ADR 0002). Archive portals change their addresses, and a Citation must stay checkable for as long as the Tree exists, so Rodokmen keeps its own copy. But archives allow copies for personal research, not for publishing. So the copies are private: they are served only through signed links that expire within minutes, from a separate host that the session cookie never reaches, and they never go into an Export.

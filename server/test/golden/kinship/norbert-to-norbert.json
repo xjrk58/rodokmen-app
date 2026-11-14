@@ -1,0 +1,49 @@
+{
+  "from": "019b76da-b910-78f3-9d0c-ff01728972b0",
+  "to": "019b76da-b910-78f3-9d0c-ff01728972b0",
+  "asOf": {
+    "logEntryId": null,
+    "at": null
+  },
+  "paths": [
+    {
+      "kind": "self",
+      "line": null,
+      "degree": null,
+      "up": 0,
+      "down": 0,
+      "half": false,
+      "adoptive": false,
+      "possible": false,
+      "commonAncestors": [],
+      "steps": [],
+      "term": {
+        "cs": {
+          "text": "vy",
+          "gender": "m"
+        },
+        "en": {
+          "text": "you",
+          "gender": "m"
+        }
+      }
+    }
+  ],
+  "more": false,
+  "connection": null,
+  "persons": [
+    {
+      "id": "019b76da-b910-78f3-9d0c-ff01728972b0",
+      "version": 1,
+      "sex": "male",
+      "given": "Norbert",
+      "surname": "Javorník",
+      "displayName": "Norbert Javorník",
+      "living": false,
+      "birth": "1898-09-12",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    }
+  ]
+}

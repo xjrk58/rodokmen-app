@@ -1,5 +1,4 @@
 import type {
-  AccountRole,
   ChildLinkType,
   Confidence,
   EventType,
@@ -32,8 +31,10 @@ import type {
 } from './vault-import-types.js';
 import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
 import type { ErasureTable, ExportSlugTable } from './export-types.js';
+import type { AccountTable } from './account-types.js';
 
 export type { UploadTable } from './vault-import-types.js';
+export type { AccountTable } from './account-types.js';
 
 /** ISO day 'YYYY-MM-DD', or 'infinity' / '-infinity' for open period ends. */
 export type Day = string;
@@ -214,24 +215,6 @@ export interface ImageTable extends RecordColumns {
 export interface ImagePersonTable extends RecordColumns {
   image_id: string;
   person_id: string;
-}
-
-export interface AccountTable {
-  id: Generated<string>;
-  version: Generated<number>;
-  /** Null exactly for Agents. */
-  email: string | null;
-  display_name: string;
-  language: UiLanguage;
-  role: Generated<AccountRole>;
-  disabled_at: Timestamp | null;
-  invited_by: string | null;
-  last_seen_at: Timestamp | null;
-  outcome_emails: Generated<boolean>;
-  /** The Person who is this Member in the Tree (set by the Owner). */
-  person_id: string | null;
-  created_at: CreatedAt;
-  updated_at: Generated<Date>;
 }
 
 export interface SessionTable {

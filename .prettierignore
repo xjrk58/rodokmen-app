@@ -20,3 +20,6 @@ docs/architecture/generated/
 
 # LemmaScript working files (git-ignored), written by `pnpm --filter @rodokmen/shared verify`.
 **/.lemmascript/
+
+# Golden answers of the kinship tests, rewritten only with UPDATE_GOLDEN=1 and compared byte for byte.
+server/test/golden/

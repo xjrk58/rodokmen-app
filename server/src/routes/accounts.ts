@@ -7,6 +7,7 @@ import {
   InvitationList,
   LinkPersonBody,
   Me,
+  PersonRequestBody,
   MemberList,
   MemberView,
   PasskeyList,
@@ -14,6 +15,7 @@ import {
   RateLimited,
   SessionList,
   UpdateMeBody,
+  type PersonRequest,
   type PersonSummary,
 } from '@rodokmen/shared';
 import type { FastifyInstance } from 'fastify';
@@ -21,6 +23,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
 import {
   changeRole,
+  clearPersonRequest,
   createInvitation,
   disableMember,
   enableMember,
@@ -28,6 +31,7 @@ import {
   linkPerson,
   listInvitations,
   listMembers,
+  requestPerson,
   revokeInvitation,
   updateOwnAccount,
   type AccountDeps,
@@ -56,6 +60,22 @@ async function linkedPersons(deps: { db: Db; clock: Clock }, accounts: readonly 
   return out;
 }
 
+/** The open requests to be linked of these accounts, keyed by account id; a merged Person counts as the one kept. */
+async function personRequests(deps: { db: Db; clock: Clock }, accounts: readonly Account[]): Promise<Map<string, PersonRequest>> {
+  const asked = new Map<string, { id: string; at: string }>();
+  for (const a of accounts) {
+    const id = a.person_request_id ? await keptPerson(deps.db, a.person_request_id) : null;
+    if (id && a.person_request_at) asked.set(a.id, { id, at: new Date(a.person_request_at).toISOString() });
+  }
+  const summaries = await personSummaries(deps.db, [...new Set([...asked.values()].map((r) => r.id))], deps.clock);
+  const out = new Map<string, PersonRequest>();
+  for (const [accountId, r] of asked) {
+    const person = summaries.get(r.id);
+    if (person) out.set(accountId, { person, at: r.at });
+  }
+  return out;
+}
+
 export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promise<Me> {
   const { n } = await deps.db
     .selectFrom('passkey')
@@ -73,6 +93,7 @@ export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promis
     permissions: permissionsFor(a.role),
     passkeyCount: n,
     person: persons.get(a.id) ?? null,
+    personRequest: (await personRequests(deps, [a])).get(a.id) ?? null,
     familyRoots: await familyRootIds(deps.db),
   };
 }
@@ -80,6 +101,7 @@ export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promis
 /** Members as the Owner sees them, each with their linked Person. Agents are listed with their tokens instead (auth/agents.ts). */
 async function memberViews(deps: { db: Db; clock: Clock }, accounts: readonly Account[]): Promise<MemberView[]> {
   const persons = await linkedPersons(deps, accounts);
+  const requests = await personRequests(deps, accounts);
   return accounts.map((a) => {
     if (a.role === 'agent' || a.email === null) throw new Error(`account ${a.id} is an Agent, not a Member`);
     return {
@@ -93,6 +115,7 @@ async function memberViews(deps: { db: Db; clock: Clock }, accounts: readonly Ac
       createdAt: new Date(a.created_at).toISOString(),
       lastSeenAt: a.last_seen_at ? new Date(a.last_seen_at).toISOString() : null,
       person: persons.get(a.id) ?? null,
+      personRequest: requests.get(a.id) ?? null,
     };
   });
 }
@@ -255,6 +278,34 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
       response: { 200: MemberView, 404: ApiError, ...ownerOnly },
     },
     handler: async (req) => memberView(deps, await linkPerson(deps, req.params.id, req.body.personId)),
+  });
+
+  app.put('/api/me/person-request', {
+    ...own,
+    schema: {
+      tags: ['Account'],
+      summary: 'Ask the Owner to link your account to the Person who is you in the Tree ("This is me"). A new request replaces the old',
+      body: PersonRequestBody,
+      response: { 200: Me, 404: ApiError, 409: ApiError, ...ownAccount },
+    },
+    handler: async (req) => meView(deps, await requestPerson(deps, req.member!, req.body.personId)),
+  });
+
+  app.delete('/api/me/person-request', {
+    ...own,
+    schema: { tags: ['Account'], summary: 'Withdraw your request to be linked to a Person', response: { 200: Me, ...ownAccount } },
+    handler: async (req) => meView(deps, await clearPersonRequest(deps, req.member!.id)),
+  });
+
+  app.delete('/api/members/:id/person-request', {
+    ...owner,
+    schema: {
+      tags: ['Members'],
+      summary: "Refuse a Member's request to be linked to a Person (Owner only). To confirm it, link the Member to that Person",
+      params: IdParams,
+      response: { 200: MemberView, 404: ApiError, ...ownerOnly },
+    },
+    handler: async (req) => memberView(deps, await clearPersonRequest(deps, req.params.id)),
   });
 
   app.get('/api/invitations', {

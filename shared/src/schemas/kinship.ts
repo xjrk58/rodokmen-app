@@ -19,20 +19,15 @@ export const KinshipTerm = z
   .strict()
   .meta({ id: 'KinshipTerm', description: 'The kinship term in every Interface language' });
 
-export const KinshipKind = z
-  .enum(['self', 'partner', 'birth', 'marriage', 'stepSibling', 'coParentInLaw', 'foster'])
-  .meta({
-    id: 'KinshipKind',
-    description: 'The kind of path: the reader, a partner, by birth (adoption included), by marriage, a step-sibling, a co-parent-in-law, or a foster pair',
-  });
+export const KinshipKind = z.enum(['self', 'partner', 'birth', 'marriage', 'stepSibling', 'coParentInLaw', 'foster']).meta({
+  id: 'KinshipKind',
+  description: 'The kind of path: the reader, a partner, by birth (adoption included), by marriage, a step-sibling, a co-parent-in-law, or a foster pair',
+});
 
-export const KinshipLine = z
-  .enum(['direct', 'collateral'])
-  .nullable()
-  .meta({
-    id: 'KinshipLine',
-    description: 'The line of kinship as the Czech civil code counts it (§ 772, and § 774 for kinship by marriage); null for the kinds with no degree',
-  });
+export const KinshipLine = z.enum(['direct', 'collateral']).nullable().meta({
+  id: 'KinshipLine',
+  description: 'The line of kinship as the Czech civil code counts it (§ 772, and § 774 for kinship by marriage); null for the kinds with no degree',
+});
 
 export const KinshipStep = z
   .object({
@@ -85,8 +80,7 @@ export const KinshipShort = z
   })
   .meta({ id: 'KinshipShort', description: "The Person's closest kinship to the signed-in Member's own Person" });
 
-export const KinshipQuery = z
-  .object({ from: Id.optional().describe("The starting Person; by default the caller's own Person. An Agent must name one") })
-  .meta({ id: 'KinshipQuery' });
+// A query string has no component id: the OpenAPI description lists its parameters one by one.
+export const KinshipQuery = z.object({ from: Id.optional().describe("The starting Person; by default the caller's own Person. An Agent must name one") });
 
 export type KinshipShort = z.infer<typeof KinshipShort>;

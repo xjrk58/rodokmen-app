@@ -1,0 +1,386 @@
+{
+  "from": "019b76da-b910-78f3-9d0c-ff01728972b0",
+  "to": "019b76da-b8ea-7331-9c85-87e57c4bc0a3",
+  "asOf": {
+    "logEntryId": null,
+    "at": null
+  },
+  "paths": [
+    {
+      "kind": "birth",
+      "line": "collateral",
+      "degree": 5,
+      "up": 3,
+      "down": 2,
+      "half": false,
+      "adoptive": false,
+      "possible": false,
+      "commonAncestors": [
+        "019b76da-b861-7543-9147-f89a157889c9",
+        "019b76da-b863-7d16-a0fd-a34c47cc3347"
+      ],
+      "steps": [
+        {
+          "person": "019b76da-b8e8-7cc8-9150-38cb565421b5",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77"
+        },
+        {
+          "person": "019b76da-b879-77ca-be96-d7de67411528",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b"
+        },
+        {
+          "person": "019b76da-b861-7543-9147-f89a157889c9",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b87f-756c-8ee1-48561f8da742"
+        },
+        {
+          "person": "019b76da-b87b-7ab4-95d7-9cb4c2a73a58",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b887-77fc-94dc-1ab691f6dc71"
+        },
+        {
+          "person": "019b76da-b8ea-7331-9c85-87e57c4bc0a3",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8f4-7aa2-80fc-2cc5ccecdf6e"
+        }
+      ],
+      "term": {
+        "cs": {
+          "text": "strýc z 2. kolena",
+          "gender": "m"
+        },
+        "en": {
+          "text": "first cousin once removed",
+          "gender": "m"
+        }
+      }
+    },
+    {
+      "kind": "birth",
+      "line": "collateral",
+      "degree": 5,
+      "up": 3,
+      "down": 2,
+      "half": false,
+      "adoptive": false,
+      "possible": false,
+      "commonAncestors": [
+        "019b76da-b865-7a64-809b-895f12b1fd12",
+        "019b76da-b867-7c37-b111-6b6b0382b14a"
+      ],
+      "steps": [
+        {
+          "person": "019b76da-b8e8-7cc8-9150-38cb565421b5",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77"
+        },
+        {
+          "person": "019b76da-b897-751c-9b07-a711de64d592",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b"
+        },
+        {
+          "person": "019b76da-b865-7a64-809b-895f12b1fd12",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b89b-7fc8-8482-840592d402e4"
+        },
+        {
+          "person": "019b76da-b899-7814-888a-cd83fd203078",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8a3-7666-96a0-a7f3925cddc5"
+        },
+        {
+          "person": "019b76da-b8ea-7331-9c85-87e57c4bc0a3",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8f4-7aa2-80fc-2cc5ccecdf6e"
+        }
+      ],
+      "term": {
+        "cs": {
+          "text": "strýc z 2. kolena",
+          "gender": "m"
+        },
+        "en": {
+          "text": "first cousin once removed",
+          "gender": "m"
+        }
+      }
+    },
+    {
+      "kind": "marriage",
+      "line": "collateral",
+      "degree": 5,
+      "up": 3,
+      "down": 2,
+      "half": false,
+      "adoptive": false,
+      "possible": false,
+      "commonAncestors": [
+        "019b76da-b861-7543-9147-f89a157889c9",
+        "019b76da-b863-7d16-a0fd-a34c47cc3347"
+      ],
+      "steps": [
+        {
+          "person": "019b76da-b907-788a-a9e2-f1cf369c7d28",
+          "link": "partner",
+          "linkType": null,
+          "weak": false,
+          "recordId": "019b76da-b919-78cb-8a5d-632c4569747d"
+        },
+        {
+          "person": "019b76da-b8fd-705a-8815-dd1f3c09b40a",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b909-73ae-9634-cae5ae82c9d8"
+        },
+        {
+          "person": "019b76da-b87d-76d4-9c89-c3665b57a0bd",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8ff-782f-b1c2-0ec51555ab78"
+        },
+        {
+          "person": "019b76da-b861-7543-9147-f89a157889c9",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b88f-7c6a-a7fc-6c2ba74ee5d4"
+        },
+        {
+          "person": "019b76da-b87b-7ab4-95d7-9cb4c2a73a58",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b887-77fc-94dc-1ab691f6dc71"
+        },
+        {
+          "person": "019b76da-b8ea-7331-9c85-87e57c4bc0a3",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-b8f4-7aa2-80fc-2cc5ccecdf6e"
+        }
+      ],
+      "term": {
+        "cs": {
+          "text": "sešvagřený",
+          "gender": "m"
+        },
+        "en": {
+          "text": "related by marriage",
+          "gender": "m"
+        }
+      }
+    }
+  ],
+  "more": false,
+  "connection": null,
+  "persons": [
+    {
+      "id": "019b76da-b861-7543-9147-f89a157889c9",
+      "version": 1,
+      "sex": "male",
+      "given": "Ignác",
+      "surname": "Javorník",
+      "displayName": "Ignác Javorník",
+      "living": true,
+      "birth": null,
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b863-7d16-a0fd-a34c47cc3347",
+      "version": 1,
+      "sex": "female",
+      "given": "Kristina",
+      "surname": "Ostrovská",
+      "displayName": "Kristina Ostrovská",
+      "living": false,
+      "birth": null,
+      "death": "1856-12-01",
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b865-7a64-809b-895f12b1fd12",
+      "version": 1,
+      "sex": "male",
+      "given": "Hynek",
+      "surname": "Ostrovský",
+      "displayName": "Hynek Ostrovský",
+      "living": true,
+      "birth": null,
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b867-7c37-b111-6b6b0382b14a",
+      "version": 1,
+      "sex": "female",
+      "given": "Johana",
+      "surname": "Javorníková",
+      "displayName": "Johana Javorníková",
+      "living": true,
+      "birth": null,
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b879-77ca-be96-d7de67411528",
+      "version": 1,
+      "sex": "male",
+      "given": "Bartoloměj",
+      "surname": "Javorník",
+      "displayName": "Bartoloměj Javorník",
+      "living": false,
+      "birth": "1845-11-02",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b87b-7ab4-95d7-9cb4c2a73a58",
+      "version": 1,
+      "sex": "male",
+      "given": "Cyril",
+      "surname": "Javorník",
+      "displayName": "Cyril Javorník",
+      "living": false,
+      "birth": "1848-03-09",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b87d-76d4-9c89-c3665b57a0bd",
+      "version": 1,
+      "sex": "female",
+      "given": "Dorota",
+      "surname": "Javorníková",
+      "displayName": "Dorota Javorníková",
+      "living": false,
+      "birth": "1850-06-27",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b897-751c-9b07-a711de64d592",
+      "version": 1,
+      "sex": "female",
+      "given": "Hedvika",
+      "surname": "Ostrovská",
+      "displayName": "Hedvika Ostrovská",
+      "living": false,
+      "birth": "1849-04-14",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b899-7814-888a-cd83fd203078",
+      "version": 1,
+      "sex": "female",
+      "given": "Irena",
+      "surname": "Ostrovská",
+      "displayName": "Irena Ostrovská",
+      "living": false,
+      "birth": "1851-08-30",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b8e8-7cc8-9150-38cb565421b5",
+      "version": 1,
+      "sex": "male",
+      "given": "Karel",
+      "surname": "Javorník",
+      "displayName": "Karel Javorník",
+      "living": false,
+      "birth": "1872-10-04",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b8ea-7331-9c85-87e57c4bc0a3",
+      "version": 1,
+      "sex": "male",
+      "given": "Matouš",
+      "surname": "Javorník",
+      "displayName": "Matouš Javorník",
+      "living": false,
+      "birth": "1874-05-22",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b8fd-705a-8815-dd1f3c09b40a",
+      "version": 1,
+      "sex": "female",
+      "given": "Markéta",
+      "surname": "Javorníková",
+      "displayName": "Markéta Javorníková",
+      "living": false,
+      "birth": "1876-07-08",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b907-788a-a9e2-f1cf369c7d28",
+      "version": 1,
+      "sex": "female",
+      "given": "Radka",
+      "surname": "Javorníková",
+      "displayName": "Radka Javorníková",
+      "living": false,
+      "birth": "1900-03-03",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-b910-78f3-9d0c-ff01728972b0",
+      "version": 1,
+      "sex": "male",
+      "given": "Norbert",
+      "surname": "Javorník",
+      "displayName": "Norbert Javorník",
+      "living": false,
+      "birth": "1898-09-12",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    }
+  ]
+}
