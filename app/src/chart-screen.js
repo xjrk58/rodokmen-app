@@ -58,10 +58,11 @@ export function layoutChart(model, metrics, labels) {
 export function firstView(layout, size) {
   const whole = Math.min((size.width - 16) / Math.max(1, layout.width), (size.height - 16) / Math.max(1, layout.height));
   if (whole * 32 >= READABLE_PX) return { k: Math.min(1, whole), x: (size.width - layout.width * Math.min(1, whole)) / 2, y: 8 };
-  const top = layout.cards.filter((c) => c.y < 500);
-  const topWidth = Math.max(1, ...top.map((c) => c.x + c.w)) - Math.min(...top.map((c) => c.x), 0);
+  // The first row: its cards across the screen's width, at a readable size at least.
+  const top = layout.cards.filter((c) => c.y < 300);
+  const left = Math.min(...top.map((c) => c.x));
+  const topWidth = Math.max(1, Math.max(...top.map((c) => c.x + c.w)) - left);
   const k = Math.max(READABLE_PX / 32, Math.min(1, (size.width - 16) / topWidth));
-  const left = Math.min(...top.map((c) => c.x), 0);
   return { k, x: (size.width - topWidth * k) / 2 - left * k, y: 8 };
 }
 
@@ -125,8 +126,13 @@ function ChartCanvas({ layout, onTap, onLongPress, viewKey }) {
     const r = svgRef.current?.getBoundingClientRect();
     return { width: r?.width ?? 390, height: r?.height ?? 600 };
   };
-  const fitView = () => setView(firstView(layout, size()));
-  useEffect(fitView, [viewKey, layout]);
+  useEffect(() => setView(firstView(layout, size())), [viewKey, layout]);
+  // The fit button shows the whole Chart, however small.
+  const fitView = () => {
+    const s = size();
+    const k = Math.min(1, (s.width - 16) / Math.max(1, layout.width), (s.height - 16) / Math.max(1, layout.height));
+    setView({ k, x: (s.width - layout.width * k) / 2, y: (s.height - layout.height * k) / 2 });
+  };
   const gestures = useGestures({ view, setView, onTap, onLongPress });
   const zoomBy = (/** @type {number} */ f) => {
     const s = size();
@@ -353,8 +359,10 @@ export function ChartScreen({ me, chart, cache }) {
   const fromHere = (/** @type {string} */ id) =>
     (location.hash = chartAddress({ ...chart, start: 'person', kind: 'descendants', id, line: null, form: 'tree' }));
 
+  // The Sheet of these very options: while another one loads, the last one stays on screen but is not printed.
+  const sheetCurrent = sheetModel !== null && sheetLoaded.key === `chart-sheet:${sheetQuery}`;
   const sheetReady = () => {
-    if (!sheetModel || !metrics) {
+    if (!sheetModel || !metrics || !sheetCurrent) {
       setStatus(t(sheetLoaded.error instanceof ApiError && sheetLoaded.error.offline ? 'chart.sheetOffline' : 'chart.preparing'));
       return null;
     }
@@ -415,7 +423,31 @@ export function ChartScreen({ me, chart, cache }) {
     download(`${f.name}.png`, png.blob);
   };
 
-  return html`<section class="screen-body chart-screen" data-testid="chart-screen" data-kind=${chart.kind}>
+  // A Sheet asked for before its variant has loaded is made as soon as it is there.
+  const [pending, setPending] = useState(/** @type {'print' | 'svg' | 'png' | null} */ (null));
+  const run = (/** @type {'print' | 'svg' | 'png'} */ what) => {
+    if (what === 'print') print();
+    else void (what === 'svg' ? downloadSvg() : downloadPng());
+  };
+  const ask = (/** @type {'print' | 'svg' | 'png'} */ what) => {
+    if (sheetCurrent && metrics) run(what);
+    else {
+      setPending(what);
+      sheetReady();
+    }
+  };
+  useEffect(() => {
+    if (pending === null || !sheetCurrent || !metrics) return;
+    setPending(null);
+    run(pending);
+  }, [pending, sheetCurrent, metrics]);
+
+  return html`<section
+    class="screen-body chart-screen"
+    data-testid="chart-screen"
+    data-kind=${chart.kind}
+    data-sheet-ready=${String(sheetCurrent && metrics !== null)}
+  >
     <header class="chart-head">
       <h1 data-testid="chart-title">${title || t('chart.label')}</h1>
       <${AsOf} asOf=${loaded.asOf} />
@@ -424,9 +456,9 @@ export function ChartScreen({ me, chart, cache }) {
     ${model ? html`<${Notes} model=${model} chart=${chart} labels=${labels} />` : null}
     <${Options} chart=${chart} model=${model} me=${me} title=${title} />
     <div class="chart-actions">
-      <button type="button" class="button primary" data-testid="chart-print" onClick=${print}>${t('chart.print')}</button>
-      <button type="button" class="button" data-testid="chart-svg" onClick=${() => void downloadSvg()}>${t('chart.downloadSvg')}</button>
-      <button type="button" class="button" data-testid="chart-png" onClick=${() => void downloadPng()}>${t('chart.downloadPng')}</button>
+      <button type="button" class="button primary" data-testid="chart-print" onClick=${() => ask('print')}>${t('chart.print')}</button>
+      <button type="button" class="button" data-testid="chart-svg" onClick=${() => ask('svg')}>${t('chart.downloadSvg')}</button>
+      <button type="button" class="button" data-testid="chart-png" onClick=${() => ask('png')}>${t('chart.downloadPng')}</button>
     </div>
     ${status ? html`<p class="small muted" role="status" data-testid="chart-status">${status}</p>` : null}
     ${

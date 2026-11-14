@@ -2193,8 +2193,11 @@ pre.transcription {
   body.chart-printing > *:not(#chart-print-root) {
     display: none !important;
   }
+  html:has(body.chart-printing),
   body.chart-printing {
+    height: auto;
     margin: 0;
+    overflow: visible;
     background: #fff;
   }
   body.chart-printing #chart-print-root {

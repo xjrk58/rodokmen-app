@@ -31,6 +31,9 @@ import { CARD, cardText, SIZE, textLine } from './chart-cards.js';
 
 /** Gaps: between a person and a partner card, between subtrees, and between generations. */
 export const GAP = { couple: 40, subtree: 80, generation: 170 };
+/** A generation's height; a column's step; the indent of a column from its rake. */
+const ROW = CARD.h + GAP.generation;
+const COLUMN = { step: CARD.h + 30, indent: 40 };
 
 /**
  * @typedef {object} Sub
@@ -39,6 +42,7 @@ export const GAP = { couple: 40, subtree: 80, generation: 170 };
  * @property {number} unitX the unit's left edge, relative to the subtree's origin
  * @property {Array<{ sub: Sub, dx: number }>} kids
  * @property {Array<[number, number]>} contour left and right edge per depth below
+ * @property {Sub[]} [column] a Family's children who have none drawn, stacked in a column under the couple
  */
 
 /**
@@ -69,13 +73,16 @@ export function layoutTree(model, metrics, labels, part = {}) {
   const topOf = new Map();
   /** @type {Array<() => void>} */
   const deferred = [];
+  /** @type {Map<string, { x: number, y: number }>} the left middle of each card in a column */
+  const inColumn = new Map();
 
-  /** @param {Sub} s @param {number} ox @param {number} depth */
-  const place = (s, ox, depth) => {
+  /** @param {Sub} s @param {number} ox @param {number} depth @param {number} [top] the y of a card in a column */
+  const place = (s, ox, depth, top) => {
     const n = /** @type {DescendantNode} */ (nodes.get(s.key));
     const x = ox + s.unitX;
-    const y = depth * (CARD.h + GAP.generation);
+    const y = top ?? depth * ROW;
     topOf.set(s.key, { x: x + CARD.w / 2, y });
+    if (top !== undefined) inColumn.set(s.key, { x, y: y + CARD.h / 2 });
     const p = persons.get(n.personId);
     const own = { x, y, w: CARD.w, h: CARD.h };
     if (stubs.has(n.key)) {
@@ -100,7 +107,11 @@ export function layoutTree(model, metrics, labels, part = {}) {
       if (f.pointer || f.children.length === 0 || stubs.has(n.key)) continue;
       drop(n, f, from, y);
     }
-    for (const k of s.kids) place(k.sub, ox + k.dx, depth + 1);
+    for (const k of s.kids) {
+      const column = k.sub.column;
+      if (column === undefined) place(k.sub, ox + k.dx, depth + 1);
+      else column.forEach((c, i) => place(c, ox + k.dx + COLUMN.indent, depth + 1, (depth + 1) * ROW + i * COLUMN.step));
+    }
   };
 
   /**
@@ -126,6 +137,20 @@ export function layoutTree(model, metrics, labels, part = {}) {
     return { x: px - GAP.couple / 2, y: ly };
   };
 
+  /**
+   * How the line to a child is drawn: dotted for a weak link, dashed for a link that is not a birth.
+   * @param {import('./types.js').ChartFamily | undefined} family
+   * @param {DescendantNode} child
+   * @returns {'solid' | 'dashed' | 'dotted'}
+   */
+  const childStyle = (family, child) => {
+    const link = family?.children.find((l) => l.personId === child.personId);
+    const style = link?.weakLink ? 'dotted' : link && link.linkType !== 'birth' ? 'dashed' : 'solid';
+    if (style === 'dotted') used.add('weak');
+    if (style === 'dashed') used.add('nonBirth');
+    return style;
+  };
+
   /** The lines from a couple down to its children. @param {DescendantNode} n @param {DescendantNode['families'][number]} f @param {{ x: number, y: number }} from @param {number} y */
   const drop = (n, f, from, y) => {
     const cx = from.x;
@@ -134,8 +159,22 @@ export function layoutTree(model, metrics, labels, part = {}) {
     deferred.push(() => {
       const tops = f.children.map((k) => ({ k, at: topOf.get(k) })).filter((c) => c.at !== undefined);
       if (tops.length === 0) return;
-      const xs = tops.map((c) => /** @type {{ x: number }} */ (c.at).x);
       const onLine = n.onLine && tops.some((c) => nodes.get(c.k)?.onLine);
+      const rows = tops.map((c) => ({ ...c, left: inColumn.get(c.k) }));
+      if (rows.every((c) => c.left !== undefined)) {
+        // A column: a rake down its left side, with a short line to each card.
+        const rake = /** @type {{ x: number }} */ (rows[0].left).x - COLUMN.indent / 2;
+        const lastY = Math.max(...rows.map((c) => /** @type {{ y: number }} */ (c.left).y));
+        lines.push({ key: `down:${n.key}:${f.familyId}`, d: `M${cx} ${from.y}V${bus}H${rake}V${lastY}`, style: 'solid', line: onLine });
+        for (const c of rows) {
+          const child = /** @type {DescendantNode} */ (nodes.get(c.k));
+          const style = childStyle(family, child);
+          const at = /** @type {{ x: number, y: number }} */ (c.left);
+          lines.push({ key: `child:${c.k}`, d: `M${rake} ${at.y}H${at.x}`, style, line: n.onLine && child.onLine });
+        }
+        return;
+      }
+      const xs = tops.map((c) => /** @type {{ x: number }} */ (c.at).x);
       lines.push({
         key: `down:${n.key}:${f.familyId}`,
         d: `M${cx} ${from.y}V${bus}H${Math.min(cx, ...xs)}M${cx} ${bus}H${Math.max(cx, ...xs)}`,
@@ -144,10 +183,7 @@ export function layoutTree(model, metrics, labels, part = {}) {
       });
       for (const c of tops) {
         const child = /** @type {DescendantNode} */ (nodes.get(c.k));
-        const link = family?.children.find((l) => l.personId === child.personId);
-        const style = link?.weakLink ? 'dotted' : link && link.linkType !== 'birth' ? 'dashed' : 'solid';
-        if (style === 'dotted') used.add('weak');
-        if (style === 'dashed') used.add('nonBirth');
+        const style = childStyle(family, child);
         const at = /** @type {{ x: number, y: number }} */ (c.at);
         lines.push({ key: `child:${c.k}`, d: `M${at.x} ${bus}V${at.y}`, style, line: n.onLine && child.onLine });
       }
@@ -174,8 +210,34 @@ function subtrees(model, part) {
   const places = (n) => n.families.filter((f) => f.partnerId !== null || f.pointer);
   /** @param {DescendantNode} n */
   const unitWidth = (n) => (stubs.has(n.key) ? CARD.w : CARD.w + places(n).length * (CARD.w + GAP.couple));
-  /** @param {DescendantNode} n */
-  const childKeys = (n) => (stubs.has(n.key) ? [] : n.families.flatMap((f) => (f.pointer ? [] : f.children)));
+
+  /**
+   * What hangs under a node, left to right: each child's subtree, except that a Family whose
+   * children have none drawn below them stacks them in one column, to keep the Chart narrow.
+   * @param {DescendantNode} n
+   * @returns {Sub[]}
+   */
+  const items = (n) => {
+    if (stubs.has(n.key)) return [];
+    return n.families.flatMap((f) => {
+      if (f.pointer) return [];
+      const subs = f.children.map((k) => sub(k));
+      if (subs.length < 2 || subs.some((x) => x.kids.length > 0)) return subs;
+      const w = COLUMN.indent + Math.max(...subs.map((x) => x.unitW));
+      const height = subs.length * COLUMN.step - 30;
+      const depths = Math.max(1, Math.ceil(height / ROW));
+      return [
+        {
+          key: `${n.key}#column:${f.familyId}`,
+          unitW: w,
+          unitX: 0,
+          kids: [],
+          contour: Array.from({ length: depths }, () => /** @type {[number, number]} */ ([0, w])),
+          column: subs,
+        },
+      ];
+    });
+  };
 
   /** @param {string} key @returns {Sub} */
   const sub = (key) => {
@@ -185,8 +247,7 @@ function subtrees(model, part) {
     const kids = [];
     /** @type {Array<[number, number]>} */
     const below = [];
-    for (const k of childKeys(n)) {
-      const s = sub(k);
+    for (const s of items(n)) {
       let dx = 0;
       if (kids.length > 0) {
         dx = -Infinity;

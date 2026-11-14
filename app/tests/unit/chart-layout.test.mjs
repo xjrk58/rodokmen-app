@@ -38,18 +38,17 @@ function treeInvariants(model, layout) {
   for (const n of model.nodes) {
     const own = at.get(n.key);
     assert.ok(own, `${n.key} is drawn`);
+    /** Whether a Family's children hang in a column (they have none of their own drawn). @param {string[]} keys */
+    const isColumn = (keys) => keys.length > 1 && keys.every((k) => at.get(k)?.x === at.get(keys[0])?.x);
     for (const f of n.families) {
-      // Siblings left to right in the model's order.
-      const xs = f.children.map((k) => /** @type {{ x: number }} */ (at.get(k)).x);
-      assert.deepEqual(
-        xs,
-        [...xs].sort((a, b) => a - b),
-        `children of ${n.key} in order`,
-      );
+      // Siblings left to right in the model's order, or top to bottom in a column.
+      const places = f.children.map((k) => /** @type {{ x: number, y: number }} */ (at.get(k)));
+      const sorted = [...places].sort((a, b) => a.x - b.x || a.y - b.y);
+      assert.deepEqual(places, sorted, `children of ${n.key} in order`);
     }
-    // Each unit centred over its children.
+    // Each unit centred over its children (when none hang in a column).
     const kids = n.families.flatMap((f) => (f.pointer ? [] : f.children)).map((k) => at.get(k));
-    if (kids.length > 0 && !n.pointer) {
+    if (kids.length > 0 && !n.pointer && !n.families.some((f) => !f.pointer && isColumn(f.children))) {
       const unit = [own, ...n.families.filter((f) => f.partnerId !== null || f.pointer).map((f) => at.get(`${n.key}+${f.familyId}`))];
       const centre =
         (Math.min(...unit.map((c) => /** @type {{ x: number }} */ (c).x)) +
@@ -62,13 +61,20 @@ function treeInvariants(model, layout) {
       assert.ok(Math.abs(centre - (firstUnit + lastUnit) / 2) <= 1, `${n.key} centred over its children`);
     }
   }
-  // Every line to a child ends on the top of its card.
+  // Every line to a child ends on its card: on the top of it, or on its left side in a column.
   for (const l of layout.lines.filter((x) => x.key.startsWith('child:'))) {
     const card = at.get(l.key.slice('child:'.length));
-    const m = /M(-?\d+) (-?\d+)V(-?\d+)$/.exec(l.d);
-    assert.ok(card && m, l.key);
-    assert.equal(Number(m[3]), card.y, `${l.key} ends on its card`);
-    assert.ok(Number(m[1]) > card.x && Number(m[1]) < card.x + card.w, `${l.key} ends within its card`);
+    assert.ok(card, l.key);
+    const down = /M(-?\d+) (-?\d+)V(-?\d+)$/.exec(l.d);
+    const across = /M(-?\d+) (-?\d+)H(-?\d+)$/.exec(l.d);
+    if (down) {
+      assert.equal(Number(down[3]), card.y, `${l.key} ends on its card`);
+      assert.ok(Number(down[1]) > card.x && Number(down[1]) < card.x + card.w, `${l.key} ends within its card`);
+    } else {
+      assert.ok(across, l.key);
+      assert.equal(Number(across[3]), card.x, `${l.key} ends on its card`);
+      assert.ok(Number(across[2]) > card.y && Number(across[2]) < card.y + card.h, `${l.key} ends within its card`);
+    }
   }
   // Every Person drawn once as a descendant, apart from the cards that point to them.
   const main = layout.cards.filter((c) => c.kind === 'person').map((c) => c.personId);
