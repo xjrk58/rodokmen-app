@@ -23,6 +23,16 @@ const EXAMPLES: Array<[input: string, form: string, earliest: string | null, lat
   ['../1805-06', 'before', null, '1805-06-30'],
   ['1790/..', 'after', '1790-01-01', null],
   ['1790-04-02/..', 'after', '1790-04-02', null],
+  // Qualified interval ends (#135): each end is read as the single date it is.
+  ['1801/1803~', 'between', '1801-01-01', '1805-12-31'],
+  ['1801~/1803', 'between', '1799-01-01', '1803-12-31'],
+  ['1801~/1803~', 'between', '1799-01-01', '1805-12-31'],
+  ['1801-05~/1801-09-10~', 'between', '1801-04-01', '1801-09-17'],
+  ['1801?/1803', 'between', '1801-01-01', '1803-12-31'],
+  ['1801/1803?', 'between', '1801-01-01', '1803-12-31'],
+  ['../1805~', 'before', null, '1807-12-31'],
+  ['../1805?', 'before', null, '1805-12-31'],
+  ['1790~/..', 'after', '1788-01-01', null],
 ];
 
 describe('EDTF subset parser', () => {
@@ -51,16 +61,33 @@ describe('EDTF subset parser', () => {
     '1801%',
     '~1801',
     '1803/1801',
+    '1803~/1801',
+    '1802~/1801~',
     '../..',
+    '..~/1805',
     '/1805',
     '1790/',
-    '1801~/1803',
+    '1801~?/1803',
+    '1801%/1803',
     '1801/1802/1803',
     'about 1801',
     '12.3.1801',
   ])('refuses %j', (input) => {
     expect(isEdtf(input)).toBe(false);
     expect(() => parseEdtf(input)).toThrow(/EDTF subset/);
+  });
+
+  it('an interval with qualified ends reaches as far as each end does alone (#135)', () => {
+    for (const [start, end] of [
+      ['1801~', '1803~'],
+      ['1801-05~', '1802?'],
+      ['1801-03-12~', '1801-04'],
+    ] as const) {
+      const interval = parseEdtf(`${start}/${end}`);
+      expect([interval.earliest, interval.latest]).toEqual([parseEdtf(start).earliest, parseEdtf(end).latest]);
+      expect(parseEdtf(`../${end}`).latest).toBe(parseEdtf(end).latest);
+      expect(parseEdtf(`${start}/..`).earliest).toBe(parseEdtf(start).earliest);
+    }
   });
 
   it('accepts 29 February in leap years only', () => {

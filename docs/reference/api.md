@@ -108,6 +108,7 @@ Only the Owner invites ([How to invite a Member](../how-to/invite-a-member.md)).
 - `DELETE /api/invitations/{id}` withdraws an open invitation: its link stops working, however it was sent. 404 when the invitation is not open.
 - `POST /api/auth/invitation/check` with `token` (public) only reads. It answers `status`, `language`, `message` (what to do next, in the invitation's language) and `email`, the invited address while the invitation is pending and `null` otherwise. 404 `invitation_unknown` for a token that matches no invitation.
 - `POST /api/auth/invitation/accept` with `token`, `displayName` and `language` (public) is the only call that uses an invitation. It creates a Contributor and signs them in (201). A used, expired or withdrawn invitation answers 410 (`invitation_accepted`, `invitation_expired`, `invitation_revoked`), and an address that has become a Member's meanwhile 409 `already_member`.
+- After a successful accept, and only then, the server emails the Owner (whoever has the Owner role at that moment), in the Owner's language: the display name, the invited address, the time in Prague and a link to `<PUBLIC_ORIGIN>/#settings`. The email is sent after the acceptance is stored. If it cannot be sent, the failure is logged and the answer is still 201.
 
 The token travels only in the link's fragment, which browsers and link previews do not send, so a `GET` of the link never reaches the server with the token.
 

@@ -63,7 +63,7 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
     config: pub,
     schema: {
       tags: ['Sign-in'],
-      summary: 'Accept an invitation: set display name and language, become a Contributor and sign in',
+      summary: 'Accept an invitation: set display name and language, become a Contributor and sign in. The Owner is then told by email',
       body: AcceptInvitationBody,
       response: { 201: SignedIn, 404: ApiError, 409: ApiError, 410: ApiError },
     },

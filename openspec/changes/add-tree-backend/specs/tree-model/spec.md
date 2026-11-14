@@ -32,11 +32,15 @@ Every dated fact SHALL be an Event with a type (birth, baptism, marriage, death,
 - **THEN** one baptism Event links all six Persons, each with their Role
 
 ### Requirement: Dates allow uncertainty
-Event dates SHALL use an EDTF subset: exact day, month, year, about (`1801~`), uncertain (`1801?`), between (`1801/1803`), before (`../1805`) and after (`1790/..`). The system SHALL order Events by the earliest date each could be.
+Event dates SHALL use an EDTF subset: exact day, month, year, about (`1801~`), uncertain (`1801?`), between (`1801/1803`), before (`../1805`) and after (`1790/..`). An end of an interval MAY be about or uncertain (`1801~/1803~`, `../1805~`); the interval then runs from the earliest day its start could be to the latest day its end could be. The system SHALL order Events by the earliest date each could be.
 
 #### Scenario: Approximate and open dates
 - **WHEN** one Event is dated `1801~` and another `../1805`
 - **THEN** both are stored as written and both can be sorted and filtered by year
+
+#### Scenario: Interval with an approximate end
+- **WHEN** a residence is dated `1801/1803~`
+- **THEN** it is stored as written and covers 1801 to the end of 1805, as far as `1803~` reaches alone
 
 ### Requirement: Places, Houses and Municipalities
 A Place SHALL have names with periods and languages (Czech, German, Latin), an optional location, and a link to the Municipality it lies in today. A House SHALL belong to one Place and carry its house numbers (čp.) with periods.

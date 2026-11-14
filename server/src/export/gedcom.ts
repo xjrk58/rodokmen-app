@@ -39,7 +39,8 @@ function simpleDate(part: string): string | null {
 
 /**
  * An EDTF date of the Tree as a GEDCOM date: about (`~`) is `ABT`, uncertain (`?`) is `EST`, a
- * range is `BET … AND …`, open ranges are `BEF` and `AFT`. Null when it cannot be said.
+ * range is `BET … AND …`, open ranges are `BEF` and `AFT`. Null when it cannot be said, as for a
+ * range with an "about" or uncertain end (`1801/1803~`): GEDCOM ranges take plain dates only.
  */
 export function gedcomDate(edtf: string): string | null {
   if (edtf.includes('/')) {

@@ -1,4 +1,5 @@
 import {
+  CitationDetail,
   EstateDetail,
   EventDetail,
   FamilyDetail,
@@ -63,6 +64,21 @@ describe('research notes and Labels', () => {
     ]);
     expect(fact.statusCode).toBe(400);
     expect(errorOf(fact).code).toBe('evidence_missing');
+  });
+
+  it("a Citation's note needs no evidence: correcting it alone is accepted; its confidence or transcription still needs a Citation (#157)", async () => {
+    const citationId = model.eventCitations.find((c) => c.eventId === L.janBaptism)!.citationId;
+    const citation = async () => CitationDetail.parse((await call(contributor, 'GET', `/api/citations/${citationId}`)).json());
+    const before = await citation();
+    const note = `${before.note ?? ''}\nEvidence class: A`.trim();
+    await accept(await submit(contributor, [{ op: 'setField', record: 'citation', id: citationId, baseVersion: before.version, set: { note } }]));
+    expect(await citation()).toMatchObject({ note, confidence: before.confidence, transcription: before.transcription });
+    const version = (await citation()).version;
+    for (const set of [{ confidence: 'very_high' }, { transcription: 'Baptizatus est (invented).' }, { note: 'x', confidence: 'very_high' }]) {
+      const fact = await submit(contributor, [{ op: 'setField', record: 'citation', id: citationId, baseVersion: version, set }]);
+      expect(fact.statusCode).toBe(400);
+      expect(errorOf(fact).code).toBe('evidence_missing');
+    }
   });
 
   it('every kind of record holds notes, set through one Proposal, and an undo takes them away again', async () => {

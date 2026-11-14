@@ -24,9 +24,11 @@ import { startLiveServer, type LiveServer } from './live-server.js';
 
 /**
  * A later run over a Tree imported before the follow-ups of the Owner's real import: presumed deaths
- * (#132), fields the Tree has no place for (#134), long log notes (#136) and a marriage both spouses
- * record without a Source note (#149). The importer before them is this importer with its plan turned back into what the
- * earlier one planned; the second run is this importer as it is.
+ * (#132), fields the Tree has no place for (#134) with register entries' Citation notes (#157),
+ * residence dates (#135), long log notes (#136), Places that are part of a Municipality (#137) and a
+ * marriage both spouses record without a Source note (#149). The importer before them is this
+ * importer with its plan turned back into what the earlier one planned; the second run is this
+ * importer as it is.
  */
 const before = vi.hoisted(() => ({ fix: false }));
 
@@ -53,13 +55,27 @@ function before132(plan: Plan): void {
 
 /** The plan of the importer before #134: research notes held the note's body alone (none without one), and a Citation's note the path. */
 function before134(plan: Plan): void {
-  for (const u of plan.updates)
+  for (const u of plan.updates.filter((x) => x.topic === 'fields'))
     for (const p of plan.proposals) {
       const i = p.ops.findIndex((o) => o.key === u.freshKey);
       if (i < 0) continue;
-      const op = { ...p.ops[i]!.op, ...(u.field === 'notes' ? { notes: u.before } : { note: u.before }) };
-      p.ops = u.before === null ? p.ops.filter((_, j) => j !== i) : p.ops.map((o, j) => (j === i ? { ...o, op, value: JSON.stringify(op) } : o));
+      const op = { ...p.ops[i]!.op, ...u.before };
+      p.ops = u.before.notes === null ? p.ops.filter((_, j) => j !== i) : p.ops.map((o, j) => (j === i ? { ...o, op, value: JSON.stringify(op) } : o));
     }
+}
+
+/**
+ * The plan of the importer before #135 and #137, which created records otherwise: a residence with
+ * a qualified end, or an end that is an interval, had no date (#135); a Place was linked only to the
+ * Municipality of its own name (#137).
+ */
+function before135and137(plan: Plan): void {
+  for (const u of plan.updates.filter((x) => x.topic === 'date' || x.topic === 'municipality'))
+    for (const o of plan.proposals.flatMap((p) => p.ops))
+      if (o.key === u.freshKey) {
+        o.op = { ...o.op, ...u.before };
+        o.value = JSON.stringify(o.op);
+      }
 }
 
 /** The plan of the importer before #136: a lead's reason held the first 4,000 characters of its note. */
@@ -77,6 +93,7 @@ vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
         before132(plan);
         before134(plan);
         before136(plan);
+        before135and137(plan);
         before149(plan);
       }
       return plan;
@@ -86,7 +103,7 @@ vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
 
 const MUNICIPALITIES: Municipality[] = [{ code: '572128', name: 'Vrbice', district: 'Jičín', lat: 50.38, lon: 15.39 }];
 
-describe('a later run over a Tree imported before the follow-ups (#132, #134, #136, #149)', () => {
+describe('a later run over a Tree imported before the follow-ups (#132, #134, #135, #136, #137, #149, #157)', () => {
   let s: LiveServer;
   let token: string;
   let owner: Account;
@@ -130,7 +147,17 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
   const person = async (key: string) => PersonDetail.parse((await asOwner('GET', `/api/persons/${await recordOf(key)}`)).json());
   const marriages = async () => (await person('person:marie-svobodova-1775')).events.filter((e) => e.event.type === 'marriage');
   const citations = (e: PersonDetail['events'][number]) => e.citations.map((c) => c.page).sort();
-  const place = async () => PlaceDetail.parse((await asOwner('GET', `/api/places/${await recordOf('place:kamenna-lhota')}`)).json());
+  const placeOf = async (key: string) => PlaceDetail.parse((await asOwner('GET', `/api/places/${await recordOf(key)}`)).json());
+  const place = async () => placeOf('place:kamenna-lhota');
+  /** Kryštof's residence Events, in the order of his note. */
+  const residences = async () =>
+    Promise.all(
+      [0, 1, 2].map(async (i) =>
+        EventDetail.parse((await asOwner('GET', `/api/events/${await recordOf(`event:krystof-vymysleny-1790:residence:${i}`)}`)).json()),
+      ),
+    );
+  const VRBICE = { code: '572128', name: 'Vrbice' };
+  const JINDE = { code: '500011', name: 'Jinde' };
   const JAN = 'Baptism found; the death is known from the family only. Check the death register of 1850.';
   const lead = async (question: string) => LeadList.parse((await asOwner('GET', '/api/leads?limit=50')).json()).items.find((l) => l.question === question)!;
   const whole = (topic: string) => longLog(topic).split('---\n').slice(2).join('---\n').trim();
@@ -144,6 +171,15 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     vault = await fixtureVault();
     await writeFile(join(vault.path, 'log/2026-10-25-long.md'), longLog('A long invented session'));
     await writeFile(join(vault.path, 'log/2026-10-26-edited.md'), longLog('A long session the Owner edits'));
+    // Two invented hamlets that are part of the Municipality of Vrbice: named by name, and by RÚIAN code.
+    await writeFile(join(vault.path, 'places/horni-ves.md'), '---\ntype: place\nname: Horní Ves\nkind: osada\nmunicipality: Vrbice\n---\n');
+    await writeFile(join(vault.path, 'places/dolni-ves.md'), '---\ntype: place\nname: Dolní Ves\nkind: osada\nmunicipality: 572128\n---\n');
+    // An invented man who lived in three places, in periods with a qualified end or an end that is an interval.
+    await writeFile(
+      join(vault.path, 'people/krystof-vymysleny-1790.md'),
+      "---\ntype: person\nname:\n  given: Kryštof\n  surname: Vymyšlený\nsex: M\nresidences:\n  - place: '[[kamenna-lhota]]'\n    from: 1801\n    to: 1803~\n" +
+        "  - house: '[[kamenna-lhota-12]]'\n    from: 1799~\n    to: 1800/1801\n  - place: '[[vrbice]]'\n    from: 1805\n    to: 1807~\n---\n",
+    );
   }, 60_000);
   afterAll(async () => {
     await s?.close();
@@ -199,9 +235,65 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
       ],
     });
     expect(death.statusCode, death.body).toBe(201);
+    // The hamlets came in without a Municipality, and the Owner links one of them to another in the app.
+    expect((await placeOf('place:horni-ves')).municipality).toBeNull();
+    const dolni = await placeOf('place:dolni-ves');
+    expect(dolni.municipality).toBeNull();
+    const linked = await asOwner('POST', '/api/proposals', {
+      formatVersion: OPERATIONS_VERSION,
+      idempotencyKey: 'owner-dolni-ves',
+      direct: true,
+      operations: [
+        {
+          op: 'createCitation',
+          tempId: 'tmp:c',
+          sourceId: await recordOf('vault-source'),
+          page: null,
+          transcription: 'Dolní Ves belongs to Jinde today (invented).',
+          readOn: '2026-11-01',
+          confidence: 'low',
+          note: null,
+        },
+        { op: 'setField', record: 'place', id: dolni.id, baseVersion: dolni.version, set: { municipality: JINDE } },
+      ],
+    });
+    expect(linked.statusCode, linked.body).toBe(201);
+    // The residences came in undated, with the dates as written in their descriptions; the Owner dates the third in the app.
+    expect((await residences()).map((e) => [e.date, e.description])).toEqual([
+      [null, 'Date as written in the Vault: 1801/1803~'],
+      [null, 'Date as written in the Vault: 1799~/1800/1801'],
+      [null, 'Date as written in the Vault: 1805/1807~'],
+    ]);
+    const third = (await residences())[2]!;
+    const dated = await asOwner('POST', '/api/proposals', {
+      formatVersion: OPERATIONS_VERSION,
+      idempotencyKey: 'owner-residence-date',
+      direct: true,
+      operations: [
+        {
+          op: 'createCitation',
+          tempId: 'tmp:c',
+          sourceId: await recordOf('vault-source'),
+          page: null,
+          transcription: 'He moved to Vrbice in 1806 (invented).',
+          readOn: '2026-11-01',
+          confidence: 'low',
+          note: null,
+        },
+        { op: 'attachCitation', citationId: 'tmp:c', eventId: third.id, baseVersion: third.version },
+        { op: 'setField', record: 'event', id: third.id, baseVersion: third.version, set: { date: '1806' } },
+      ],
+    });
+    expect(dated.statusCode, dated.body).toBe(201);
   });
 
-  it('a later run submits only what the fixes add, and its batch is accepted whole', async () => {
+  it('a later run submits what the fixes add and the notes new since, and its batch is accepted whole', async () => {
+    // Notes new since the first run come in fresh, as this importer maps them (#135, #137).
+    await writeFile(join(vault.path, 'places/predni-ves.md'), '---\ntype: place\nname: Přední Ves\nkind: osada\nmunicipality: Vrbice\n---\n');
+    await writeFile(
+      join(vault.path, 'people/kristina-vymyslena-1800.md'),
+      "---\ntype: person\nname:\n  given: Kristina\n  surname: Vymyšlená\nsex: F\nresidences:\n  - place: '[[predni-ves]]'\n    from: 1820~\n    to: 1830/1832\n---\n",
+    );
     before.fix = true;
     dry = await runImport({ ...options(), dryRun: true });
     expect((await lead('A long invented session')).reason).toHaveLength(4000);
@@ -209,6 +301,19 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect(second.run.submitted).toBe(dry.run.submitted);
     expect(second.run.deferred).toEqual([]);
     await acceptBatch(second.run.batch!.id, second.run.submitted);
+  });
+
+  it('a new Place note and a new residence come in as a fresh import makes them: linked to the Municipality, dated with its qualified end (#135, #137)', async () => {
+    expect(await placeOf('place:predni-ves')).toMatchObject({ municipality: VRBICE, location: null });
+    const event = EventDetail.parse((await asOwner('GET', `/api/events/${await recordOf('event:kristina-vymyslena-1800:residence:0')}`)).json());
+    expect([event.date, event.earliest, event.latest, event.description, event.place?.id]).toEqual([
+      '1820~/1832',
+      '1818-01-01',
+      '1832-12-31',
+      'Date as written in the Vault: 1820~/1830/1832',
+      await recordOf('place:predni-ves'),
+    ]);
+    expect(event.citations.map((c) => c.page)).toEqual(['people/kristina-vymyslena-1800.md']);
   });
 
   it('a Person the Tree has as the import left them gets the presumed death; one given a death or a birth date since is left out and listed (#132)', async () => {
@@ -225,34 +330,93 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect([marie.living, marie.events.filter((e) => e.event.type === 'death')]).toEqual([true, []]);
   });
 
-  it('research notes that hold what the import wrote get the fields not mapped; those changed since, and Citation notes, are listed (#134)', async () => {
+  it('research notes and Citation notes that hold what the import wrote get the fields not mapped; those changed since are listed (#134, #157)', async () => {
     for (const run of [dry, second]) {
-      expect(run.run.updates.added).toBe(3);
-      expect(run.run.updates.notUpdated).toEqual([
-        { path: 'parishes/vrbice.md', lines: ['denomination: římskokatolická'], why: 'changed' },
-        { path: 'sources/n-vrbice-1801-f12.md', lines: ['Evidence class: A'], why: 'citation' },
-      ]);
+      expect(run.run.updates.fields.added).toBe(4);
+      expect(run.run.updates.fields.notUpdated).toEqual([{ path: 'parishes/vrbice.md', lines: ['denomination: římskokatolická'] }]);
     }
     expect(second.report).toContain('- parishes/vrbice.md: denomination: římskokatolická');
-    expect(second.report).toContain('- sources/n-vrbice-1801-f12.md: Evidence class: A');
-    // Each update is a Proposal of one operation, at the version the importer read.
+    expect(second.report).not.toContain('- sources/n-vrbice-1801-f12.md: Evidence class: A');
+    // Each update is a Proposal of one operation, at the version the importer read; a Citation's note needs no new Citation.
     const { items } = ProposalList.parse((await asOwner('GET', `/api/batches/${second.run.batch!.id}/proposals`)).json());
     const notes = items.filter((p) => p.note?.endsWith('(fields the Tree has no place for)'));
     expect(notes.map((p) => [p.note, p.operations.map((o) => o.operation.op)])).toEqual([
       ['Vault: places/kamenna-lhota.md (fields the Tree has no place for)', ['setNotes']],
+      ['Vault: sources/n-vrbice-1801-f12.md (fields the Tree has no place for)', ['setField']],
       ['Vault: people/jan-novak-1801.md (fields the Tree has no place for)', ['setNotes']],
       ['Vault: sources/rod-novaku.md (fields the Tree has no place for)', ['setNotes']],
     ]);
+    expect(notes[1]!.operations[0]!.operation).toMatchObject({
+      record: 'citation',
+      set: { note: 'Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12\nEvidence class: A' },
+    });
     // Accepted, the records are as a fresh import makes them (vault-import.test.ts).
     expect((await person('person:jan-novak-1801')).notes).toBe(`${JAN}\n\nFrom the Vault, not mapped:\n- occupation: sedlák`);
     expect((await place()).notes).toBe('From the Vault, not mapped:\n- district: Invented District\n- names.en: Stone Lhota');
     const source = SourceDetail.parse((await asOwner('GET', `/api/sources/${await recordOf('source:rod-novaku')}`)).json());
     expect(source.notes).toMatch(/\n\nFrom the Vault, not mapped:\n- Evidence class: C$/);
-    // The Owner's Parish notes and the register entry's Citation note stay as they are.
+    const citation = CitationDetail.parse((await asOwner('GET', `/api/citations/${await recordOf('citation:n-vrbice-1801-f12')}`)).json());
+    expect(citation.note).toBe('Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12\nEvidence class: A');
+    // The Owner's Parish notes stay as they are.
     const parish = ParishDetail.parse((await asOwner('GET', `/api/parishes/${await recordOf('parish:vrbice')}`)).json());
     expect(parish.notes).toMatch(/Ask the parish office\.$/);
-    const citation = CitationDetail.parse((await asOwner('GET', `/api/citations/${await recordOf('citation:n-vrbice-1801-f12')}`)).json());
-    expect(citation.note).toBe('Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12');
+  });
+
+  it('a Place that still has no Municipality gets the one its note names; one the Owner linked otherwise since is listed and left alone (#137)', async () => {
+    for (const run of [dry, second])
+      expect(run.run.updates.municipality).toEqual({ added: 1, notUpdated: [{ path: 'places/dolni-ves.md', lines: ['Vrbice (572128, Jičín)'] }] });
+    expect(second.report).toContain('- places/dolni-ves.md: Vrbice (572128, Jičín)');
+    // A Municipality is a fact: the Proposal cites the note again, as the Place's own Proposal does.
+    const { items } = ProposalList.parse((await asOwner('GET', `/api/batches/${second.run.batch!.id}/proposals`)).json());
+    const linked = items.filter((p) => p.note?.endsWith('(the Municipality it is part of)'));
+    expect(linked.map((p) => [p.note, p.operations.map((o) => o.operation)])).toEqual([
+      [
+        'Vault: places/horni-ves.md (the Municipality it is part of)',
+        [
+          expect.objectContaining({ op: 'createCitation', sourceId: await recordOf('vault-source'), page: 'places/horni-ves.md', confidence: 'low' }),
+          expect.objectContaining({ op: 'setField', record: 'place', id: await recordOf('place:horni-ves'), set: { municipality: VRBICE } }),
+        ],
+      ],
+    ]);
+    expect((await placeOf('place:horni-ves')).municipality).toEqual(VRBICE);
+    expect((await placeOf('place:dolni-ves')).municipality).toEqual(JINDE);
+  });
+
+  it('a residence still undated gets the date its note gives; one the Owner dated since is listed and left alone (#135)', async () => {
+    for (const run of [dry, second])
+      expect(run.run.updates.date).toEqual({
+        added: 2,
+        notUpdated: [{ path: 'people/krystof-vymysleny-1790.md', lines: ['residences.2: 1805/1807~ → 1805/1807~'] }],
+      });
+    expect(second.report).toContain('- people/krystof-vymysleny-1790.md: residences.2: 1805/1807~ → 1805/1807~');
+    // A date is a fact: the Proposal attaches a new Citation of the note to the Event, and changes only what differs.
+    const { items } = ProposalList.parse((await asOwner('GET', `/api/batches/${second.run.batch!.id}/proposals`)).json());
+    const dates = items.filter((p) => p.note?.endsWith('(the date of a residence)'));
+    const [res0, res1] = await residences();
+    expect(dates.map((p) => p.operations.map((o) => o.operation))).toEqual([
+      [
+        expect.objectContaining({
+          op: 'createCitation',
+          page: 'people/krystof-vymysleny-1790.md',
+          confidence: 'low',
+          note: 'The date of residences.0 in the note',
+        }),
+        expect.objectContaining({ op: 'attachCitation', eventId: res0!.id }),
+        expect.objectContaining({ op: 'setField', record: 'event', id: res0!.id, set: { date: '1801/1803~', description: null } }),
+      ],
+      [
+        expect.objectContaining({ op: 'createCitation', note: 'The date of residences.1 in the note' }),
+        expect.objectContaining({ op: 'attachCitation', eventId: res1!.id }),
+        expect.objectContaining({ op: 'setField', record: 'event', id: res1!.id, set: { date: '1799~/1801' } }),
+      ],
+    ]);
+    // Accepted, the Events are dated as a fresh import dates them; the Owner's date stays.
+    expect((await residences()).map((e) => [e.date, e.earliest, e.latest, e.description])).toEqual([
+      ['1801/1803~', '1801-01-01', '1805-12-31', null],
+      ['1799~/1801', '1797-01-01', '1801-12-31', 'Date as written in the Vault: 1799~/1800/1801'],
+      ['1806', '1806-01-01', '1806-12-31', 'Date as written in the Vault: 1805/1807~'],
+    ]);
+    expect((await residences())[0]!.citations.map((c) => c.page)).toEqual(['people/krystof-vymysleny-1790.md', 'people/krystof-vymysleny-1790.md']);
   });
 
   it('a lead an earlier run cut gets the whole note; one the Owner changed since is listed and left alone (#136)', async () => {

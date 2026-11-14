@@ -155,7 +155,14 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
     if (closing) reply.header('connection', 'close');
   });
 
-  const accountDeps: AccountDeps = { db, clock, mailer, publicOrigin: config.publicOrigin, session: { idleDays: config.sessionIdleDays } };
+  const accountDeps: AccountDeps = {
+    db,
+    clock,
+    mailer,
+    publicOrigin: config.publicOrigin,
+    session: { idleDays: config.sessionIdleDays },
+    log: (msg, err) => app.log.error({ err }, msg),
+  };
   await app.register(systemRoutes, { db, release: config.release });
   await app.register(treeRoutes, { db, clock, images });
   const proposalDeps = { db, clock, images, mailer, publicOrigin: config.publicOrigin, log: (msg: string, err?: unknown) => app.log.error({ err }, msg) };

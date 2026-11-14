@@ -68,6 +68,7 @@ this page with `node scripts/verification-trace.mjs`.
 | tree-history: Undo a whole Proposal | openspec/changes/add-proposals-and-review/specs/tree-history/spec.md | `undoBlockers` | shared/src/rules.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `compareByEarliest` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `dayDate` | shared/src/edtf.ts | see below |
+| tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `endRange` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `monthDate` | shared/src/edtf.ts | see below |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `rangeOf` | shared/src/edtf.ts | see below |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `widenAbout` | shared/src/edtf.ts | nothing beyond the trusted base |
@@ -95,7 +96,7 @@ A verified function's `requires` are proved wherever a verified function calls i
 - `monthDate` (shared/src/edtf.ts):
   - its requires, where unverified code calls it (`parseSimple`): `1 <= month && month <= 12`
 - `rangeOf` (shared/src/edtf.ts):
-  - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)`; `s.kind === 'before' ==> isValidDay(s.end.last)`; `s.kind === 'after' ==> isValidDay(s.start.first)`
+  - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.date.first) && isValidDay(s.start.date.last) && s.start.date.first.year >= 1 && s.start.date.last.year >= 1`; `s.kind === 'between' ==> isValidDay(s.end.date.first) && isValidDay(s.end.date.last) && s.end.date.first.year >= 1 && s.end.date.last.year >= 1`; `s.kind === 'before' ==> isValidDay(s.end.date.first) && isValidDay(s.end.date.last) && s.end.date.first.year >= 1 && s.end.date.last.year >= 1`; `s.kind === 'after' ==> isValidDay(s.start.date.first) && isValidDay(s.start.date.last) && s.start.date.first.year >= 1 && s.start.date.last.year >= 1`
 - `familyAt` (shared/src/house-chart.ts):
   - its requires, where unverified code calls it (shared/src/house-chart-model.ts): `marriageDated.length === marriageEarliest.length`
 - `houseRows` (shared/src/house-chart.ts):
@@ -136,7 +137,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 - shared/src/presumed-death.ts: `anchorBound`, `endsAt`, `isStep`, `checkChain`
 - shared/src/reading.ts: `copyToSend`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
-- shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
+- shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isCitationNoteOnly`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
 ## Proof additions
 
