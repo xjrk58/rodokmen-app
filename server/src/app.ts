@@ -20,6 +20,7 @@ import { agentRoutes } from './routes/agents.js';
 import { authRoutes } from './routes/auth.js';
 import { batchRoutes } from './routes/batches.js';
 import { erasureRoutes } from './routes/erasure.js';
+import { chartRoutes } from './routes/charts.js';
 import { leadRoutes } from './routes/leads.js';
 import { pageRoutes } from './routes/pages.js';
 import { proposalRoutes } from './routes/proposals.js';
@@ -185,6 +186,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
     cookieSecure,
     passkeys: { db, clock, rpId: config.rpId, rpName: 'Rodokmen', origin: config.publicOrigin },
   });
+  await app.register(chartRoutes, { db, clock });
   await app.register(pageRoutes, { appDir: config.appDir, imageOrigin: await images.linkOrigin(), log: (msg) => app.log.info(msg) });
   if (deps.extraRoutes) await app.register(async (scope) => deps.extraRoutes!(scope));
 

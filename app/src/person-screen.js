@@ -11,7 +11,7 @@ import { EraseSection } from './erase-person.js';
 import { lifeYears } from './hourglass-layout.js';
 import { has, t } from './i18n.js';
 import { PersonLeads } from './leads-screen.js';
-import { lifeAddress, personAddress, treeAddress } from './routes.js';
+import { chartAddress, lifeAddress, personAddress, treeAddress } from './routes.js';
 import { EventMergeOffer } from './event-merge.js';
 import { AsOf, ErrorLine, errorText, eventWhere, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
 import { html, useState } from './ui.js';
@@ -103,6 +103,13 @@ function Events({ person, cache, canMerge, onMerged }) {
             <span class="chip" data-testid="role">${t(`role.${e.role}`)}${e.roleDetail ? `: ${e.roleDetail}` : ''}</span>
           </header>
           <p class="small">${[e.event.date, eventWhere(e.event)].filter(Boolean).join(' · ')}</p>
+          ${
+            e.event.house
+              ? html`<p class="small">
+                  <a href=${chartAddress({ kind: 'house', start: 'house', id: e.event.house.id })} data-testid="house-chart">${t('chart.openHouse')}</a>
+                </p>`
+              : null
+          }
           ${e.event.description ? html`<p class="small muted">${e.event.description}</p>` : null}
           <${Citations} citations=${e.citations} cache=${cache} />
           ${canMerge ? offersAt(person, i).map((pair) => html`<${EventMergeOffer} key=${pair.mergeId} pair=${pair} onMerged=${onMerged} />`) : null}
@@ -230,6 +237,7 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     <nav class="person-actions">
       <a class="button primary" href=${treeAddress(person.id)} data-testid="show-in-tree">${t('people.showInTree')}</a>
       <a class="button" href=${lifeAddress(person.id)} data-testid="life-path">${t('person.lifePath')}</a>
+      <a class="button" href=${chartAddress({ kind: 'descendants', start: 'person', id: person.id })} data-testid="open-chart">${t('chart.open')}</a>
       <a class="button" href=${`#work/propose/correction/${person.id}`} data-testid="propose-change">${t('person.propose')}</a>
       <a class="button" href=${`#work/history/person/${person.id}`} data-testid="history">${t('person.history')}</a>
       <a class="button" href=${`#work/propose/notes/${person.id}`} data-testid="edit-notes">${t('person.editNotes')}</a>

@@ -48,6 +48,10 @@ A Living relative may also ask to leave the Tree completely. The Owner then eras
 
 What erasure cannot find stays: free text that names the Person, such as the transcription of a Citation other people share, a research note or a scan reading. The Owner reads and corrects those, as the erasure guide says.
 
+## Living people on a Sheet
+
+A Chart on screen shows the Tree as the tree does, Living people marked: it stays inside the app, for Members. A Sheet, printed or downloaded as SVG or PNG, is made to leave the app, perhaps for someone outside the family. So every card on a Sheet is the Export view of its Person, by the same proved function an Export uses: a Living person keeps name, sex, relationships and birth year, with no exact date, Place, House, Source or image, and an Event a Living person took part in is left out of every card, so a marriage to a Living partner or a birth at a House does not give them away. On a House chart, such an Event places nobody, so a row only Living people placed is not on the Sheet at all. A Member can also leave Living people's names off a Sheet; each is then a card that says only "living", with the lines to their family. The server makes the Sheet's model the same way for whoever asks, Contributor or Owner, and the app's SVG writer refuses a model that is not a Sheet's, so a file cannot carry the screen's data by mistake. The colophon names the day the Living rule was applied, since someone who stops counting as Living tomorrow may be shown in full on tomorrow's Sheet ([Charts](charts.md)).
+
 ## Images stay private
 
 Each Citation can hold an image of the register page it cites, and Persons can hold portraits (ADR 0002). Archive portals change their addresses, and a Citation must stay checkable for as long as the Tree exists, so Rodokmen keeps its own copy. But archives allow copies for personal research, not for publishing. So the copies are private: they are served only through signed links that expire within minutes, from a separate host that the session cookie never reaches, and they never go into an Export.

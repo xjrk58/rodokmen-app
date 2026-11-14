@@ -1,6 +1,6 @@
 # Map data files
 
-The public map reads its reference data from `app/data/` (`app/src/data.js`). The files are public: they hold no family data. The service worker precaches them, so a change gives the app a new version stamp when it is built or served (`app/scripts/stamp-version.mjs`), and installed apps load the new data. Prettier skips the folder; `app/scripts/build-data.mjs` writes JSON in the layout of `app/scripts/lib/json-format.mjs`, and hand edits keep it. Where each file comes from and its licence: [Licences](licences.md).
+The public map reads its reference data from `app/data/` (`app/src/data.js`), and the Charts read the widths of their fonts there (`chart-fonts.json`). The files are public: they hold no family data. The service worker precaches them, so a change gives the app a new version stamp when it is built or served (`app/scripts/stamp-version.mjs`), and installed apps load the new data. Prettier skips the folder; `app/scripts/build-data.mjs` writes JSON in the layout of `app/scripts/lib/json-format.mjs`, and hand edits keep it. Where each file comes from and its licence: [Licences](licences.md).
 
 | File                  | Edited                                  | Holds                                                                |
 | --------------------- | --------------------------------------- | -------------------------------------------------------------------- |
@@ -10,6 +10,7 @@ The public map reads its reference data from `app/data/` (`app/src/data.js`). Th
 | `country.geojson`     | generated                               | the border of the Czech Republic (all districts dissolved)           |
 | `municipalities.json` | generated                               | every Municipality, for search and archive lookup                    |
 | `build-info.json`     | generated                               | where the generated files came from, and what the build changed      |
+| `chart-fonts.json`    | generated                               | the widths of characters in the fonts of the Charts                  |
 
 ## `archives.json`
 
@@ -62,3 +63,27 @@ An array with one object per Municipality: `code` (the municipality code), `name
 | `counts`     | districts and Municipalities written                                                                                |
 | `excluded`   | rows of the source left out, with the reason                                                                        |
 | `reassigned` | Municipalities listed under one district but inside another's polygon (district boundaries changed in 2021)         |
+
+## `chart-fonts.json`
+
+The advance widths the Charts fit their text by, so that a Chart is the same on every device: the browser never measures text. `app/scripts/font-metrics.mjs` (`pnpm --filter @rodokmen/app font-metrics`) writes it from the vendored fonts in `app/vendor/fonts/`, as `app/styles.css` declares them, with object keys in code point order and two spaces of indent. Run it again after vendoring other fonts or adding characters to `app/i18n/`: `app/tests/unit/chart-fonts.test.mjs` fails while the file differs from what the script writes.
+
+`faces` holds one object per face:
+
+| Key        | Font                   |
+| ---------- | ---------------------- |
+| `regular`  | EB Garamond 400        |
+| `italic`   | EB Garamond 400 italic |
+| `semibold` | EB Garamond 600        |
+| `title`    | Grenze Gotisch 400     |
+
+| Field        | Value                                                                                                                                                                                           |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `family`     | the CSS font family, as `styles.css` declares it                                                                                                                                                |
+| `weight`     | the CSS font weight                                                                                                                                                                             |
+| `style`      | `normal` or `italic`                                                                                                                                                                            |
+| `unitsPerEm` | the font units in one em (1000 for both fonts): a width in pixels is `advance × fontSize / unitsPerEm`                                                                                          |
+| `advances`   | the advance width in font units of each character, without kerning: printable ASCII, the letters of Czech, Slovak and German, every character of `app/i18n/`, and `– — … ’ ‘ „ “ « » · ° × ⚭ †` |
+| `fallback`   | the width of "n", for a character missing from `advances`                                                                                                                                       |
+
+A character the face lacks is left out of `advances`; today that is `⚭` and `←` in every face. The Charts draw their symbols as paths, not as characters.

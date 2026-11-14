@@ -92,6 +92,9 @@ export function onLanguageChange(listener) {
   listeners.add(listener);
 }
 
+/** The interface texts of the current language, for the Chart's labels (src/chart-text.js). */
+export const currentTexts = () => strings;
+
 /** Whether the interface has a text for this key. @param {string} key */
 export function has(key) {
   return Object.hasOwn(strings, key);

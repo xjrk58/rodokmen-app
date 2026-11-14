@@ -31,6 +31,7 @@ The OpenAPI tags, and the routes in each:
 | System         | `GET /api/health` (public), `GET /api/openapi.json`                                                                                                                                                                                                                               |
 | Persons        | `GET /api/persons` (search), `GET /api/persons/{id}`, `…/ancestors`, `…/descendants`, `…/hourglass`; `GET /api/family-roots`, `PUT /api/persons/{id}/family-root`                                                                                                                 |
 | Families       | `GET /api/families/{id}`                                                                                                                                                                                                                                                          |
+| Charts         | `GET /api/charts/descendants`, `GET /api/charts/house/{id}` ([Charts](#charts))                                                                                                                                                                                                   |
 | Events         | `GET /api/events/{id}` (308 to the remaining Event for one merged into another)                                                                                                                                                                                                   |
 | Map            | `GET /api/map/events`                                                                                                                                                                                                                                                             |
 | Places         | `GET /api/places` (search), `GET /api/places/{id}`, `…/events`, `…/houses`; `GET /api/houses/{id}`, `GET /api/parishes/{id}`, `GET /api/estates/{id}`                                                                                                                             |
@@ -73,8 +74,34 @@ Errors are JSON:
 | 403    | the role may not do this, or a write with the session cookie came from another site                                                                                                                                                                   |
 | 404    | no such record or route; every scan reading route while scan reading is off                                                                                                                                                                           |
 | 409    | the request conflicts with the Tree as it is, such as marking a Person merged into another; a Research lead changed since it was read (`conflict`); a suggested lead already decided (`already_decided`); two Events that disagree (`merge_conflict`) |
+| 422    | a Descendant chart's Direct line: its end (`line`) does not descend from the start within 12 generations (`not_a_descendant`)                                                                                                                         |
 | 429    | an Agent reached its hourly limit (`code` `rate_limited`), or a Member or Agent their scan readings of the day (`daily_limit`); `retryAt` and the `Retry-After` header say when to try again                                                          |
 | 503    | finishing an upload: 8 uploads are already waiting to be checked (`busy`), or the image store did not answer within 30 seconds (`store_timeout`); the `Retry-After` header says when to try again, and the upload can be finished then                |
+
+## Charts
+
+Both routes answer the Chart model: who is in a Chart, in what order, with which facts and marks, as data with no coordinates and no words in any language (`DescendantChart` and `HouseChart` in `server/openapi.json`). The app lays it out and draws it ([Charts](../explanation/charts.md)). Both need the action `read`, so every Member and Agent may ask, and an Agent's call counts as one read request.
+
+`GET /api/charts/descendants` takes:
+
+| Option        | Values                                                      | Default |
+| ------------- | ----------------------------------------------------------- | ------- |
+| `person`      | the start: a Person (a merged Person is followed)           |         |
+| `family`      | or the start: a Family, its couple and their descendants    |         |
+| `generations` | 2 to 8, the start counting as the first (tree form)         | 4       |
+| `form`        | `tree` (every branch) or `line` (the Direct line)           | `tree`  |
+| `line`        | the end of the Direct line, a descendant; needed for `line` |         |
+| `sheet`       | `reduced` or `nameless`; absent for the screen              |         |
+
+`GET /api/charts/house/{id}` takes `from` and `to` (years: only rows whose period could reach them), `unrelated` (`true` to show the rows of Unrelated people, default `false`) and `sheet`.
+
+Limits and answers:
+
+- A Descendant chart holds at most 500 Person cards (descendants, partners and pointer cards). With more, it keeps as many whole generations as fit, at least 2 (`shown`), and each Person of the last one carries `leftOut`, the descendants left out below them. The Direct line goes at most 12 generations down; `lineBeyond` says it goes deeper than the tree form shows.
+- A House chart shows at most 80 rows. With more in the period asked, `needsPeriod` is `true`, `rows` is empty, and `firstYear` and `lastYear` give the years to choose from.
+- With `sheet`, the model is a Sheet's: every Person an Export reduces keeps only name, sex, relationships and birth year, no fact a Living person took part in is shown, and `nameless` leaves their names and birth years off as well. It is the same for every caller.
+- 400 for both `person` and `family`, neither, `generations` outside 2 to 8, or `form=line` without `line`; 404 for an unknown start or House; 422 naming `line` when its end does not descend from the start.
+- Each Chart is gathered in at most 24 queries, whatever its size.
 
 ## Invitations
 

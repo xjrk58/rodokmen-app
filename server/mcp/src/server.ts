@@ -183,6 +183,40 @@ export function createRodokmenServer(api: Api): McpServer {
   );
 
   server.registerTool(
+    'get_chart',
+    {
+      title: 'Read a Chart',
+      description:
+        "A Chart's content as data, as the app gets it (no picture): a Descendant chart from a Person or a Family (who is in it, in the Chart's order, with each card's facts and marks, and the Direct line to a descendant), or a House chart (the Families who lived at a House, in time order, with their periods, house numbers and how each is linked to an earlier row). Living people are shown as in the tree.",
+      inputSchema: z.object({
+        kind: z.enum(['descendants', 'house']).describe('descendants: from a Person or a Family; house: the Families of a House'),
+        personId: Id.optional().describe('descendants: start at this Person'),
+        familyId: Id.optional().describe('descendants: start at this Family'),
+        houseId: Id.optional().describe('house: the House'),
+        generations: z
+          .number()
+          .int()
+          .min(2)
+          .max(8)
+          .optional()
+          .describe('descendants: generations in the tree form, the start counting as the first (default 4)'),
+        form: z.enum(['tree', 'line']).optional().describe('descendants: tree (every branch) or line (the Direct line down the centre)'),
+        line: Id.optional().describe('descendants: the end of the Direct line, a descendant of the start; needed for the line form'),
+        from: z.number().int().optional().describe('house: only rows whose period could reach this year or later'),
+        to: z.number().int().optional().describe('house: only rows whose period could reach this year or earlier'),
+        unrelated: z.boolean().optional().describe('house: also the rows of Unrelated people'),
+      }),
+      annotations: readOnly,
+    },
+    async ({ kind, personId, familyId, houseId, generations, form, line, from, to, unrelated }) =>
+      call(() =>
+        kind === 'house'
+          ? api.get(`/api/charts/house/${houseId ?? ''}`, { from, to, unrelated: unrelated === undefined ? undefined : String(unrelated) })
+          : api.get('/api/charts/descendants', { person: personId, family: familyId, generations, form, line }),
+      ),
+  );
+
+  server.registerTool(
     'submit_proposal',
     {
       title: 'Submit a Proposal',

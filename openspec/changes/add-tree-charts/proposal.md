@@ -28,6 +28,10 @@ Out of scope:
 - A sheet with full details of Living people (see design.md, "Open Questions").
 - Uploaded emblems or coats of arms. The ornament is a fixed drawing.
 
+## Decisions
+
+The Owner gave the go-ahead on 2026-11-14 without answering the points in design.md, "Open Questions", so this change is built with the recommended or planned answer to each: no pedigree Sheet yet; no holders, occupations or House names; no Sheet with full details of Living people and no third Sheet option; every Member may print and download; "died young" means before the 15th birthday; foster and step children are shown and not followed; EB Garamond with a Grenze Gotisch title, a fixed ornament, A3 landscape and 4 generations by default; the fonts are precached. A Sheet reuses the Export's proved reduction, which `add-exports-and-erasure` built first. design.md, "Decisions taken at implementation", has the details, and any of them can still change.
+
 ## Capabilities
 
 ### New Capabilities

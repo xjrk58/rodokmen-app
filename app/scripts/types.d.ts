@@ -5,3 +5,16 @@ declare module 'mapshaper' {
   };
   export default mapshaper;
 }
+
+// fontkit 3 ships no type declarations either: only what scripts/font-metrics.mjs uses.
+declare module 'fontkit' {
+  export interface Glyph {
+    advanceWidth: number;
+  }
+  export interface Font {
+    unitsPerEm: number;
+    hasGlyphForCodePoint(codePoint: number): boolean;
+    glyphForCodePoint(codePoint: number): Glyph;
+  }
+  export function openSync(filename: string): Font;
+}
