@@ -191,6 +191,7 @@ describe('mapping the fixture Vault', () => {
           key,
           earlierKey: 'event:marriage:person:marie-svobodova-1775+person:tomas-novak-1770:vault:tomas-novak-1770:0',
           paths: ['people/marie-svobodova-1775.md', 'people/tomas-novak-1770.md'],
+          personKey: 'person:tomas-novak-1770',
         },
       ]);
       expect(p.issues.filter((i) => i.kind === 'marriageDiffers')).toEqual([]);

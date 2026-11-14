@@ -74,13 +74,15 @@ export interface PlannedLead {
 /**
  * A marriage both spouses record without a Source note (#149): one Event under `key`. An importer
  * before #149 gave the second spouse's note an Event of its own, `earlierKey`, so a Tree imported
- * then holds both; the report lists them.
+ * then holds both; the report lists them until the Owner merged the other into the `key` Event (#154).
  */
 export interface MergedMarriage {
   key: string;
   earlierKey: string;
   /** The two Person notes: the one that creates the Event, then the other. */
   paths: [string, string];
+  /** The Person of the second note, whose person page offers the merge. */
+  personKey: string;
 }
 
 /**
