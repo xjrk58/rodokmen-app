@@ -335,6 +335,7 @@ export function detail(n) {
       const role = /** @type {RoleType} */ (e[5].find(([p]) => p === n)?.[1]);
       return { roleId: ID(2000 + e[0] * 10 + n), role, roleDetail: null, event: eventSummary(e), citations: citations(e[0]) };
     }),
+    mergeableEvents: [],
     familiesAsPartner: FAMILIES.filter((f) => f[1] === n || f[2] === n).map(([id, a, b, children]) => {
       const other = a === n ? b : a;
       return {

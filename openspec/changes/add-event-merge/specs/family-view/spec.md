@@ -15,7 +15,7 @@ The person page SHALL offer an Editor to merge each pair of the Person's Events 
 
 #### Scenario: Refused after a change
 - **WHEN** another Editor dated one of the two marriages otherwise after the page was loaded, and the Editor merges the pair
-- **THEN** the page says in the Member's language that the dates differ, and nothing changes
+- **THEN** nothing changes, and the page says in the Member's language that one Event changed meanwhile and shows both as they are now; merging again is refused, naming the date
 
 #### Scenario: Contributor sees no offer
 - **WHEN** a Contributor opens the page of Jan Novák with his marriage in the Tree twice

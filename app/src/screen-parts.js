@@ -95,6 +95,13 @@ export function errorText(error) {
   return messageOf(error);
 }
 
+/** Where an Event happened: its Place, and the House with its number then. @param {import('./types.js').EventSummary} e */
+export function eventWhere(e) {
+  const place = e.place?.name ?? '';
+  if (e.house?.number) return t('person.atHouse', { place, number: e.house.number });
+  return place;
+}
+
 /** @param {{ error: unknown }} props */
 export function ErrorLine({ error }) {
   if (!error) return null;
