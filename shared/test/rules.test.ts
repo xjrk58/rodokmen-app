@@ -30,6 +30,10 @@ describe('what a role may do', () => {
     ]);
     expect(allowed('owner')).toEqual([...ACTIONS]);
   });
+  it('only the Owner corrects a Member’s address (member-accounts spec, "An Editor tries to change an address")', () => {
+    // The routes under /api/members/{id}/email-change name `manageAccounts`.
+    expect(['owner', 'editor', 'contributor', 'agent'].map((role) => mayDo(role, 'manageAccounts'))).toEqual([true, false, false, false]);
+  });
   it('an unknown role or action is refused', () => {
     expect(allowed('Agent')).toEqual([]);
     expect(allowed('')).toEqual([]);

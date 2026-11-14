@@ -23,6 +23,8 @@ export interface AccountDeps {
   mailer: Mailer;
   publicOrigin: string;
   session: SessionOptions;
+  /** Where failures that must not fail the request go, such as an email sent after a commit. */
+  log?: (msg: string, error?: unknown) => void;
 }
 
 /** Sign-in link requests allowed per Member per hour; more are dropped silently. */

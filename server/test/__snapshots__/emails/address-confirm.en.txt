@@ -1,0 +1,13 @@
+Subject: Confirm your new address for Rodokmen
+
+Hello Marta Invented,
+
+Petr Dvořák, the Owner of Rodokmen, set this as your new address in Rodokmen, where it will send your sign-in links. The change takes effect once you confirm it with this link. The link is valid for 7 days and works only once.
+
+https://rodokmen.example/#address/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+
+Until you confirm it, sign-in links still go to your old address. Your passkeys keep working.
+
+If you are not Marta Invented, or did not expect this change, do not open the link and ignore this email. Nothing changes without the confirmation.
+
+Rodokmen
