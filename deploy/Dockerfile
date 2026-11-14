@@ -21,6 +21,10 @@ RUN pnpm install --frozen-lockfile --filter @rodokmen/server... --filter @rodokm
 FROM node:22-bookworm-slim
 ARG RELEASE=dev
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 APP_DIR=/srv/app RELEASE=$RELEASE
+# git and ssh push the nightly Export to rodokmen-export, when the Owner switches it on (README.md, "Nightly Export").
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git openssh-client ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 WORKDIR /srv/server
 COPY --from=build /out ./
 COPY --from=build /mcp /srv/mcp

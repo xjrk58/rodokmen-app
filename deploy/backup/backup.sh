@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Nightly Backup (operations spec, "Nightly encrypted Backups"): the database (pg_dump) and
 # every image (a copy of the bucket), encrypted and deduplicated by restic into a repository
-# at a second EU provider. Keeps 30 daily and 12 monthly snapshots.
+# at a second EU provider, with the list of erasures (db/erasures.tsv). Keeps 30 daily and 12
+# monthly snapshots.
 #
 # At the end it writes STATUS_FILE, successful or not; the watchdog reads it and alerts the
 # Owner when a Backup failed or none succeeded for 26 hours.
@@ -81,6 +82,19 @@ table_counts=$(tr -d ' ' <<<"$table_counts")
 echo "commit;" >&"${PSQL[1]}"
 eval "exec ${PSQL[1]}>&-"
 wait "$PSQL_PID" 2>/dev/null || true
+
+# The list of erased Persons, ids and dates only (erasure spec, "Restores keep erased people
+# erased"): a restore of an older Backup takes it from the newest one and erases them again.
+# Read after the dump, so it may list an erasure the dump does not know yet, which is what a
+# restore wants. Before the erasure table exists the list is empty.
+log "writing the list of erasures"
+if [ "$(psql -qAtX -v ON_ERROR_STOP=1 -c "select to_regclass('public.erasure') is not null")" = t ]; then
+  psql -qAtX -v ON_ERROR_STOP=1 -F $'\t' \
+    -c "select person_id, to_char(erased_at at time zone 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') from erasure order by erased_at, person_id" \
+    > "$WORK_DIR/db/erasures.tsv"
+else
+  : > "$WORK_DIR/db/erasures.tsv"
+fi
 
 log "copying images from $(sed -E 's/(access_key_id|secret_access_key)=[^,:]*/\1=***/g' <<<"$IMAGES_SOURCE")"
 rclone sync "$IMAGES_SOURCE" "$WORK_DIR/images" --checksum --stats-one-line --stats 0

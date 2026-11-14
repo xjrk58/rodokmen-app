@@ -14,7 +14,7 @@ Agents are the strongest case. An assistant can read registers tirelessly and pr
 
 A Proposal carries everything one finding implies, and is accepted or rejected whole. A baptism entry, for example, is the child, the Event, the parents' and godparents' Roles, the Family link, and the Citation of the register page. Taking only half of that would leave the Tree in a state nobody found.
 
-Every Proposal needs evidence: at least one Citation of a Source, such as a register entry, a document or a Family account, with a transcription. An Editor can then check the claim against the page rather than against the author's memory.
+Every Proposal needs evidence: at least one Citation of a Source, such as a register entry, a document or a Family account, with a transcription. An Editor can then check the claim against the page rather than against the author's memory. An Editor's merge or undo states no new fact, so it needs no Citation; it is logged like any other Proposal.
 
 An Editor may correct a Proposal before accepting it, for example a misread year. The history keeps both parts: what the author proposed, and what the Editor changed.
 
@@ -52,4 +52,4 @@ Research leads from the Vault link Persons and Places that exist only once the b
 
 ## Where the rules are
 
-Who may accept, reject, merge and undo, who may accept a whole Import batch, that every Proposal carries evidence (Research notes and Labels state no fact, so need none), how conflicts are detected and when an undo is blocked are pure rules in `shared/src/rules.ts`, proved with LemmaScript ([verification](../verification.md)). The requirements are in the OpenSpec change `add-proposals-and-review`.
+Who may accept, reject, merge and undo, who may accept a whole Import batch, that every Proposal carries evidence (merges, undos, Research notes and Labels state no fact, so need none), how conflicts are detected and when an undo is blocked are pure rules in `shared/src/rules.ts`, proved with LemmaScript ([verification](../verification.md)). The requirements are in the OpenSpec change `add-proposals-and-review`.

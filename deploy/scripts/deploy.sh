@@ -19,6 +19,9 @@ STATE=state
 IMAGES="$STATE/images.env"
 SLOT_DIR="$STATE/api-slot"
 mkdir -p "$STATE" "$SLOT_DIR"
+# The nightly Export's deploy key, mounted read-only into the API (README.md, "Nightly Export");
+# empty until the Owner adds the key. Made here, so that Docker does not make it as root.
+mkdir -p export
 touch "$IMAGES"
 # How long the old slot may take to answer the requests Caddy still forwards to it.
 DRAIN_SECONDS=${DRAIN_SECONDS:-30}

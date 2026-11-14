@@ -4,12 +4,12 @@ Every account has one role. Every API route names the action it performs, and th
 
 ## Roles
 
-| Role          | Who                                                                                                                                                              |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `contributor` | a Member who submits Proposals but does not change the Tree directly; every new Member starts here                                                               |
-| `editor`      | a Member who reviews Proposals and may change the Tree directly                                                                                                  |
-| `owner`       | the one Member who invites Members, assigns roles, manages Agents, marks Family roots, accepts whole Import batches and switches scan reading on; also an Editor |
-| `agent`       | an AI assistant's account, created by the Owner, signed in with a token                                                                                          |
+| Role          | Who                                                                                                                                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contributor` | a Member who submits Proposals but does not change the Tree directly; every new Member starts here                                                                                                                           |
+| `editor`      | a Member who reviews Proposals and may change the Tree directly                                                                                                                                                              |
+| `owner`       | the one Member who invites Members, assigns roles, manages Agents, marks Family roots, accepts whole Import batches, switches scan reading on, erases Living people on request and downloads the GEDCOM file; also an Editor |
+| `agent`       | an AI assistant's account, created by the Owner, signed in with a token                                                                                                                                                      |
 
 The Owner changes a Member's role in **Settings** (or `PUT /api/members/{id}/role`). Making another Member the Owner hands the role over: the previous Owner becomes an Editor.
 
@@ -32,6 +32,8 @@ The Owner changes a Member's role in **Settings** (or `PUT /api/members/{id}/rol
 | `markFamilyRoots`   |  no   |     no      |   no   |  yes  |
 | `acceptBatch`       |  no   |     no      |   no   |  yes  |
 | `manageSettings`    |  no   |     no      |   no   |  yes  |
+| `erase`             |  no   |     no      |   no   |  yes  |
+| `downloadExport`    |  no   |     no      |   no   |  yes  |
 
 Any other role or action is refused.
 
@@ -53,6 +55,8 @@ Any other role or action is refused.
 | `markFamilyRoots`   | marking and unmarking Family roots, and undoing a Proposal that did                                                         | `PUT /api/persons/{id}/family-root`                                                                                                                                                               |
 | `acceptBatch`       | accepting every pending Proposal of an Import batch at once, after a confirmation                                           | `POST /api/batches/{id}/accept`                                                                                                                                                                   |
 | `manageSettings`    | the settings of the whole Rodokmen: today, whether scan reading is on and its daily limit                                   | `GET`, `PUT /api/settings/scan-reading` ([Scan reading](scan-reading.md))                                                                                                                         |
+| `erase`             | erasing a Living person at their request, after reading what goes                                                           | `GET /api/persons/{id}/erasure`, `POST /api/persons/{id}/erase` ([Exports and erasure](exports.md#erasure))                                                                                       |
+| `downloadExport`    | downloading the GEDCOM file of the Tree                                                                                     | `GET /api/export/family.ged` ([Exports](exports.md))                                                                                                                                              |
 
 The health check and the sign-in steps (`/api/auth/…`) need no role.
 

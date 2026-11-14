@@ -2,7 +2,7 @@
 // a Person's name with life years and marks, and a debounced value.
 
 import { ApiError, messageOf } from './api.js';
-import { loadThrough } from './cache.js';
+import { isGone, loadThrough } from './cache.js';
 import { lifeYears } from './hourglass-layout.js';
 import { language, t } from './i18n.js';
 import { relationOf } from './relation.js';
@@ -45,7 +45,8 @@ export function useCachedLoad(key, fetcher, cache) {
         if (!signal.aborted) setState((s) => ({ ...s, loading: false }));
       })
       .catch((/** @type {unknown} */ error) => {
-        if (!signal.aborted) setState((s) => ({ ...s, key, data: s.key === key ? s.data : null, error, loading: false }));
+        // A record the server no longer has is not shown from the device either.
+        if (!signal.aborted) setState((s) => ({ ...s, key, data: s.key === key && !isGone(error) ? s.data : null, error, loading: false }));
       });
     return () => controller.abort();
     // The fetcher is a new function on every render; the key names what it loads.

@@ -43,6 +43,32 @@ test("a photo's thumbnail lets go of the photo's memory once shown", async ({ pa
   await expect(page.locator('html')).toHaveAttribute('data-revoked', '1');
 });
 
+test('a Draft keeps its photo as taken, at full size', async ({ page }) => {
+  await mockApi(page, { 'GET me': SIGNED_OUT });
+  await startDeath(page);
+  await page.getByTestId('photo-input').setInputFiles({ name: 'page.png', mimeType: 'image/png', buffer: TILE });
+  await expect(page.getByTestId('photos').locator('img')).toHaveCount(1);
+  // The bytes of every photo the device keeps for Drafts.
+  const stored = await page.evaluate(
+    () =>
+      /** @type {Promise<number[][]>} */ (
+        new Promise((resolve, reject) => {
+          const open = indexedDB.open('rodokmen-drafts');
+          open.onerror = () => reject(new Error('the Drafts database did not open'));
+          open.onsuccess = () => {
+            const all = open.result.transaction('photos').objectStore('photos').getAll();
+            all.onerror = () => reject(new Error('the photos could not be read'));
+            all.onsuccess = () => {
+              const photos = /** @type {{ blob: Blob }[]} */ (all.result);
+              void Promise.all(photos.map(async (p) => Array.from(new Uint8Array(await p.blob.arrayBuffer())))).then(resolve);
+            };
+          };
+        })
+      ),
+  );
+  expect(stored).toEqual([Array.from(TILE)]);
+});
+
 test('when the device storage fails, the Member is told', async ({ page }) => {
   await mockApi(page, { 'GET me': SIGNED_OUT });
   page.on('dialog', (dialog) => void dialog.accept());

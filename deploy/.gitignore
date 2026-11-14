@@ -1,3 +1,5 @@
 # Real configuration and deploy state stay on the server.
 backup.env
 state/
+# The nightly Export's deploy key and known_hosts (README.md, "Nightly Export").
+export/

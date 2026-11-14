@@ -46,6 +46,10 @@ x-api: &api
     # glibc gives each thread its own heap and returns little of it. With two, the memory one
     # large image needed is reused for the next (measured: 15 to 20 % lower peaks with several).
     MALLOC_ARENA_MAX: '2'
+  # The nightly Export's deploy key and known_hosts (README.md, "Nightly Export"). The Export is
+  # off until RODOKMEN_EXPORT_ENABLED=true in .env; the folder may stay empty until then.
+  volumes:
+    - ./export:/run/rodokmen-export:ro
   depends_on:
     db:
       condition: service_healthy

@@ -223,6 +223,17 @@ export const listFamilyRoots = (signal) => api('family-roots', { signal });
 /** The Owner marks or unmarks a Family root. @param {string} personId @param {boolean} familyRoot @returns {Promise<import('./types.js').FamilyRootList>} */
 export const setFamilyRoot = (personId, familyRoot) => api(`persons/${encodeURIComponent(personId)}/family-root`, { method: 'PUT', body: { familyRoot } });
 
+// ---------------------------------------------------------------- erasure and the GEDCOM file (the Owner)
+
+/** What erasing a Living person would remove. @param {string} personId @param {AbortSignal} [signal] @returns {Promise<import('./types.js').ErasurePreview>} */
+export const erasurePreview = (personId, signal) => api(`persons/${encodeURIComponent(personId)}/erasure`, { signal });
+
+/** Erases a Living person; the confirmation names them. @param {string} personId @param {string} confirmation @returns {Promise<import('./types.js').ErasureResult>} */
+export const erasePerson = (personId, confirmation) => api(`persons/${encodeURIComponent(personId)}/erase`, { method: 'POST', body: { confirmation } });
+
+/** Where the Owner downloads the GEDCOM file of the Tree (a plain link: the browser saves it). */
+export const GEDCOM_DOWNLOAD = `${API}export/family.ged`;
+
 // ---------------------------------------------------------------- signing in (public routes)
 
 /** @param {string} token @returns {Promise<import('./types.js').InvitationCheck>} */

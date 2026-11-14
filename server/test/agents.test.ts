@@ -77,6 +77,8 @@ describe('Agent accounts belong to the Owner', () => {
       markFamilyRoots: false,
       acceptBatch: false,
       manageSettings: false,
+      erase: false,
+      downloadExport: false,
     });
     expect((await withToken(token.token)).statusCode).toBe(200);
   });

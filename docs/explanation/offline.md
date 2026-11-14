@@ -20,7 +20,7 @@ This is a cache, not a copy of the Tree. It holds only what the Member has opene
 
 ## Writing offline: Drafts, not sync
 
-A Member can write a Proposal offline. It is kept on the device as a Draft, with its photos, and survives closing the app. Back online, the app offers to submit it.
+A Member can write a Proposal offline. It is kept on the device as a Draft, with its photos at full size, as taken, and survives closing the app. Back online, the app offers to submit it.
 
 Full offline synchronisation, where edits made on several devices are merged automatically, was rejected (ADR 0003). It would be the most expensive part of the system to build and the hardest to get right, and it would merge changes nobody reviewed. Rodokmen already has a person who looks at every change: the Editor. So each Draft records the version of every record it was based on, and if the Tree changed meanwhile, the Editor sees both values and decides ([Proposals and review](proposals-and-review.md)).
 
