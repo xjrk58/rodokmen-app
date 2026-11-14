@@ -68,9 +68,12 @@ export const SearchRecordView = z
 
 // ---------------------------------------------------------------- leads
 
+/** The longest reason a lead holds: a whole research log or plan (#136), as long as a Citation's transcription. */
+export const LEAD_REASON_MAX = 20_000;
+
 const LeadFields = {
   question: nonEmpty(1000).describe('The question, such as "Find Jan’s baptism"'),
-  reason: nonEmpty(4000).describe('Why, and what is known so far'),
+  reason: nonEmpty(LEAD_REASON_MAX).describe('Why, and what is known so far'),
   archive: text(400).nullable().describe('The archive to look in'),
   sourceId: Id.nullable().describe('The register Source to check'),
   years: YearRange.nullable().describe('The years to check'),
