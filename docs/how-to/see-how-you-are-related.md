@@ -18,7 +18,7 @@ In search results and the People list, each Person's term follows the life years
 2. Each path shows its term, line and degree, its marks (possibly, half, through adoption), and every Person on the way with the step to the next ("otec: …", "syn: …"). Each Person is a link to their page.
 3. If the list ends with **There may be more paths**, the search stopped at its limit of 100 paths or of work; the paths shown are the closest.
 
-A Person with no kinship to you shows how you are connected instead ("connected through 2 marriages", with the chain), or that the Tree records no kinship between you.
+A Person with no kinship to you shows that the Tree records none, and how Family links connect you, with the number of marriages among them and the chain; or only that the Tree records no kinship between you.
 
 ## Ask to be linked to your own Person
 

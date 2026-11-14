@@ -23,3 +23,5 @@ docs/architecture/generated/
 
 # Golden answers of the kinship tests, rewritten only with UPDATE_GOLDEN=1 and compared byte for byte.
 server/test/golden/
+# The mocked kinship answers, written by app/tests/unit/kinship-answers.test.mjs and compared byte for byte.
+app/tests/e2e/family-kinship.json

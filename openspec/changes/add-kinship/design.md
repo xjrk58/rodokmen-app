@@ -201,6 +201,18 @@ Each rule is a pure function proved with `lsc check`, naming its requirement wit
 
 Not proved: that `kinshipPaths` lists every path within the limits (the naive-search test covers it), the server's gathering and its cache key, and the app's display.
 
+## Implementation notes
+
+Recorded when the change was built (PR #176), where the code differs from the text above:
+
+- **The answer** also holds `persons` (the summaries of everyone its paths name, as the tree shows them), and each step a `term`: the next Person as the one before names them (otec, syn, manželka), so the app writes the steps without rules of its own. The short form also holds the path's `kind`, so the reader's own Person reads "vy". The Owner's `me` holds `openPersonRequests`, the count on the Settings tab.
+- **The error code** is `no_own_person`, in the API's snake_case like its other codes.
+- **The work bound**: the paths of the closest degree are always listed whole, up to the 200,000 units of a full answer, also for a Person in a list; the 5,000 units of the short form apply after that degree. So the short form always names the first path of the full answer, and one Person of a list can cost up to 200,000 units on an adversarial pedigree. A search also stops once whole degrees hold 100 paths.
+- **Couples**: a Family with one known partner is a couple of its own, so children of two such Families are half-siblings. Paths through the same Persons by other links are one path, the confirmed one kept.
+- **Evidence**: `isStrongLink` got a contract over its parameter alone, which proves, so `isPossiblePath` calls it across files and the shell passes no strong flags.
+- **Civil code**: kinship § 771, lines § 772, degree § 773, kinship by marriage § 774 (zákon č. 89/2012 Sb. as in force in 2026).
+- **Determinism**: the ESLint block is written by this change and covers `shared/src/kinship*.ts` and `shared/src/kinship-terms/`; `add-tree-charts` adds its modules to it.
+
 ## Risks / Trade-offs
 
 - [Czech usage differs by region and age ("koleno", ujec, strýna)] → One table per language, in the reference page. The Owner chose the modern strýc and teta on both sides, "z n. kolena", and "pra" up to three times (Open Questions 2 to 4).

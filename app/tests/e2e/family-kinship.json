@@ -16,7 +16,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000001"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000001"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -216,7 +218,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000002"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000002"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -416,7 +420,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000003"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000003"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -586,7 +592,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000004"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000004"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -786,7 +794,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000005"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000005"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -986,7 +996,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000006"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000006"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -1156,7 +1168,10 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000004", "0192f0c4-7a1e-7c3b-9d2a-000000000005"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000004",
+          "0192f0c4-7a1e-7c3b-9d2a-000000000005"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -1399,7 +1414,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000008"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000008"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -1629,7 +1646,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000009"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000009"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -1859,7 +1878,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -1999,7 +2020,10 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000003", "0192f0c4-7a1e-7c3b-9d2a-000000000006"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+          "0192f0c4-7a1e-7c3b-9d2a-000000000006"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -2212,7 +2236,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -2382,7 +2408,9 @@
         "half": true,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -2552,7 +2580,9 @@
         "half": true,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -2722,7 +2752,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000015"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000015"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -2862,7 +2894,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000016"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000016"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -2972,7 +3006,10 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010", "0192f0c4-7a1e-7c3b-9d2a-000000000015"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+          "0192f0c4-7a1e-7c3b-9d2a-000000000015"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -3155,7 +3192,9 @@
         "half": true,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -3355,7 +3394,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000019"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000019"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -3465,7 +3506,10 @@
         "half": false,
         "adoptive": true,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000016", "0192f0c4-7a1e-7c3b-9d2a-000000000019"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+          "0192f0c4-7a1e-7c3b-9d2a-000000000019"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -3539,7 +3583,9 @@
         "half": true,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000010"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -3752,7 +3798,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000021"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000021"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -3832,7 +3880,9 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000022"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000022"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000022",
@@ -3961,7 +4011,10 @@
         "half": false,
         "adoptive": false,
         "possible": false,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000021", "0192f0c4-7a1e-7c3b-9d2a-000000000022"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+          "0192f0c4-7a1e-7c3b-9d2a-000000000022"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -4084,7 +4137,10 @@
         "half": false,
         "adoptive": false,
         "possible": true,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000021", "0192f0c4-7a1e-7c3b-9d2a-000000000022"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+          "0192f0c4-7a1e-7c3b-9d2a-000000000022"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -4207,7 +4263,9 @@
         "half": false,
         "adoptive": false,
         "possible": true,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000026"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000026"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
@@ -4467,7 +4525,9 @@
         "half": false,
         "adoptive": false,
         "possible": true,
-        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000027"],
+        "commonAncestors": [
+          "0192f0c4-7a1e-7c3b-9d2a-000000000027"
+        ],
         "steps": [
           {
             "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
