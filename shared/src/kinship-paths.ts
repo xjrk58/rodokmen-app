@@ -117,9 +117,10 @@ function pairWith(g: KinshipGraph, a: ChainNode, bs: readonly ChainNode[], group
   const n = ++budget.stamp;
   for (let x = a.prev; x; x = x.prev) budget.mark[x.top] = n;
   budget.units += bs.length;
+  const ca = chainOf(a);
   for (const b of bs) {
     if (meets(b, budget.mark, n) || (exclude >= 0 && onChain(b, exclude))) continue;
-    const pair = birthPair(g, chainOf(a), chainOf(b));
+    const pair = birthPair(g, ca, chainOf(b));
     const full = pair.coupleA >= 0 && pair.coupleA === pair.coupleB;
     // Through both partners of a couple one path; otherwise each pair of chains is its own, links and all.
     const key = full ? `${pair.coupleA}|${pair.persons.filter((v) => v !== a.top).join(',')}` : `top:${a.top}|${pair.steps.map((s) => s.parentLink).join(',')}`;
@@ -267,7 +268,8 @@ export function kinshipPaths(s: KinshipSearch, to: number, bound = FULL_BOUND): 
     budget.stopAt = limit - chains;
     const complete = pathsAt(s, to, d, found, budget);
     if (d === first && complete) listedFirst = true;
-    if (!complete || (d < MAX_DEGREE && budget.units + chains > limit)) {
+    // Paths come by degree first, so once a whole degree is listed with 100 paths up to it, no later one is shown.
+    if (!complete || (d < MAX_DEGREE && (budget.units + chains > limit || (complete && d >= first && distinct(found) >= MAX_PATHS)))) {
       more = true;
       break;
     }
@@ -289,6 +291,11 @@ export function kinshipPaths(s: KinshipSearch, to: number, bound = FULL_BOUND): 
     connection: paths.length === 0 ? connectionOf(g, from, to) : null,
     units: budget.units + chains,
   };
+}
+
+/** How many paths through different Persons a list holds. */
+function distinct(paths: readonly Path[]): number {
+  return new Set(paths.map((p) => `${p.kind}|${p.persons.join(',')}`)).size;
 }
 
 /** Of two paths through the same Persons, whether `a` says more: confirmed, then both partners of a couple, then full. */
