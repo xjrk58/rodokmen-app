@@ -26,7 +26,18 @@ import {
 } from './kinship.js';
 import { ChainSet, chainOf, onChain, otherPartner, type ChainNode, type KinshipGraph } from './kinship-graph.js';
 import { SHAPE_BIRTH, SHAPE_KIN_PARTNER, SHAPE_PARTNER_KIN, SHAPE_SELF } from './kinship-terms/shapes.js';
-import { connectionOf, coupleOf, finish, otherPaths, pathOut, stepLink, type KinshipPathOut, type KinshipResult, type Path, type Step } from './kinship-steps.js';
+import {
+  connectionOf,
+  coupleOf,
+  finish,
+  otherPaths,
+  pathOut,
+  stepLink,
+  type KinshipPathOut,
+  type KinshipResult,
+  type Path,
+  type Step,
+} from './kinship-steps.js';
 
 /** At most this many paths are listed (kinship spec, "Limits of the kinship search"). */
 export const MAX_PATHS = 100;
@@ -69,8 +80,10 @@ type Chain = { persons: number[]; links: number[] };
 
 function birthPair(g: KinshipGraph, ca: Chain, cb: Chain): BirthPair {
   const steps: Step[] = [];
-  for (let k = ca.links.length - 1; k >= 0; k--) steps.push({ dir: UP, to: ca.persons[k]!, parentLink: ca.links[k]!, family: g.parentLinks[ca.links[k]!]!.family });
-  for (let k = 0; k < cb.links.length; k++) steps.push({ dir: DOWN, to: cb.persons[k + 1]!, parentLink: cb.links[k]!, family: g.parentLinks[cb.links[k]!]!.family });
+  for (let k = ca.links.length - 1; k >= 0; k--)
+    steps.push({ dir: UP, to: ca.persons[k]!, parentLink: ca.links[k]!, family: g.parentLinks[ca.links[k]!]!.family });
+  for (let k = 0; k < cb.links.length; k++)
+    steps.push({ dir: DOWN, to: cb.persons[k + 1]!, parentLink: cb.links[k]!, family: g.parentLinks[cb.links[k]!]!.family });
   const couple = (links: number[]) => (links.length > 0 ? g.parentLinks[links[0]!]!.couple : -1);
   return {
     up: ca.links.length,
@@ -250,7 +263,18 @@ export function kinshipPaths(s: KinshipSearch, to: number, bound = FULL_BOUND): 
   const g = s.g;
   const from = s.from;
   if (from === to) {
-    const self = finish(g, { kind: SELF, shape: SHAPE_SELF, up: 0, down: 0, half: false, adoptive: false, married: false, persons: [from], steps: [], ancestors: [] });
+    const self = finish(g, {
+      kind: SELF,
+      shape: SHAPE_SELF,
+      up: 0,
+      down: 0,
+      half: false,
+      adoptive: false,
+      married: false,
+      persons: [from],
+      steps: [],
+      ancestors: [],
+    });
     return { paths: [pathOut(g, to, self)], more: false, connection: null, units: 0 };
   }
   const closest = closestPaths(s, to);
@@ -311,4 +335,3 @@ export function kinshipShort(s: KinshipSearch, to: number): { first: KinshipPath
   if (r.paths.length === 0) return null;
   return { first: r.paths[0]!, others: r.paths.length - 1, more: r.more, units: r.units };
 }
-

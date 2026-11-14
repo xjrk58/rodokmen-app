@@ -2,7 +2,20 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { kinshipTerms, termsOf } from '../src/kinship-terms/index.js';
 import * as shapes from '../src/kinship-terms/shapes.js';
-import { FEMALE, MALE, SHAPE_BIRTH, SHAPE_CO_PARENT_IN_LAW, SHAPE_FOSTER, SHAPE_KIN_PARTNER, SHAPE_PARTNER, SHAPE_PARTNER_KIN, SHAPE_SELF, SHAPE_STEP_SIBLING, UNKNOWN_SEX, type TermInput } from '../src/kinship-terms/shapes.js';
+import {
+  FEMALE,
+  MALE,
+  SHAPE_BIRTH,
+  SHAPE_CO_PARENT_IN_LAW,
+  SHAPE_FOSTER,
+  SHAPE_KIN_PARTNER,
+  SHAPE_PARTNER,
+  SHAPE_PARTNER_KIN,
+  SHAPE_SELF,
+  SHAPE_STEP_SIBLING,
+  UNKNOWN_SEX,
+  type TermInput,
+} from '../src/kinship-terms/shapes.js';
 import { expectGolden } from './golden.js';
 
 const term = (shape: number, up: number, down: number, sex: number, marks: Partial<Pick<TermInput, 'half' | 'adoptive' | 'married'>> = {}): TermInput => ({
@@ -92,7 +105,10 @@ describe('half, step, adoptive and foster kinship (kinship spec)', () => {
   });
 
   it('through adoption: a birth son of an adopted daughter, and one adoptive link alone', () => {
-    expect([cs(birth(0, 2, MALE, { adoptive: true })), en(birth(0, 2, MALE, { adoptive: true }))]).toEqual(['vnuk (přes osvojení)', 'grandson (through adoption)']);
+    expect([cs(birth(0, 2, MALE, { adoptive: true })), en(birth(0, 2, MALE, { adoptive: true }))]).toEqual([
+      'vnuk (přes osvojení)',
+      'grandson (through adoption)',
+    ]);
     expect([cs(birth(1, 0, FEMALE, { adoptive: true })), en(birth(1, 0, FEMALE, { adoptive: true }))]).toEqual(['adoptivní matka', 'adoptive mother']);
     expect([cs(birth(0, 1, FEMALE, { adoptive: true })), en(birth(0, 1, FEMALE, { adoptive: true }))]).toEqual(['adoptivní dcera', 'adopted daughter']);
   });

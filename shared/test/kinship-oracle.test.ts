@@ -66,7 +66,8 @@ function naive(data: KinshipData, from: string, to: string): Set<string> {
     const walk = (persons: string[], couples: string[]) => {
       out.push({ persons, couples });
       if (persons.length > 12) return;
-      for (const { parent, couple } of parents.get(persons[persons.length - 1]!) ?? []) if (!persons.includes(parent)) walk([...persons, parent], [...couples, couple]);
+      for (const { parent, couple } of parents.get(persons[persons.length - 1]!) ?? [])
+        if (!persons.includes(parent)) walk([...persons, parent], [...couples, couple]);
     };
     walk([v], []);
     return out;

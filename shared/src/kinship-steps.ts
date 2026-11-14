@@ -118,7 +118,14 @@ function partnerPaths(g: KinshipGraph, from: number, to: number, add: AddPath): 
   }
   for (const fs of couples.values()) {
     const strong = fs.find((f) => isStrongLink({ a: 0, b: 0, confidences: g.families[f]!.confidences })) ?? fs[0]!;
-    add(PARTNER, SHAPE_PARTNER, 0, 0, [{ dir: ACROSS, to, parentLink: -1, family: strong }], fs.some((f) => g.families[f]!.married));
+    add(
+      PARTNER,
+      SHAPE_PARTNER,
+      0,
+      0,
+      [{ dir: ACROSS, to, parentLink: -1, family: strong }],
+      fs.some((f) => g.families[f]!.married),
+    );
   }
 }
 
@@ -219,7 +226,13 @@ export function connectionOf(g: KinshipGraph, from: number, to: number): Kinship
     const next = c.persons[k + 1]!;
     if (l.partner) return { person: g.ids[next]!, link: 'partner', linkType: null, weak: !isStrongLink(l), recordId: g.families[l.ref]!.id };
     const pl = g.parentLinks[l.ref]!;
-    return { person: g.ids[next]!, link: pl.parent === next ? 'parent' : 'child', linkType: LINK_TYPE_NAMES[pl.type]!, weak: !isStrongLink(l), recordId: pl.childLinkId };
+    return {
+      person: g.ids[next]!,
+      link: pl.parent === next ? 'parent' : 'child',
+      linkType: LINK_TYPE_NAMES[pl.type]!,
+      weak: !isStrongLink(l),
+      recordId: pl.childLinkId,
+    };
   });
   return { steps, marriages: c.links.filter((i) => g.links[i]!.partner).length };
 }

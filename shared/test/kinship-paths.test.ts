@@ -20,7 +20,7 @@ function family(): Tree {
 }
 
 describe('kinship to the reader (kinship spec, "Kinship to the Member\'s own Person")', () => {
-  it('great-grandfather: the father of his father\'s father, in the direct line, of the 3rd degree', () => {
+  it("great-grandfather: the father of his father's father, in the direct line, of the 3rd degree", () => {
     const [p] = kin(family().data, 'karel', 'jan').paths;
     expect([p!.kind, p!.line, p!.degree, cs(p), en(p)]).toEqual(['birth', 'direct', 3, 'praděd', 'great-grandfather']);
     expect(p!.commonAncestors).toEqual(['jan']);
@@ -81,7 +81,7 @@ describe('kinship by marriage (kinship spec, "Line and degree of kinship by marr
     expect(cs(kin(t.data, 'karel', 'alena').paths[0])).toBe('partnerka');
   });
 
-  it('brother-in-law: the wife\'s brother, by marriage, collateral, 2nd degree', () => {
+  it("brother-in-law: the wife's brother, by marriage, collateral, 2nd degree", () => {
     const [p] = kin(married().data, 'karel', 'ivan').paths;
     expect([p!.kind, p!.line, p!.degree, cs(p), en(p)]).toEqual(['marriage', 'collateral', 2, 'švagr', 'brother-in-law']);
     expect(people(p!)).toEqual(['alena', 'bohus', 'ivan']);
@@ -179,9 +179,7 @@ describe('half, step, adoptive and foster kinship (kinship spec)', () => {
     // Petr's second wife Zdena has a daughter Olga with Jiří: Olga is Karel's stepsister.
     t.family('f-petr-2', 'petr', 'zdena');
     t.couple('f-zdena', 'jiri', 'zdena', 'olga');
-    expect(kin(t.data, 'karel', 'olga').paths.map((p) => [p.kind, p.degree, cs(p), en(p)])).toEqual([
-      ['stepSibling', null, 'nevlastní sestra', 'stepsister'],
-    ]);
+    expect(kin(t.data, 'karel', 'olga').paths.map((p) => [p.kind, p.degree, cs(p), en(p)])).toEqual([['stepSibling', null, 'nevlastní sestra', 'stepsister']]);
     // Karel's son married Svat's daughter: Svat is Karel's svat.
     t.family('f-karel', 'karel', null);
     t.child('f-karel', 'syn');
@@ -278,7 +276,17 @@ describe('evidence (kinship spec, "Kinship follows the evidence")', () => {
 
   it('the closest path comes first even when it is only possible (the Owner, Open Questions 1)', () => {
     const t = new Tree();
-    t.people(['karel', 'male'], ['otec', 'male'], ['ded', 'male'], ['stryc', 'male'], ['bratranec', 'male'], ['x', 'male'], ['y', 'male'], ['z', 'male'], ['w', 'male']);
+    t.people(
+      ['karel', 'male'],
+      ['otec', 'male'],
+      ['ded', 'male'],
+      ['stryc', 'male'],
+      ['bratranec', 'male'],
+      ['x', 'male'],
+      ['y', 'male'],
+      ['z', 'male'],
+      ['w', 'male'],
+    );
     t.family('f-ded', 'ded', null);
     t.child('f-ded', 'otec', { confidences1: ['low'] });
     t.child('f-ded', 'stryc');
@@ -292,7 +300,11 @@ describe('evidence (kinship spec, "Kinship follows the evidence")', () => {
 describe('fixed rules and limits (kinship spec, "Kinship follows fixed rules", "Limits of the kinship search")', () => {
   function shuffled(data: KinshipData, seed: number): KinshipData {
     const random = seeded(seed);
-    const shuffle = <T>(xs: readonly T[]) => xs.map((x) => [random(), x] as const).sort((a, b) => a[0] - b[0]).map(([, x]) => x);
+    const shuffle = <T>(xs: readonly T[]) =>
+      xs
+        .map((x) => [random(), x] as const)
+        .sort((a, b) => a[0] - b[0])
+        .map(([, x]) => x);
     return { persons: shuffle(data.persons), families: shuffle(data.families), childLinks: shuffle(data.childLinks) };
   }
 

@@ -11,6 +11,7 @@ The proved rules are pure functions in `shared/src/`: no database, no clock, no 
 - the hourly window of an Agent's rate limit;
 - who is Living, and the date ranges of uncertain dates (EDTF);
 - the relation to the family;
+- kinship: the line and degree, the search up through birth and adoptive links, the closest path, the order of paths, the evidence, half kinship, the paths by marriage that would name the reader's own parent or child, the connection chain, and the choice of the Czech and English terms ([Kinship](kinship.md#proved-within-limits));
 - Research leads: when a lead may be closed as not found, which leads accepting or undoing a Proposal changes, which links of a lead an Export keeps, and what the gap finder suggests ([Research leads](research-leads.md#what-is-proved)).
 - scan reading: that nothing is read or sent while it is off, the daily limit, which copy of each scan is sent, the normal-confidence cap and the "read by AI" marks, and how candidates for a read name are ranked ([Scan reading](scan-reading.md#what-is-proved-and-what-is-tested)).
 

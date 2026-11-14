@@ -27,3 +27,13 @@ That Member's tree now opens on their own Person unless their device remembers a
 To change the link, click **Change** and pick another Person. To remove it, click **Remove the link**.
 
 If the Member is not in the Tree yet, add them first with a Proposal (such as **Baptism or birth**), accept it, and then link them.
+
+## Confirm or refuse a request to be linked
+
+A Member who is not linked can ask from their own person page with **This is me** ([see how you are related](see-how-you-are-related.md#ask-to-be-linked-to-your-own-person)). No email is sent; the **Settings** tab shows a count of open requests.
+
+1. Open **Settings**. Under **Family members**, then **Members**, a Member who asked shows **Asks to be:** and the Person, with the time of the request.
+2. Open the Person's page to check that it is that Member.
+3. Click **Confirm** to link the account to that Person, or **Refuse** to turn the request down. Either way the request is gone; after a refusal, the Member can ask again.
+
+A new request from the same Member replaces their earlier one. If the Person is merged into another, the request follows the Person kept.

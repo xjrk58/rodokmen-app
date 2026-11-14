@@ -21,6 +21,10 @@ Two choices in that rule matter:
 
 The relation is never entered by hand, because a hand-set label would go stale the moment the evidence changed. Instead it is recomputed whenever an accepted Proposal changes a Family link, a Citation's confidence or the Family roots. When a second, clear Citation is added to a weak father link, that Person becomes a Relative as soon as the Proposal is accepted.
 
+## Not the same as kinship
+
+The relation to the family is relative to the Family roots and the same for every Member. How a Person is related to the Member reading the page ("your great-grandfather") is [kinship](kinship.md), worked out from the same Family links but from the Member's own Person.
+
 ## What Members see
 
 Once there is a Family root, the People list, search and the family on the map show Relatives and Possible relatives, each with a switch to include Unrelated people. The tree hides Unrelated people, except the Focus Person.

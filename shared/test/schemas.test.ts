@@ -297,7 +297,19 @@ describe('image metadata', () => {
 describe('kinship (kinship spec, "Kinship as data")', () => {
   const kid = (n: number) => `0190a000-0000-7000-8000-${String(n).padStart(12, '0')}`;
   const term = { cs: { text: 'sestřenice', gender: 'f' }, en: { text: 'first cousin', gender: 'f' } };
-  const summary = { id: kid(2), version: 1, sex: 'female', given: 'Marie', surname: 'Nováková', displayName: 'Marie Nováková', living: false, birth: '1885', death: null, relation: 'relative', familyRoot: false };
+  const summary = {
+    id: kid(2),
+    version: 1,
+    sex: 'female',
+    given: 'Marie',
+    surname: 'Nováková',
+    displayName: 'Marie Nováková',
+    living: false,
+    birth: '1885',
+    death: null,
+    relation: 'relative',
+    familyRoot: false,
+  };
   const path = {
     kind: 'birth',
     line: 'collateral',
@@ -311,7 +323,15 @@ describe('kinship (kinship spec, "Kinship as data")', () => {
     steps: [{ person: kid(5), link: 'parent', linkType: 'birth', weak: false, recordId: kid(6) }],
     term,
   };
-  const answer = { from: kid(1), to: kid(2), asOf: { logEntryId: kid(7), at: '2026-11-14T10:00:00.000Z' }, paths: [path], more: false, connection: null, persons: [summary] };
+  const answer = {
+    from: kid(1),
+    to: kid(2),
+    asOf: { logEntryId: kid(7), at: '2026-11-14T10:00:00.000Z' },
+    paths: [path],
+    more: false,
+    connection: null,
+    persons: [summary],
+  };
 
   it('a full answer and a connection parse', () => {
     ok(Kinship, answer);

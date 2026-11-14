@@ -63,7 +63,7 @@ How a Person is related to the signed-in Member's own Person, worked out from th
 _Avoid_: relationship, degree of relative, příbuzenský vztah (in English text)
 
 **Degree of kinship**:
-The number of births between two Persons in the direct line, or by which both descend from their nearest common ancestor in the collateral line, as the Czech civil code counts it (§ 771); for kinship by marriage, the degree of the kin married into (§ 772). A first cousin is of the 4th degree.
+The number of births between two Persons in the direct line, or by which both descend from their nearest common ancestor in the collateral line, as the Czech civil code counts it (§ 773); for kinship by marriage, the degree of the kin married into (§ 774). A first cousin is of the 4th degree.
 _Avoid_: koleno (as the thing itself: "z 2. kolena" is part of a Czech term, not a degree), generation, distance
 
 **Label**:

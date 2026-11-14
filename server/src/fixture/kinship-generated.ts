@@ -10,7 +10,11 @@
  */
 import type { KinshipData } from '@rodokmen/shared';
 
-type Mutable = { persons: Array<KinshipData['persons'][number]>; families: Array<KinshipData['families'][number]>; childLinks: Array<KinshipData['childLinks'][number]> };
+type Mutable = {
+  persons: Array<KinshipData['persons'][number]>;
+  families: Array<KinshipData['families'][number]>;
+  childLinks: Array<KinshipData['childLinks'][number]>;
+};
 
 /** A seeded generator of numbers in [0, 1). */
 function seeded(seed: number): () => number {
@@ -64,7 +68,14 @@ function dense(seed: number): { data: KinshipData; youngest: string[] } {
     for (let i = 0; i < PER_GENERATION && couples.length > 0; i++) {
       const child = person();
       const f = couples[Math.floor(r() * couples.length)]!;
-      data.childLinks.push({ id: id('3', data.childLinks.length), familyId: f, childId: child.id, type: r() < 0.97 ? 'birth' : 'adoptive', confidences1: confidence(r), confidences2: confidence(r) });
+      data.childLinks.push({
+        id: id('3', data.childLinks.length),
+        familyId: f,
+        childId: child.id,
+        type: r() < 0.97 ? 'birth' : 'adoptive',
+        confidences1: confidence(r),
+        confidences2: confidence(r),
+      });
       next.push(child);
     }
     generation = next;
@@ -90,7 +101,14 @@ function sparse(seed: number): { data: KinshipData; youngest: string[] } {
     const children = 1 + Math.floor(r() * 5);
     for (let c = 0; c < children; c++) {
       const child = take();
-      data.childLinks.push({ id: id('3', data.childLinks.length), familyId: f, childId: child, type: 'birth', confidences1: confidence(r), confidences2: confidence(r) });
+      data.childLinks.push({
+        id: id('3', data.childLinks.length),
+        familyId: f,
+        childId: child,
+        type: 'birth',
+        confidences1: confidence(r),
+        confidences2: confidence(r),
+      });
       parents.push(child);
       youngest.push(child);
     }

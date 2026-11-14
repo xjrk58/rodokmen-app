@@ -55,7 +55,9 @@ export const PersonSummary = z
     familyRoot: z.boolean().describe('The Owner marked this Person as a Family root'),
     kinship: KinshipShort.nullable()
       .optional()
-      .describe("How this Person is related to the signed-in Member's own Person (search, the person page and the hourglass); null with no kinship, absent when the Member has no own Person"),
+      .describe(
+        "How this Person is related to the signed-in Member's own Person (search, the person page and the hourglass); null with no kinship, absent when the Member has no own Person",
+      ),
   })
   .meta({ id: 'PersonSummary' });
 

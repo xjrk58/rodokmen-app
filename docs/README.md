@@ -32,6 +32,7 @@ Researching:
 
 - [Work with Research leads](how-to/work-with-research-leads.md): write a lead, take it on, record searches, close it, start a Proposal from it, and decide on suggested leads.
 - [Record research as an Agent](how-to/record-research-as-an-agent.md): the lead tools of the MCP server, from looking up what was searched to naming the leads a Proposal answers.
+- [See how you are related](how-to/see-how-you-are-related.md): read a Person's kinship to you, list every path, and ask the Owner to link you to your own Person.
 - [Read a scan and check it](how-to/read-a-scan.md): have a register page read, check each entry against the scan on a phone or a computer, choose who each person is, keep the next steps as leads, and submit.
 
 Keeping the repo public-safe:
@@ -60,6 +61,7 @@ Developing:
 - [Map data files](reference/app-data.md): the files in `app/data/`.
 - [Licences](reference/licences.md): the licence of the code, and of each bundled data file and vendored library, with the credit each asks for.
 - [Vault denylist format](reference/vault-denylist.md): the private file the Vault-name guard reads, and the guard's options.
+- [Kinship terms and degrees](reference/kinship-terms.md): the Czech and English terms of each kinship, the line and degree as the civil code counts them, the marks and the limits.
 - [Glossary](../GLOSSARY.md): the words we use, and the ones we avoid.
 - [Verification](verification.md): every proved rule and its requirement, and what the proofs assume (generated).
 - [Deploy guide](../deploy/README.md): what runs on the server, its configuration and secrets, deploys, Backups and alerts (moving into these docs, [#88](https://github.com/xjrk58/rodokmen-app/issues/88)).
@@ -71,6 +73,7 @@ Developing:
 - [Proposals and review](explanation/proposals-and-review.md): why every change to the Tree is a reviewed Proposal, and why the Vault import comes as Import batches.
 - [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, Living people in Exports, erasure, images, the Vault and this public repo.
 - [The relation to the family](explanation/relation-to-the-family.md): Relatives, Possible relatives and Unrelated people, and why they are computed from the evidence.
+- [Kinship](explanation/kinship.md): why kinship is relative to the Member's own Person, how the degree is counted, several paths, the evidence, and what is proved.
 - [Research leads](explanation/research-leads.md): why leads sit beside the Tree and change without review, how the gap finder picks gaps, registers and years, and what is proved.
 - [Scan reading](explanation/scan-reading.md): why the server reads scans with Anthropic's API, what is sent and what is not, and why a person decides every value and who each name is.
 - [Offline and the app](explanation/offline.md): what works without a connection, and why offline means Drafts rather than sync.

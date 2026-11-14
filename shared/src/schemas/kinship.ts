@@ -21,12 +21,18 @@ export const KinshipTerm = z
 
 export const KinshipKind = z
   .enum(['self', 'partner', 'birth', 'marriage', 'stepSibling', 'coParentInLaw', 'foster'])
-  .meta({ id: 'KinshipKind', description: 'The kind of path: the reader, a partner, by birth (adoption included), by marriage, a step-sibling, a co-parent-in-law, or a foster pair' });
+  .meta({
+    id: 'KinshipKind',
+    description: 'The kind of path: the reader, a partner, by birth (adoption included), by marriage, a step-sibling, a co-parent-in-law, or a foster pair',
+  });
 
 export const KinshipLine = z
   .enum(['direct', 'collateral'])
   .nullable()
-  .meta({ id: 'KinshipLine', description: 'The line of kinship as the Czech civil code counts it (§ 771, § 772); null for the kinds with no degree' });
+  .meta({
+    id: 'KinshipLine',
+    description: 'The line of kinship as the Czech civil code counts it (§ 772, and § 774 for kinship by marriage); null for the kinds with no degree',
+  });
 
 export const KinshipStep = z
   .object({
@@ -42,7 +48,12 @@ export const KinshipPath = z
   .object({
     kind: KinshipKind,
     line: KinshipLine,
-    degree: z.number().int().min(1).nullable().describe('The degree as the Czech civil code counts it: births between the two, or of the kin married into; null for the kinds with none'),
+    degree: z
+      .number()
+      .int()
+      .min(1)
+      .nullable()
+      .describe('The degree as the Czech civil code counts it: births between the two, or of the kin married into; null for the kinds with none'),
     up: z.number().int().min(0).describe('Generations up from the reader to the common ancestors (of the part by birth)'),
     down: z.number().int().min(0).describe('Generations down from the common ancestors to the Person (of the part by birth)'),
     half: z.boolean().describe('Half kinship: one common ancestor reached through two couples'),

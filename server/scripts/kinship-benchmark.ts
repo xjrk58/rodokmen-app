@@ -76,7 +76,9 @@ for (const shape of ['sparse', 'dense'] as const) {
     const s = stats(xs);
     console.log(`  ${name}: median ${ms(s.median)}, p95 ${ms(s.p95)}, max ${ms(s.max)}${extra}`);
   };
-  console.log(`${shape}: ${data.persons.length} Persons, ${data.families.length} Families, ${data.childLinks.length} child links, ${g.parentLinks.length} parent links`);
+  console.log(
+    `${shape}: ${data.persons.length} Persons, ${data.families.length} Families, ${data.childLinks.length} child links, ${g.parentLinks.length} parent links`,
+  );
   row('rebuild of the link copy', rebuilds);
   row('full answer, 30 pairs', full, ` (units median ${stats(fullUnits).median}, max ${stats(fullUnits).max}; ${withPaths} of 30 related)`);
   row('search page of 50', pages, ` (units median ${stats(pageUnits).median}, max ${stats(pageUnits).max})`);

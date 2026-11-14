@@ -6,7 +6,7 @@
  * This file holds the rules that are proved with LemmaScript (ADR 0009, docs/verification.md):
  *
  * - {@link kinshipDegree} and {@link kinshipLine}: the line and degree as the civil code counts them
- *   (§ 771 by birth, § 772 by marriage);
+ *   (§§ 771 to 773 by birth, § 774 by marriage);
  * - {@link chainsUp}: the generations up from a Person through birth and adoptive child links only;
  * - {@link closestPath}: the closest path by birth, whose two chains meet only at the common ancestor;
  * - {@link compareKinshipPaths}: the total, fixed order of paths;
@@ -34,7 +34,7 @@ export const STEP_SIBLING = 4;
 export const CO_PARENT_IN_LAW = 5;
 export const FOSTER = 6;
 
-/** The lines of kinship (civil code § 771); none for the kinds with no degree. */
+/** The lines of kinship (civil code § 772); none for the kinds with no degree. */
 export const NO_LINE = 0;
 export const DIRECT = 1;
 export const COLLATERAL = 2;
@@ -123,7 +123,7 @@ export function hasDegree(kind: number): boolean {
 
 /**
  * The degree of kinship as the civil code counts it: the number of births between the two Persons
- * (§ 771), and for kinship by marriage the degree of the kin married into (§ 772). `up` and `down`
+ * (§ 773), and for kinship by marriage the degree of the kin married into (§ 774). `up` and `down`
  * are the generations up from the reader to the common ancestors and down from them to the Person,
  * of the part by birth. {@link NO_DEGREE} for the kinds with none.
  */

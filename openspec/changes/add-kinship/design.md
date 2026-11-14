@@ -82,8 +82,8 @@ Alternatives considered: a bidirectional breadth-first search over all Family li
 
 `kinshipDegree` and `kinshipLine` in `shared/src/kinship.ts`:
 
-- **By birth** (civil code § 771): the direct line when `up` or `down` is 0, else collateral. The degree is `up + down`, the number of births, one per child link. An adoptive link counts as a birth: Czech law gives adoption the effect of kinship. The docs task cites the section after checking the current text of the civil code.
-- **By marriage** (§ 772): the line and degree of the part by birth, the kin married into.
+- **By birth** (civil code §§ 771 to 773): the direct line when `up` or `down` is 0, else collateral. The degree is `up + down`, the number of births, one per child link. An adoptive link counts as a birth: Czech law gives adoption the effect of kinship. The docs task cites the section after checking the current text of the civil code.
+- **By marriage** (§ 774): the line and degree of the part by birth, the kin married into.
 - **None** for `self`, `partner`, `stepSibling`, `coParentInLaw` and `foster`, and for a connection.
 
 German law counts degrees the same way (BGB § 1589). English-speaking readers know another count, so the English and German texts say "degree (Czech law)", and the reference page explains it. The degree is shown in every language because the Owner asked for the degree as Czech law has it.

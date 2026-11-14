@@ -80,7 +80,20 @@ describe('chains up (kinship spec, "Kinship is computed from Family links")', ()
 describe('the closest path (kinship spec, "Paths in a fixed order")', () => {
   it('two cousinships: of a second and a third cousin, the second is the closest, its chains meeting only at the top', () => {
     // 0 and 9 are second cousins through 4 (0-1-2-4, 9-8-7-4) and third cousins through 6 (0-1-3-5-6, 9-8-10-11-6).
-    const links = [link(0, 1), link(1, 2), link(2, 4), link(9, 8), link(8, 7), link(7, 4), link(1, 3), link(3, 5), link(5, 6), link(8, 10), link(10, 11), link(11, 6)];
+    const links = [
+      link(0, 1),
+      link(1, 2),
+      link(2, 4),
+      link(9, 8),
+      link(8, 7),
+      link(7, 4),
+      link(1, 3),
+      link(3, 5),
+      link(5, 6),
+      link(8, 10),
+      link(10, 11),
+      link(11, 6),
+    ];
     const c = closestPath(12, 0, 9, links);
     expect(c.found).toBe(true);
     expect(c.top).toBe(4);
@@ -99,7 +112,14 @@ describe('the closest path (kinship spec, "Paths in a fixed order")', () => {
 });
 
 describe('the order of paths (kinship spec, "Paths in a fixed order")', () => {
-  const key = (kind: number, degree: number, up: number, down: number, persons: number[], possible = false): PathKey => ({ kind, degree, possible, up, down, persons });
+  const key = (kind: number, degree: number, up: number, down: number, persons: number[], possible = false): PathKey => ({
+    kind,
+    degree,
+    possible,
+    up,
+    down,
+    persons,
+  });
 
   it('brother-in-law and cousin: the brother-in-law (2nd degree) before the third cousin (8th)', () => {
     expect(compareKinshipPaths(key(MARRIAGE, 2, 1, 1, [0, 1, 2]), key(BIRTH, 8, 4, 4, [0, 3, 4, 5, 6, 7, 8, 9, 2]))).toBe(-1);
@@ -138,9 +158,24 @@ describe('half, step and foster (kinship spec, "Half, step, adoptive and foster 
   });
 
   it('own child, not a stepchild; stepmother kept', () => {
-    expect(namesOwnParentOrChild([{ dir: ACROSS, couple: 5 }, { dir: DOWN, couple: 5 }])).toBe(true);
-    expect(namesOwnParentOrChild([{ dir: UP, couple: 5 }, { dir: ACROSS, couple: 6 }])).toBe(false);
-    expect(namesOwnParentOrChild([{ dir: UP, couple: 5 }, { dir: ACROSS, couple: 5 }])).toBe(true);
+    expect(
+      namesOwnParentOrChild([
+        { dir: ACROSS, couple: 5 },
+        { dir: DOWN, couple: 5 },
+      ]),
+    ).toBe(true);
+    expect(
+      namesOwnParentOrChild([
+        { dir: UP, couple: 5 },
+        { dir: ACROSS, couple: 6 },
+      ]),
+    ).toBe(false);
+    expect(
+      namesOwnParentOrChild([
+        { dir: UP, couple: 5 },
+        { dir: ACROSS, couple: 5 },
+      ]),
+    ).toBe(true);
   });
 });
 
@@ -159,7 +194,10 @@ describe('the connection chain (kinship spec, "Limits of the kinship search")', 
   });
 
   it('no chain: nothing listed, and the reach of the Person leaves the reader out', () => {
-    const c = connectionChain(4, 0, 3, [{ a: 0, b: 1, confidences: [] }, { a: 2, b: 3, confidences: [] }]);
+    const c = connectionChain(4, 0, 3, [
+      { a: 0, b: 1, confidences: [] },
+      { a: 2, b: 3, confidences: [] },
+    ]);
     expect(c.found).toBe(false);
     expect(c.persons).toEqual([]);
     expect(c.reached).toEqual([false, false, true, true]);
