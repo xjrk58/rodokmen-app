@@ -14,14 +14,20 @@ describe('invented fixture Tree', () => {
   });
   afterAll(async () => t?.drop());
 
-  it('holds about 200 Persons over 6 generations, all loaded', async () => {
+  it('holds about 200 Persons over 6 generations, and a large family of about 600 for the Charts, all loaded', async () => {
     const { count } = await t.db
       .selectFrom('person')
       .select((eb) => eb.fn.countAll<number>().as('count'))
       .executeTakeFirstOrThrow();
     expect(count).toBe(model.persons.length);
-    expect(count).toBeGreaterThanOrEqual(180);
-    expect(count).toBeLessThanOrEqual(230);
+    // The large family: the Zástěra descendants and their partners.
+    const large = new Set(model.names.filter((n) => n.surname.startsWith('Zástěr') && n.type === 'birth').map((n) => n.personId));
+    for (const f of model.families)
+      if ([f.partner1Id, f.partner2Id].some((p) => p !== null && large.has(p))) for (const p of [f.partner1Id, f.partner2Id]) if (p) large.add(p);
+    expect(large.size).toBeGreaterThanOrEqual(580);
+    expect(count - large.size).toBeGreaterThanOrEqual(180);
+    expect(count - large.size).toBeLessThanOrEqual(240);
+    expect(count).toBeLessThanOrEqual(850);
 
     // Generation depth along child links: the longest line of descent has exactly 6 generations.
     const parents = new Map<string, string[]>();

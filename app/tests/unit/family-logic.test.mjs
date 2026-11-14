@@ -2,7 +2,7 @@
 // cache's eviction order, as pure functions.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CACHE_LIMIT, toEvict } from '../../src/cache.js';
+import { CACHE_LIMIT, CHART_LIMIT, chartsToEvict, toEvict } from '../../src/cache.js';
 import { chooseFocus, clampDepth } from '../../src/focus.js';
 import { familyRoots, isShown, relationFilter, relationKnown, relationOf, rootsKnown, setFamilyRoots } from '../../src/relation.js';
 import { leadAddress, lifeAddress, needsMember, parseRoute, personAddress, treeAddress } from '../../src/routes.js';
@@ -114,4 +114,18 @@ test('the cache keeps at most its limit, dropping the least recently used first'
     ['old', 'mid'],
   );
   assert.ok(CACHE_LIMIT >= 100);
+});
+
+test('at most 20 Charts and 20 Sheets stay on the device, the least recently used going first', () => {
+  const entries = [
+    ...Array.from({ length: 22 }, (_, i) => ({ key: `chart:charts/descendants?person=${i}`, usedAt: 100 + i })),
+    ...Array.from({ length: 21 }, (_, i) => ({ key: `chart-sheet:charts/descendants?person=${i}&sheet=reduced`, usedAt: 200 + i })),
+    { key: 'person:1', usedAt: 1 },
+  ];
+  assert.equal(CHART_LIMIT, 20);
+  assert.deepEqual(chartsToEvict(entries, CHART_LIMIT), [
+    'chart:charts/descendants?person=0',
+    'chart:charts/descendants?person=1',
+    'chart-sheet:charts/descendants?person=0&sheet=reduced',
+  ]);
 });

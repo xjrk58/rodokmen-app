@@ -48,6 +48,43 @@ const restricted = {
   },
 };
 
+// A Chart is the same for the same Tree, options, language and day, byte for byte (tree-charts
+// spec, "Charts follow fixed rules"). Its modules may not read the clock, roll dice, or ask the
+// device's locale data or layout engine, whose answers differ between devices and browsers.
+const chartFiles = [
+  'shared/src/charts.ts',
+  'shared/src/chart-rows.ts',
+  'shared/src/charts-model.ts',
+  'shared/src/house-chart.ts',
+  'shared/src/house-chart-model.ts',
+  'shared/src/sheet-reduction.ts',
+  'server/src/charts/**/*.ts',
+];
+const chartAppFiles = ['app/src/chart-*.js'];
+const determinism = [
+  ["MemberExpression[object.name='Math'][property.name='random']", 'Math.random() differs on every run: a Chart orders by dates, the recorded order and ids.'],
+  ["MemberExpression[object.name='Date'][property.name='now']", 'Date.now() reads the clock: a Chart gets its day as livingOn, from server/src/clock.ts.'],
+  [
+    "NewExpression[callee.name='Date']",
+    'new Date() reads the clock or parses by the device: a Chart gets its day as livingOn, and dates from the proved EDTF ranges.',
+  ],
+  ["MemberExpression[object.name='performance'][property.name='now']", 'performance.now() reads the clock: a Chart may not depend on time.'],
+  ["MemberExpression[property.name='randomUUID']", 'crypto.randomUUID() differs on every run: derive ids from record ids.'],
+  [
+    "MemberExpression[property.name='localeCompare']",
+    'localeCompare depends on the ICU data of the device: compare ids by code units (a < b) and never order by names.',
+  ],
+  ['MemberExpression[property.name=/^toLocale/]', 'toLocale*String depends on the device: write dates and numbers by the fixed patterns of the chart.* texts.'],
+  [
+    "MemberExpression[object.name='Intl'][property.name=/^(DateTimeFormat|Collator|NumberFormat|PluralRules)$/]",
+    'Intl output changes between ICU versions: use the fixed patterns and plural rules of src/chart-text.js.',
+  ],
+  [
+    'MemberExpression[property.name=/^(getBBox|getComputedTextLength)$/]',
+    'Measuring text in the browser differs between devices: fit text by app/data/chart-fonts.json (src/chart-cards.js).',
+  ],
+].map(([selector, message]) => ({ selector, message }));
+
 // Words GLOSSARY.md rejects that have no other meaning in this code, as exact identifiers
 // (`town` for a Place, #21 L23). Words with other meanings (record, tag, root, account) stay allowed.
 const glossaryRejects = [
@@ -124,6 +161,8 @@ export default defineConfig(
   },
   // The sign-in hooks.
   { files: ['server/src/auth/**/*.ts'], rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, restricted.rawRequestUrl] } },
+  // The Chart's rules and its server shell.
+  { files: chartFiles, rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, ...determinism] } },
 
   // The MCP server is a client of the public API (add-agent-access design): it may not reach the
   // database or the server's code, so it can offer nothing the Agent token may not do there.
@@ -160,6 +199,8 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
     rules: { 'no-restricted-syntax': ['error', restricted.leafletHtml, restricted.utcDay] },
   },
+  // The Chart's layout and drawing.
+  { files: chartAppFiles, rules: { 'no-restricted-syntax': ['error', restricted.leafletHtml, restricted.utcDay, ...determinism] } },
   { files: ['app/sw.js'], languageOptions: { globals: globals.serviceworker } },
   // Node scripts and tests; Playwright's page.evaluate callbacks run in the browser.
   {

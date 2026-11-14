@@ -28,6 +28,10 @@ Third-party material in this repo keeps its own licence:
 - app/vendor/leaflet/: Leaflet, BSD-2-Clause (its LICENSE file).
 - app/vendor/preact/: Preact, MIT (its LICENSE file).
 - app/vendor/htm/: htm, Apache-2.0 (its LICENSE file).
+- app/vendor/fonts/eb-garamond/: EB Garamond, OFL-1.1, Copyright 2017
+  The EB Garamond Project Authors (its LICENSE file).
+- app/vendor/fonts/grenze-gotisch/: Grenze Gotisch, OFL-1.1, Copyright
+  2020 The Grenze Gotisch Project Authors (its LICENSE file).
 - .claude/skills/openspec-*/, .claude/commands/opsx/: written by the
   OpenSpec CLI, MIT, Copyright (c) 2024 OpenSpec Contributors.
 

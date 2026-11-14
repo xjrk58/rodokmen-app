@@ -334,3 +334,49 @@ export function exportRecord(r: ExportRecord): ExportRecord {
     links: exportLinks(r.links),
   };
 }
+
+// ---------------------------------------------------------------- the Sheet view of a Person (tree-charts)
+
+/**
+ * What a Sheet of a Chart may show of a Person (tree-charts spec, "Living people on a Sheet"):
+ * their Export view ({@link exportRecord}), so that a Sheet reduces exactly whom an Export
+ * reduces, the same way; and with `nameless`, a Living person keeps neither name nor birth year,
+ * a card that says only that they are living. It sits in this file because a proof may not call
+ * into another (docs/verification.md); shared/src/sheet-reduction.ts maps a card to and from it.
+ */
+export function sheetPerson(r: ExportRecord, nameless: boolean): ExportRecord {
+  //@ verify
+  //@ contract tree-charts: Living people on a Sheet
+  //@ ensures \result.id === r.id && \result.kind === r.kind && \result.living === r.living && \result.sex === r.sex
+  // A Living person: name, sex, relationships and birth year only; no exact date, Place, House, Source or image.
+  //@ ensures r.living ==> \result.events.length === 0 && \result.facts.length === 0 && \result.links.length === 0 && \result.notes === ''
+  //@ ensures r.living ==> \result.names.length <= 1 && forall(i: nat, i < \result.names.length ==> \result.names[i].citations.length === 0 && \result.names[i].asFound === '' && \result.names[i].type === '' && \result.names[i].language === '')
+  //@ ensures r.living ==> forall(i: nat, i < \result.relations.length ==> isLivingRelation(\result.relations[i]))
+  // Scenario "Living grandchild": born in 2010, his card keeps the name and the year 2010, and nothing else.
+  //@ ensures r.living && !nameless && r.names.length > 0 ==> \result.names.length === 1 && \result.names[0].given === r.names[0].given && \result.names[0].surname === r.names[0].surname
+  //@ ensures r.living && !nameless ==> \result.birthYear === r.birthYear && \result.hasBirthYear === r.hasBirthYear
+  // Scenario "Names left off": a card that says only that the Person is living.
+  //@ ensures r.living && nameless ==> \result.names.length === 0 && !\result.hasBirthYear && \result.birthYear === 0
+  // Anyone else keeps their Names and facts, without the Events a Living person took part in and without images.
+  //@ ensures !r.living ==> \result.names.length === r.names.length && \result.facts === r.facts && \result.relations === r.relations
+  //@ ensures forall(i: nat, i < \result.events.length ==> !hasLivingRole(\result.events[i]))
+  //@ ensures !hasMedia(\result.links)
+  //@ ensures forall(i: nat, i < \result.events.length ==> forall(k: nat, k < \result.events[i].citations.length ==> !hasMedia(\result.events[i].citations[k].links)))
+  const view = exportRecord(r);
+  if (!r.living || !nameless) return view;
+  return {
+    kind: view.kind,
+    id: view.id,
+    living: view.living,
+    concernsLiving: view.concernsLiving,
+    sex: view.sex,
+    names: [],
+    relations: view.relations,
+    birthYear: 0,
+    hasBirthYear: false,
+    events: view.events,
+    facts: view.facts,
+    notes: view.notes,
+    links: view.links,
+  };
+}

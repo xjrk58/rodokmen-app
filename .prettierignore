@@ -9,6 +9,10 @@ app/data/
 # Written by `pnpm --filter @rodokmen/server openapi` and compared byte for byte in CI.
 server/openapi.json
 server/test/__snapshots__/
+# Golden files of the Charts (tree-charts), rewritten only with UPDATE_GOLDEN=1 and compared byte for byte.
+shared/test/golden/
+server/test/golden/
+app/tests/unit/golden/
 # OpenSpec changes and specs, and the Claude Code commands that drive them.
 openspec/
 .claude/
