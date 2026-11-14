@@ -1,4 +1,4 @@
-import { ProposalList, type OperationInput } from '@rodokmen/shared';
+import { PersonDetail, ProposalList, type OperationInput } from '@rodokmen/shared';
 import { randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DailyScheduler, pragueTime } from '../src/jobs/daily.js';
@@ -149,6 +149,41 @@ describe('notifications: the daily Editor digest and outcome emails', () => {
     } finally {
       a.mailer.send = send;
     }
+  });
+
+  it("Editor's own changes: a direct change, a merge, an undo and a Proposal its author accepts send no outcome email", async () => {
+    // The Owner is an Editor whose outcome emails are on.
+    const own = await propose(owner, 'E1');
+    a.mailer.clear();
+    expect((await call(owner, 'POST', `/api/proposals/${own}/accept`, {})).statusCode).toBe(200);
+    const direct = await call(owner, 'POST', '/api/proposals', {
+      formatVersion: 1,
+      idempotencyKey: randomBytes(8).toString('hex'),
+      note: 'Finding E2',
+      direct: true,
+      operations: [
+        { op: 'createPerson', tempId: 'tmp:pE2', sex: 'female', name: { given: 'Person E1', surname: 'Invented', type: 'birth', asFound: 'Person E2' } },
+        ...evidence('E2'),
+      ],
+    });
+    expect(direct.statusCode, direct.body).toBe(201);
+    const twins = await t.db.selectFrom('name').select('person_id').where('given', '=', 'Person E1').execute();
+    const [keep, gone] = await Promise.all(twins.map(async (n) => PersonDetail.parse((await call(owner, 'GET', `/api/persons/${n.person_id}`)).json())));
+    const merge = await call(owner, 'POST', `/api/persons/${keep!.id}/merge`, {
+      mergeId: gone!.id,
+      keepBaseVersion: keep!.version,
+      mergeBaseVersion: gone!.version,
+      note: null,
+    });
+    expect(merge.statusCode, merge.body).toBe(200);
+    expect((await call(owner, 'POST', `/api/proposals/${idOf(merge)}/undo`, {})).statusCode).toBe(200);
+    expect(a.mailer.messages).toEqual([]);
+
+    // Submitted by the Owner and decided by another Editor: the Owner is told.
+    const reviewed = await propose(owner, 'E3');
+    expect((await call(editor, 'POST', `/api/proposals/${reviewed}/reject`, { note: 'Duplicate' })).statusCode).toBe(200);
+    expect(a.mailer.messages.map((m) => m.to)).toEqual([owner.email]);
+    expect(a.mailer.lastTo(owner.email)!.text).toContain(`/#work/mine/${reviewed}`);
   });
 
   it('a digest that fails for one Editor is retried only for that Editor, and given up after three tries', async () => {
