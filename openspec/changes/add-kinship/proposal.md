@@ -25,8 +25,24 @@ Out of scope:
 - Kinship on a printed or downloaded Sheet (`add-tree-charts`), in an Export, or for visitors who are not signed in.
 - A coefficient of relationship (the share of DNA expected), DNA matches, and "double cousin" as a term of its own. The count of paths says that instead.
 - Members linking their own account without the Owner, and linking an account to more than one Person.
-- Older or regional Czech words (ujec, strýna, ujčina) beyond the planned list, unless the Owner asks for them (design.md, "Open Questions").
+- Older or regional Czech words (ujec, strýna, ujčina): the Owner chose the modern strýc and teta on both sides.
 - Changing the relation to the family (Relative, Possible relative, Unrelated person) or the glossary's definition of a Relative.
+
+## Decisions of the Owner
+
+The Owner answered the nine open questions of design.md on 2026-11-14, each as planned:
+
+1. The closest path comes first, even when it is only "possibly".
+2. Czech uses the modern strýc and teta on both sides.
+3. "z n. kolena" as planned: strýc z 2. kolena, synovec z 2. kolena, bratranec z 2. kolena.
+4. "pra" is written out up to three times (praprapraděd), then "předek v 6. pokolení".
+5. Kinship by marriage and by birth are ranked together by degree.
+6. "This is me", confirmed by the Owner in Settings, with no email; a count on the Settings tab.
+7. Kinship goes in the strip above the tree and in each box's accessible name, with no visible line in the boxes.
+8. On Chart cards on screen behind a switch, off by default, and never on a Sheet.
+9. Step-siblings and svat or svatka are named.
+
+The Owner gave the go-ahead for implementation on the same day.
 
 ## Capabilities
 
