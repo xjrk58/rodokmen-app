@@ -35,7 +35,7 @@
         "type": "string",
         "minLength": 4,
         "maxLength": 32,
-        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after)",
+        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after); an end of an interval may be about or uncertain too (1801/1803~)",
         "examples": [
           "1801-03-12",
           "1801~",
@@ -9899,7 +9899,7 @@
         "type": "string",
         "minLength": 4,
         "maxLength": 32,
-        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after)",
+        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after); an end of an interval may be about or uncertain too (1801/1803~)",
         "examples": [
           "1801-03-12",
           "1801~",
@@ -26372,7 +26372,7 @@
     },
     "/api/auth/invitation/accept": {
       "post": {
-        "summary": "Accept an invitation: set display name and language, become a Contributor and sign in",
+        "summary": "Accept an invitation: set display name and language, become a Contributor and sign in. The Owner is then told by email",
         "tags": [
           "Sign-in"
         ],

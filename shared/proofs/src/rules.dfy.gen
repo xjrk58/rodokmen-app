@@ -8,6 +8,8 @@ function {:axiom} valueOf(values: seq<FieldValue>, field: string): Unknown
 
 datatype WindowDecision = WindowDecision(allowed: bool, windowStart: int, count: int, retryAt: int)
 
+datatype EvidenceOperation = EvidenceOperation(op: string, record: string, fields: seq<string>)
+
 datatype FieldConflictResult = FieldConflictResult(field: string, proposed: Unknown, current: Unknown)
 
 datatype ConflictResult = ConflictResult(baseVersion: int, currentVersion: Option<int>, fields: seq<FieldConflictResult>)
@@ -119,14 +121,26 @@ lemma fixedWindow_ensures(windowStart: int, count: int, limit: int, windowMs: in
 {
 }
 
-function isCitationOperation(op: string): bool
+function isCitationOperation(o: EvidenceOperation): bool
 {
-  ((op == "createCitation") || (op == "attachCitation"))
+  ((o.op == "createCitation") || (o.op == "attachCitation"))
 }
 
-function isFactFreeOperation(op: string): bool
+function isCitationNoteOnly(o: EvidenceOperation): bool
 {
-  ((((((op == "mergePersons") || (op == "restoreRecord")) || (op == "setFamilyRoot")) || (op == "setNotes")) || (op == "addLabel")) || (op == "removeLabel"))
+  ((((o.op == "setField") && (o.record == "citation")) && (|o.fields| == 1)) && (o.fields[0] == "note"))
+}
+
+function isFactFreeOperation(o: EvidenceOperation): bool
+{
+  var op := o.op;
+  (((((((op == "mergePersons") || (op == "restoreRecord")) || (op == "setFamilyRoot")) || (op == "setNotes")) || (op == "addLabel")) || (op == "removeLabel")) || isCitationNoteOnly(o))
+}
+
+lemma isFactFreeOperation_ensures(o: EvidenceOperation)
+  ensures ((o.op == "setField") ==> (o.record == "citation") ==> (isFactFreeOperation(o) == ((|o.fields| == 1) && (o.fields[0] == "note"))))
+  ensures ((o.op == "setField") ==> (o.record != "citation") ==> !(isFactFreeOperation(o)))
+{
 }
 
 function sameRecord(a: RecordKey, b: RecordKey): bool
@@ -186,11 +200,13 @@ function hasProposal(found: seq<LoggedTouch>, id: string): bool
   (exists f :: f in found && (f.proposalId == id))
 }
 
-method satisfiesEvidenceRule(ops: seq<string>) returns (res: bool)
+method satisfiesEvidenceRule(ops: seq<EvidenceOperation>) returns (res: bool)
   ensures ((exists i: nat :: ((i < |ops|) && isCitationOperation(ops[i]))) ==> res)
   ensures ((forall i: nat :: ((i < |ops|) ==> !(isCitationOperation(ops[i])))) ==> (exists i: nat :: ((i < |ops|) && !(isFactFreeOperation(ops[i])))) ==> !(res))
   ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> isFactFreeOperation(ops[i]))) ==> res)
-  ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> (((ops[i] == "setNotes") || (ops[i] == "addLabel")) || (ops[i] == "removeLabel")))) ==> res)
+  ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> (((ops[i].op == "setNotes") || (ops[i].op == "addLabel")) || (ops[i].op == "removeLabel")))) ==> res)
+  ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> ((((ops[i].op == "setField") && (ops[i].record == "citation")) && (|ops[i].fields| == 1)) && (ops[i].fields[0] == "note")))) ==> res)
+  ensures ((forall i: nat :: ((i < |ops|) ==> !(isCitationOperation(ops[i])))) ==> (exists i: nat :: ((((i < |ops|) && (ops[i].op == "setField")) && (ops[i].record == "citation")) && exists j: nat :: ((j < |ops[i].fields|) && (ops[i].fields[j] != "note")))) ==> !(res))
   ensures ((|ops| == 0) ==> !(res))
 {
   if (|ops| == 0) {

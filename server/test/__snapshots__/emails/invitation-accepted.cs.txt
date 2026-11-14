@@ -1,0 +1,13 @@
+Subject: Pozvánka do Rodokmenu byla přijata
+
+Dobrý den,
+
+pozvánku na adresu cousin.marta@example.test přijal 14. listopadu 2026 v 11:05 nový člen pod jménem „Marta Invented“. Je teď přispěvatelem a vidí celý rodokmen včetně žijících osob.
+
+Pokud to není ten, koho jste zvali, zablokujte ho v Nastavení, v části Členové, tlačítkem Zablokovat. Tím skončí všechna jeho přihlášení. Potom pozvěte správnou adresu.
+
+https://rodokmen.example/#settings
+
+Tento e-mail dostane správce Rodokmenu pokaždé, když někdo přijme pozvánku.
+
+Rodokmen

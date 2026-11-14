@@ -149,6 +149,13 @@ describe('typed operations', () => {
     expect(checkOperations(ops, { editor: false }).issues).toEqual([]);
   });
 
+  it("correcting only a Citation's note needs no new evidence; its transcription or confidence does (#157)", () => {
+    const set = (fields: Record<string, unknown>): OperationInput => ({ op: 'setField', record: 'citation', id: ids.citation, baseVersion: 3, set: fields });
+    expect(checkOperations([set({ note: 'Vault: sources/x.md\nEvidence class: A' })], { editor: false }).issues).toEqual([]);
+    for (const fields of [{ transcription: 'Baptizatus est Joannes.' }, { confidence: 'high' }, { note: 'Read again.', confidence: 'high' }])
+      expect(checkOperations([set(fields)], { editor: false }).issues).toEqual([{ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en }]);
+  });
+
   it('rejects unknown operations instead of guessing', () => {
     const { issues } = checkOperations([{ op: 'deleteEverything' }, examples[9]], { editor: true });
     expect(issues.map((i) => i.code)).toContain('unknown_operation');

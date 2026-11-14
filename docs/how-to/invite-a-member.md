@@ -10,6 +10,14 @@ This guide shows the Owner how to invite a relative by email, how to send the sa
 
 The email goes out at once, and the invitation is listed as **pending**. The link in it works once, for 7 days. Once the relative accepts, the invitation shows **accepted** and the relative is listed under **Members** as a Contributor.
 
+## When the relative accepts
+
+You get an email in your language: who accepted the invitation (the name they chose), the address it went to, and when. You get one email for each new Member, however the link reached them.
+
+1. Read the name. If it is the relative you invited, there is nothing to do.
+2. If it is not, click **Open Settings** in the email. Under **Members**, click **Disable** next to them. That ends their sessions at once.
+3. Invite the right address again.
+
 The address you enter becomes the relative's account address, where Rodokmen sends their sign-in links. Check it before you send.
 
 ## Also send it through WhatsApp
@@ -45,6 +53,8 @@ The invitation page shows the relative the address the invitation went to, and a
 
 1. Click **Withdraw** next to the invitation.
 2. Invite the right address.
+
+The email you get when an invitation is accepted ([above](#when-the-relative-accepts)) is the moment to check who accepted it.
 
 If the right relative has already accepted an invitation sent to a wrong address, keep their account and [correct the address](#correct-a-members-address).
 

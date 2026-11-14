@@ -26,6 +26,8 @@ A link that came through a chat does not prove that the relative reads the invit
 
 Anyone who holds the link can accept it, and a chat message is easier to forward than an email and is kept in backups. That risk is accepted, because the link works only once and only for 7 days, the message asks the relative not to forward it, the page shows whose address it is, and the Owner sees every new Member and can disable one at once.
 
+The Owner does not have to open Settings to see a new Member: every accepted invitation sends the Owner an email with the name the new Member chose and the address the invitation went to. That shortens the time a wrong person could look around unnoticed. The email is sent only after the acceptance is stored, and a failure to send it does not undo the acceptance: it is a notice about the acceptance, so it must not decide it. There is no switch to turn it off, because it is rare, one per new Member, and turning it off would bring the risk back.
+
 ## A Member's address
 
 Whoever reads a Member's mailbox can ask for a sign-in link and become that Member, so the address is as sensitive as a password. That is why only the Owner can change it, and why a new address does nothing until someone confirms the link Rodokmen sends there. A typo in the correction then cannot hand the account to a stranger: the stranger would have to press a button on an email that names someone else and says to ignore it. Until the link is confirmed, the old address keeps working and the Owner can withdraw the change. Confirming does not sign anyone in. It proves the mailbox, which is all the change needs, and a link valid for 7 days should not double as a sign-in link.

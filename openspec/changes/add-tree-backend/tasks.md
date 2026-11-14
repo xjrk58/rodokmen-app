@@ -12,6 +12,7 @@
 - [x] 2.1 Write Zod schemas in `shared/` for Person, Name, Family (with child link types), Event, Role, Place, House, Parish, Estate, Municipality link, Source, Citation and image metadata; verify with unit tests of valid and invalid examples
 - [x] 2.2 Write the EDTF-subset parser with `earliest` and `latest`; verify the table of examples in the tree-model spec
   - Note: the tree-model spec lists the forms but has no table of earliest/latest values. The table now lives in `shared/src/edtf.ts` ("about" widens by 2 years / 1 month / 7 days; "uncertain" keeps the range) and `shared/test/edtf.test.ts` checks every row.
+  - Note (#135): an end of an interval may now be about or uncertain (`1801/1803~`, `1801~/1803~`, `../1805~`), as EDTF Level 1 allows: the interval runs from the earliest day its start could be to the latest day its end could be, through the proved `endRange`, and one whose ends as written are in the wrong order is refused. The scenario "Interval with an approximate end" states it; `shared/test/edtf.test.ts` checks the new rows.
 - [x] 2.3 Write the Living rule as a pure function; verify the spec scenarios (no dates, born 1920, born 1950)
 
 ## 3. Database

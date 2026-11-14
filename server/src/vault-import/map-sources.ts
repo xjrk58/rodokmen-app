@@ -16,7 +16,7 @@ import {
 import { keep, linked, notesOf, unmapped, vaultCitation, type MapContext } from './map-places.js';
 import { presumedDeath } from './map-presumed.js';
 import { at, CONFIDENCE_OF, lowest, type PlannedFile, type PlannedProposal } from './plan.js';
-import { dateText, linkOf, textOf, type VaultNote } from './reader.js';
+import { dateText, isValidDate, linkOf, textOf, type VaultNote } from './reader.js';
 
 /**
  * Source notes (vault-import spec, "One Proposal per Source note"): one Proposal each, in date
@@ -159,10 +159,11 @@ function citation(ctx: MapContext, p: PlannedProposal, note: VaultNote, confiden
       key: `vault-fields:${key}`,
       recordKey: key,
       record: 'citation',
-      field: 'note',
-      before,
-      after: citationNote,
+      topic: 'fields',
+      before: { note: before },
+      after: { note: citationNote },
       freshKey: key,
+      evidence: null,
       path: note.path,
       lines,
     });
@@ -186,22 +187,66 @@ export function mapSources(ctx: MapContext, citers: Map<string, Citers>): void {
   }
 }
 
-/** A residence: the Person lived at a House or Place, in a period. */
+/**
+ * A residence's period from its ends as written (#135): `from` alone is the date; with `to`, the
+ * two are joined as an interval, and an end that is itself an interval gives its outer end
+ * (`1861` and `1864/1866` give `1861/1866`).
+ */
+export function residencePeriod(from: string | null, to: string | null): string | null {
+  if (to === null) return from;
+  const start = from === null ? '..' : from.split('/')[0]!;
+  return `${start}/${to.split('/').at(-1)!}`;
+}
+
+/** Whether the importer before #135 took a date: it read no qualified end of an interval (`1801/1803~`). */
+const datedBefore135 = (text: string) => isValidDate(text) && !(text.includes('/') && /[~?](\/|$)/.test(text));
+
+/**
+ * A residence: the Person lived at a House or Place, in a period (residencePeriod). When the date
+ * stored is not the period as written, the description keeps the text, as for any date that is not
+ * EDTF. An importer before #135 left a residence undated when an end was qualified or itself an
+ * interval: the plan says so, for a Tree imported then.
+ */
 function residence(ctx: MapContext, p: PlannedProposal, note: VaultNote, r: Record<string, unknown>, i: number, citationKey: string, person: string): void {
   const from = dateText(r.from);
   const to = dateText(r.to);
-  const raw = from || to ? `${from ?? '..'}/${to ?? '..'}` : null;
-  const single = from !== null && to === null ? from : null;
+  const written = to === null ? from : `${from ?? '..'}/${to}`;
+  const period = residencePeriod(from, to);
   const key = `event:${note.id}:residence:${i}`;
-  const { date, description } = eventDate(ctx, note, single ?? (raw === '../..' ? null : raw), `residences.${i}`);
+  const field = `residences.${i}`;
+  const asWritten = `Date as written in the Vault: ${written}`;
+  let date: string | null = null;
+  let description: string | null = null;
+  if (written !== null && period !== null && isValidDate(period)) {
+    date = period;
+    if (period !== written) {
+      description = asWritten;
+      ctx.b.report('badDate', note.path, `${field}: ${written} (dated ${period})`);
+    }
+  } else if (written !== null) {
+    ({ date, description } = eventDate(ctx, note, written, field));
+  }
   ctx.b.create(p, key, 'event', {
     op: 'createEvent',
     tempId: '',
     type: 'residence',
     date,
-    ...eventWhere(ctx, note, r.place, r.house, `residences.${i}`),
+    ...eventWhere(ctx, note, r.place, r.house, field),
     description,
   });
+  if (date !== null && written !== null && !datedBefore135(written))
+    ctx.b.updates.push({
+      key: `vault-date:${key}`,
+      recordKey: key,
+      record: 'event',
+      topic: 'date',
+      before: { date: null, description: asWritten },
+      after: { date, description },
+      freshKey: key,
+      evidence: { transcription: note.frontmatterText.trim() || note.path, readOn: ctx.readOn, note: `The date of ${field} in the note` },
+      path: note.path,
+      lines: [`${field}: ${written} → ${date}`],
+    });
   role(ctx, p, key, person, 'other', typeof r.role === 'string' ? r.role.slice(0, 200) : null);
   ctx.b.link(p, `cite:${key}:${citationKey}`, 'citation link', { op: 'attachCitation', citationId: at(citationKey), eventId: at(key) });
 }

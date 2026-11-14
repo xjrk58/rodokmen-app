@@ -111,6 +111,62 @@ export function invitationShareText(m: InvitationShareText): string {
   ].join('\n\n');
 }
 
+export interface InvitationAcceptedEmail {
+  /** The Owner's address. */
+  to: string;
+  /** The Owner's language. */
+  language: UiLanguage;
+  /** The display name the relative chose: their own text, so it stays out of the subject. */
+  memberName: string;
+  /** The invited address, now the new Member's. */
+  email: string;
+  acceptedAt: Date;
+  /** Settings, where the Owner can disable the new Member. */
+  settingsLink: string;
+}
+
+const timeFormat = (language: UiLanguage, d: Date) =>
+  new Intl.DateTimeFormat(language === 'cs' ? 'cs-CZ' : 'en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Prague',
+  }).format(d);
+
+/**
+ * Tells the Owner that a relative accepted an invitation (member-accounts spec, "The Owner is
+ * told when an invitation is accepted"), so that a wrong person can be disabled at once.
+ */
+export function invitationAcceptedEmail(e: InvitationAcceptedEmail): MailMessage {
+  const when = timeFormat(e.language, e.acceptedAt);
+  if (e.language === 'cs') {
+    return render(e.to, {
+      subject: 'Pozvánka do Rodokmenu byla přijata',
+      intro: [
+        'Dobrý den,',
+        `pozvánku na adresu ${e.email} přijal ${when} nový člen pod jménem „${e.memberName}“. Je teď přispěvatelem a vidí celý rodokmen včetně žijících osob.`,
+        'Pokud to není ten, koho jste zvali, zablokujte ho v Nastavení, v části Členové, tlačítkem Zablokovat. Tím skončí všechna jeho přihlášení. Potom pozvěte správnou adresu.',
+      ],
+      button: { label: 'Otevřít Nastavení', url: e.settingsLink },
+      outro: ['Tento e-mail dostane správce Rodokmenu pokaždé, když někdo přijme pozvánku.'],
+      signature: 'Rodokmen',
+    });
+  }
+  return render(e.to, {
+    subject: 'Your Rodokmen invitation was accepted',
+    intro: [
+      'Hello,',
+      `The invitation sent to ${e.email} was accepted on ${when} by someone who chose the name “${e.memberName}”. They are now a Contributor and see the whole Tree, Living people included.`,
+      'If this is not the person you invited, click Disable next to them in Settings, under Members. That ends all their sessions at once. Then invite the right address.',
+    ],
+    button: { label: 'Open Settings', url: e.settingsLink },
+    outro: ['The Owner of Rodokmen gets this email whenever someone accepts an invitation.'],
+    signature: 'Rodokmen',
+  });
+}
+
 export interface SignInLinkEmail {
   to: string;
   language: UiLanguage;

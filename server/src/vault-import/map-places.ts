@@ -40,7 +40,7 @@ const PLACE_TYPES = new Map<string, 'village' | 'town' | 'hamlet' | 'other'>([
   ['osada', 'hamlet'],
 ]);
 const KNOWN = {
-  place: ['type', 'name', 'kind', 'district', 'lat', 'lon', 'names', 'aliases'],
+  place: ['type', 'name', 'kind', 'district', 'municipality', 'lat', 'lon', 'names', 'aliases'],
   parish: ['type', 'name', 'seat', 'aliases'],
   house: ['type', 'place', 'numbers', 'aliases'],
   register: ['type', 'archive', 'signature', 'kind', 'years', 'places', 'url', 'parish', 'aliases'],
@@ -119,10 +119,11 @@ export function notesOf(ctx: MapContext, p: PlannedProposal, record: PlannedUpda
       key: `vault-fields:${recordKey}`,
       recordKey,
       record,
-      field: 'notes',
-      before: body,
-      after: notes,
+      topic: 'fields',
+      before: { notes: body },
+      after: { notes },
       freshKey: `notes:${recordKey}`,
+      evidence: null,
       path: note.path,
       lines,
     });
@@ -148,6 +149,37 @@ function municipalityOf(ctx: MapContext, note: VaultNote) {
   if (!name || !district) return null;
   return ctx.municipalities.find((m) => fold(m.name) === name && fold(m.district) === district) ?? null;
 }
+
+/**
+ * The Municipality a Place is part of, as its note names it in `municipality` (#137): by its RÚIAN
+ * code, or by its name, in the note's district when the note gives one. A name or code that finds
+ * no Municipality, or more than one, is reported and kept as a line.
+ */
+function partOf(ctx: MapContext, note: VaultNote): Municipality | null {
+  const value = textOf(note.data.municipality).trim();
+  if (!value) {
+    if (note.data.municipality !== undefined && note.data.municipality !== null) {
+      ctx.b.report('unmappedValue', note.path, 'places.municipality: not a name or a RÚIAN code');
+      keep(ctx, note, 'municipality', note.data.municipality);
+    }
+    return null;
+  }
+  const district = fold(note.data.district);
+  const matches = /^\d{6}$/.test(value)
+    ? ctx.municipalities.filter((m) => m.code === value)
+    : ctx.municipalities.filter((m) => fold(m.name) === fold(value) && (!district || fold(m.district) === district));
+  if (matches.length === 1) return matches[0]!;
+  ctx.b.report(
+    'unmappedValue',
+    note.path,
+    matches.length ? 'places.municipality: more than one Municipality of that name; give its RÚIAN code' : 'places.municipality: no such Municipality',
+  );
+  keep(ctx, note, 'municipality', note.data.municipality);
+  return null;
+}
+
+/** A Municipality as a Place links it. */
+const municipalityLink = (m: Municipality | null) => (m ? { code: m.code, name: m.name } : null);
 
 /** A Place's kind, as the Tree's type; a kind it has no type for is reported. */
 function placeType(ctx: MapContext, note: VaultNote) {
@@ -181,14 +213,20 @@ function placeNames(ctx: MapContext, p: PlannedProposal, note: VaultNote, key: s
   }
 }
 
+/**
+ * A Place with its Municipality: the one its note names in `municipality` (#137), else the one of
+ * its own name in its district. An importer before #137 linked only the latter: the plan says so,
+ * for a Tree imported then.
+ */
 function mapPlace(ctx: MapContext, note: VaultNote): void {
   const { b } = ctx;
   const name = textOf(note.data.name).trim() || note.id;
-  const m = municipalityOf(ctx, note);
-  if (!m && note.data.district) {
-    b.report('unmappedValue', note.path, 'places.district: no Municipality of that name in that district');
-    keep(ctx, note, 'district', note.data.district);
-  }
+  const own = municipalityOf(ctx, note);
+  if (!own && note.data.district) keep(ctx, note, 'district', note.data.district);
+  const part = partOf(ctx, note);
+  // The dry run lists a district that finds no Municipality until the note names the one the Place is part of.
+  if (!own && !part && note.data.district) b.report('unmappedValue', note.path, 'places.district: no Municipality of that name in that district');
+  const m = part ?? own;
   const p = b.proposal('place', `place-note:${note.id}`, `Vault: ${note.path}`, note);
   vaultCitation(ctx, p, note);
   const key = `place:${note.id}`;
@@ -197,9 +235,22 @@ function mapPlace(ctx: MapContext, note: VaultNote): void {
     tempId: '',
     type: placeType(ctx, note),
     location: placeLocation(note, name, m),
-    municipality: m ? { code: m.code, name: m.name } : null,
+    municipality: municipalityLink(m),
     name: { name, language: 'cs' },
   });
+  if (part && part !== own)
+    b.updates.push({
+      key: `vault-municipality:${key}`,
+      recordKey: key,
+      record: 'place',
+      topic: 'municipality',
+      before: { municipality: municipalityLink(own) },
+      after: { municipality: municipalityLink(part) },
+      freshKey: key,
+      evidence: { transcription: note.frontmatterText.trim() || note.path, readOn: ctx.readOn, note: null },
+      path: note.path,
+      lines: [`${part.name} (${part.code}, ${part.district})`],
+    });
   placeNames(ctx, p, note, key);
   unmapped(ctx, note, KNOWN.place);
   notesOf(ctx, p, 'place', key, note);
