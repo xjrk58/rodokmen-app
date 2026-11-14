@@ -34,4 +34,4 @@
 
 ## 7. Everything together
 
-- [ ] 7.1 Run `pnpm check` and `pnpm verify`, the server tests touched and the app's unit tests; verify they pass, and that CI is green on the PR
+- [x] 7.1 Run `pnpm check` and `pnpm verify`, the server tests touched and the app's unit tests; verify they pass, and that CI is green on the PR
