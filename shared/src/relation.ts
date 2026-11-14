@@ -48,6 +48,7 @@ export function isConfirming(confidence: string): boolean {
 /** A link counts toward being a Relative when at least one of its Citations confirms it. */
 export function isStrongLink(link: FamilyLink): boolean {
   //@ verify
+  //@ ensures \result === exists(j: nat, j < link.confidences.length && (link.confidences[j] === 'normal' || link.confidences[j] === 'high' || link.confidences[j] === 'very_high'))
   return link.confidences.some((c) => isConfirming(c));
 }
 
