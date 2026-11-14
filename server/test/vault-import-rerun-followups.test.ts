@@ -287,7 +287,13 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect(dated.statusCode, dated.body).toBe(201);
   });
 
-  it('a later run submits only what the fixes add, and its batch is accepted whole', async () => {
+  it('a later run submits what the fixes add and the notes new since, and its batch is accepted whole', async () => {
+    // Notes new since the first run come in fresh, as this importer maps them (#135, #137).
+    await writeFile(join(vault.path, 'places/predni-ves.md'), '---\ntype: place\nname: Přední Ves\nkind: osada\nmunicipality: Vrbice\n---\n');
+    await writeFile(
+      join(vault.path, 'people/kristina-vymyslena-1800.md'),
+      "---\ntype: person\nname:\n  given: Kristina\n  surname: Vymyšlená\nsex: F\nresidences:\n  - place: '[[predni-ves]]'\n    from: 1820~\n    to: 1830/1832\n---\n",
+    );
     before.fix = true;
     dry = await runImport({ ...options(), dryRun: true });
     expect((await lead('A long invented session')).reason).toHaveLength(4000);
@@ -295,6 +301,19 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect(second.run.submitted).toBe(dry.run.submitted);
     expect(second.run.deferred).toEqual([]);
     await acceptBatch(second.run.batch!.id, second.run.submitted);
+  });
+
+  it('a new Place note and a new residence come in as a fresh import makes them: linked to the Municipality, dated with its qualified end (#135, #137)', async () => {
+    expect(await placeOf('place:predni-ves')).toMatchObject({ municipality: VRBICE, location: null });
+    const event = EventDetail.parse((await asOwner('GET', `/api/events/${await recordOf('event:kristina-vymyslena-1800:residence:0')}`)).json());
+    expect([event.date, event.earliest, event.latest, event.description, event.place?.id]).toEqual([
+      '1820~/1832',
+      '1818-01-01',
+      '1832-12-31',
+      'Date as written in the Vault: 1820~/1830/1832',
+      await recordOf('place:predni-ves'),
+    ]);
+    expect(event.citations.map((c) => c.page)).toEqual(['people/kristina-vymyslena-1800.md']);
   });
 
   it('a Person the Tree has as the import left them gets the presumed death; one given a death or a birth date since is left out and listed (#132)', async () => {

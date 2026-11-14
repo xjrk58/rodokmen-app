@@ -115,10 +115,12 @@ describe('mapping the fixture Vault', () => {
     expect(op('place:horni-ves')).toMatchObject({ municipality: vrbice, location: { lat: 50.39, lon: 15.41 } });
     expect(op('place:dolni-ves')).toMatchObject({ municipality: vrbice, location: null });
     expect(op('place:zadni-ves')).toMatchObject({ municipality: null, location: null });
-    expect(p.issues.filter((i) => i.path === 'places/zadni-ves.md').map((i) => i.detail)).toEqual([
-      'places.district: no Municipality of that name in that district',
-      'places.municipality: no such Municipality',
+    // The dry run lists the district of a Place no longer once its note names the Municipality; the research notes keep it.
+    expect(p.issues.filter((i) => i.path.endsWith('-ves.md')).map((i) => [i.path, i.detail])).toEqual([
+      ['places/zadni-ves.md', 'places.municipality: no such Municipality'],
+      ['places/zadni-ves.md', 'places.district: no Municipality of that name in that district'],
     ]);
+    expect(op('notes:place:horni-ves')).toMatchObject({ notes: 'From the Vault, not mapped:\n- district: Jičín' });
     expect(op('notes:place:zadni-ves')).toMatchObject({ notes: 'From the Vault, not mapped:\n- district: Jičín\n- municipality: Nikde' });
     // What an importer before #137 wrote instead: no Municipality, for a later run to add with the note's Citation as evidence.
     const updates = p.updates.filter((u) => u.topic === 'municipality');

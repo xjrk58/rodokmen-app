@@ -222,11 +222,10 @@ function mapPlace(ctx: MapContext, note: VaultNote): void {
   const { b } = ctx;
   const name = textOf(note.data.name).trim() || note.id;
   const own = municipalityOf(ctx, note);
-  if (!own && note.data.district) {
-    b.report('unmappedValue', note.path, 'places.district: no Municipality of that name in that district');
-    keep(ctx, note, 'district', note.data.district);
-  }
+  if (!own && note.data.district) keep(ctx, note, 'district', note.data.district);
   const part = partOf(ctx, note);
+  // The dry run lists a district that finds no Municipality until the note names the one the Place is part of.
+  if (!own && !part && note.data.district) b.report('unmappedValue', note.path, 'places.district: no Municipality of that name in that district');
   const m = part ?? own;
   const p = b.proposal('place', `place-note:${note.id}`, `Vault: ${note.path}`, note);
   vaultCitation(ctx, p, note);

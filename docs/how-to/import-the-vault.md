@@ -61,7 +61,8 @@ folder) and never paste it into an issue or a pull request. It lists:
 
 Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left. A Place listed
 with `places.district: no Municipality of that name in that district` is often a village or hamlet that is part of
-a larger Municipality: name that one in its note, by name or by RÚIAN code, and the Place is linked to it:
+a larger Municipality: name that one in its note, by name or by RÚIAN code, and the Place is linked to it and leaves
+that list:
 
 ```yaml
 name: Horní Ves
