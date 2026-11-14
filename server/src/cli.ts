@@ -4,7 +4,11 @@ import { UiLanguage } from '@rodokmen/shared';
 import { createOwner, requestEmailLink } from './auth/accounts.js';
 import { loadConfig } from './config.js';
 import { createDb, migrateToLatest } from './db/db.js';
+import { importErasures, reapplyErasures } from './erasure/service.js';
+import { gedcomOfTree, runExport } from './export/run.js';
 import { loadFixture } from './fixture/load.js';
+import { pragueTime } from './jobs/daily.js';
+import { createImageStorage } from './storage/images.js';
 import { createMailer } from './mail/mailer.js';
 import { sendAlert } from './ops/alerts.js';
 import { OPENAPI_FILE, openApiJson } from './ops/openapi-file.js';
@@ -24,6 +28,12 @@ const USAGE = `Usage: node dist/cli.js <command>
   alert --subject S [--details D] email the Owner an alert
   health [url]                    exit 0 when the health check passes
   watchdog                        alert the Owner on failing health checks and Backups
+  export run                      run the nightly Export now (only when RODOKMEN_EXPORT_ENABLED is true)
+  export gedcom [file]            write the GEDCOM file of the Tree (default: standard output)
+  erasures list                   print the erased Persons' ids and when, one per line
+  erasures reapply [--list FILE]  add the ids in FILE (from a newer Backup's erasures.tsv) to the
+                                  list of erasures, and erase again every listed Person the
+                                  database still holds (the API does this too when it starts)
   vault-import --vault DIR [--dry-run] [--report FILE] [--name N] [--given-by N] [--root ID]…
                                   import the Vault through the API as one Import batch, with
                                   RODOKMEN_URL and an Agent token in RODOKMEN_TOKEN (see
@@ -88,6 +98,54 @@ const COMMANDS: Record<string, Command> = {
     }
     console.log('OpenAPI description matches the routes');
     return 0;
+  },
+
+  async export(config, [sub, file]) {
+    if (sub !== 'run' && sub !== 'gedcom') return null;
+    const db = createDb(config.databaseUrl);
+    try {
+      await migrateToLatest(db);
+      if (sub === 'gedcom') {
+        const text = await gedcomOfTree(db, systemClock);
+        if (file) await writeFile(file, text);
+        else process.stdout.write(text);
+        return 0;
+      }
+      if (!config.export) {
+        console.error('The nightly Export is off: set RODOKMEN_EXPORT_ENABLED=true and RODOKMEN_EXPORT_REPO (deploy/README.md, "Nightly Export").');
+        return 1;
+      }
+      const { day } = pragueTime(systemClock.now());
+      console.log((await runExport({ db, clock: systemClock, repo: config.export }, day)).detail);
+      return 0;
+    } finally {
+      await db.destroy();
+    }
+  },
+
+  async erasures(config, [sub, ...args]) {
+    if (sub !== 'list' && sub !== 'reapply') return null;
+    const { values } = parseArgs({ args, options: { list: { type: 'string' } } });
+    const db = createDb(config.databaseUrl);
+    try {
+      await migrateToLatest(db);
+      if (sub === 'list') {
+        for (const e of await db.selectFrom('erasure').select(['person_id', 'erased_at']).orderBy('erased_at').orderBy('person_id').execute())
+          console.log(`${e.person_id}\t${new Date(e.erased_at).toISOString()}`);
+        return 0;
+      }
+      if (values.list) console.log(`added ${await importErasures(db, await readFile(values.list, 'utf8'), systemClock.now())} erased ids from ${values.list}`);
+      const again = await reapplyErasures({
+        db,
+        clock: systemClock,
+        images: createImageStorage(config.s3, systemClock),
+        log: (msg, err) => console.error(msg, err),
+      });
+      console.log(again.length ? `erased again ${again.length} Persons` : 'no erased Person remains');
+      return 0;
+    } finally {
+      await db.destroy();
+    }
   },
 
   async alert(config, args) {

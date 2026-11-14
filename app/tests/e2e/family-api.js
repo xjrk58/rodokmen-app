@@ -145,6 +145,8 @@ export function member(role, o = {}) {
       markFamilyRoots: role === 'owner',
       acceptBatch: role === 'owner',
       manageSettings: role === 'owner',
+      erase: role === 'owner',
+      downloadExport: role === 'owner',
     },
     passkeyCount: 1,
     person: o.person ? withRelations(summary(o.person), o.roots ?? []) : null,

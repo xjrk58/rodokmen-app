@@ -61,8 +61,8 @@ export function actionOf(route: { method: string | string[]; config?: { action?:
 
 function refusal(member: Account, action: Action): string {
   if (member.role === 'agent') return 'An Agent may only read the Tree, submit Proposals and write Research leads.';
-  if (action === 'manageAccounts' || action === 'markFamilyRoots' || action === 'acceptBatch' || action === 'manageSettings')
-    return 'Only the Owner can do this.';
+  // What an Editor may not do either is the Owner's alone.
+  if (!mayDo('editor', action)) return 'Only the Owner can do this.';
   return 'Only Editors can do this.';
 }
 

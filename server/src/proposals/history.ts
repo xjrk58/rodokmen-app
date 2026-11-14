@@ -26,6 +26,13 @@ import { authorRef, proposalViews } from './views.js';
 
 // ---------------------------------------------------------------- record history
 
+/** What a history entry that involved an erased Person says, in both languages. */
+function erasedRecord(at: Date): { cs: string; en: string } {
+  const day = at.toISOString().slice(0, 10);
+  const [y, m, d] = day.split('-').map(Number);
+  return { cs: `Vymazaný záznam (vymazán ${d}. ${m}. ${y})`, en: `Erased record (erased on ${day})` };
+}
+
 /** Snapshot columns that point at a record of each kind, besides its own id. */
 const REFERENCES: Record<HistoryKind, string[]> = {
   person: ['person_id', 'child_id', 'partner1_id', 'partner2_id', 'merged_into_id', 'account_given_by_person_id'],
@@ -47,10 +54,12 @@ const REFERENCES: Record<HistoryKind, string[]> = {
  */
 export async function recordHistory(db: Db, kind: HistoryKind, id: string): Promise<HistoryEntry[]> {
   const doc = (column: string) => sql<boolean>`(coalesce(before, '{}'::jsonb) || coalesce(after, '{}'::jsonb)) @> ${JSON.stringify({ [column]: id })}::jsonb`;
+  // A change erasure turned into a marker still names the records that stay which it pointed at.
+  const erasedRef = sql<boolean>`cardinality(erased_refs) > 0 and erased_refs @> array[${id}]::uuid[]`;
   const changes = await db
     .selectFrom('log_change')
-    .selectAll()
-    .where((eb) => eb.or([eb('record_id', '=', id), ...REFERENCES[kind].map((c) => doc(c))]))
+    .select(['id', 'log_entry_id', 'seq', 'record_table', 'record_id', 'before', 'after'])
+    .where((eb) => eb.or([eb('record_id', '=', id), erasedRef, ...REFERENCES[kind].map((c) => doc(c))]))
     .orderBy('log_entry_id')
     .orderBy('seq')
     .execute();
@@ -70,6 +79,7 @@ export async function recordHistory(db: Db, kind: HistoryKind, id: string): Prom
       'p.note',
       'p.decision_note',
       'p.undone_by_proposal_id',
+      'p.erased_at',
     ])
     .where('l.id', 'in', entryIds)
     .orderBy('l.accepted_at', 'desc')
@@ -100,6 +110,24 @@ export async function recordHistory(db: Db, kind: HistoryKind, id: string): Prom
   const labels = await labelsFor(db, idsIn([...storedOf.values()].flat().map((s) => [s.original, s.corrected])));
   const out: HistoryEntry[] = [];
   for (const e of entries) {
+    if (e.erased_at) {
+      // Erasure left a marker (erasure spec, "Erasure reaches the log"): who accepted it and when, and nothing of the erased Person.
+      out.push({
+        proposalId: e.proposal_id,
+        kind: e.kind,
+        author: authorRef(accounts.get(e.author_id)!),
+        acceptedBy: authorRef(accounts.get(e.accepted_by)!),
+        acceptedAt: new Date(e.accepted_at).toISOString(),
+        note: null,
+        decisionNote: null,
+        citations: [],
+        summaries: [erasedRecord(new Date(e.erased_at))],
+        corrections: [],
+        changes: changes.filter((c) => c.log_entry_id === e.id).map((c) => ({ table: c.record_table, id: c.record_id, before: c.before, after: c.after })),
+        undoneBy: e.undone_by_proposal_id,
+      });
+      continue;
+    }
     const stored = storedOf.get(e.proposal_id) ?? [];
     const effective = describeOperations(
       stored.map((s) => s.effective),
@@ -156,8 +184,15 @@ interface LoggedChange {
 }
 
 async function loggedChanges(db: Db, proposalId: string): Promise<LoggedChange[]> {
-  const entry = await db.selectFrom('log_entry').select('id').where('proposal_id', '=', proposalId).executeTakeFirst();
+  const entry = await db
+    .selectFrom('log_entry as l')
+    .innerJoin('proposal as p', 'p.id', 'l.proposal_id')
+    .select(['l.id', 'p.erased_at'])
+    .where('l.proposal_id', '=', proposalId)
+    .executeTakeFirst();
   if (!entry) throw new ApiProblem(409, 'not_accepted', 'Only an accepted Proposal can be undone.');
+  // Its logged values are gone with the erased Person (erasure spec, "Erasure reaches the log").
+  if (entry.erased_at) throw new ApiProblem(409, 'erased', 'This Proposal involved a record that was erased, so it can no longer be undone.');
   const rows = await db.selectFrom('log_change').selectAll().where('log_entry_id', '=', entry.id).orderBy('seq').execute();
   return rows.map((r) => ({ seq: r.seq, table: r.record_table, id: r.record_id, before: r.before, after: r.after }));
 }

@@ -19,6 +19,7 @@ import { accountRoutes } from './routes/accounts.js';
 import { agentRoutes } from './routes/agents.js';
 import { authRoutes } from './routes/auth.js';
 import { batchRoutes } from './routes/batches.js';
+import { erasureRoutes } from './routes/erasure.js';
 import { leadRoutes } from './routes/leads.js';
 import { pageRoutes } from './routes/pages.js';
 import { proposalRoutes } from './routes/proposals.js';
@@ -160,6 +161,7 @@ export async function buildApp(deps: AppDeps): Promise<RodokmenApp> {
   await app.register(proposalRoutes, proposalDeps);
   await app.register(batchRoutes, proposalDeps);
   await app.register(leadRoutes, { db, clock });
+  await app.register(erasureRoutes, { db, clock, images, log: (msg: string, err?: unknown) => app.log.error({ err }, msg) });
   await app.register(readingRoutes, {
     db,
     clock,

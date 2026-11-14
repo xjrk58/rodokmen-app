@@ -54,6 +54,8 @@ describe('roles, the single Owner, sessions and disabling', () => {
       markFamilyRoots: false,
       acceptBatch: false,
       manageSettings: false,
+      erase: false,
+      downloadExport: false,
     });
   });
 

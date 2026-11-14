@@ -1,6 +1,7 @@
 import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
 import { CONNECTION_CLOSED, createDb, migrateToLatest, reportOnStderr } from './db/db.js';
+import { reapplyErasures } from './erasure/service.js';
 import { DailyScheduler } from './jobs/daily.js';
 import { createMailer } from './mail/mailer.js';
 import { shutDown, SHUTDOWN_TIMEOUT_MS } from './shutdown.js';
@@ -20,6 +21,9 @@ async function main() {
   const applied = await migrateToLatest(db);
   const mailer = createMailer(config, (line) => console.log(line));
   const images = createImageStorage(config.s3, systemClock);
+  // A restored Backup may hold people erased since: erase them again before any request (erasure
+  // spec, "Restores keep erased people erased"). A failure stops the start, and so the deploy.
+  const erasedAgain = await reapplyErasures({ db, clock: systemClock, images, log: (msg, err) => console.error(msg, err) });
   const app = await buildApp({
     config,
     db,
@@ -29,6 +33,7 @@ async function main() {
   });
   reportIdleError = (error) => app.log.warn({ error }, CONNECTION_CLOSED);
   if (applied.length) app.log.info({ applied }, 'migrations applied');
+  if (erasedAgain.length) app.log.warn({ count: erasedAgain.length }, 'erased again Persons a restored Backup still held');
   // Readings left in the queue by the previous process run now, one at a time.
   const resumed = await app.readingJobs.resume();
   if (resumed) app.log.info({ resumed }, 'scan readings queued again');
@@ -36,13 +41,16 @@ async function main() {
   const sweep = setInterval(() => void app.readingJobs.resume().catch((err: unknown) => app.log.error({ err }, 'could not requeue readings')), 10 * 60_000);
   if (config.env === 'production' && !config.s3.configured) app.log.warn('object storage is not configured; image links will not work');
 
-  // Daily jobs (Editor digest at 18:00 Prague time, deleting images of rejected Proposals).
+  // Daily jobs (Editor digest at 18:00 Prague time, deleting images of rejected Proposals, and the
+  // nightly Export once the Owner configured it).
+  if (!config.export) app.log.info('the nightly Export is off (RODOKMEN_EXPORT_ENABLED)');
   const stopJobs = new DailyScheduler({
     db,
     clock: systemClock,
     mailer,
     images,
     publicOrigin: config.publicOrigin,
+    exportRepo: config.export,
     log: (msg, err) => app.log.error({ err }, msg),
   }).start();
 

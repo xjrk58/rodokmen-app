@@ -39,6 +39,16 @@ Read by `server/src/config.ts` when the API, the CLI or the watchdog starts. An 
 | `RODOKMEN_SCAN_MODEL`  | `claude-opus-5-5`                                          | the Claude model that reads scans: a current model that reads images and answers in a JSON schema ([the reader benchmark](../how-to/run-the-reader-benchmark.md))                                 |
 | `RODOKMEN_SCAN_EFFORT` | `high`                                                     | how much effort the model spends on a reading: `low`, `medium`, `high`, `xhigh` or `max`                                                                                                          |
 
+The nightly Export ([Exports](exports.md)) is off unless switched on:
+
+| Variable                      | Default | Meaning                                                                                                                     |
+| ----------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `RODOKMEN_EXPORT_ENABLED`     | `false` | `true` pushes the Export every night at 04:00 Prague time; it then needs `RODOKMEN_EXPORT_REPO`                             |
+| `RODOKMEN_EXPORT_REPO`        | none    | the repository to push to, such as `git@github.com:<owner>/rodokmen-export.git`, or a local path                            |
+| `RODOKMEN_EXPORT_BRANCH`      | `main`  | the branch the Export writes                                                                                                |
+| `RODOKMEN_EXPORT_SSH_KEY`     | none    | the deploy key, a private key file that may write to that repository alone; in production `/run/rodokmen-export/deploy_key` |
+| `RODOKMEN_EXPORT_KNOWN_HOSTS` | none    | the known_hosts file SSH checks the host against; required with a key; in production `/run/rodokmen-export/known_hosts`     |
+
 Boolean variables take `true`, `false`, `1` or `0`.
 
 With `NODE_ENV=production` the server refuses to start unless `PUBLIC_ORIGIN` is `https://`, `MAIL_TRANSPORT` is `smtp`, `SMTP_HOST`, `ALERT_EMAIL` and all four `S3_` settings for the bucket are set, and image links (`S3_PUBLIC_ENDPOINT`, else `S3_ENDPOINT`) are `https://`. In development and tests, missing `S3_` settings give image links that lead nowhere.
@@ -67,17 +77,18 @@ The production stack (`deploy/docker-compose.yml`) reads two files on the VPS, b
 
 `/opt/rodokmen/.env` (from `deploy/.env.example`):
 
-| Variable                                                           | Meaning                                                                                                            |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `DOMAIN`                                                           | the one domain, such as `rodokmen.dev`; image links use `files.$DOMAIN`                                            |
-| `ACME_EMAIL`                                                       | contact address for the certificate authority                                                                      |
-| `POSTGRES_PASSWORD`                                                | the database password                                                                                              |
-| `MAIL_TRANSPORT`, `MAIL_FROM`, `SMTP_*`, `ALERT_EMAIL`             | as for the API server above                                                                                        |
-| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`                         | the API's key to the image bucket: `GK` and 24 hex digits, and 64 hex digits; Garage creates it on its first start |
-| `IMAGES_BACKUP_KEY_ID`, `IMAGES_BACKUP_SECRET_KEY`                 | the Backup job's read-only key, in the same format; `deploy/scripts/storage-init.sh` creates it                    |
-| `GARAGE_RPC_SECRET`                                                | 64 hex digits; Garage's internal secret                                                                            |
-| `SESSION_IDLE_DAYS`                                                | optional, as for the API server above                                                                              |
-| `ANTHROPIC_API_KEY`, `RODOKMEN_SCAN_MODEL`, `RODOKMEN_SCAN_EFFORT` | optional, as for the API server above ([switch scan reading on](../how-to/switch-on-scan-reading.md))              |
+| Variable                                                           | Meaning                                                                                                                                                |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DOMAIN`                                                           | the one domain, such as `rodokmen.dev`; image links use `files.$DOMAIN`                                                                                |
+| `ACME_EMAIL`                                                       | contact address for the certificate authority                                                                                                          |
+| `POSTGRES_PASSWORD`                                                | the database password                                                                                                                                  |
+| `MAIL_TRANSPORT`, `MAIL_FROM`, `SMTP_*`, `ALERT_EMAIL`             | as for the API server above                                                                                                                            |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`                         | the API's key to the image bucket: `GK` and 24 hex digits, and 64 hex digits; Garage creates it on its first start                                     |
+| `IMAGES_BACKUP_KEY_ID`, `IMAGES_BACKUP_SECRET_KEY`                 | the Backup job's read-only key, in the same format; `deploy/scripts/storage-init.sh` creates it                                                        |
+| `GARAGE_RPC_SECRET`                                                | 64 hex digits; Garage's internal secret                                                                                                                |
+| `SESSION_IDLE_DAYS`                                                | optional, as for the API server above                                                                                                                  |
+| `ANTHROPIC_API_KEY`, `RODOKMEN_SCAN_MODEL`, `RODOKMEN_SCAN_EFFORT` | optional, as for the API server above ([switch scan reading on](../how-to/switch-on-scan-reading.md))                                                  |
+| `RODOKMEN_EXPORT_*`                                                | optional, as for the API server above; off unless `RODOKMEN_EXPORT_ENABLED=true` ([set up the nightly Export](../how-to/set-up-the-nightly-export.md)) |
 
 Set by `docker-compose.yml` rather than `.env`: `NODE_ENV=production`, `HOST`, `PORT`, `APP_DIR=/srv/app`, `TRUST_PROXY=true`, `PUBLIC_ORIGIN=https://$DOMAIN`, `DATABASE_URL`, `S3_ENDPOINT=http://garage:3900`, `S3_PUBLIC_ENDPOINT=https://files.$DOMAIN`, `S3_REGION=garage`, `S3_BUCKET=rodokmen-images`, `S3_FORCE_PATH_STYLE=true`, `MALLOC_ARENA_MAX=2` for the API slots, `RODOKMEN_API_URL=http://api:3000` for the MCP server (Caddy, which forwards to the active API slot), and `WATCHDOG_URL` and `BACKUP_STATUS_FILE` for the watchdog. The image sets `RELEASE` to the commit it was built from.
 

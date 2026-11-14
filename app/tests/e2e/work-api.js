@@ -104,6 +104,8 @@ export function me(role) {
       markFamilyRoots: false,
       acceptBatch: false,
       manageSettings: false,
+      erase: false,
+      downloadExport: false,
     },
     passkeyCount: 1,
     person: null,

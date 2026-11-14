@@ -3553,6 +3553,14 @@
           "manageSettings": {
             "type": "boolean",
             "description": "Change the Tree’s settings, such as scan reading (the Owner)"
+          },
+          "erase": {
+            "type": "boolean",
+            "description": "Erase a Living person from the Tree, the log and the Exports (the Owner)"
+          },
+          "downloadExport": {
+            "type": "boolean",
+            "description": "Download the GEDCOM file of the Tree (the Owner)"
           }
         },
         "required": [
@@ -3565,7 +3573,9 @@
           "disableMembers",
           "markFamilyRoots",
           "acceptBatch",
-          "manageSettings"
+          "manageSettings",
+          "erase",
+          "downloadExport"
         ]
       },
       "MeInput": {
@@ -9667,6 +9677,172 @@
           "next"
         ]
       },
+      "ErasurePreviewInput": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/PersonSummaryInput"
+          },
+          "mayErase": {
+            "type": "boolean",
+            "description": "Whether the Person is Living, the only kind of Person that can be erased"
+          },
+          "confirmWith": {
+            "type": "string",
+            "description": "The name to type to confirm: the given name and surname of the primary Name"
+          },
+          "names": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Names that go"
+          },
+          "roles": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Roles in Events that go"
+          },
+          "familyLinks": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Links to Families as a partner or child that go"
+          },
+          "labels": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummaryInput"
+            },
+            "description": "Events only this Person took part in, which disappear with them"
+          },
+          "citations": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Citations attached only to what goes, which disappear too"
+          },
+          "images": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Images that show only this Person, or belong to a Citation that goes"
+          },
+          "families": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Families left with nobody, which disappear"
+          },
+          "leads": {
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unlinked": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "deleted",
+              "unlinked"
+            ],
+            "description": "Research leads deleted (about only this Person) and unlinked"
+          },
+          "history": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Proposals whose history entries become \"erased record\""
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending Proposals about this Person, which are closed"
+          }
+        },
+        "required": [
+          "person",
+          "mayErase",
+          "confirmWith",
+          "names",
+          "roles",
+          "familyLinks",
+          "labels",
+          "events",
+          "citations",
+          "images",
+          "families",
+          "leads",
+          "history",
+          "pending"
+        ]
+      },
+      "EraseBodyInput": {
+        "type": "object",
+        "properties": {
+          "confirmation": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "The Person's name as shown in confirmWith; case and spacing do not matter"
+          }
+        },
+        "required": [
+          "confirmation"
+        ]
+      },
+      "ErasureResultInput": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "erasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "events": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "citations": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "images": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "history": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "personId",
+          "erasedAt",
+          "events",
+          "citations",
+          "images",
+          "history"
+        ]
+      },
       "Id": {
         "type": "string",
         "format": "uuid",
@@ -13283,6 +13459,14 @@
           "manageSettings": {
             "type": "boolean",
             "description": "Change the Tree’s settings, such as scan reading (the Owner)"
+          },
+          "erase": {
+            "type": "boolean",
+            "description": "Erase a Living person from the Tree, the log and the Exports (the Owner)"
+          },
+          "downloadExport": {
+            "type": "boolean",
+            "description": "Download the GEDCOM file of the Tree (the Owner)"
           }
         },
         "required": [
@@ -13295,7 +13479,9 @@
           "disableMembers",
           "markFamilyRoots",
           "acceptBatch",
-          "manageSettings"
+          "manageSettings",
+          "erase",
+          "downloadExport"
         ],
         "additionalProperties": false
       },
@@ -19625,6 +19811,176 @@
           "next"
         ],
         "additionalProperties": false
+      },
+      "ErasurePreview": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/PersonSummary"
+          },
+          "mayErase": {
+            "type": "boolean",
+            "description": "Whether the Person is Living, the only kind of Person that can be erased"
+          },
+          "confirmWith": {
+            "type": "string",
+            "description": "The name to type to confirm: the given name and surname of the primary Name"
+          },
+          "names": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Names that go"
+          },
+          "roles": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Roles in Events that go"
+          },
+          "familyLinks": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Links to Families as a partner or child that go"
+          },
+          "labels": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventSummary"
+            },
+            "description": "Events only this Person took part in, which disappear with them"
+          },
+          "citations": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Citations attached only to what goes, which disappear too"
+          },
+          "images": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Images that show only this Person, or belong to a Citation that goes"
+          },
+          "families": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Families left with nobody, which disappear"
+          },
+          "leads": {
+            "type": "object",
+            "properties": {
+              "deleted": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "unlinked": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "deleted",
+              "unlinked"
+            ],
+            "additionalProperties": false,
+            "description": "Research leads deleted (about only this Person) and unlinked"
+          },
+          "history": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Proposals whose history entries become \"erased record\""
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Pending Proposals about this Person, which are closed"
+          }
+        },
+        "required": [
+          "person",
+          "mayErase",
+          "confirmWith",
+          "names",
+          "roles",
+          "familyLinks",
+          "labels",
+          "events",
+          "citations",
+          "images",
+          "families",
+          "leads",
+          "history",
+          "pending"
+        ],
+        "additionalProperties": false
+      },
+      "EraseBody": {
+        "type": "object",
+        "properties": {
+          "confirmation": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "The Person's name as shown in confirmWith; case and spacing do not matter"
+          }
+        },
+        "required": [
+          "confirmation"
+        ],
+        "additionalProperties": false
+      },
+      "ErasureResult": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "erasedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          },
+          "events": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "citations": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "images": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "history": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "personId",
+          "erasedAt",
+          "events",
+          "citations",
+          "images",
+          "history"
+        ],
+        "additionalProperties": false
       }
     }
   },
@@ -24045,6 +24401,207 @@
             }
           },
           "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/erasure": {
+      "get": {
+        "summary": "What erasing this Person would remove: their Names, Roles and Family links, the Events only they took part in, images, leads and history",
+        "tags": [
+          "Erasure"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasurePreview"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/erase": {
+      "post": {
+        "summary": "Erase a Living person at their request: from the Tree, the log (entries become \"erased record\") and the next Export. Only Living people; the confirmation names them. Cannot be undone",
+        "tags": [
+          "Erasure"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EraseBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErasureResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/export/family.ged": {
+      "get": {
+        "summary": "The Tree as a GEDCOM 5.5.1 file, with Living people reduced to name, sex, relationships and birth year, and no images: the same file as the nightly Export",
+        "tags": [
+          "Export"
+        ],
+        "responses": {
+          "200": {
+            "description": "GEDCOM 5.5.1, UTF-8",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "description": "GEDCOM 5.5.1, UTF-8"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Default Response",
             "content": {
               "application/json": {

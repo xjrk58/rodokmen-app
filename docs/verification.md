@@ -17,9 +17,24 @@ this page with `node scripts/verification-trace.mjs`.
 | agent-access: Agents write Research leads | openspec/changes/add-research-leads/specs/agent-access/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | agent-access: Rate limits | openspec/changes/add-agent-access/specs/agent-access/spec.md | `fixedWindow` | shared/src/rules.ts | see below |
 | agent-access: Read and propose only | openspec/changes/add-agent-access/specs/agent-access/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| erasure: Erasure reaches the log | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `rewriteLog` | shared/src/erasure.ts | nothing beyond the trusted base |
+| erasure: Owner erases a Living person | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `citationsLeft` | shared/src/erasure.ts | nothing beyond the trusted base |
+| erasure: Owner erases a Living person | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `mayErase` | shared/src/erasure.ts | nothing beyond the trusted base |
+| erasure: Owner erases a Living person | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `theirRows` | shared/src/erasure.ts | nothing beyond the trusted base |
+| erasure: Owner erases a Living person | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `theirsAlone` | shared/src/erasure.ts | nothing beyond the trusted base |
+| erasure: Owner erases a Living person | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| erasure: Restores keep erased people erased | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `afterReapplying` | shared/src/erasure.ts | nothing beyond the trusted base |
+| erasure: Restores keep erased people erased | openspec/changes/add-exports-and-erasure/specs/erasure/spec.md | `toEraseAgain` | shared/src/erasure.ts | nothing beyond the trusted base |
 | evidence-media: Images sent for reading | openspec/changes/add-scan-reading/specs/evidence-media/spec.md | `imagesToSend` | shared/src/reading.ts | nothing beyond the trusted base |
 | evidence-media: Images sent for reading | openspec/changes/add-scan-reading/specs/evidence-media/spec.md | `mayRead` | shared/src/reading.ts | nothing beyond the trusted base |
+| exports: GEDCOM download for the Owner | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportRecord` | shared/src/export.ts | nothing beyond the trusted base |
+| exports: GEDCOM download for the Owner | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `reducePerson` | shared/src/export.ts | nothing beyond the trusted base |
+| exports: GEDCOM download for the Owner | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| exports: Living people are reduced in every Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportRecord` | shared/src/export.ts | nothing beyond the trusted base |
+| exports: Living people are reduced in every Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `reducePerson` | shared/src/export.ts | nothing beyond the trusted base |
 | exports: Living people are reduced in every Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportedPersonLinks` | shared/src/leads.ts | nothing beyond the trusted base |
+| exports: No images in any Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportLinks` | shared/src/export.ts | nothing beyond the trusted base |
+| exports: No images in any Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportRecord` | shared/src/export.ts | nothing beyond the trusted base |
 | proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | research-leads: Findings link back to leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `leadsOnAccept` | shared/src/leads.ts | nothing beyond the trusted base |
@@ -80,6 +95,8 @@ A verified function's `requires` are proved wherever a verified function calls i
 Also proved, with no requirement of their own; the traced functions rely on their contracts.
 
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
+- shared/src/erasure.ts: `onlyTheirs`, `leftWithNothing`, `mentionsAny`
+- shared/src/export.ts: `isMediaLink`, `hasMedia`, `citationView`, `citationsView`, `hasLivingRole`, `eventView`, `eventsView`, `namesView`, `isLivingRelation`, `livingRelations`
 - shared/src/gaps.ts: `gapKey`, `maxInt`, `minInt`, `isBirthGap`, `isParentsGap`, `isMarriageGap`, `fits`, `anyFits`, `hasSuggestion`, `gapSuggestions`, `isRealGap`
 - shared/src/leads.ts: `isLeadStatus`, `isFoundBy`
 - shared/src/matching.ts: `sharesOne`, `nameMatches`, `houseMatches`, `yearsMatch`, `placeMatches`, `matchReasons`, `scoreOf`, `fullMatch`, `isSuggested`
@@ -118,9 +135,37 @@ Where a proof covers less than its requirement, exactly what it does and does no
   the transaction of every accept and undo and never on a rejection; server/test/leads.test.ts tests that.
 - **Leads in an Export** (`exportedPersonLinks`, shared/src/leads.ts; exports "Living people are reduced in every
   Export"). Proved for one lead's links to Persons: no link to a Living person is kept, every other link is, and a lead
-  that concerned Living people only is left out. The Export itself is not built yet (add-exports-and-erasure); its entry
-  for leads is server/src/leads/export.ts, which marks who is Living with the proved Living rule and is tested in
-  server/test/leads.test.ts. Erasure is to use the same rule (`living` meaning the erased Person).
+  that concerned Living people only is left out. Not proved: that the Export writes its leads through
+  server/src/leads/export.ts, which marks who is Living with the proved Living rule, and that erasure uses the same
+  rule (server/src/leads/erasure.ts, `living` meaning the erased Person); server/test/exports.test.ts and
+  server/test/erasure.test.ts test both with a lead linked to a Living person.
+- **The Export view of a record** (`exportRecord`, `reducePerson`, `exportLinks`, shared/src/export.ts; exports "Living
+  people are reduced in every Export", "No images in any Export" and "GEDCOM download for the Owner"). Proved, for any
+  record: a Living person keeps the given name and surname of their primary Name (no other Name, no spelling as found,
+  no Citation), their sex, only their `childOf` and `partnerIn` relations, and their birth year, and nothing else: no
+  Event (so no exact date, Place or House), fact, note or link ("Living grandchild in GEDCOM": born in 2010, the view
+  holds 2010 and no place or other fact); no record keeps an Event in which a Living person has a Role; a record that
+  concerns a Living person keeps no notes; no record, Event Citation or Name Citation keeps a link to an image or a
+  document, and every other link is kept ("Citation with a page image": its transcription, page and confidence stay);
+  any other record keeps its facts and relations. Not proved: who is Living (the proved Living rule, which the server
+  asks), what the server gathers into a record (server/src/export/gather.ts: which links are images, the image embeds
+  it takes out of notes, the birth year from the dates, which Families concern a Living person, a Family account given
+  by a Living person), that both writers write only the view (server/src/export/markdown.ts and gedcom.ts), and that
+  the download and the nightly file are the same; server/test/exports.test.ts tests those.
+- **Erasure** (`mayErase`, `theirsAlone`, `theirRows`, `citationsLeft`, `rewriteLog`, `toEraseAgain`,
+  `afterReapplying`, shared/src/erasure.ts; `mayDo`, shared/src/rules.ts; erasure "Owner erases a Living person",
+  "Erasure reaches the log" and "Restores keep erased people erased"). Proved: only a Living person is erased, and only
+  when the confirmation is their name ("Not Living", "A cousin asks to be removed"); only the Owner may (`erase`); the
+  Events and images that go are exactly those whose every Person is the erased one, so none another Person took part in
+  or is shown in; the rows that go are exactly the erased Person's; the Citations that go are exactly those attached
+  only to records that go; every log entry that mentions an erased record becomes a marker with only "erased" and the
+  time, and every other entry stays as it was ("History after erasure"); a restore erases again exactly the listed
+  Persons it holds, so none remains and nobody else goes ("Restore from an old Backup"). Not proved: which rows,
+  Events, Citations, images and log entries the server gathers and which ids a snapshot or an operation mentions, that
+  it deletes and rewrites them in one transaction (server/src/erasure/service.ts), that a Proposal involved in an
+  erased entry loses its operations and notes, that the Export replaces its history afterwards
+  (server/src/export/run.ts), and that the API and the monthly restore test erase again before anything else;
+  server/test/erasure.test.ts tests those, the last with a database restored from before the erasure.
 - **The relation to the family** (`relationLevels`, shared/src/relation.ts; tree-model "Relation to the family is
   computed" and "Relation follows the evidence"). Proved, for any Persons, Family roots and links: both searches
   (`reachFrom`) stop (a round that reaches someone new leaves fewer unreached: a `decreases` added in relation.dfy);
@@ -206,10 +251,11 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   `hasProposal` in rules.ts), so that it is proved from the element at hand, and give `.dfy` hints (`var x :| …`)
   when a proof chains several.
 
-Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/gaps.ts,
-shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts, shared/src/reading.ts, shared/src/relation.ts and
-shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
-(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of relation.ts and gaps.ts
-compare two plain integers, emitted in their order; gaps.ts, leads.ts, matching.ts and reading.ts have no optionals at
-all: unknown years, houses, Places and Sources are a flag and 0, or the empty string), and the generated `.dfy.gen`
-was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.
+Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/erasure.ts,
+shared/src/export.ts, shared/src/gaps.ts, shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts,
+shared/src/reading.ts, shared/src/relation.ts and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`,
+`>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where order does not matter; the
+`!` index reads of relation.ts, gaps.ts and export.ts are not compared at all or compare two plain integers, emitted
+in their order; erasure.ts, export.ts, gaps.ts, leads.ts, matching.ts and reading.ts have no optionals at all: unknown
+years, houses, Places and Sources are a flag and 0, or the empty string), and the generated `.dfy.gen` was read for
+it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.

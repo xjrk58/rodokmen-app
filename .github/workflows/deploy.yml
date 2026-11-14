@@ -100,10 +100,10 @@ jobs:
           printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           printf 'Host vps\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n' \
             "${{ secrets.DEPLOY_HOST }}" "${{ secrets.DEPLOY_USER }}" > ~/.ssh/config
-      - name: Copy the stack definition (compose, Caddyfile, scripts; never .env)
+      - name: Copy the stack definition (compose, Caddyfile, scripts; never .env or the Export's deploy key)
         run: |
           rsync -rlptz --delete \
-            --exclude '.env' --exclude 'backup.env' --exclude 'state/' --exclude '.gitignore' \
+            --exclude '.env' --exclude 'backup.env' --exclude 'state/' --exclude 'export/' --exclude '.gitignore' \
             deploy/ "vps:$DEPLOY_PATH/"
       - name: Log the VPS in to GHCR for this pull
         run: echo "${{ secrets.GITHUB_TOKEN }}" | ssh vps docker login ghcr.io -u "${{ github.actor }}" --password-stdin

@@ -7,6 +7,8 @@ import { proposalDigestLines } from '../proposals/views.js';
 import { uploadKeys, type ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { messageOf } from '../errors.js';
+import type { ExportRepoConfig } from '../export/repo.js';
+import { runExport } from '../export/run.js';
 
 export const TIME_ZONE = 'Europe/Prague';
 
@@ -47,6 +49,8 @@ export interface JobDeps {
   mailer: Mailer;
   images: ImageStorage;
   publicOrigin: string;
+  /** The nightly Export's repository; without one (the default) the Export does not run. */
+  exportRepo?: ExportRepoConfig | null;
   log?: (msg: string, error?: unknown) => void;
 }
 
@@ -179,6 +183,16 @@ export function dailyJobs(deps: JobDeps): DailyJob[] {
     { name: 'editor-digest', at: { hour: 18, minute: 0 }, run: (_now, day) => sendDigests(deps, day) },
     { name: 'delete-unused-images', at: { hour: 3, minute: 30 }, run: (now) => deleteUnusedImages(deps, now) },
     { name: 'lead-suggestions', at: { hour: 2, minute: 30 }, run: (now) => suggestLeads(deps, now) },
+    // The nightly Export to rodokmen-export (exports spec), only once the Owner configured it.
+    ...(deps.exportRepo
+      ? [
+          {
+            name: 'nightly-export',
+            at: { hour: 4, minute: 0 },
+            run: (_now: Date, day: string) => runExport({ db: deps.db, clock: deps.clock, repo: deps.exportRepo ?? null }, day),
+          },
+        ]
+      : []),
   ];
 }
 
