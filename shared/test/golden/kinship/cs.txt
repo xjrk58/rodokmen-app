@@ -1,0 +1,789 @@
+self male: vy
+self female: vy
+self unknown: vy
+birth up 0 down 1 male: syn
+birth up 0 down 1 male adoptive: adoptivní syn
+birth up 0 down 1 female: dcera
+birth up 0 down 1 female adoptive: adoptivní dcera
+birth up 0 down 1 unknown: dítě
+birth up 0 down 1 unknown adoptive: adoptivní dítě
+birth up 0 down 2 male: vnuk
+birth up 0 down 2 male adoptive: vnuk (přes osvojení)
+birth up 0 down 2 female: vnučka
+birth up 0 down 2 female adoptive: vnučka (přes osvojení)
+birth up 0 down 2 unknown: vnouče
+birth up 0 down 2 unknown adoptive: vnouče (přes osvojení)
+birth up 0 down 3 male: pravnuk
+birth up 0 down 3 male adoptive: pravnuk (přes osvojení)
+birth up 0 down 3 female: pravnučka
+birth up 0 down 3 female adoptive: pravnučka (přes osvojení)
+birth up 0 down 3 unknown: pravnouče
+birth up 0 down 3 unknown adoptive: pravnouče (přes osvojení)
+birth up 0 down 4 male: prapravnuk
+birth up 0 down 4 male adoptive: prapravnuk (přes osvojení)
+birth up 0 down 4 female: prapravnučka
+birth up 0 down 4 female adoptive: prapravnučka (přes osvojení)
+birth up 0 down 4 unknown: prapravnouče
+birth up 0 down 4 unknown adoptive: prapravnouče (přes osvojení)
+birth up 0 down 5 male: praprapravnuk
+birth up 0 down 5 male adoptive: praprapravnuk (přes osvojení)
+birth up 0 down 5 female: praprapravnučka
+birth up 0 down 5 female adoptive: praprapravnučka (přes osvojení)
+birth up 0 down 5 unknown: praprapravnouče
+birth up 0 down 5 unknown adoptive: praprapravnouče (přes osvojení)
+birth up 0 down 6 male: potomek v 6. pokolení
+birth up 0 down 6 male adoptive: potomek v 6. pokolení (přes osvojení)
+birth up 0 down 6 female: potomkyně v 6. pokolení
+birth up 0 down 6 female adoptive: potomkyně v 6. pokolení (přes osvojení)
+birth up 0 down 6 unknown: potomek v 6. pokolení
+birth up 0 down 6 unknown adoptive: potomek v 6. pokolení (přes osvojení)
+birth up 0 down 7 male: potomek v 7. pokolení
+birth up 0 down 7 male adoptive: potomek v 7. pokolení (přes osvojení)
+birth up 0 down 7 female: potomkyně v 7. pokolení
+birth up 0 down 7 female adoptive: potomkyně v 7. pokolení (přes osvojení)
+birth up 0 down 7 unknown: potomek v 7. pokolení
+birth up 0 down 7 unknown adoptive: potomek v 7. pokolení (přes osvojení)
+birth up 0 down 8 male: potomek v 8. pokolení
+birth up 0 down 8 male adoptive: potomek v 8. pokolení (přes osvojení)
+birth up 0 down 8 female: potomkyně v 8. pokolení
+birth up 0 down 8 female adoptive: potomkyně v 8. pokolení (přes osvojení)
+birth up 0 down 8 unknown: potomek v 8. pokolení
+birth up 0 down 8 unknown adoptive: potomek v 8. pokolení (přes osvojení)
+birth up 1 down 0 male: otec
+birth up 1 down 0 male adoptive: adoptivní otec
+birth up 1 down 0 female: matka
+birth up 1 down 0 female adoptive: adoptivní matka
+birth up 1 down 0 unknown: rodič
+birth up 1 down 0 unknown adoptive: adoptivní rodič
+birth up 1 down 1 male: bratr
+birth up 1 down 1 male half: polorodý bratr
+birth up 1 down 1 male adoptive: bratr (přes osvojení)
+birth up 1 down 1 female: sestra
+birth up 1 down 1 female half: polorodá sestra
+birth up 1 down 1 female adoptive: sestra (přes osvojení)
+birth up 1 down 1 unknown: sourozenec
+birth up 1 down 1 unknown half: polorodý sourozenec
+birth up 1 down 1 unknown adoptive: sourozenec (přes osvojení)
+birth up 1 down 2 male: synovec
+birth up 1 down 2 male half: polorodý synovec
+birth up 1 down 2 male adoptive: synovec (přes osvojení)
+birth up 1 down 2 female: neteř
+birth up 1 down 2 female half: polorodá neteř
+birth up 1 down 2 female adoptive: neteř (přes osvojení)
+birth up 1 down 2 unknown: synovec/neteř
+birth up 1 down 2 unknown half: polorodý synovec/polorodá neteř
+birth up 1 down 2 unknown adoptive: synovec/neteř (přes osvojení)
+birth up 1 down 3 male: prasynovec
+birth up 1 down 3 male half: polorodý prasynovec
+birth up 1 down 3 male adoptive: prasynovec (přes osvojení)
+birth up 1 down 3 female: praneteř
+birth up 1 down 3 female half: polorodá praneteř
+birth up 1 down 3 female adoptive: praneteř (přes osvojení)
+birth up 1 down 3 unknown: prasynovec/praneteř
+birth up 1 down 3 unknown half: polorodý prasynovec/polorodá praneteř
+birth up 1 down 3 unknown adoptive: prasynovec/praneteř (přes osvojení)
+birth up 1 down 4 male: praprasynovec
+birth up 1 down 4 male half: polorodý praprasynovec
+birth up 1 down 4 male adoptive: praprasynovec (přes osvojení)
+birth up 1 down 4 female: prapraneteř
+birth up 1 down 4 female half: polorodá prapraneteř
+birth up 1 down 4 female adoptive: prapraneteř (přes osvojení)
+birth up 1 down 4 unknown: praprasynovec/prapraneteř
+birth up 1 down 4 unknown half: polorodý praprasynovec/polorodá prapraneteř
+birth up 1 down 4 unknown adoptive: praprasynovec/prapraneteř (přes osvojení)
+birth up 1 down 5 male: prapraprasynovec
+birth up 1 down 5 male half: polorodý prapraprasynovec
+birth up 1 down 5 male adoptive: prapraprasynovec (přes osvojení)
+birth up 1 down 5 female: praprapraneteř
+birth up 1 down 5 female half: polorodá praprapraneteř
+birth up 1 down 5 female adoptive: praprapraneteř (přes osvojení)
+birth up 1 down 5 unknown: prapraprasynovec/praprapraneteř
+birth up 1 down 5 unknown half: polorodý prapraprasynovec/polorodá praprapraneteř
+birth up 1 down 5 unknown adoptive: prapraprasynovec/praprapraneteř (přes osvojení)
+birth up 1 down 6 male: příbuzný
+birth up 1 down 6 male half: polorodý příbuzný
+birth up 1 down 6 male adoptive: příbuzný (přes osvojení)
+birth up 1 down 6 female: příbuzná
+birth up 1 down 6 female half: polorodá příbuzná
+birth up 1 down 6 female adoptive: příbuzná (přes osvojení)
+birth up 1 down 6 unknown: příbuzný/příbuzná
+birth up 1 down 6 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 1 down 6 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 1 down 7 male: příbuzný
+birth up 1 down 7 male half: polorodý příbuzný
+birth up 1 down 7 male adoptive: příbuzný (přes osvojení)
+birth up 1 down 7 female: příbuzná
+birth up 1 down 7 female half: polorodá příbuzná
+birth up 1 down 7 female adoptive: příbuzná (přes osvojení)
+birth up 1 down 7 unknown: příbuzný/příbuzná
+birth up 1 down 7 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 1 down 7 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 1 down 8 male: příbuzný
+birth up 1 down 8 male half: polorodý příbuzný
+birth up 1 down 8 male adoptive: příbuzný (přes osvojení)
+birth up 1 down 8 female: příbuzná
+birth up 1 down 8 female half: polorodá příbuzná
+birth up 1 down 8 female adoptive: příbuzná (přes osvojení)
+birth up 1 down 8 unknown: příbuzný/příbuzná
+birth up 1 down 8 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 1 down 8 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 2 down 0 male: děd
+birth up 2 down 0 male adoptive: děd (přes osvojení)
+birth up 2 down 0 female: babička
+birth up 2 down 0 female adoptive: babička (přes osvojení)
+birth up 2 down 0 unknown: prarodič
+birth up 2 down 0 unknown adoptive: prarodič (přes osvojení)
+birth up 2 down 1 male: strýc
+birth up 2 down 1 male half: polorodý strýc
+birth up 2 down 1 male adoptive: strýc (přes osvojení)
+birth up 2 down 1 female: teta
+birth up 2 down 1 female half: polorodá teta
+birth up 2 down 1 female adoptive: teta (přes osvojení)
+birth up 2 down 1 unknown: strýc/teta
+birth up 2 down 1 unknown half: polorodý strýc/polorodá teta
+birth up 2 down 1 unknown adoptive: strýc/teta (přes osvojení)
+birth up 2 down 2 male: bratranec
+birth up 2 down 2 male half: polorodý bratranec
+birth up 2 down 2 male adoptive: bratranec (přes osvojení)
+birth up 2 down 2 female: sestřenice
+birth up 2 down 2 female half: polorodá sestřenice
+birth up 2 down 2 female adoptive: sestřenice (přes osvojení)
+birth up 2 down 2 unknown: bratranec/sestřenice
+birth up 2 down 2 unknown half: polorodý bratranec/polorodá sestřenice
+birth up 2 down 2 unknown adoptive: bratranec/sestřenice (přes osvojení)
+birth up 2 down 3 male: synovec z 2. kolena
+birth up 2 down 3 male half: polorodý synovec z 2. kolena
+birth up 2 down 3 male adoptive: synovec z 2. kolena (přes osvojení)
+birth up 2 down 3 female: neteř z 2. kolena
+birth up 2 down 3 female half: polorodá neteř z 2. kolena
+birth up 2 down 3 female adoptive: neteř z 2. kolena (přes osvojení)
+birth up 2 down 3 unknown: synovec/neteř z 2. kolena
+birth up 2 down 3 unknown half: polorodý synovec/polorodá neteř z 2. kolena
+birth up 2 down 3 unknown adoptive: synovec/neteř z 2. kolena (přes osvojení)
+birth up 2 down 4 male: prasynovec z 2. kolena
+birth up 2 down 4 male half: polorodý prasynovec z 2. kolena
+birth up 2 down 4 male adoptive: prasynovec z 2. kolena (přes osvojení)
+birth up 2 down 4 female: praneteř z 2. kolena
+birth up 2 down 4 female half: polorodá praneteř z 2. kolena
+birth up 2 down 4 female adoptive: praneteř z 2. kolena (přes osvojení)
+birth up 2 down 4 unknown: prasynovec/praneteř z 2. kolena
+birth up 2 down 4 unknown half: polorodý prasynovec/polorodá praneteř z 2. kolena
+birth up 2 down 4 unknown adoptive: prasynovec/praneteř z 2. kolena (přes osvojení)
+birth up 2 down 5 male: praprasynovec z 2. kolena
+birth up 2 down 5 male half: polorodý praprasynovec z 2. kolena
+birth up 2 down 5 male adoptive: praprasynovec z 2. kolena (přes osvojení)
+birth up 2 down 5 female: prapraneteř z 2. kolena
+birth up 2 down 5 female half: polorodá prapraneteř z 2. kolena
+birth up 2 down 5 female adoptive: prapraneteř z 2. kolena (přes osvojení)
+birth up 2 down 5 unknown: praprasynovec/prapraneteř z 2. kolena
+birth up 2 down 5 unknown half: polorodý praprasynovec/polorodá prapraneteř z 2. kolena
+birth up 2 down 5 unknown adoptive: praprasynovec/prapraneteř z 2. kolena (přes osvojení)
+birth up 2 down 6 male: prapraprasynovec z 2. kolena
+birth up 2 down 6 male half: polorodý prapraprasynovec z 2. kolena
+birth up 2 down 6 male adoptive: prapraprasynovec z 2. kolena (přes osvojení)
+birth up 2 down 6 female: praprapraneteř z 2. kolena
+birth up 2 down 6 female half: polorodá praprapraneteř z 2. kolena
+birth up 2 down 6 female adoptive: praprapraneteř z 2. kolena (přes osvojení)
+birth up 2 down 6 unknown: prapraprasynovec/praprapraneteř z 2. kolena
+birth up 2 down 6 unknown half: polorodý prapraprasynovec/polorodá praprapraneteř z 2. kolena
+birth up 2 down 6 unknown adoptive: prapraprasynovec/praprapraneteř z 2. kolena (přes osvojení)
+birth up 2 down 7 male: příbuzný
+birth up 2 down 7 male half: polorodý příbuzný
+birth up 2 down 7 male adoptive: příbuzný (přes osvojení)
+birth up 2 down 7 female: příbuzná
+birth up 2 down 7 female half: polorodá příbuzná
+birth up 2 down 7 female adoptive: příbuzná (přes osvojení)
+birth up 2 down 7 unknown: příbuzný/příbuzná
+birth up 2 down 7 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 2 down 7 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 2 down 8 male: příbuzný
+birth up 2 down 8 male half: polorodý příbuzný
+birth up 2 down 8 male adoptive: příbuzný (přes osvojení)
+birth up 2 down 8 female: příbuzná
+birth up 2 down 8 female half: polorodá příbuzná
+birth up 2 down 8 female adoptive: příbuzná (přes osvojení)
+birth up 2 down 8 unknown: příbuzný/příbuzná
+birth up 2 down 8 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 2 down 8 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 3 down 0 male: praděd
+birth up 3 down 0 male adoptive: praděd (přes osvojení)
+birth up 3 down 0 female: prababička
+birth up 3 down 0 female adoptive: prababička (přes osvojení)
+birth up 3 down 0 unknown: praprarodič
+birth up 3 down 0 unknown adoptive: praprarodič (přes osvojení)
+birth up 3 down 1 male: prastrýc
+birth up 3 down 1 male half: polorodý prastrýc
+birth up 3 down 1 male adoptive: prastrýc (přes osvojení)
+birth up 3 down 1 female: prateta
+birth up 3 down 1 female half: polorodá prateta
+birth up 3 down 1 female adoptive: prateta (přes osvojení)
+birth up 3 down 1 unknown: prastrýc/prateta
+birth up 3 down 1 unknown half: polorodý prastrýc/polorodá prateta
+birth up 3 down 1 unknown adoptive: prastrýc/prateta (přes osvojení)
+birth up 3 down 2 male: strýc z 2. kolena
+birth up 3 down 2 male half: polorodý strýc z 2. kolena
+birth up 3 down 2 male adoptive: strýc z 2. kolena (přes osvojení)
+birth up 3 down 2 female: teta z 2. kolena
+birth up 3 down 2 female half: polorodá teta z 2. kolena
+birth up 3 down 2 female adoptive: teta z 2. kolena (přes osvojení)
+birth up 3 down 2 unknown: strýc/teta z 2. kolena
+birth up 3 down 2 unknown half: polorodý strýc/polorodá teta z 2. kolena
+birth up 3 down 2 unknown adoptive: strýc/teta z 2. kolena (přes osvojení)
+birth up 3 down 3 male: bratranec z 2. kolena
+birth up 3 down 3 male half: polorodý bratranec z 2. kolena
+birth up 3 down 3 male adoptive: bratranec z 2. kolena (přes osvojení)
+birth up 3 down 3 female: sestřenice z 2. kolena
+birth up 3 down 3 female half: polorodá sestřenice z 2. kolena
+birth up 3 down 3 female adoptive: sestřenice z 2. kolena (přes osvojení)
+birth up 3 down 3 unknown: bratranec/sestřenice z 2. kolena
+birth up 3 down 3 unknown half: polorodý bratranec/polorodá sestřenice z 2. kolena
+birth up 3 down 3 unknown adoptive: bratranec/sestřenice z 2. kolena (přes osvojení)
+birth up 3 down 4 male: synovec z 3. kolena
+birth up 3 down 4 male half: polorodý synovec z 3. kolena
+birth up 3 down 4 male adoptive: synovec z 3. kolena (přes osvojení)
+birth up 3 down 4 female: neteř z 3. kolena
+birth up 3 down 4 female half: polorodá neteř z 3. kolena
+birth up 3 down 4 female adoptive: neteř z 3. kolena (přes osvojení)
+birth up 3 down 4 unknown: synovec/neteř z 3. kolena
+birth up 3 down 4 unknown half: polorodý synovec/polorodá neteř z 3. kolena
+birth up 3 down 4 unknown adoptive: synovec/neteř z 3. kolena (přes osvojení)
+birth up 3 down 5 male: prasynovec z 3. kolena
+birth up 3 down 5 male half: polorodý prasynovec z 3. kolena
+birth up 3 down 5 male adoptive: prasynovec z 3. kolena (přes osvojení)
+birth up 3 down 5 female: praneteř z 3. kolena
+birth up 3 down 5 female half: polorodá praneteř z 3. kolena
+birth up 3 down 5 female adoptive: praneteř z 3. kolena (přes osvojení)
+birth up 3 down 5 unknown: prasynovec/praneteř z 3. kolena
+birth up 3 down 5 unknown half: polorodý prasynovec/polorodá praneteř z 3. kolena
+birth up 3 down 5 unknown adoptive: prasynovec/praneteř z 3. kolena (přes osvojení)
+birth up 3 down 6 male: praprasynovec z 3. kolena
+birth up 3 down 6 male half: polorodý praprasynovec z 3. kolena
+birth up 3 down 6 male adoptive: praprasynovec z 3. kolena (přes osvojení)
+birth up 3 down 6 female: prapraneteř z 3. kolena
+birth up 3 down 6 female half: polorodá prapraneteř z 3. kolena
+birth up 3 down 6 female adoptive: prapraneteř z 3. kolena (přes osvojení)
+birth up 3 down 6 unknown: praprasynovec/prapraneteř z 3. kolena
+birth up 3 down 6 unknown half: polorodý praprasynovec/polorodá prapraneteř z 3. kolena
+birth up 3 down 6 unknown adoptive: praprasynovec/prapraneteř z 3. kolena (přes osvojení)
+birth up 3 down 7 male: prapraprasynovec z 3. kolena
+birth up 3 down 7 male half: polorodý prapraprasynovec z 3. kolena
+birth up 3 down 7 male adoptive: prapraprasynovec z 3. kolena (přes osvojení)
+birth up 3 down 7 female: praprapraneteř z 3. kolena
+birth up 3 down 7 female half: polorodá praprapraneteř z 3. kolena
+birth up 3 down 7 female adoptive: praprapraneteř z 3. kolena (přes osvojení)
+birth up 3 down 7 unknown: prapraprasynovec/praprapraneteř z 3. kolena
+birth up 3 down 7 unknown half: polorodý prapraprasynovec/polorodá praprapraneteř z 3. kolena
+birth up 3 down 7 unknown adoptive: prapraprasynovec/praprapraneteř z 3. kolena (přes osvojení)
+birth up 3 down 8 male: příbuzný
+birth up 3 down 8 male half: polorodý příbuzný
+birth up 3 down 8 male adoptive: příbuzný (přes osvojení)
+birth up 3 down 8 female: příbuzná
+birth up 3 down 8 female half: polorodá příbuzná
+birth up 3 down 8 female adoptive: příbuzná (přes osvojení)
+birth up 3 down 8 unknown: příbuzný/příbuzná
+birth up 3 down 8 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 3 down 8 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 4 down 0 male: prapraděd
+birth up 4 down 0 male adoptive: prapraděd (přes osvojení)
+birth up 4 down 0 female: praprababička
+birth up 4 down 0 female adoptive: praprababička (přes osvojení)
+birth up 4 down 0 unknown: prapraprarodič
+birth up 4 down 0 unknown adoptive: prapraprarodič (přes osvojení)
+birth up 4 down 1 male: praprastrýc
+birth up 4 down 1 male half: polorodý praprastrýc
+birth up 4 down 1 male adoptive: praprastrýc (přes osvojení)
+birth up 4 down 1 female: praprateta
+birth up 4 down 1 female half: polorodá praprateta
+birth up 4 down 1 female adoptive: praprateta (přes osvojení)
+birth up 4 down 1 unknown: praprastrýc/praprateta
+birth up 4 down 1 unknown half: polorodý praprastrýc/polorodá praprateta
+birth up 4 down 1 unknown adoptive: praprastrýc/praprateta (přes osvojení)
+birth up 4 down 2 male: prastrýc z 2. kolena
+birth up 4 down 2 male half: polorodý prastrýc z 2. kolena
+birth up 4 down 2 male adoptive: prastrýc z 2. kolena (přes osvojení)
+birth up 4 down 2 female: prateta z 2. kolena
+birth up 4 down 2 female half: polorodá prateta z 2. kolena
+birth up 4 down 2 female adoptive: prateta z 2. kolena (přes osvojení)
+birth up 4 down 2 unknown: prastrýc/prateta z 2. kolena
+birth up 4 down 2 unknown half: polorodý prastrýc/polorodá prateta z 2. kolena
+birth up 4 down 2 unknown adoptive: prastrýc/prateta z 2. kolena (přes osvojení)
+birth up 4 down 3 male: strýc z 3. kolena
+birth up 4 down 3 male half: polorodý strýc z 3. kolena
+birth up 4 down 3 male adoptive: strýc z 3. kolena (přes osvojení)
+birth up 4 down 3 female: teta z 3. kolena
+birth up 4 down 3 female half: polorodá teta z 3. kolena
+birth up 4 down 3 female adoptive: teta z 3. kolena (přes osvojení)
+birth up 4 down 3 unknown: strýc/teta z 3. kolena
+birth up 4 down 3 unknown half: polorodý strýc/polorodá teta z 3. kolena
+birth up 4 down 3 unknown adoptive: strýc/teta z 3. kolena (přes osvojení)
+birth up 4 down 4 male: bratranec z 3. kolena
+birth up 4 down 4 male half: polorodý bratranec z 3. kolena
+birth up 4 down 4 male adoptive: bratranec z 3. kolena (přes osvojení)
+birth up 4 down 4 female: sestřenice z 3. kolena
+birth up 4 down 4 female half: polorodá sestřenice z 3. kolena
+birth up 4 down 4 female adoptive: sestřenice z 3. kolena (přes osvojení)
+birth up 4 down 4 unknown: bratranec/sestřenice z 3. kolena
+birth up 4 down 4 unknown half: polorodý bratranec/polorodá sestřenice z 3. kolena
+birth up 4 down 4 unknown adoptive: bratranec/sestřenice z 3. kolena (přes osvojení)
+birth up 4 down 5 male: synovec z 4. kolena
+birth up 4 down 5 male half: polorodý synovec z 4. kolena
+birth up 4 down 5 male adoptive: synovec z 4. kolena (přes osvojení)
+birth up 4 down 5 female: neteř z 4. kolena
+birth up 4 down 5 female half: polorodá neteř z 4. kolena
+birth up 4 down 5 female adoptive: neteř z 4. kolena (přes osvojení)
+birth up 4 down 5 unknown: synovec/neteř z 4. kolena
+birth up 4 down 5 unknown half: polorodý synovec/polorodá neteř z 4. kolena
+birth up 4 down 5 unknown adoptive: synovec/neteř z 4. kolena (přes osvojení)
+birth up 4 down 6 male: prasynovec z 4. kolena
+birth up 4 down 6 male half: polorodý prasynovec z 4. kolena
+birth up 4 down 6 male adoptive: prasynovec z 4. kolena (přes osvojení)
+birth up 4 down 6 female: praneteř z 4. kolena
+birth up 4 down 6 female half: polorodá praneteř z 4. kolena
+birth up 4 down 6 female adoptive: praneteř z 4. kolena (přes osvojení)
+birth up 4 down 6 unknown: prasynovec/praneteř z 4. kolena
+birth up 4 down 6 unknown half: polorodý prasynovec/polorodá praneteř z 4. kolena
+birth up 4 down 6 unknown adoptive: prasynovec/praneteř z 4. kolena (přes osvojení)
+birth up 4 down 7 male: praprasynovec z 4. kolena
+birth up 4 down 7 male half: polorodý praprasynovec z 4. kolena
+birth up 4 down 7 male adoptive: praprasynovec z 4. kolena (přes osvojení)
+birth up 4 down 7 female: prapraneteř z 4. kolena
+birth up 4 down 7 female half: polorodá prapraneteř z 4. kolena
+birth up 4 down 7 female adoptive: prapraneteř z 4. kolena (přes osvojení)
+birth up 4 down 7 unknown: praprasynovec/prapraneteř z 4. kolena
+birth up 4 down 7 unknown half: polorodý praprasynovec/polorodá prapraneteř z 4. kolena
+birth up 4 down 7 unknown adoptive: praprasynovec/prapraneteř z 4. kolena (přes osvojení)
+birth up 4 down 8 male: prapraprasynovec z 4. kolena
+birth up 4 down 8 male half: polorodý prapraprasynovec z 4. kolena
+birth up 4 down 8 male adoptive: prapraprasynovec z 4. kolena (přes osvojení)
+birth up 4 down 8 female: praprapraneteř z 4. kolena
+birth up 4 down 8 female half: polorodá praprapraneteř z 4. kolena
+birth up 4 down 8 female adoptive: praprapraneteř z 4. kolena (přes osvojení)
+birth up 4 down 8 unknown: prapraprasynovec/praprapraneteř z 4. kolena
+birth up 4 down 8 unknown half: polorodý prapraprasynovec/polorodá praprapraneteř z 4. kolena
+birth up 4 down 8 unknown adoptive: prapraprasynovec/praprapraneteř z 4. kolena (přes osvojení)
+birth up 5 down 0 male: praprapraděd
+birth up 5 down 0 male adoptive: praprapraděd (přes osvojení)
+birth up 5 down 0 female: prapraprababička
+birth up 5 down 0 female adoptive: prapraprababička (přes osvojení)
+birth up 5 down 0 unknown: praprapraprarodič
+birth up 5 down 0 unknown adoptive: praprapraprarodič (přes osvojení)
+birth up 5 down 1 male: prapraprastrýc
+birth up 5 down 1 male half: polorodý prapraprastrýc
+birth up 5 down 1 male adoptive: prapraprastrýc (přes osvojení)
+birth up 5 down 1 female: prapraprateta
+birth up 5 down 1 female half: polorodá prapraprateta
+birth up 5 down 1 female adoptive: prapraprateta (přes osvojení)
+birth up 5 down 1 unknown: prapraprastrýc/prapraprateta
+birth up 5 down 1 unknown half: polorodý prapraprastrýc/polorodá prapraprateta
+birth up 5 down 1 unknown adoptive: prapraprastrýc/prapraprateta (přes osvojení)
+birth up 5 down 2 male: praprastrýc z 2. kolena
+birth up 5 down 2 male half: polorodý praprastrýc z 2. kolena
+birth up 5 down 2 male adoptive: praprastrýc z 2. kolena (přes osvojení)
+birth up 5 down 2 female: praprateta z 2. kolena
+birth up 5 down 2 female half: polorodá praprateta z 2. kolena
+birth up 5 down 2 female adoptive: praprateta z 2. kolena (přes osvojení)
+birth up 5 down 2 unknown: praprastrýc/praprateta z 2. kolena
+birth up 5 down 2 unknown half: polorodý praprastrýc/polorodá praprateta z 2. kolena
+birth up 5 down 2 unknown adoptive: praprastrýc/praprateta z 2. kolena (přes osvojení)
+birth up 5 down 3 male: prastrýc z 3. kolena
+birth up 5 down 3 male half: polorodý prastrýc z 3. kolena
+birth up 5 down 3 male adoptive: prastrýc z 3. kolena (přes osvojení)
+birth up 5 down 3 female: prateta z 3. kolena
+birth up 5 down 3 female half: polorodá prateta z 3. kolena
+birth up 5 down 3 female adoptive: prateta z 3. kolena (přes osvojení)
+birth up 5 down 3 unknown: prastrýc/prateta z 3. kolena
+birth up 5 down 3 unknown half: polorodý prastrýc/polorodá prateta z 3. kolena
+birth up 5 down 3 unknown adoptive: prastrýc/prateta z 3. kolena (přes osvojení)
+birth up 5 down 4 male: strýc z 4. kolena
+birth up 5 down 4 male half: polorodý strýc z 4. kolena
+birth up 5 down 4 male adoptive: strýc z 4. kolena (přes osvojení)
+birth up 5 down 4 female: teta z 4. kolena
+birth up 5 down 4 female half: polorodá teta z 4. kolena
+birth up 5 down 4 female adoptive: teta z 4. kolena (přes osvojení)
+birth up 5 down 4 unknown: strýc/teta z 4. kolena
+birth up 5 down 4 unknown half: polorodý strýc/polorodá teta z 4. kolena
+birth up 5 down 4 unknown adoptive: strýc/teta z 4. kolena (přes osvojení)
+birth up 5 down 5 male: bratranec z 4. kolena
+birth up 5 down 5 male half: polorodý bratranec z 4. kolena
+birth up 5 down 5 male adoptive: bratranec z 4. kolena (přes osvojení)
+birth up 5 down 5 female: sestřenice z 4. kolena
+birth up 5 down 5 female half: polorodá sestřenice z 4. kolena
+birth up 5 down 5 female adoptive: sestřenice z 4. kolena (přes osvojení)
+birth up 5 down 5 unknown: bratranec/sestřenice z 4. kolena
+birth up 5 down 5 unknown half: polorodý bratranec/polorodá sestřenice z 4. kolena
+birth up 5 down 5 unknown adoptive: bratranec/sestřenice z 4. kolena (přes osvojení)
+birth up 5 down 6 male: synovec z 5. kolena
+birth up 5 down 6 male half: polorodý synovec z 5. kolena
+birth up 5 down 6 male adoptive: synovec z 5. kolena (přes osvojení)
+birth up 5 down 6 female: neteř z 5. kolena
+birth up 5 down 6 female half: polorodá neteř z 5. kolena
+birth up 5 down 6 female adoptive: neteř z 5. kolena (přes osvojení)
+birth up 5 down 6 unknown: synovec/neteř z 5. kolena
+birth up 5 down 6 unknown half: polorodý synovec/polorodá neteř z 5. kolena
+birth up 5 down 6 unknown adoptive: synovec/neteř z 5. kolena (přes osvojení)
+birth up 5 down 7 male: prasynovec z 5. kolena
+birth up 5 down 7 male half: polorodý prasynovec z 5. kolena
+birth up 5 down 7 male adoptive: prasynovec z 5. kolena (přes osvojení)
+birth up 5 down 7 female: praneteř z 5. kolena
+birth up 5 down 7 female half: polorodá praneteř z 5. kolena
+birth up 5 down 7 female adoptive: praneteř z 5. kolena (přes osvojení)
+birth up 5 down 7 unknown: prasynovec/praneteř z 5. kolena
+birth up 5 down 7 unknown half: polorodý prasynovec/polorodá praneteř z 5. kolena
+birth up 5 down 7 unknown adoptive: prasynovec/praneteř z 5. kolena (přes osvojení)
+birth up 5 down 8 male: praprasynovec z 5. kolena
+birth up 5 down 8 male half: polorodý praprasynovec z 5. kolena
+birth up 5 down 8 male adoptive: praprasynovec z 5. kolena (přes osvojení)
+birth up 5 down 8 female: prapraneteř z 5. kolena
+birth up 5 down 8 female half: polorodá prapraneteř z 5. kolena
+birth up 5 down 8 female adoptive: prapraneteř z 5. kolena (přes osvojení)
+birth up 5 down 8 unknown: praprasynovec/prapraneteř z 5. kolena
+birth up 5 down 8 unknown half: polorodý praprasynovec/polorodá prapraneteř z 5. kolena
+birth up 5 down 8 unknown adoptive: praprasynovec/prapraneteř z 5. kolena (přes osvojení)
+birth up 6 down 0 male: předek v 6. pokolení
+birth up 6 down 0 male adoptive: předek v 6. pokolení (přes osvojení)
+birth up 6 down 0 female: předkyně v 6. pokolení
+birth up 6 down 0 female adoptive: předkyně v 6. pokolení (přes osvojení)
+birth up 6 down 0 unknown: předek v 6. pokolení
+birth up 6 down 0 unknown adoptive: předek v 6. pokolení (přes osvojení)
+birth up 6 down 1 male: příbuzný
+birth up 6 down 1 male half: polorodý příbuzný
+birth up 6 down 1 male adoptive: příbuzný (přes osvojení)
+birth up 6 down 1 female: příbuzná
+birth up 6 down 1 female half: polorodá příbuzná
+birth up 6 down 1 female adoptive: příbuzná (přes osvojení)
+birth up 6 down 1 unknown: příbuzný/příbuzná
+birth up 6 down 1 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 6 down 1 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 6 down 2 male: prapraprastrýc z 2. kolena
+birth up 6 down 2 male half: polorodý prapraprastrýc z 2. kolena
+birth up 6 down 2 male adoptive: prapraprastrýc z 2. kolena (přes osvojení)
+birth up 6 down 2 female: prapraprateta z 2. kolena
+birth up 6 down 2 female half: polorodá prapraprateta z 2. kolena
+birth up 6 down 2 female adoptive: prapraprateta z 2. kolena (přes osvojení)
+birth up 6 down 2 unknown: prapraprastrýc/prapraprateta z 2. kolena
+birth up 6 down 2 unknown half: polorodý prapraprastrýc/polorodá prapraprateta z 2. kolena
+birth up 6 down 2 unknown adoptive: prapraprastrýc/prapraprateta z 2. kolena (přes osvojení)
+birth up 6 down 3 male: praprastrýc z 3. kolena
+birth up 6 down 3 male half: polorodý praprastrýc z 3. kolena
+birth up 6 down 3 male adoptive: praprastrýc z 3. kolena (přes osvojení)
+birth up 6 down 3 female: praprateta z 3. kolena
+birth up 6 down 3 female half: polorodá praprateta z 3. kolena
+birth up 6 down 3 female adoptive: praprateta z 3. kolena (přes osvojení)
+birth up 6 down 3 unknown: praprastrýc/praprateta z 3. kolena
+birth up 6 down 3 unknown half: polorodý praprastrýc/polorodá praprateta z 3. kolena
+birth up 6 down 3 unknown adoptive: praprastrýc/praprateta z 3. kolena (přes osvojení)
+birth up 6 down 4 male: prastrýc z 4. kolena
+birth up 6 down 4 male half: polorodý prastrýc z 4. kolena
+birth up 6 down 4 male adoptive: prastrýc z 4. kolena (přes osvojení)
+birth up 6 down 4 female: prateta z 4. kolena
+birth up 6 down 4 female half: polorodá prateta z 4. kolena
+birth up 6 down 4 female adoptive: prateta z 4. kolena (přes osvojení)
+birth up 6 down 4 unknown: prastrýc/prateta z 4. kolena
+birth up 6 down 4 unknown half: polorodý prastrýc/polorodá prateta z 4. kolena
+birth up 6 down 4 unknown adoptive: prastrýc/prateta z 4. kolena (přes osvojení)
+birth up 6 down 5 male: strýc z 5. kolena
+birth up 6 down 5 male half: polorodý strýc z 5. kolena
+birth up 6 down 5 male adoptive: strýc z 5. kolena (přes osvojení)
+birth up 6 down 5 female: teta z 5. kolena
+birth up 6 down 5 female half: polorodá teta z 5. kolena
+birth up 6 down 5 female adoptive: teta z 5. kolena (přes osvojení)
+birth up 6 down 5 unknown: strýc/teta z 5. kolena
+birth up 6 down 5 unknown half: polorodý strýc/polorodá teta z 5. kolena
+birth up 6 down 5 unknown adoptive: strýc/teta z 5. kolena (přes osvojení)
+birth up 6 down 6 male: bratranec z 5. kolena
+birth up 6 down 6 male half: polorodý bratranec z 5. kolena
+birth up 6 down 6 male adoptive: bratranec z 5. kolena (přes osvojení)
+birth up 6 down 6 female: sestřenice z 5. kolena
+birth up 6 down 6 female half: polorodá sestřenice z 5. kolena
+birth up 6 down 6 female adoptive: sestřenice z 5. kolena (přes osvojení)
+birth up 6 down 6 unknown: bratranec/sestřenice z 5. kolena
+birth up 6 down 6 unknown half: polorodý bratranec/polorodá sestřenice z 5. kolena
+birth up 6 down 6 unknown adoptive: bratranec/sestřenice z 5. kolena (přes osvojení)
+birth up 6 down 7 male: synovec z 6. kolena
+birth up 6 down 7 male half: polorodý synovec z 6. kolena
+birth up 6 down 7 male adoptive: synovec z 6. kolena (přes osvojení)
+birth up 6 down 7 female: neteř z 6. kolena
+birth up 6 down 7 female half: polorodá neteř z 6. kolena
+birth up 6 down 7 female adoptive: neteř z 6. kolena (přes osvojení)
+birth up 6 down 7 unknown: synovec/neteř z 6. kolena
+birth up 6 down 7 unknown half: polorodý synovec/polorodá neteř z 6. kolena
+birth up 6 down 7 unknown adoptive: synovec/neteř z 6. kolena (přes osvojení)
+birth up 6 down 8 male: prasynovec z 6. kolena
+birth up 6 down 8 male half: polorodý prasynovec z 6. kolena
+birth up 6 down 8 male adoptive: prasynovec z 6. kolena (přes osvojení)
+birth up 6 down 8 female: praneteř z 6. kolena
+birth up 6 down 8 female half: polorodá praneteř z 6. kolena
+birth up 6 down 8 female adoptive: praneteř z 6. kolena (přes osvojení)
+birth up 6 down 8 unknown: prasynovec/praneteř z 6. kolena
+birth up 6 down 8 unknown half: polorodý prasynovec/polorodá praneteř z 6. kolena
+birth up 6 down 8 unknown adoptive: prasynovec/praneteř z 6. kolena (přes osvojení)
+birth up 7 down 0 male: předek v 7. pokolení
+birth up 7 down 0 male adoptive: předek v 7. pokolení (přes osvojení)
+birth up 7 down 0 female: předkyně v 7. pokolení
+birth up 7 down 0 female adoptive: předkyně v 7. pokolení (přes osvojení)
+birth up 7 down 0 unknown: předek v 7. pokolení
+birth up 7 down 0 unknown adoptive: předek v 7. pokolení (přes osvojení)
+birth up 7 down 1 male: příbuzný
+birth up 7 down 1 male half: polorodý příbuzný
+birth up 7 down 1 male adoptive: příbuzný (přes osvojení)
+birth up 7 down 1 female: příbuzná
+birth up 7 down 1 female half: polorodá příbuzná
+birth up 7 down 1 female adoptive: příbuzná (přes osvojení)
+birth up 7 down 1 unknown: příbuzný/příbuzná
+birth up 7 down 1 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 7 down 1 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 7 down 2 male: příbuzný
+birth up 7 down 2 male half: polorodý příbuzný
+birth up 7 down 2 male adoptive: příbuzný (přes osvojení)
+birth up 7 down 2 female: příbuzná
+birth up 7 down 2 female half: polorodá příbuzná
+birth up 7 down 2 female adoptive: příbuzná (přes osvojení)
+birth up 7 down 2 unknown: příbuzný/příbuzná
+birth up 7 down 2 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 7 down 2 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 7 down 3 male: prapraprastrýc z 3. kolena
+birth up 7 down 3 male half: polorodý prapraprastrýc z 3. kolena
+birth up 7 down 3 male adoptive: prapraprastrýc z 3. kolena (přes osvojení)
+birth up 7 down 3 female: prapraprateta z 3. kolena
+birth up 7 down 3 female half: polorodá prapraprateta z 3. kolena
+birth up 7 down 3 female adoptive: prapraprateta z 3. kolena (přes osvojení)
+birth up 7 down 3 unknown: prapraprastrýc/prapraprateta z 3. kolena
+birth up 7 down 3 unknown half: polorodý prapraprastrýc/polorodá prapraprateta z 3. kolena
+birth up 7 down 3 unknown adoptive: prapraprastrýc/prapraprateta z 3. kolena (přes osvojení)
+birth up 7 down 4 male: praprastrýc z 4. kolena
+birth up 7 down 4 male half: polorodý praprastrýc z 4. kolena
+birth up 7 down 4 male adoptive: praprastrýc z 4. kolena (přes osvojení)
+birth up 7 down 4 female: praprateta z 4. kolena
+birth up 7 down 4 female half: polorodá praprateta z 4. kolena
+birth up 7 down 4 female adoptive: praprateta z 4. kolena (přes osvojení)
+birth up 7 down 4 unknown: praprastrýc/praprateta z 4. kolena
+birth up 7 down 4 unknown half: polorodý praprastrýc/polorodá praprateta z 4. kolena
+birth up 7 down 4 unknown adoptive: praprastrýc/praprateta z 4. kolena (přes osvojení)
+birth up 7 down 5 male: prastrýc z 5. kolena
+birth up 7 down 5 male half: polorodý prastrýc z 5. kolena
+birth up 7 down 5 male adoptive: prastrýc z 5. kolena (přes osvojení)
+birth up 7 down 5 female: prateta z 5. kolena
+birth up 7 down 5 female half: polorodá prateta z 5. kolena
+birth up 7 down 5 female adoptive: prateta z 5. kolena (přes osvojení)
+birth up 7 down 5 unknown: prastrýc/prateta z 5. kolena
+birth up 7 down 5 unknown half: polorodý prastrýc/polorodá prateta z 5. kolena
+birth up 7 down 5 unknown adoptive: prastrýc/prateta z 5. kolena (přes osvojení)
+birth up 7 down 6 male: strýc z 6. kolena
+birth up 7 down 6 male half: polorodý strýc z 6. kolena
+birth up 7 down 6 male adoptive: strýc z 6. kolena (přes osvojení)
+birth up 7 down 6 female: teta z 6. kolena
+birth up 7 down 6 female half: polorodá teta z 6. kolena
+birth up 7 down 6 female adoptive: teta z 6. kolena (přes osvojení)
+birth up 7 down 6 unknown: strýc/teta z 6. kolena
+birth up 7 down 6 unknown half: polorodý strýc/polorodá teta z 6. kolena
+birth up 7 down 6 unknown adoptive: strýc/teta z 6. kolena (přes osvojení)
+birth up 7 down 7 male: bratranec z 6. kolena
+birth up 7 down 7 male half: polorodý bratranec z 6. kolena
+birth up 7 down 7 male adoptive: bratranec z 6. kolena (přes osvojení)
+birth up 7 down 7 female: sestřenice z 6. kolena
+birth up 7 down 7 female half: polorodá sestřenice z 6. kolena
+birth up 7 down 7 female adoptive: sestřenice z 6. kolena (přes osvojení)
+birth up 7 down 7 unknown: bratranec/sestřenice z 6. kolena
+birth up 7 down 7 unknown half: polorodý bratranec/polorodá sestřenice z 6. kolena
+birth up 7 down 7 unknown adoptive: bratranec/sestřenice z 6. kolena (přes osvojení)
+birth up 7 down 8 male: synovec z 7. kolena
+birth up 7 down 8 male half: polorodý synovec z 7. kolena
+birth up 7 down 8 male adoptive: synovec z 7. kolena (přes osvojení)
+birth up 7 down 8 female: neteř z 7. kolena
+birth up 7 down 8 female half: polorodá neteř z 7. kolena
+birth up 7 down 8 female adoptive: neteř z 7. kolena (přes osvojení)
+birth up 7 down 8 unknown: synovec/neteř z 7. kolena
+birth up 7 down 8 unknown half: polorodý synovec/polorodá neteř z 7. kolena
+birth up 7 down 8 unknown adoptive: synovec/neteř z 7. kolena (přes osvojení)
+birth up 8 down 0 male: předek v 8. pokolení
+birth up 8 down 0 male adoptive: předek v 8. pokolení (přes osvojení)
+birth up 8 down 0 female: předkyně v 8. pokolení
+birth up 8 down 0 female adoptive: předkyně v 8. pokolení (přes osvojení)
+birth up 8 down 0 unknown: předek v 8. pokolení
+birth up 8 down 0 unknown adoptive: předek v 8. pokolení (přes osvojení)
+birth up 8 down 1 male: příbuzný
+birth up 8 down 1 male half: polorodý příbuzný
+birth up 8 down 1 male adoptive: příbuzný (přes osvojení)
+birth up 8 down 1 female: příbuzná
+birth up 8 down 1 female half: polorodá příbuzná
+birth up 8 down 1 female adoptive: příbuzná (přes osvojení)
+birth up 8 down 1 unknown: příbuzný/příbuzná
+birth up 8 down 1 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 8 down 1 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 8 down 2 male: příbuzný
+birth up 8 down 2 male half: polorodý příbuzný
+birth up 8 down 2 male adoptive: příbuzný (přes osvojení)
+birth up 8 down 2 female: příbuzná
+birth up 8 down 2 female half: polorodá příbuzná
+birth up 8 down 2 female adoptive: příbuzná (přes osvojení)
+birth up 8 down 2 unknown: příbuzný/příbuzná
+birth up 8 down 2 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 8 down 2 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 8 down 3 male: příbuzný
+birth up 8 down 3 male half: polorodý příbuzný
+birth up 8 down 3 male adoptive: příbuzný (přes osvojení)
+birth up 8 down 3 female: příbuzná
+birth up 8 down 3 female half: polorodá příbuzná
+birth up 8 down 3 female adoptive: příbuzná (přes osvojení)
+birth up 8 down 3 unknown: příbuzný/příbuzná
+birth up 8 down 3 unknown half: polorodý příbuzný/polorodá příbuzná
+birth up 8 down 3 unknown adoptive: příbuzný/příbuzná (přes osvojení)
+birth up 8 down 4 male: prapraprastrýc z 4. kolena
+birth up 8 down 4 male half: polorodý prapraprastrýc z 4. kolena
+birth up 8 down 4 male adoptive: prapraprastrýc z 4. kolena (přes osvojení)
+birth up 8 down 4 female: prapraprateta z 4. kolena
+birth up 8 down 4 female half: polorodá prapraprateta z 4. kolena
+birth up 8 down 4 female adoptive: prapraprateta z 4. kolena (přes osvojení)
+birth up 8 down 4 unknown: prapraprastrýc/prapraprateta z 4. kolena
+birth up 8 down 4 unknown half: polorodý prapraprastrýc/polorodá prapraprateta z 4. kolena
+birth up 8 down 4 unknown adoptive: prapraprastrýc/prapraprateta z 4. kolena (přes osvojení)
+birth up 8 down 5 male: praprastrýc z 5. kolena
+birth up 8 down 5 male half: polorodý praprastrýc z 5. kolena
+birth up 8 down 5 male adoptive: praprastrýc z 5. kolena (přes osvojení)
+birth up 8 down 5 female: praprateta z 5. kolena
+birth up 8 down 5 female half: polorodá praprateta z 5. kolena
+birth up 8 down 5 female adoptive: praprateta z 5. kolena (přes osvojení)
+birth up 8 down 5 unknown: praprastrýc/praprateta z 5. kolena
+birth up 8 down 5 unknown half: polorodý praprastrýc/polorodá praprateta z 5. kolena
+birth up 8 down 5 unknown adoptive: praprastrýc/praprateta z 5. kolena (přes osvojení)
+birth up 8 down 6 male: prastrýc z 6. kolena
+birth up 8 down 6 male half: polorodý prastrýc z 6. kolena
+birth up 8 down 6 male adoptive: prastrýc z 6. kolena (přes osvojení)
+birth up 8 down 6 female: prateta z 6. kolena
+birth up 8 down 6 female half: polorodá prateta z 6. kolena
+birth up 8 down 6 female adoptive: prateta z 6. kolena (přes osvojení)
+birth up 8 down 6 unknown: prastrýc/prateta z 6. kolena
+birth up 8 down 6 unknown half: polorodý prastrýc/polorodá prateta z 6. kolena
+birth up 8 down 6 unknown adoptive: prastrýc/prateta z 6. kolena (přes osvojení)
+birth up 8 down 7 male: strýc z 7. kolena
+birth up 8 down 7 male half: polorodý strýc z 7. kolena
+birth up 8 down 7 male adoptive: strýc z 7. kolena (přes osvojení)
+birth up 8 down 7 female: teta z 7. kolena
+birth up 8 down 7 female half: polorodá teta z 7. kolena
+birth up 8 down 7 female adoptive: teta z 7. kolena (přes osvojení)
+birth up 8 down 7 unknown: strýc/teta z 7. kolena
+birth up 8 down 7 unknown half: polorodý strýc/polorodá teta z 7. kolena
+birth up 8 down 7 unknown adoptive: strýc/teta z 7. kolena (přes osvojení)
+birth up 8 down 8 male: bratranec z 7. kolena
+birth up 8 down 8 male half: polorodý bratranec z 7. kolena
+birth up 8 down 8 male adoptive: bratranec z 7. kolena (přes osvojení)
+birth up 8 down 8 female: sestřenice z 7. kolena
+birth up 8 down 8 female half: polorodá sestřenice z 7. kolena
+birth up 8 down 8 female adoptive: sestřenice z 7. kolena (přes osvojení)
+birth up 8 down 8 unknown: bratranec/sestřenice z 7. kolena
+birth up 8 down 8 unknown half: polorodý bratranec/polorodá sestřenice z 7. kolena
+birth up 8 down 8 unknown adoptive: bratranec/sestřenice z 7. kolena (přes osvojení)
+partner male married: manžel
+partner male: partner
+partner female married: manželka
+partner female: partnerka
+partner unknown married: manžel/manželka
+partner unknown: partner/partnerka
+partner’s kin up 0 down 1 male: nevlastní syn
+partner’s kin up 0 down 1 female: nevlastní dcera
+partner’s kin up 0 down 1 unknown: nevlastní dítě
+partner’s kin up 0 down 2 male: sešvagřený
+partner’s kin up 0 down 2 female: sešvagřená
+partner’s kin up 0 down 2 unknown: sešvagřený/sešvagřená
+partner’s kin up 0 down 3 male: sešvagřený
+partner’s kin up 0 down 3 female: sešvagřená
+partner’s kin up 0 down 3 unknown: sešvagřený/sešvagřená
+partner’s kin up 1 down 0 male: tchán
+partner’s kin up 1 down 0 female: tchyně
+partner’s kin up 1 down 0 unknown: tchán/tchyně
+partner’s kin up 1 down 1 male: švagr
+partner’s kin up 1 down 1 female: švagrová
+partner’s kin up 1 down 1 unknown: švagr/švagrová
+partner’s kin up 1 down 2 male: sešvagřený
+partner’s kin up 1 down 2 female: sešvagřená
+partner’s kin up 1 down 2 unknown: sešvagřený/sešvagřená
+partner’s kin up 1 down 3 male: sešvagřený
+partner’s kin up 1 down 3 female: sešvagřená
+partner’s kin up 1 down 3 unknown: sešvagřený/sešvagřená
+partner’s kin up 2 down 0 male: sešvagřený
+partner’s kin up 2 down 0 female: sešvagřená
+partner’s kin up 2 down 0 unknown: sešvagřený/sešvagřená
+partner’s kin up 2 down 1 male: sešvagřený
+partner’s kin up 2 down 1 female: sešvagřená
+partner’s kin up 2 down 1 unknown: sešvagřený/sešvagřená
+partner’s kin up 2 down 2 male: sešvagřený
+partner’s kin up 2 down 2 female: sešvagřená
+partner’s kin up 2 down 2 unknown: sešvagřený/sešvagřená
+partner’s kin up 2 down 3 male: sešvagřený
+partner’s kin up 2 down 3 female: sešvagřená
+partner’s kin up 2 down 3 unknown: sešvagřený/sešvagřená
+partner’s kin up 3 down 0 male: sešvagřený
+partner’s kin up 3 down 0 female: sešvagřená
+partner’s kin up 3 down 0 unknown: sešvagřený/sešvagřená
+partner’s kin up 3 down 1 male: sešvagřený
+partner’s kin up 3 down 1 female: sešvagřená
+partner’s kin up 3 down 1 unknown: sešvagřený/sešvagřená
+partner’s kin up 3 down 2 male: sešvagřený
+partner’s kin up 3 down 2 female: sešvagřená
+partner’s kin up 3 down 2 unknown: sešvagřený/sešvagřená
+partner’s kin up 3 down 3 male: sešvagřený
+partner’s kin up 3 down 3 female: sešvagřená
+partner’s kin up 3 down 3 unknown: sešvagřený/sešvagřená
+partner’s kin up 1 down 1 male adoptive: švagr (přes osvojení)
+partner’s kin up 1 down 1 female adoptive: švagrová (přes osvojení)
+partner’s kin up 1 down 1 unknown adoptive: švagr/švagrová (přes osvojení)
+kin’s partner up 0 down 1 male: zeť
+kin’s partner up 0 down 1 female: snacha
+kin’s partner up 0 down 1 unknown: zeť/snacha
+kin’s partner up 0 down 2 male: sešvagřený
+kin’s partner up 0 down 2 female: sešvagřená
+kin’s partner up 0 down 2 unknown: sešvagřený/sešvagřená
+kin’s partner up 0 down 3 male: sešvagřený
+kin’s partner up 0 down 3 female: sešvagřená
+kin’s partner up 0 down 3 unknown: sešvagřený/sešvagřená
+kin’s partner up 1 down 0 male: nevlastní otec
+kin’s partner up 1 down 0 female: nevlastní matka
+kin’s partner up 1 down 0 unknown: nevlastní rodič
+kin’s partner up 1 down 1 male: švagr
+kin’s partner up 1 down 1 female: švagrová
+kin’s partner up 1 down 1 unknown: švagr/švagrová
+kin’s partner up 1 down 2 male: sešvagřený
+kin’s partner up 1 down 2 female: sešvagřená
+kin’s partner up 1 down 2 unknown: sešvagřený/sešvagřená
+kin’s partner up 1 down 3 male: sešvagřený
+kin’s partner up 1 down 3 female: sešvagřená
+kin’s partner up 1 down 3 unknown: sešvagřený/sešvagřená
+kin’s partner up 2 down 0 male: nevlastní děd
+kin’s partner up 2 down 0 female: nevlastní babička
+kin’s partner up 2 down 0 unknown: nevlastní prarodič
+kin’s partner up 2 down 1 male: přiženěný strýc
+kin’s partner up 2 down 1 female: přivdaná teta
+kin’s partner up 2 down 1 unknown: přiženěný strýc/přivdaná teta
+kin’s partner up 2 down 2 male: sešvagřený
+kin’s partner up 2 down 2 female: sešvagřená
+kin’s partner up 2 down 2 unknown: sešvagřený/sešvagřená
+kin’s partner up 2 down 3 male: sešvagřený
+kin’s partner up 2 down 3 female: sešvagřená
+kin’s partner up 2 down 3 unknown: sešvagřený/sešvagřená
+kin’s partner up 3 down 0 male: sešvagřený
+kin’s partner up 3 down 0 female: sešvagřená
+kin’s partner up 3 down 0 unknown: sešvagřený/sešvagřená
+kin’s partner up 3 down 1 male: sešvagřený
+kin’s partner up 3 down 1 female: sešvagřená
+kin’s partner up 3 down 1 unknown: sešvagřený/sešvagřená
+kin’s partner up 3 down 2 male: sešvagřený
+kin’s partner up 3 down 2 female: sešvagřená
+kin’s partner up 3 down 2 unknown: sešvagřený/sešvagřená
+kin’s partner up 3 down 3 male: sešvagřený
+kin’s partner up 3 down 3 female: sešvagřená
+kin’s partner up 3 down 3 unknown: sešvagřený/sešvagřená
+kin’s partner up 1 down 1 male adoptive: švagr (přes osvojení)
+kin’s partner up 1 down 1 female adoptive: švagrová (přes osvojení)
+kin’s partner up 1 down 1 unknown adoptive: švagr/švagrová (přes osvojení)
+step-sibling male: nevlastní bratr
+co-parent-in-law male: svat
+foster parent male: pěstoun
+foster child male: svěřený syn
+step-sibling female: nevlastní sestra
+co-parent-in-law female: svatka
+foster parent female: pěstounka
+foster child female: svěřená dcera
+step-sibling unknown: nevlastní sourozenec
+co-parent-in-law unknown: svat/svatka
+foster parent unknown: pěstoun/pěstounka
+foster child unknown: svěřené dítě
