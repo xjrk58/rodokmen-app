@@ -113,6 +113,15 @@
 /** @typedef {import('../../shared/src/schemas/api.js').CitationSummary} CitationSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').CitationDetail} CitationDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').Hourglass} Hourglass */
+/** @typedef {import('../../shared/src/schemas/charts.js').DescendantChart} DescendantChart */
+/** @typedef {import('../../shared/src/schemas/charts.js').HouseChart} HouseChart */
+/** @typedef {DescendantChart | HouseChart} ChartModel */
+/** @typedef {import('../../shared/src/schemas/charts.js').ChartPerson} ChartPerson */
+/** @typedef {import('../../shared/src/schemas/charts.js').ChartFact} ChartFact */
+/** @typedef {import('../../shared/src/schemas/charts.js').ChartFamily} ChartFamily */
+/** @typedef {import('../../shared/src/schemas/charts.js').DescendantNode} DescendantNode */
+/** @typedef {import('../../shared/src/schemas/charts.js').LineRow} LineRow */
+/** @typedef {import('../../shared/src/schemas/charts.js').HouseRow} HouseRow */
 /** @typedef {import('../../shared/src/schemas/api.js').MapEvent} MapEvent */
 /** @typedef {import('../../shared/src/schemas/api.js').MapEventsResult} MapEventsResult */
 /** @typedef {import('../../shared/src/schemas/places-api.js').PlaceEvents} PlaceEvents */

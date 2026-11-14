@@ -2,7 +2,7 @@
 // offline (family-view spec, "Family data offline"; add-family-view design, "Local cache").
 // Records are kept in IndexedDB by key ("person:<id>", "hourglass:<id>:3:2", "me", …) with the
 // time they were loaded. Only viewed records are kept, at most CACHE_LIMIT, the least recently
-// used going first. Nothing is cached for someone who is not signed in, and signing out (or a
+// used going first, and of those at most CHART_LIMIT Charts and as many of their Sheets. Nothing is cached for someone who is not signed in, and signing out (or a
 // session that has ended) empties it.
 
 import { ApiError } from './api.js';
@@ -11,6 +11,8 @@ const DB_NAME = 'rodokmen-cache';
 const DB_VERSION = 1;
 const STORE = 'records';
 export const CACHE_LIMIT = 400;
+/** At most this many Charts, and as many of their Sheets, so that a few large ones cannot push out person pages. */
+export const CHART_LIMIT = 20;
 
 /**
  * @typedef {object} CachedRecord
@@ -32,6 +34,21 @@ export function toEvict(entries, limit) {
     .sort((a, b) => a.usedAt - b.usedAt || a.key.localeCompare(b.key))
     .slice(0, entries.length - limit)
     .map((e) => e.key);
+}
+
+/**
+ * The Charts to drop so that at most `limit` of each kind remain (`chart:` and `chart-sheet:`), the least recently used first.
+ * @param {readonly { key: string, usedAt: number }[]} entries
+ * @param {number} limit
+ * @returns {string[]}
+ */
+export function chartsToEvict(entries, limit) {
+  return ['chart:', 'chart-sheet:'].flatMap((prefix) =>
+    toEvict(
+      entries.filter((e) => e.key.startsWith(prefix)),
+      limit,
+    ),
+  );
 }
 
 /** @type {Promise<IDBDatabase> | null} */
@@ -116,7 +133,9 @@ export async function writeCached(key, data) {
     /** @type {unknown[]} */
     const all = await run('readonly', (s) => s.getAll());
     const entries = all.filter(isRecord).map((r) => ({ key: r.key, usedAt: r.usedAt }));
-    for (const key of toEvict(entries, CACHE_LIMIT)) await run('readwrite', (s) => s.delete(key));
+    const charts = chartsToEvict(entries, CHART_LIMIT);
+    const rest = entries.filter((e) => !charts.includes(e.key));
+    for (const key of [...charts, ...toEvict(rest, CACHE_LIMIT)]) await run('readwrite', (s) => s.delete(key));
   } catch (error) {
     // Storage full or blocked: the page still shows what it loaded.
     console.warn('The offline copy could not be kept.', error);

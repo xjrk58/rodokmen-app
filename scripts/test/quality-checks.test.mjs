@@ -122,7 +122,7 @@ export function guard(app: FastifyInstance) {
     assert.match(found[0], /today\(\)/);
     // A timestamp is fine, and so is the UTC day where UTC is meant (the Living rule in shared/).
     assert.deepEqual(await findings(`export const now = () => new Date().toISOString();\n`, 'app/src/', '.js', 'no-restricted-syntax'), []);
-    assert.deepEqual(await findings(`export const d = new Date().toISOString().slice(0, 10);\n`, 'shared/src/', '.ts', 'no-restricted-syntax'), []);
+    assert.deepEqual(await findings(`export const d = new Date().toISOString().slice(0, 10);\n`, 'shared/src/', 'living.ts', 'no-restricted-syntax'), []);
   });
 
   test('identifiers may not use words the glossary rejects (L23: town for a Place)', async () => {
