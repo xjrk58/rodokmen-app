@@ -60,21 +60,23 @@ The Owner answered every point of design.md, "Open Questions", as planned and ga
 
 Until then these stay unticked, and the change ships without them. Say so on #126 when closing this change's issue, so that whichever is built later carries them out.
 
+**Deferred (2026-11-14):** `add-tree-charts` is not built, so group 8 is filed as #177 and said on #126.
+
 - [ ] 8.1 Add the option `kinship=1` to both Chart routes on the screen variant: the short form on the model's Persons for the caller's own Person, refused with `sheet` (400), adding nothing for a caller with no own Person, and never sent by `get_chart`. The Sheet schema has no kinship field, and the SVG builder refuses a model with one. Regenerate `server/openapi.json`. Verify with `server/test/charts.test.ts`: the option changes nothing else in the model, `sheet` with the option is 400, the tool's model has no kinship ("Same answer as the app" of `add-tree-charts` still holds), and with the OpenAPI check.
 - [ ] 8.2 Add the switch "Příbuzenství ke mně" ("Kinship to me") to `chart-screen.js`, off by default and remembered on the device, kept out of the Chart's address, and the term on one line of each card. Verify with Playwright in both projects: "Switched on", "Printing" (the downloaded SVG equals the golden file with the switch on and off), a shared link that shows each Member their own kinship, a Chart cached without kinship showing none offline, and no overflow at 390 px.
 - [ ] 8.3 Docs, how-to and explanation: the switch in `docs/how-to/make-a-chart.md`, and why a Sheet never shows kinship in `docs/explanation/charts.md`. Verify with `pnpm lint:docs`.
 
 ## 9. Slovak and German (only with `add-interface-languages`, #113)
 
-- [ ] 9.1 If #113 has not landed when this change ships, comment on it with what it must add: `shared/src/kinship-terms/sk.ts` and `de.ts`, their golden files, and the `kinship` i18n keys, with TypeScript refusing a language without terms. If it has landed, write them here as drafts for its native reviewer, and do not offer the words until the review. Verify that the comment is on #113, or that `pnpm verify` and vitest pass for both files and the golden files list every combination, as in 3.3.
+- [x] 9.1 If #113 has not landed when this change ships, comment on it with what it must add: `shared/src/kinship-terms/sk.ts` and `de.ts`, their golden files, and the `kinship` i18n keys, with TypeScript refusing a language without terms. If it has landed, write them here as drafts for its native reviewer, and do not offer the words until the review. Verify that the comment is on #113, or that `pnpm verify` and vitest pass for both files and the golden files list every combination, as in 3.3. **Done:** #113 has not landed (`UiLanguage` is cs and en), so #113 has the comment: sk.ts and de.ts with their golden files and i18n keys, and the Record and the strict schema that refuse a language without terms.
 
 ## 10. Everything together
 
 - [x] 10.1 Run the whole flow on the fixture Tree against the real server (`server/test/family-view.e2e.test.ts` or a new `kinship.e2e.test.ts`) at 390 px and 1280 px: an unlinked Member asks to be linked, the Owner confirms, kinship appears on the person page, in search and in the tree, the list of paths for the second cousins who married, a weak link shown as "možná" and then confirmed by an accepted Proposal, and offline reopening, with phone screenshots through `FAMILY_SCREENSHOTS=<dir>` for the PR. Verify that the tests pass and the screenshots show the terms readable at phone width. **Done:** server/test/kinship.e2e.test.ts at 390 and 1280 px: the request and the Owner's confirmation, the paths to Radka, search and the tree, Felix's weak link confirmed by an accepted Proposal, and offline reopening; phone screenshots taken with FAMILY_SCREENSHOTS and attached to the PR.
-- [ ] 10.2 Run `pnpm check`, `pnpm verify` and `openspec validate add-kinship --strict`. Verify that all pass, and tick each task above with a note of where it is verified.
+- [x] 10.2 Run `pnpm check`, `pnpm verify` and `openspec validate add-kinship --strict`. Verify that all pass, and tick each task above with a note of where it is verified. **Done:** pnpm check passes 11 of 11, pnpm verify proves every file (kinship.dfy 1,041 checks), openspec validate add-kinship --strict passes, and pnpm test:scripts passes; each task above names where it is verified.
 
 ## Workflow follow-up
 
-- Comment on #19 (`add-exports-and-erasure`): erasure must write a `log_entry`, or otherwise move the key of the link copy, and no Export carries kinship.
-- Comment on #126 with whatever of group 8 remains.
+- Comment on #19 (`add-exports-and-erasure`): erasure must write a `log_entry`, or otherwise move the key of the link copy, and no Export carries kinship. **Done otherwise:** #19 was built and merged (#156) before this change, so the key of the link copy reads the newest erasure as well as the newest log entry (`server/src/tree/kinship.ts`, tested in `server/test/kinship.test.ts`), and no Export carries kinship since it is never stored.
+- Comment on #126 with whatever of group 8 remains. **Done:** group 8 filed as #177, and #126 told.
 - Archive this change after it ships, once `add-tree-charts` and `add-family-view` are archived, so that its deltas land on specs that exist.

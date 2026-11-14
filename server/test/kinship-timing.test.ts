@@ -101,7 +101,8 @@ for (const shape of ['sparse', 'dense'] as const) {
         hourglass: await time('/api/persons/{i}/hourglass?up=3&down=2', 10),
       };
       const previous: unknown = existsSync(OUT!) ? JSON.parse(readFileSync(OUT!, 'utf8')) : [];
-      writeFileSync(OUT!, JSON.stringify([...(Array.isArray(previous) ? previous : []), figures], null, 2));
+      const earlier: unknown[] = Array.isArray(previous) ? previous : [];
+      writeFileSync(OUT!, JSON.stringify([...earlier, figures], null, 2));
     }, 600_000);
   });
 }
