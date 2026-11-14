@@ -59,13 +59,13 @@ Dates and Places compare as written, by value and by id: `1801` and `1801-11-20`
 - Partners A against B alone are refused too, although they would make only two. They share no Person, so the person page never offers that pair; an Editor adds the partner Role to one Event first.
 - Godparent, witness, priest, informant and other Roles add up freely: one entry may name the godparents, another the witnesses.
 
-The rule is one pure function, `mergeEventFacts` in `shared/src/event-merge.ts`, proved (below). The server reads both Events and their Roles under lock, asks it, and refuses with 409 `merge_conflict` listing the facts (`date`, `place` …). The app keys its text on that code and those names, so the refusal shows in Czech too. The function is symmetric in what it refuses: swapping keep and merge changes only the order of joined text.
+The rule is one pure function, `mergeEventFacts` in `shared/src/event-merge.ts`, proved (below). The server reads both Events and their Roles under lock, asks it, and refuses with 409 `merge_conflict`. The answer (`MergeRefused`) lists the facts in `facts`, comma-separated (`date,place`). The app keys its text on that code and those names, so the refusal shows in Czech too. The function is symmetric in what it refuses: swapping keep and merge changes only the order of joined text.
 
 ### 3. Delete the merged Event, redirect from the log
 
 The Person merge keeps the merged row with `merged_into_id`, and every query of Persons filters it out. Doing the same for Events would add a column and a filter to every Event query: person and family pages, the map, Places, Houses, Exports, the gap finder, relation, kinship and charts. So the merged Event is deleted, as #154 says.
 
-Its address still answers. `GET /api/events/{id}` finds an Event that no longer exists in the log: the latest accepted `mergeEvents` operation that names it as `mergeId`, in a Proposal not undone (`proposal_operation.target_table = 'event'` and `target_id`, kept for every operation). It answers 308 to the kept Event, following later merges up to 10 steps, as `GET /api/persons/{id}` does for a merged Person. An Event deleted by an undo of its creation finds no merge and stays 404. The same lookup lets an operation on a merged Event fail with 409 `event_merged` ("propose against the remaining Event"), next to `person_merged`. A pending Proposal written against the merged Event therefore cannot be accepted as it is: the Editor rejects it, or corrects it to the kept Event.
+Its address still answers. `GET /api/events/{id}` finds an Event that no longer exists in the log: the latest accepted `mergeEvents` operation that names it as `mergeId`, in a Proposal not undone (`proposal_operation.target_table = 'event'` and `target_id`, kept for every operation). It answers 308 to the kept Event, following later merges up to 10 steps, as `GET /api/persons/{id}` does for a merged Person. An Event deleted by an undo of its creation finds no merge and stays 404. The same lookup lets an operation on a merged Event fail with 409 `event_merged` ("propose against the remaining Event"), next to `person_merged`, both when it is applied and when accepting finds it in conflict. A pending Proposal written against the merged Event therefore cannot be accepted as it is: the Editor rejects it, or corrects it to the kept Event.
 
 ### 4. Order of the changes, and undo
 
@@ -75,7 +75,7 @@ Apply, in `apply.ts`:
 2. Read both Events and their Roles; ask `mergeEventFacts`; refuse on any conflict.
 3. Move or remove the Roles.
 4. Move or remove the Citation links.
-5. Update the kept Event's fields where they change, through `setFieldColumns`, so the date's range columns follow.
+5. Update the kept Event's fields where they change, through `setFieldColumns`, so the date's range columns follow. The kept Event's version goes up even when no field of its own changes (its `updated_at` is set), because it took in the other: a Proposal written against it before shows as a conflict, and the merge is in its history even when every Role and Citation was a twin.
 6. Remove the merged Event (`rows.remove`, which refuses while anything still points at it).
 
 Removing twins first matters: the imported pairs are all twins once the #158 run is accepted. Moving a twin would break `unique (event_id, person_id, role)` and answer 23505.
@@ -107,7 +107,7 @@ The undo needs nothing new. It replays the logged changes newest first: the merg
   - `PersonDetail.mergeableEvents` lists the pairs of the Person's Events that look like one, each `{ keepId, mergeId }`, worked out by the proved `mergeOffer`: of one type, the Person in the same Role in both, and `mergeEventFacts` finds no conflict. The suggested Event to keep has more Citations, else the earlier `created_at`.
   - For the imported pairs that is the `key` Event, which carries both notes' Citations once the #158 run is accepted. Before that the two tie, and the `key` Event is the older, since the batch is accepted in order.
   - Every Member gets the field. Only an Editor sees the offer.
-- **The panel.** Under the second Event of a pair an Editor sees "Same Event?". It opens a panel with both Events side by side, loaded with `GET /api/events/{id}`: their Roles, date, Place or House, description and Citations. A choice says which one stays, with the suggested one chosen. A note field and "Merge" follow. After the merge the page reloads; a refusal is shown in the Member's language. The undo is in the Person's history, as for every change.
+- **The panel.** Under the second Event of a pair an Editor sees "Same Event?". It opens a panel with both Events side by side, loaded with `GET /api/events/{id}`: their Roles, date, Place or House, description and Citations. A choice says which one stays, with the suggested one chosen. A note field and "Merge" follow. After the merge the page reloads; a refusal is shown in the Member's language. When one Event changed since the panel read it (409 `conflict`), the panel says so and reads both again, so the Editor sees what changed before trying again. The undo is in the Person's history, as for every change.
 - **MCP.** No new tool: Agents read and propose only.
   - `submit_proposal` takes the whole operation set, so it would carry `mergeEvents`, and the API refuses it with 403 like `mergePersons`.
   - `get_record` follows the redirect, so a merged Event's id answers with the kept one. Its description says so, as it does for Persons.
@@ -119,10 +119,10 @@ The importer's Agent cannot submit `mergeEvents` (Context). Letting it, or letti
 
 So the Owner merges the pairs in the app. The report helps:
 
-- **What the run reads.** For each pair it reads the other Event, `GET /api/events/{other}`, about 25 reads, well under the Agent's 1,000 an hour.
-- **Still two Events.** The pair is listed with the Event to keep and the address of the first spouse's person page, `<url>/#people/<id>`.
-- **Merged into the `key` Event.** The redirect names the `key` Event, or the read answers 404. The pair is left out.
-- **Merged the other way.** The redirect names another Event. The pair is listed under its own line: later runs refer to the `key` Event, which is gone, so a later fix to that marriage would fail. The Owner undoes the merge and merges the other way.
+- **What the run reads.** For each pair it reads the `key` Event and, while that is there, the other one (`GET /api/events/{id}`, which follows a merge): about 50 reads for 25 pairs, well under the Agent's 1,000 an hour.
+- **Still two Events.** The pair is listed with the Event to keep and the address of the second spouse's person page, `<url>/#people/<id>` (`MergedMarriage.personKey`).
+- **Merged into the `key` Event.** The `key` Event is there, and reading the other leads to it (or to nothing). The pair is left out.
+- **Merged the other way.** Reading the `key` Event leads elsewhere, or nowhere. The pair is listed under its own heading: later runs refer to the `key` Event, which is gone, so a later fix to that marriage would fail. The Owner undoes the merge and merges the other way.
 
 The how-to says to keep the Event the app suggests, which is the report's "keep".
 
