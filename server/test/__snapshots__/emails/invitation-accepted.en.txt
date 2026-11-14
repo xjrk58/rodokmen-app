@@ -1,0 +1,13 @@
+Subject: Your Rodokmen invitation was accepted
+
+Hello,
+
+The invitation sent to cousin.marta@example.test was accepted on 14 November 2026 at 11:05 by someone who chose the name “Marta Invented”. They are now a Contributor and see the whole Tree, Living people included.
+
+If this is not the person you invited, click Disable next to them in Settings, under Members. That ends all their sessions at once. Then invite the right address.
+
+https://rodokmen.example/#settings
+
+The Owner of Rodokmen gets this email whenever someone accepts an invitation.
+
+Rodokmen
