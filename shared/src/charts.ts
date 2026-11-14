@@ -75,7 +75,7 @@ export function compareFamilies(a: FamilyKey, b: FamilyKey): number {
 // ---------------------------------------------------------------- died young (tree-charts, "Marks on cards")
 
 /** A calendar day as an integer `yyyymmdd`, so that days compare as integers. */
-export function dayKey(year: number, month: number, day: number): number {
+export function ymdKey(year: number, month: number, day: number): number {
   //@ verify
   return year * 10000 + month * 100 + day;
 }
@@ -89,14 +89,14 @@ export function dayKey(year: number, month: number, day: number): number {
 export function diedYoung(hasBirth: boolean, birthYear: number, birthMonth: number, birthDay: number, hasDeath: boolean, deathKey: number): boolean {
   //@ verify
   //@ contract tree-charts: Marks on cards
-  //@ ensures \result === (hasBirth && hasDeath && deathKey < dayKey(birthYear + 15, birthMonth, birthDay))
+  //@ ensures \result === (hasBirth && hasDeath && deathKey < ymdKey(birthYear + 15, birthMonth, birthDay))
   // Scenario "Died young": born 2 March 1830, died 10 May 1832.
   //@ ensures hasBirth && hasDeath && birthYear === 1830 && birthMonth === 3 && birthDay === 2 && deathKey === 18320510 ==> \result
   // Scenario "Not certain": born about 1830 (from 1828), died between 1840 and 1850 (until 31 December 1850).
   //@ ensures birthYear === 1828 && birthMonth === 1 && birthDay === 1 && deathKey === 18501231 ==> !\result
   // Without both dates there is no mark.
   //@ ensures !hasBirth || !hasDeath ==> !\result
-  return hasBirth && hasDeath && deathKey < dayKey(birthYear + 15, birthMonth, birthDay);
+  return hasBirth && hasDeath && deathKey < ymdKey(birthYear + 15, birthMonth, birthDay);
 }
 
 // ---------------------------------------------------------------- selection (tree-charts, "Descendant chart")

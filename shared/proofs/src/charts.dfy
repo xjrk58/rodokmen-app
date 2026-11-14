@@ -178,18 +178,18 @@ lemma compareFamilies_ensures(a: FamilyKey, b: FamilyKey)
   JSStringLtTotal(a.id, b.id);
 }
 
-function dayKey(year: int, month: int, day: int): int
+function ymdKey(year: int, month: int, day: int): int
 {
   (((year * 10000) + (month * 100)) + day)
 }
 
 function diedYoung(hasBirth: bool, birthYear: int, birthMonth: int, birthDay: int, hasDeath: bool, deathKey: int): bool
 {
-  ((hasBirth && hasDeath) && (deathKey < dayKey((birthYear + 15), birthMonth, birthDay)))
+  ((hasBirth && hasDeath) && (deathKey < ymdKey((birthYear + 15), birthMonth, birthDay)))
 }
 
 lemma diedYoung_ensures(hasBirth: bool, birthYear: int, birthMonth: int, birthDay: int, hasDeath: bool, deathKey: int)
-  ensures (diedYoung(hasBirth, birthYear, birthMonth, birthDay, hasDeath, deathKey) == ((hasBirth && hasDeath) && (deathKey < dayKey((birthYear + 15), birthMonth, birthDay))))
+  ensures (diedYoung(hasBirth, birthYear, birthMonth, birthDay, hasDeath, deathKey) == ((hasBirth && hasDeath) && (deathKey < ymdKey((birthYear + 15), birthMonth, birthDay))))
   ensures (hasBirth ==> hasDeath ==> (birthYear == 1830) ==> (birthMonth == 3) ==> (birthDay == 2) ==> (deathKey == 18320510) ==> diedYoung(hasBirth, birthYear, birthMonth, birthDay, hasDeath, deathKey))
   ensures ((birthYear == 1828) ==> (birthMonth == 1) ==> (birthDay == 1) ==> (deathKey == 18501231) ==> !(diedYoung(hasBirth, birthYear, birthMonth, birthDay, hasDeath, deathKey)))
   ensures ((!(hasBirth) || !(hasDeath)) ==> !(diedYoung(hasBirth, birthYear, birthMonth, birthDay, hasDeath, deathKey)))

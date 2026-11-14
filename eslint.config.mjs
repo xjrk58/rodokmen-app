@@ -53,8 +53,10 @@ const restricted = {
 // device's locale data or layout engine, whose answers differ between devices and browsers.
 const chartFiles = [
   'shared/src/charts.ts',
+  'shared/src/chart-rows.ts',
   'shared/src/charts-model.ts',
   'shared/src/house-chart.ts',
+  'shared/src/house-chart-model.ts',
   'shared/src/sheet-reduction.ts',
   'server/src/charts/**/*.ts',
 ];

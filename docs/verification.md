@@ -53,6 +53,18 @@ this page with `node scripts/verification-trace.mjs`.
 | scan-reading: The Owner switches it on | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `imagesToSend` | shared/src/reading.ts | nothing beyond the trusted base |
 | scan-reading: The Owner switches it on | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `mayRead` | shared/src/reading.ts | nothing beyond the trusted base |
 | scan-reading: The Owner switches it on | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
+| tree-charts: Descendant chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `selectDescendants` | shared/src/charts.ts | see below |
+| tree-charts: Direct line | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `directLine` | shared/src/charts.ts | see below |
+| tree-charts: House chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `compareRows` | shared/src/house-chart.ts | nothing beyond the trusted base |
+| tree-charts: House chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `familyAt` | shared/src/house-chart.ts | see below |
+| tree-charts: House chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `houseRows` | shared/src/house-chart.ts | see below |
+| tree-charts: House chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `placesAtHouse` | shared/src/house-chart.ts | nothing beyond the trusted base |
+| tree-charts: Living people on a Sheet | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `sheetPerson` | shared/src/export.ts | nothing beyond the trusted base |
+| tree-charts: Marks on cards | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `diedYoung` | shared/src/charts.ts | nothing beyond the trusted base |
+| tree-charts: Order within a Chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `compareChildren` | shared/src/charts.ts | nothing beyond the trusted base |
+| tree-charts: Order within a Chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `compareFamilies` | shared/src/charts.ts | nothing beyond the trusted base |
+| tree-charts: Size of a Chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `cutToSize` | shared/src/charts.ts | see below |
+| tree-charts: Succession in a House chart | openspec/changes/add-tree-charts/specs/tree-charts/spec.md | `succession` | shared/src/house-chart.ts | see below |
 | tree-history: Undo a whole Proposal | openspec/changes/add-proposals-and-review/specs/tree-history/spec.md | `undoBlockers` | shared/src/rules.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `compareByEarliest` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `dayDate` | shared/src/edtf.ts | see below |
@@ -72,12 +84,24 @@ this page with `node scripts/verification-trace.mjs`.
 A verified function's `requires` are proved wherever a verified function calls it. Where unverified code
 (the "shell": parsing, I/O, the clock) calls it, they are assumed; the tests cover those callers.
 
+- `cutToSize` (shared/src/charts.ts):
+  - its requires, where unverified code calls it (shared/src/charts-model.ts): `gen.length === count && parent.length === count && cardsAt.length >= 2`; `forall(u: nat, u < count ==> 0 <= gen[u] && gen[u] <= cardsAt.length)`; `forall(u: nat, u < count && gen[u] >= 2 ==> 0 <= parent[u] && parent[u] < count && gen[parent[u]] === gen[u] - 1)`
+- `directLine` (shared/src/charts.ts):
+  - its requires, where unverified code calls it (shared/src/charts-model.ts): `0 <= start && start < count && 0 <= end && end < count && maxGen >= 1`; `forall(i: nat, i < edges.length ==> 0 <= edges[i].child && edges[i].child < count && -1 <= edges[i].a && edges[i].a < count && -1 <= edges[i].b && edges[i].b < count)`
+- `selectDescendants` (shared/src/charts.ts):
+  - its requires, where unverified code calls it (shared/src/charts-model.ts): `isStart.length === count && generations >= 1`; `forall(i: nat, i < edges.length ==> 0 <= edges[i].child && edges[i].child < count && -1 <= edges[i].a && edges[i].a < count && -1 <= edges[i].b && edges[i].b < count)`
 - `dayDate` (shared/src/edtf.ts):
   - its requires, where unverified code calls it (`parseSimple`): `isValidDay(day)`
 - `monthDate` (shared/src/edtf.ts):
   - its requires, where unverified code calls it (`parseSimple`): `1 <= month && month <= 12`
 - `rangeOf` (shared/src/edtf.ts):
   - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)`; `s.kind === 'before' ==> isValidDay(s.end.last)`; `s.kind === 'after' ==> isValidDay(s.start.first)`
+- `familyAt` (shared/src/house-chart.ts):
+  - its requires, where unverified code calls it (shared/src/house-chart-model.ts): `marriageDated.length === marriageEarliest.length`
+- `houseRows` (shared/src/house-chart.ts):
+  - its requires, where unverified code calls it (shared/src/house-chart-model.ts): `rowCount >= 0`; `forall(i: nat, i < placements.length ==> 0 <= placements[i].row && placements[i].row < rowCount)`
+- `succession` (shared/src/house-chart.ts):
+  - its requires, where unverified code calls it (shared/src/house-chart-model.ts): `a.length === b.length`; `forall(r: nat, r < a.length ==> -1 <= a[r] && a[r] < sex.length && -1 <= b[r] && b[r] < sex.length)`
 - `isLivingOn` (shared/src/living.ts):
   - its requires, where unverified code calls it (`isLiving`): `1 <= today.month && today.month <= 12 && 1 <= today.day && today.day <= 31`; `forall(i: nat, i < birthLatest.length ==> 1 <= birthLatest[i].month && birthLatest[i].month <= 12 && 1 <= birthLatest[i].day && birthLatest[i].day <= 31)`
 - `presumedDead` (shared/src/presumed-death.ts):
@@ -92,15 +116,21 @@ A verified function's `requires` are proved wherever a verified function calls i
   - an extern (`//@ extern`, or a call into another file): it has no contract, so the proofs assume only that it is a deterministic function
 - `daysInMonth` (shared/src/edtf.ts), supporting:
   - its requires, where unverified code calls it (server/src/fixture/generate.ts): `1 <= month && month <= 12`
+- `goesOn` (shared/src/charts.ts), supporting:
+  - its requires, where unverified code calls it (shared/src/charts-model.ts): `gen.length === isStart.length`
+- `linked` (shared/src/house-chart.ts), supporting:
+  - its requires, where unverified code calls it (server/src/vault-import/map-people.ts, server/src/vault-import/map-sources.ts): `a.length === b.length && 0 <= r && r < a.length && 0 <= j && j < a.length`
 
 ## Supporting functions
 
 Also proved, with no requirement of their own; the traced functions rely on their contracts.
 
+- shared/src/charts.ts: `ymdKey`, `goesOn`, `isReached`, `mayLeave`, `leaves`, `stepFits`, `cardsUpTo`, `sumUpTo`, `ancestorIn`, `leftOutBelow`, `leftOutUpTo`
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
 - shared/src/erasure.ts: `onlyTheirs`, `leftWithNothing`, `mentionsAny`
 - shared/src/export.ts: `isMediaLink`, `hasMedia`, `citationView`, `citationsView`, `hasLivingRole`, `eventView`, `eventsView`, `namesView`, `isLivingRelation`, `livingRelations`
 - shared/src/gaps.ts: `gapKey`, `maxInt`, `minInt`, `isBirthGap`, `isParentsGap`, `isMarriageGap`, `fits`, `anyFits`, `hasSuggestion`, `gapSuggestions`, `isRealGap`
+- shared/src/house-chart.ts: `marriedLater`, `bounds`, `isChildOf`, `isChildBefore`, `sharePartner`, `linked`
 - shared/src/leads.ts: `isLeadStatus`, `isFoundBy`
 - shared/src/matching.ts: `sharesOne`, `nameMatches`, `houseMatches`, `yearsMatch`, `placeMatches`, `matchReasons`, `scoreOf`, `fullMatch`, `isSuggested`
 - shared/src/presumed-death.ts: `anchorBound`, `endsAt`, `isStep`, `checkChain`
@@ -112,7 +142,9 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 
 Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
+- shared/proofs/src/charts.dfy: `JSStringLtAsymmetric`, `JSStringLtTotal`, `JSStringLtTransitive`, `compareChildren_transitive`, `compareFamilies_transitive`, `SumUpToZeros`, `SumUpToIncrement`
 - shared/proofs/src/edtf.dfy: `JSStringLtAsymmetric`, `JSStringLtTotal`, `JSStringLtTransitive`, `compareByEarliest_transitive`
+- shared/proofs/src/house-chart.dfy: `JSStringLtAsymmetric`, `JSStringLtTotal`, `JSStringLtTransitive`, `compareRows_transitive`
 - shared/proofs/src/presumed-death.dfy: `ChainNeedsFactOrLink`, `ChainBoundsBirth`
 - shared/proofs/src/relation.dfy: `ReachedIsLeast`, `EvidenceOnlyAdds`, `CitationAddedKeepsStrength`
 - shared/proofs/src/rules.dfy: assertions only
@@ -121,6 +153,65 @@ Lemmas written by hand in the `.dfy` files, on top of what `lsc` generates.
 
 Where a proof covers less than its requirement, exactly what it does and does not prove.
 
+- **The order within a Chart** (`compareChildren`, `compareFamilies`, shared/src/charts.ts; `compareRows`,
+  shared/src/house-chart.ts; tree-charts "Order within a Chart" and "House chart"). Proved: each is antisymmetric, 0 only
+  for the same id or key, and transitive (the lemmas `compareChildren_transitive`, `compareFamilies_transitive` and
+  `compareRows_transitive`), so sorting by it gives one order whatever order the rows come in; the dated come before the
+  undated, the earlier day first ("A range of years": `1803/1805` from 1 January 1803 before 1 June 1804), and children
+  born the same day in the order their Family records them ("Twins"). Not proved: the keys the shell makes from the Tree
+  (shared/src/chart-rows.ts: the earliest day of a child's birth or baptism, a Family's marriage), and that it sorts by
+  them; shared/test/charts-model.test.ts tests both with the rows shuffled.
+- **Who is in a Descendant chart** (`selectDescendants`, shared/src/charts.ts; tree-charts "Descendant chart").
+  Proved, for any Persons, Families and child links: the start is generation 1 and nobody else is, nobody is beyond the
+  generations asked for; closed: a birth or adoptive link from a partner the Chart goes on from leads to a Person in it at
+  most one generation further; sound: everyone else came through a birth or adoptive link (never a foster or step link)
+  from a partner one generation up, so each Person is at the smallest number of such links from the start, once
+  ("Descended in two ways"); from a start Family, its partners go on only through it ("From a couple"). Not proved: the
+  rows the server gathers (server/src/charts/gather.ts), and how the shell writes the nodes depth first, gives each
+  Person one main place and points to it from later ones, and shows foster and step children unfollowed
+  (shared/src/charts-model.ts); shared/test/charts-model.test.ts and server/test/charts.test.ts test those.
+- **The Direct line** (`directLine`, shared/src/charts.ts; tree-charts "Direct line"). Proved: the distance down to the
+  end is closed and sound (each Person's smallest number of birth or adoptive links to the end within the line's length);
+  the line is empty exactly when the start has no such distance ("Not a descendant"); otherwise it runs from the start to
+  the end, at most 12 Persons, each step a followed link to a child that still reaches the end in time ("Line to the
+  Member"), and at each step no earlier link in the Chart's order would ("Two ways down"). Not proved: that the links come
+  in the Chart's order (the shell sorts them by Family and child), and the rows the line form draws around it (the
+  children, and the siblings' Families beside each row).
+- **The size of a Chart** (`cutToSize`, shared/src/charts.ts; tree-charts "Size of a Chart"). Proved, for any
+  generations and cards per generation: the Chart keeps whole generations, at least 2, as many as fit within the limit,
+  and more than fit only when 2 already exceed it; each Person of the last generation kept carries exactly the number of
+  descendants left out below them, counting someone reached in two ways once, below the ancestor they were selected
+  through, and the counts add up to the total left out ("A large family"). Not proved: the cards counted per generation
+  (descendants, partners and pointer cards, counted by the shell as it writes the nodes), and the cut of the second
+  generation in the Chart's order when even two generations exceed 500 cards (shared/src/charts-model.ts).
+- **Died young** (`diedYoung`, shared/src/charts.ts; tree-charts "Marks on cards"). Proved: true exactly when both days
+  are known and the death day falls before the day 15 years after the birth day ("Died young", "Not certain"); born on 29
+  February, that is 1 March in a year without one. Not proved: that the shell passes the earliest day of the birth (else
+  the baptism) and the latest day of the death (else the burial); shared/test/charts.test.ts tests the days.
+- **Living people on a Sheet** (`sheetPerson`, shared/src/export.ts; tree-charts "Living people on a Sheet"). Proved,
+  for any record: a Living person keeps the given name and surname of their primary Name, their sex, relationships and
+  birth year, and nothing else: no Event (so no exact date, Place or House), Source or image ("Living grandchild": born in
+  2010, the year and no place); without names, no Name and no birth year either ("Names left off"); no record keeps an
+  Event in which a Living person has a Role, nor an image; anyone else keeps their Names and facts. It is the Export view
+  (`exportRecord`) with only the nameless step added. Not proved: the mapping of a card to a record and back
+  (shared/src/sheet-reduction.ts), that the server marks Living people by the Living rule, and that the SVG builder
+  refuses a model that is not a Sheet; shared/test/charts-model.test.ts and app/tests/unit/chart-sheet.test.mjs test those.
+- **The House chart's rows** (`placesAtHouse`, `familyAt`, `houseRows`, shared/src/house-chart.ts; tree-charts
+  "House chart"). Proved: a godparent, witness, priest or informant places nobody ("Godmother from next door"); a birth or
+  baptism places only the child and parents, a marriage only the partners; an Event belongs to the latest of a Person's
+  Families whose marriage is not known to be later; every row shown has an Event that places it; each row's period runs
+  from the earliest to the latest day of its dated placing Events, widened by open dates, and a row with none is undated.
+  Not proved: which Family the shell finds for a birth (the child's birth or adoptive Family) or a marriage (the couple's),
+  the row of someone with no Family (their birth Family's row if it is there, else their own), the house numbers of each
+  period, the 80-row limit and the period chosen, and the Unrelated rows hidden (shared/src/house-chart-model.ts);
+  shared/test/house-chart.test.ts and server/test/charts.test.ts test those.
+- **Succession in a House chart** (`succession`, shared/src/house-chart.ts; tree-charts "Succession in a House chart").
+  Proved, for any rows: each row links to the latest earlier row a Family link connects it to, and to none when there is
+  none ("A new family"); the link is a son, daughter or child (by sex) exactly when a partner is a child of that row's
+  Family ("Son takes over"), the other partner then marked as married in exactly when they are a child of no earlier row
+  ("Son-in-law marries in"); a remarriage exactly when no partner is such a child and the rows share a partner ("Widow
+  remarries"); the result has no holder at all ("Overlapping periods"). Not proved: the child links and partners the shell
+  passes in for the rows shown.
 - **Presumed death** (`presumedDead`, shared/src/presumed-death.ts; vault-import "Presumed death when birth is provably
   long ago"). Proved, for any Persons, facts, parent links and offered chains: a Person is presumed dead only if they have
   no death or burial and no birth or baptism date of their own, and the chain offered for them ends at them, starts at a
@@ -269,12 +360,13 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   `hasProposal` in rules.ts), so that it is proved from the element at hand, and give `.dfy` hints (`var x :| …`)
   when a proof chains several.
 
-Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/erasure.ts,
-shared/src/export.ts, shared/src/gaps.ts, shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts,
-shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts and shared/src/rules.ts, no narrowed optional
-is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where
-order does not matter; the `!` index reads of relation.ts, gaps.ts, export.ts and presumed-death.ts are not compared at
-all or compare two plain integers, emitted in their order; erasure.ts, export.ts, gaps.ts, leads.ts, matching.ts,
-presumed-death.ts and reading.ts have no optionals at all: unknown years, houses, Places and Sources are a flag and 0, or
+Checked for the swapped comparison: in every `//@ verify` function of shared/src/charts.ts, shared/src/edtf.ts,
+shared/src/erasure.ts, shared/src/export.ts, shared/src/gaps.ts, shared/src/house-chart.ts, shared/src/leads.ts,
+shared/src/living.ts, shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts
+and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
+(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of charts.ts, house-chart.ts,
+relation.ts, gaps.ts, export.ts and presumed-death.ts are not compared at all or compare two plain integers, emitted in
+their order; charts.ts, erasure.ts, export.ts, gaps.ts, house-chart.ts, leads.ts, matching.ts, presumed-death.ts and
+reading.ts have no optionals at all: unknown years, days, houses, partners, Places and Sources are a flag and 0, -1, or
 the empty string, and a Person without a chain has an empty one), and the generated `.dfy.gen` was read for it. Recheck
 this, and read the `.dfy.gen`, whenever a proof is added or changed.

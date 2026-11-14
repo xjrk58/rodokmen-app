@@ -149,7 +149,7 @@ export function guard(app: FastifyInstance) {
     );
     // The same in the proved rules and the server's shell, with the clock and the device's date words.
     const shared = `export const stamp = (d: { born: string }) => \`\${new Date().getFullYear()} \${new Date(d.born).toLocaleDateString()} \${Date.now()}\`;\n`;
-    assert.equal((await findings(shared, 'shared/src/', 'charts.ts', 'no-restricted-syntax')).length, 4);
+    assert.equal((await findings(shared, 'shared/src/', 'src/charts.ts', 'no-restricted-syntax')).length, 4);
     // Elsewhere the app may still sort names for people (search results, pickers).
     assert.deepEqual(await findings(bug, 'app/src/', 'pickers.js', 'no-restricted-syntax'), []);
   });

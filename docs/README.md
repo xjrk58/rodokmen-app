@@ -73,6 +73,7 @@ Developing:
 - [The relation to the family](explanation/relation-to-the-family.md): Relatives, Possible relatives and Unrelated people, and why they are computed from the evidence.
 - [Research leads](explanation/research-leads.md): why leads sit beside the Tree and change without review, how the gap finder picks gaps, registers and years, and what is proved.
 - [Scan reading](explanation/scan-reading.md): why the server reads scans with Anthropic's API, what is sent and what is not, and why a person decides every value and who each name is.
+- [Charts](explanation/charts.md): why Charts follow fixed rules with no AI model, why they are selected on the server and drawn in the app, which rules are proved, what a House chart can and cannot know, and why Sheets are reduced.
 - [Offline and the app](explanation/offline.md): what works without a connection, and why offline means Drafts rather than sync.
 - [Proofs with LemmaScript](explanation/proofs.md): which rules are proved, what that buys, and where the proofs stop.
 

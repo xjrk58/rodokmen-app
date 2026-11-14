@@ -248,6 +248,7 @@ export type ChartFamily = z.infer<typeof ChartFamily>;
 export type ChartSource = z.infer<typeof ChartSource>;
 export type DescendantNode = z.infer<typeof DescendantNode>;
 export type LineRow = z.infer<typeof LineRow>;
+export type LineSibling = z.infer<typeof LineSibling>;
 export type DescendantChart = z.infer<typeof DescendantChart>;
 export type HouseRow = z.infer<typeof HouseRow>;
 export type HouseChart = z.infer<typeof HouseChart>;
