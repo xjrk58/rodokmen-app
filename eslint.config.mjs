@@ -40,6 +40,20 @@ const restricted = {
     selector: "CallExpression[callee.property.name=/^(slice|substring|substr|split)$/][callee.object.callee.property.name='toISOString']",
     message: "toISOString() gives the UTC day, not the Member's: use today() from src/proposal-build.js, or getFullYear/getMonth/getDate.",
   },
+  // Kinship must give the same answer every time, on every device and locale (kinship spec, "Kinship
+  // follows fixed rules"): no chance, no clock, no locale in its modules. add-tree-charts adds its Chart
+  // modules to the same block.
+  ...Object.fromEntries(
+    [
+      ["CallExpression[callee.object.name='Math'][callee.property.name='random']", 'Math.random() differs on every run: kinship takes every order from the ids.'],
+      ["CallExpression[callee.object.name='Date'][callee.property.name='now'], NewExpression[callee.name='Date']", 'The clock never decides kinship: the server stamps the answer with the state of the Tree.'],
+      ["CallExpression[callee.object.name='performance'][callee.property.name='now']", 'The clock never decides kinship: count units of work, not time.'],
+      ["CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']", 'A random id differs on every run: kinship uses the ids of the records.'],
+      ["CallExpression[callee.property.name='localeCompare']", 'localeCompare depends on the locale: compare ids by code units (a < b ? -1 : a > b ? 1 : 0).'],
+      ["CallExpression[callee.property.name=/^toLocale/]", 'toLocale…String depends on the locale: kinship terms come from the tables in kinship-terms/.'],
+      ["MemberExpression[object.name='Intl'][property.name=/^(DateTimeFormat|Collator)$/]", 'Intl depends on the locale: kinship terms come from the tables in kinship-terms/, ids compare by code units.'],
+    ].map(([selector, message], i) => [`determinism${i}`, { selector, message }]),
+  ),
   leafletHtml: {
     // Leaflet puts string content of tooltips and popups in as HTML; text from the Tree must go in as a node.
     selector:
@@ -124,6 +138,11 @@ export default defineConfig(
   },
   // The sign-in hooks.
   { files: ['server/src/auth/**/*.ts'], rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, restricted.rawRequestUrl] } },
+  // The kinship modules: the same answer every time.
+  {
+    files: ['shared/src/kinship*.ts', 'shared/src/kinship-terms/**/*.ts'],
+    rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, ...Object.entries(restricted).filter(([k]) => k.startsWith('determinism')).map(([, v]) => v)] },
+  },
 
   // The MCP server is a client of the public API (add-agent-access design): it may not reach the
   // database or the server's code, so it can offer nothing the Agent token may not do there.

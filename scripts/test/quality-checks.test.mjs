@@ -125,6 +125,19 @@ export function guard(app: FastifyInstance) {
     assert.deepEqual(await findings(`export const d = new Date().toISOString().slice(0, 10);\n`, 'shared/src/', '.ts', 'no-restricted-syntax'), []);
   });
 
+  test('the kinship modules may not use chance, the clock or the locale (kinship spec, "Kinship follows fixed rules")', async () => {
+    const bug = `export const shuffle = <T>(xs: T[]) => xs.sort(() => Math.random() - 0.5);\nexport const byName = (a: string, b: string) => a.localeCompare(b);\nexport const stamp = () => new Date();\n`;
+    const found = await findings(bug, 'shared/src/', 'kinship-paths.ts', 'no-restricted-syntax');
+    assert.equal(found.length, 3);
+    assert.match(found[0], /from the ids/);
+    assert.match(found[1], /code units/);
+    assert.equal((await findings(bug, 'shared/src/kinship-terms/', 'cs.ts', 'no-restricted-syntax')).length, 3);
+    const fixed = `export const byId = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);\n`;
+    assert.deepEqual(await findings(fixed, 'shared/src/', 'kinship-paths.ts', 'no-restricted-syntax'), []);
+    // Elsewhere in shared/ the rule does not apply (the Living rule reads the clock's day).
+    assert.deepEqual(await findings(bug, 'shared/src/', 'living.ts', 'no-restricted-syntax'), []);
+  });
+
   test('identifiers may not use words the glossary rejects (L23: town for a Place)', async () => {
     const bug = `export function label(place) {\n  const town = place.name;\n  return town;\n}\n`;
     // The declaration and its use.

@@ -21,6 +21,8 @@ export * from './schemas/review.js';
 export * from './schemas/leads.js';
 export * from './schemas/batches.js';
 export * from './schemas/erasure.js';
+export * from './schemas/kinship.js';
+export * from './schemas/kinship-api.js';
 export * from './relation.js';
 export * from './schemas/reading.js';
 export * from './reading.js';

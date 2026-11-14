@@ -36,6 +36,7 @@ ShellCheck and gitleaks run in their pinned Docker image and fall back to the to
   - in `server/src/auth/`: `request.url`, `request.raw.url` or `originalUrl`;
   - in `server/` and `shared/`: `z.url()` without a `protocol` option;
   - in the app's browser code: a day taken from `toISOString()` (`.slice`, `.substring`, `.substr`, `.split`), and Leaflet tooltip or popup content given as a string;
+  - in the kinship modules (`shared/src/kinship*.ts`, `shared/src/kinship-terms/`): `Math.random`, `Date.now`, `new Date`, `performance.now`, `crypto.randomUUID`, `localeCompare`, `toLocale…String`, `Intl.DateTimeFormat` and `Intl.Collator`, so that kinship gives the same answer on every device and locale;
   - everywhere: the identifiers GLOSSARY.md rejects and that mean nothing else here (`town`, `village`, `obec`, `farnost`, `manor`, `dominion`, `herrschaft`, `commune`, `moderator`, `superuser`, `proband`, and their plurals and capitals where listed);
   - in `app/tests/e2e/`: eslint-plugin-playwright's recommended rules, with `no-wait-for-timeout` an error and `test.skip(condition, reason)` allowed;
   - in `server/test/**/*.e2e.test.ts`: the plugin's rules on the page API only (fixed waits, `waitForSelector`, `networkidle`, element handles, `eval`, `force`, `page.pause()`, unused locators, needless `await`).

@@ -58,6 +58,14 @@ _Avoid_: maybe-relative, candidate
 A Person in the Tree with no link to any Family root, kept because they appear in the family's Places, Houses or registers, for example as a godparent or a neighbour.
 _Avoid_: stranger, non-relative, nepříbuzný (in English text)
 
+**Kinship**:
+How a Person is related to the signed-in Member's own Person, worked out from the Family links: the kinship term ("praděd", "second cousin", "švagr"), the line and Degree of kinship, and every path between them. It is relative to the reader, unlike the relation to the family (Relative, Possible relative, Unrelated person), which is relative to the Family roots.
+_Avoid_: relationship, degree of relative, příbuzenský vztah (in English text)
+
+**Degree of kinship**:
+The number of births between two Persons in the direct line, or by which both descend from their nearest common ancestor in the collateral line, as the Czech civil code counts it (§ 771); for kinship by marriage, the degree of the kin married into (§ 772). A first cousin is of the 4th degree.
+_Avoid_: koleno (as the thing itself: "z 2. kolena" is part of a Czech term, not a degree), generation, distance
+
 **Label**:
 A free word or short phrase a Member attaches to a Person to group them, such as a family line.
 _Avoid_: tag, category
