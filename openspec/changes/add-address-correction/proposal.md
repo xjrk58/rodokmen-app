@@ -44,10 +44,10 @@ Main specs are empty because no change is archived yet, so these deltas add requ
 - **Database**: a migration `0016_email_change` adds the table `email_change`, which holds one row per requested change, with only the token's hash. No existing table changes.
 - **Shared**: `shared/src/schemas/accounts.ts` gains `EMAIL_CHANGE_DAYS`, `EmailChangeBody`, `EmailChangeConfirmed`, and `pendingEmail` in `MemberView`. In `shared/src/rules.ts`, `mayDo` gains a `//@ contract` line and an `ensures` for the new requirement. No new action: correcting an address is managing Members (`manageAccounts`).
 - **Server**:
-  - `server/src/auth/accounts.ts`: request, withdraw and confirm a change, and `pendingEmail`;
+  - a new `server/src/auth/email-change.ts`: request, withdraw and confirm a change, and `pendingEmail`; `AccountDeps` in `server/src/auth/accounts.ts` gains an optional `log`, wired in `server/src/app.ts`, for the notice sent after the commit;
   - `server/src/routes/accounts.ts`: `POST` and `DELETE /api/members/{id}/email-change`;
   - `server/src/routes/auth.ts`: `POST /api/auth/email-change/confirm`;
-  - two new emails in `server/src/mail/templates.ts`;
+  - two new emails in `server/src/mail/templates.ts`, whose shared `render` takes a notice without a button;
   - `server/openapi.json`.
 - **App**:
   - `app/src/routes.js` and `app/src/shell.js`: the `#address/<token>` page;

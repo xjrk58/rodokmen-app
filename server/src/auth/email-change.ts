@@ -1,4 +1,5 @@
 import { EMAIL_CHANGE_DAYS, type UiLanguage } from '@rodokmen/shared';
+import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import { addressChangedEmail, addressConfirmEmail } from '../mail/templates.js';
@@ -42,8 +43,11 @@ export async function requestEmailChange(deps: AccountDeps, owner: Account, targ
   // The token stays in the fragment, which no browser, mail scanner or link preview sends to a server.
   const link = `${deps.publicOrigin}/#address/${token}`;
   return deps.db.transaction().execute(async (tx) => {
-    // Locked, so that two requests for one Member cannot both leave a change open.
-    const member = await tx.selectFrom('account').selectAll().where('id', '=', targetId).where('role', '<>', 'agent').forUpdate().executeTakeFirst();
+    // Locked per Member, so that two requests cannot both leave a change open. An advisory lock,
+    // not the account row's: the email below is sent inside this transaction, and the Member's own
+    // requests must not wait on the mail server.
+    await sql`select pg_advisory_xact_lock(hashtext(${`email-change:${targetId}`}))`.execute(tx);
+    const member = await tx.selectFrom('account').selectAll().where('id', '=', targetId).where('role', '<>', 'agent').executeTakeFirst();
     if (!member?.email) throw new ApiProblem(404, 'not_found', 'No Member with this id.');
     if (member.email === email) throw new ApiProblem(409, 'email_unchanged', "This is already the Member's address.");
     const taken = await tx.selectFrom('account').select('id').where('email', '=', email).executeTakeFirst();

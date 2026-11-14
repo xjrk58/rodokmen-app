@@ -62,7 +62,7 @@ The answer is `{ ok: true, email }`, the address now in effect, so that the page
 
 A Member has at most one waiting change. Asking again marks the waiting one withdrawn, so its link stops working, and sends a new link. `DELETE /api/members/{id}/email-change` withdraws it. That is how the Owner undoes a typo in the correction before a stranger confirms it. 404 when nothing is waiting.
 
-The table enforces it: a partial unique index on `email_change (account_id)` where it is neither confirmed nor withdrawn. Asking again withdraws all such rows first, with the Member's account row locked `for update`, so two requests at once cannot both insert.
+The table enforces it: a partial unique index on `email_change (account_id)` where it is neither confirmed nor withdrawn. Asking again withdraws all such rows first, under a lock per Member, so two requests at once cannot both insert. The lock is a transaction-scoped advisory lock, as for sign-in links, not a lock on the Member's account row: the confirmation email is sent inside the transaction, and the Member's own requests, which touch that row, must not wait on the mail server.
 
 ### What is refused
 

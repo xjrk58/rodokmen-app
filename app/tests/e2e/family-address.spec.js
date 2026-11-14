@@ -136,6 +136,26 @@ test.describe('the page that confirms a new address', () => {
     await expect(page.locator('body')).toHaveAttribute('data-screen', 'map');
   });
 
+  test('signed in on this device: an address taken meanwhile is explained, and once confirmed the Member is read again', async ({ page }) => {
+    let answers = 0;
+    const calls = await mockFamilyApi(page, {
+      me: member('contributor'),
+      extra: {
+        'POST auth/email-change/confirm': () =>
+          ++answers === 1
+            ? { status: 409, json: { code: 'already_member', message: 'server text' } }
+            : { json: { ok: true, email: 'marta.right@example.test' } },
+      },
+    });
+    await openLink(page);
+    await page.getByTestId('address-confirm').click();
+    await expect(page.getByTestId('sign-in-status')).toHaveText('This address already belongs to another Member, so nothing was changed. Ask the Owner.');
+    const readsBefore = calls.filter((c) => c === 'GET me').length;
+    await page.getByTestId('address-confirm').click();
+    await expect(page.getByTestId('address-confirmed')).toBeVisible();
+    await expect.poll(() => calls.filter((c) => c === 'GET me').length).toBe(readsBefore + 1);
+  });
+
   test("an old link says it no longer works, in the reader's language, and that the Owner can send a new one", async ({ page }) => {
     await mockFamilyApi(page, {
       me: null,

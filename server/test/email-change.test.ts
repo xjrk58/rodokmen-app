@@ -187,6 +187,21 @@ describe("correcting a Member's address", () => {
     expect(await addressOf(eva.id)).toBe('eva.right@example.test');
   });
 
+  it('two requests at once for one Member leave exactly one change waiting', async () => {
+    const lea = await cousin('lea');
+    const answers = await Promise.all([ask(lea.id, 'lea.one@example.test'), ask(lea.id, 'lea.two@example.test')]);
+    expect(answers.map((r) => r.statusCode)).toEqual([200, 200]);
+    const open = await t.db
+      .selectFrom('email_change')
+      .select('email')
+      .where('account_id', '=', lea.id)
+      .where('confirmed_at', 'is', null)
+      .where('revoked_at', 'is', null)
+      .execute();
+    expect(open).toHaveLength(1);
+    expect((await listed(lea.id)).pendingEmail).toBe(open[0]!.email);
+  });
+
   it('withdrawn: the link stops working, and nothing waits any more', async () => {
     const ota = await cousin('ota');
     await ask(ota.id, 'ota.typo@example.test');
