@@ -10,6 +10,8 @@ import { getHourglass } from './api.js';
 import { chooseFocus, MAX_DEPTH, MIN_DEPTH, rememberDepth, rememberedDepth, rememberedFocus, rememberFocus } from './focus.js';
 import { BOX, layoutHourglass, lifeYears } from './hourglass-layout.js';
 import { t } from './i18n.js';
+import { shortKinship } from './kinship.js';
+import { KinshipStrip } from './kinship-section.js';
 import { PeopleSearch } from './people-screen.js';
 import { familyRoots, isShown, relationKnown, relationOf, rootsKnown } from './relation.js';
 import { personAddress, treeAddress } from './routes.js';
@@ -79,6 +81,8 @@ function PersonBox({ node, focus, onTap }) {
     lifeYears(p),
     p.living ? t('person.living') : '',
     possible ? t('person.possible') : '',
+    // The kinship term is read out, not drawn: the boxes keep their size (the Owner, Open Questions 7).
+    shortKinship(p) ?? '',
     focus ? t('tree.openPage') : t('tree.makeFocus'),
   ]
     .filter(Boolean)
@@ -406,6 +410,7 @@ export function TreeScreen({ me, focus, cache }) {
     ${toolbar}
     <${AsOf} asOf=${loaded.asOf} />
     <${ErrorLine} error=${loaded.error} />
+    ${data ? html`<${KinshipStrip} me=${me} data=${data} />` : null}
     ${data ? html`<${TreeCanvas} data=${data} depthKey=${depthKey} />` : loaded.error ? null : html`<p class="empty">${t('work.loading')}</p>`}
   </section>`;
 }

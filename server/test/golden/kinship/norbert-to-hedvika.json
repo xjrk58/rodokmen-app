@@ -24,14 +24,34 @@
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77"
+          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b897-751c-9b07-a711de64d592",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b"
+          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b",
+          "term": {
+            "cs": {
+              "text": "matka",
+              "gender": "f"
+            },
+            "en": {
+              "text": "mother",
+              "gender": "f"
+            }
+          }
         }
       ],
       "term": {

@@ -76,6 +76,18 @@ async function personRequests(deps: { db: Db; clock: Clock }, accounts: readonly
   return out;
 }
 
+/** How many Members wait for the Owner to link them to their own Person: the count on the Owner's Settings tab. */
+async function openPersonRequests(db: Db): Promise<number> {
+  const { n } = await db
+    .selectFrom('account')
+    .select((eb) => eb.fn.countAll<number>().as('n'))
+    .where('person_request_id', 'is not', null)
+    .where('person_id', 'is', null)
+    .where('disabled_at', 'is', null)
+    .executeTakeFirstOrThrow();
+  return n;
+}
+
 export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promise<Me> {
   const { n } = await deps.db
     .selectFrom('passkey')
@@ -94,6 +106,7 @@ export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promis
     passkeyCount: n,
     person: persons.get(a.id) ?? null,
     personRequest: (await personRequests(deps, [a])).get(a.id) ?? null,
+    ...(a.role === 'owner' ? { openPersonRequests: await openPersonRequests(deps.db) } : {}),
     familyRoots: await familyRootIds(deps.db),
   };
 }

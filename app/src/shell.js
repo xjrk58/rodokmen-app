@@ -11,6 +11,7 @@ import { LeadScreen, NewLeadScreen } from './lead-screen.js';
 import { LeadsScreen } from './leads-screen.js';
 import { PeopleScreen } from './people-screen.js';
 import { PersonScreen } from './person-screen.js';
+import { RequestCount } from './person-request.js';
 import { setFamilyRoots } from './relation.js';
 import { needsMember, parseRoute } from './routes.js';
 import { SettingsScreen } from './settings-screen.js';
@@ -72,7 +73,8 @@ function TabBar({ route, me }) {
     ${tabs.map(
       ([id, href, key]) =>
         html`<a href=${href} class="tabbar-item" data-testid=${`tabbar-${id}`} aria-current=${active === id ? 'page' : undefined}>
-          <${TabIcon} name=${id} /><span>${t(key)}</span>
+          <${TabIcon} name=${id} /><span>${t(key)}</span
+          >${id === 'settings' && me.openPersonRequests ? html`<${RequestCount} count=${me.openPersonRequests} />` : null}
         </a>`,
     )}
   </nav>`;

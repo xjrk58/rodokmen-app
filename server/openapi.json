@@ -1278,6 +1278,10 @@
           "recordId": {
             "description": "The Family of a partner link, the child link of a parent or child link",
             "$ref": "#/components/schemas/IdInput"
+          },
+          "term": {
+            "description": "The next Person as the one before names them: otec, syn, manželka, pěstoun …",
+            "$ref": "#/components/schemas/KinshipTermInput"
           }
         },
         "required": [
@@ -1285,7 +1289,8 @@
           "link",
           "linkType",
           "weak",
-          "recordId"
+          "recordId",
+          "term"
         ]
       },
       "KinshipPathInput": {
@@ -3944,6 +3949,12 @@
               }
             ],
             "description": "This Member asked the Owner to link this Person, and the Owner has not decided yet"
+          },
+          "openPersonRequests": {
+            "description": "For the Owner: how many Members wait for the Owner to link them to their own Person",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "familyRoots": {
             "type": "array",
@@ -11550,6 +11561,10 @@
           "recordId": {
             "description": "The Family of a partner link, the child link of a parent or child link",
             "$ref": "#/components/schemas/Id"
+          },
+          "term": {
+            "description": "The next Person as the one before names them: otec, syn, manželka, pěstoun …",
+            "$ref": "#/components/schemas/KinshipTerm"
           }
         },
         "required": [
@@ -11557,7 +11572,8 @@
           "link",
           "linkType",
           "weak",
-          "recordId"
+          "recordId",
+          "term"
         ],
         "additionalProperties": false
       },
@@ -14279,6 +14295,12 @@
               }
             ],
             "description": "This Member asked the Owner to link this Person, and the Owner has not decided yet"
+          },
+          "openPersonRequests": {
+            "description": "For the Owner: how many Members wait for the Owner to link them to their own Person",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
           },
           "familyRoots": {
             "type": "array",

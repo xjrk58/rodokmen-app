@@ -102,6 +102,7 @@ export const Me = z
     passkeyCount: z.number().int(),
     person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)'),
     personRequest: PersonRequest.nullable().describe('This Member asked the Owner to link this Person, and the Owner has not decided yet'),
+    openPersonRequests: z.number().int().min(0).optional().describe('For the Owner: how many Members wait for the Owner to link them to their own Person'),
     familyRoots: z
       .array(Id)
       .describe('The Family roots the Owner marked, the first marked first. Empty until the first one: until then the relation to the family says nothing'),

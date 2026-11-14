@@ -134,6 +134,9 @@ describe('asking to be linked to one’s own Person', () => {
     expect(Me.parse(res.json()).personRequest?.person.id).toBe(L.proband);
     expect((await requestOf(asker.id))?.person.id).toBe(L.proband);
     expect((await me(askerCookie)).person).toBeNull();
+    // The count on the Owner's Settings tab; a Member's own Me has none.
+    expect((await me(ownerCookie)).openPersonRequests).toBe(1);
+    expect((await me(askerCookie)).openPersonRequests).toBeUndefined();
   });
 
   it('no request is visible to another Member, and a Contributor may not refuse it', async () => {

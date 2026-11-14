@@ -25,28 +25,68 @@
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77"
+          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b897-751c-9b07-a711de64d592",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b"
+          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b",
+          "term": {
+            "cs": {
+              "text": "matka",
+              "gender": "f"
+            },
+            "en": {
+              "text": "mother",
+              "gender": "f"
+            }
+          }
         },
         {
           "person": "019b76da-b865-7a64-809b-895f12b1fd12",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b89b-7fc8-8482-840592d402e4"
+          "recordId": "019b76da-b89b-7fc8-8482-840592d402e4",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b899-7814-888a-cd83fd203078",
           "link": "child",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b8a3-7666-96a0-a7f3925cddc5"
+          "recordId": "019b76da-b8a3-7666-96a0-a7f3925cddc5",
+          "term": {
+            "cs": {
+              "text": "dcera",
+              "gender": "f"
+            },
+            "en": {
+              "text": "daughter",
+              "gender": "f"
+            }
+          }
         }
       ],
       "term": {
@@ -79,35 +119,85 @@
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77"
+          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b879-77ca-be96-d7de67411528",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b"
+          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b861-7543-9147-f89a157889c9",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b87f-756c-8ee1-48561f8da742"
+          "recordId": "019b76da-b87f-756c-8ee1-48561f8da742",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b87b-7ab4-95d7-9cb4c2a73a58",
           "link": "child",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b887-77fc-94dc-1ab691f6dc71"
+          "recordId": "019b76da-b887-77fc-94dc-1ab691f6dc71",
+          "term": {
+            "cs": {
+              "text": "syn",
+              "gender": "m"
+            },
+            "en": {
+              "text": "son",
+              "gender": "m"
+            }
+          }
         },
         {
           "person": "019b76da-b899-7814-888a-cd83fd203078",
           "link": "partner",
           "linkType": null,
           "weak": false,
-          "recordId": "019b76da-b8e0-71c1-a496-118942f7a46c"
+          "recordId": "019b76da-b8e0-71c1-a496-118942f7a46c",
+          "term": {
+            "cs": {
+              "text": "manželka",
+              "gender": "f"
+            },
+            "en": {
+              "text": "wife",
+              "gender": "f"
+            }
+          }
         }
       ],
       "term": {

@@ -1,0 +1,4821 @@
+{
+  "1": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 5,
+        "up": 5,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000001"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000103003",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "praprapraděd",
+            "gender": "m"
+          },
+          "en": {
+            "text": "3rd great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+        "version": 1,
+        "sex": "male",
+        "given": "Václav",
+        "surname": "Novák",
+        "displayName": "Václav Novák",
+        "living": false,
+        "birth": "1745~",
+        "death": "1805-02-11",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "2": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000002",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 5,
+        "up": 5,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000002"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000002",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000103003",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "prapraprababička",
+            "gender": "f"
+          },
+          "en": {
+            "text": "3rd great-grandmother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000002",
+        "version": 1,
+        "sex": "female",
+        "given": "Anna",
+        "surname": "Dvořáková",
+        "displayName": "Anna Dvořáková",
+        "living": false,
+        "birth": "1750",
+        "death": "../1805",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "3": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 4,
+        "up": 4,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000003"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "prapraděd",
+            "gender": "m"
+          },
+          "en": {
+            "text": "great-great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "4": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000004",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 5,
+        "up": 5,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000004"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000004",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000104006",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "praprapraděd",
+            "gender": "m"
+          },
+          "en": {
+            "text": "3rd great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000004",
+        "version": 1,
+        "sex": "male",
+        "given": "Matěj",
+        "surname": "Svoboda",
+        "displayName": "Matěj Svoboda",
+        "living": false,
+        "birth": "1744",
+        "death": "1810",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Svobodová",
+        "displayName": "Marie Svobodová",
+        "living": false,
+        "birth": "1776-08-15",
+        "death": "1839-01-12",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "5": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000005",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 5,
+        "up": 5,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000005"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000005",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000104006",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "prapraprababička",
+            "gender": "f"
+          },
+          "en": {
+            "text": "3rd great-grandmother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000005",
+        "version": 1,
+        "sex": "female",
+        "given": "Kateřina",
+        "surname": "Svobodová",
+        "displayName": "Kateřina Svobodová",
+        "living": false,
+        "birth": "1748",
+        "death": "1812",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Svobodová",
+        "displayName": "Marie Svobodová",
+        "living": false,
+        "birth": "1776-08-15",
+        "death": "1839-01-12",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "6": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 4,
+        "up": 4,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000006"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "praprababička",
+            "gender": "f"
+          },
+          "en": {
+            "text": "great-great-grandmother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Svobodová",
+        "displayName": "Marie Svobodová",
+        "living": false,
+        "birth": "1776-08-15",
+        "death": "1839-01-12",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "7": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000007",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 6,
+        "up": 5,
+        "down": 1,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000004", "0192f0c4-7a1e-7c3b-9d2a-000000000005"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000004",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000104006",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000007",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000104007",
+            "term": {
+              "cs": {
+                "text": "dcera",
+                "gender": "f"
+              },
+              "en": {
+                "text": "daughter",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "prapraprateta",
+            "gender": "f"
+          },
+          "en": {
+            "text": "3rd great-aunt",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000004",
+        "version": 1,
+        "sex": "male",
+        "given": "Matěj",
+        "surname": "Svoboda",
+        "displayName": "Matěj Svoboda",
+        "living": false,
+        "birth": "1744",
+        "death": "1810",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000005",
+        "version": 1,
+        "sex": "female",
+        "given": "Kateřina",
+        "surname": "Svobodová",
+        "displayName": "Kateřina Svobodová",
+        "living": false,
+        "birth": "1748",
+        "death": "1812",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Svobodová",
+        "displayName": "Marie Svobodová",
+        "living": false,
+        "birth": "1776-08-15",
+        "death": "1839-01-12",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000007",
+        "version": 1,
+        "sex": "female",
+        "given": "Rozálie",
+        "surname": "Svobodová",
+        "displayName": "Rozálie Svobodová",
+        "living": false,
+        "birth": "1779-09-02",
+        "death": "1850",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "8": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 6,
+        "up": 6,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000008"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000103003",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000102001",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "předek v 6. pokolení",
+            "gender": "m"
+          },
+          "en": {
+            "text": "4th great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+        "version": 1,
+        "sex": "male",
+        "given": "Václav",
+        "surname": "Novák",
+        "displayName": "Václav Novák",
+        "living": false,
+        "birth": "1745~",
+        "death": "1805-02-11",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+        "version": 1,
+        "sex": "male",
+        "given": "Prokop",
+        "surname": "Novák",
+        "displayName": "Prokop Novák",
+        "living": false,
+        "birth": "1720",
+        "death": "1780",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "9": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000009",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 6,
+        "up": 6,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000009"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000103003",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000009",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000102001",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "předkyně v 6. pokolení",
+            "gender": "f"
+          },
+          "en": {
+            "text": "4th great-grandmother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+        "version": 1,
+        "sex": "male",
+        "given": "Václav",
+        "surname": "Novák",
+        "displayName": "Václav Novák",
+        "living": false,
+        "birth": "1745~",
+        "death": "1805-02-11",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000009",
+        "version": 1,
+        "sex": "female",
+        "given": "Apolena",
+        "surname": "Nováková",
+        "displayName": "Apolena Nováková",
+        "living": false,
+        "birth": "1724",
+        "death": "1790",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "10": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 3,
+        "up": 3,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "praděd",
+            "gender": "m"
+          },
+          "en": {
+            "text": "great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "11": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000011",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 5,
+        "up": 4,
+        "down": 1,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000003", "0192f0c4-7a1e-7c3b-9d2a-000000000006"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000011",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105011",
+            "term": {
+              "cs": {
+                "text": "dcera",
+                "gender": "f"
+              },
+              "en": {
+                "text": "daughter",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "praprateta",
+            "gender": "f"
+          },
+          "en": {
+            "text": "great-great-aunt",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000006",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Svobodová",
+        "displayName": "Marie Svobodová",
+        "living": false,
+        "birth": "1776-08-15",
+        "death": "1839-01-12",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000011",
+        "version": 1,
+        "sex": "female",
+        "given": "Anna",
+        "surname": "Nováková",
+        "displayName": "Anna Nováková",
+        "living": false,
+        "birth": "1804",
+        "death": "1870",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "12": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000012",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "marriage",
+        "line": "direct",
+        "degree": 3,
+        "up": 3,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000012",
+            "link": "partner",
+            "linkType": null,
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000000106",
+            "term": {
+              "cs": {
+                "text": "manželka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "wife",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "sešvagřená",
+            "gender": "f"
+          },
+          "en": {
+            "text": "related by marriage",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000012",
+        "version": 1,
+        "sex": "female",
+        "given": "Kateřina",
+        "surname": "Procházková",
+        "displayName": "Kateřina Procházková",
+        "living": false,
+        "birth": "1804-04-29",
+        "death": "1835-03-02",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "13": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 4,
+        "up": 3,
+        "down": 1,
+        "half": true,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000106013",
+            "term": {
+              "cs": {
+                "text": "syn",
+                "gender": "m"
+              },
+              "en": {
+                "text": "son",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "polorodý prastrýc",
+            "gender": "m"
+          },
+          "en": {
+            "text": "half-great-uncle",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+        "version": 1,
+        "sex": "male",
+        "given": "Karel",
+        "surname": "Novák",
+        "displayName": "Karel Novák",
+        "living": false,
+        "birth": "1827-01-28",
+        "death": "1887-09-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "14": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000014",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 4,
+        "up": 3,
+        "down": 1,
+        "half": true,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000014",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000106014",
+            "term": {
+              "cs": {
+                "text": "dcera",
+                "gender": "f"
+              },
+              "en": {
+                "text": "daughter",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "polorodá prateta",
+            "gender": "f"
+          },
+          "en": {
+            "text": "half-great-aunt",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000014",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Nováková",
+        "displayName": "Marie Nováková",
+        "living": false,
+        "birth": "1829-07-02",
+        "death": "1890",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "15": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000015",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 3,
+        "up": 3,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000015"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000015",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "prababička",
+            "gender": "f"
+          },
+          "en": {
+            "text": "great-grandmother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000015",
+        "version": 1,
+        "sex": "female",
+        "given": "Ludmila",
+        "surname": "Veselá",
+        "displayName": "Ludmila Veselá",
+        "living": false,
+        "birth": "1812-09-16",
+        "death": "1871-03-15",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "16": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 2,
+        "up": 2,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000016"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "děd",
+            "gender": "m"
+          },
+          "en": {
+            "text": "grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "17": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000017",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 4,
+        "up": 3,
+        "down": 1,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010", "0192f0c4-7a1e-7c3b-9d2a-000000000015"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000017",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107017",
+            "term": {
+              "cs": {
+                "text": "dcera",
+                "gender": "f"
+              },
+              "en": {
+                "text": "daughter",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "prateta",
+            "gender": "f"
+          },
+          "en": {
+            "text": "great-aunt",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000015",
+        "version": 1,
+        "sex": "female",
+        "given": "Ludmila",
+        "surname": "Veselá",
+        "displayName": "Ludmila Veselá",
+        "living": false,
+        "birth": "1812-09-16",
+        "death": "1871-03-15",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000017",
+        "version": 1,
+        "sex": "female",
+        "given": "Johana",
+        "surname": "Nováková",
+        "displayName": "Johana Nováková",
+        "living": false,
+        "birth": "1843-01-19",
+        "death": "1900",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "18": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000018",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "marriage",
+        "line": "collateral",
+        "degree": 4,
+        "up": 3,
+        "down": 1,
+        "half": true,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000106013",
+            "term": {
+              "cs": {
+                "text": "syn",
+                "gender": "m"
+              },
+              "en": {
+                "text": "son",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000018",
+            "link": "partner",
+            "linkType": null,
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000000108",
+            "term": {
+              "cs": {
+                "text": "manželka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "wife",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "sešvagřená",
+            "gender": "f"
+          },
+          "en": {
+            "text": "related by marriage",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+        "version": 1,
+        "sex": "male",
+        "given": "Karel",
+        "surname": "Novák",
+        "displayName": "Karel Novák",
+        "living": false,
+        "birth": "1827-01-28",
+        "death": "1887-09-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000018",
+        "version": 1,
+        "sex": "female",
+        "given": "Barbora",
+        "surname": "Marková",
+        "displayName": "Barbora Marková",
+        "living": false,
+        "birth": "1858",
+        "death": "1886-02-17",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "19": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000019",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 2,
+        "up": 2,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000019"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000019",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "babička",
+            "gender": "f"
+          },
+          "en": {
+            "text": "grandmother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000019",
+        "version": 1,
+        "sex": "female",
+        "given": "Terezie",
+        "surname": "Černá",
+        "displayName": "Terezie Černá",
+        "living": false,
+        "birth": "1845",
+        "death": "1915-05-21",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "20": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000020",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 3,
+        "up": 2,
+        "down": 1,
+        "half": false,
+        "adoptive": true,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000016", "0192f0c4-7a1e-7c3b-9d2a-000000000019"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000020",
+            "link": "child",
+            "linkType": "adoptive",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109020",
+            "term": {
+              "cs": {
+                "text": "adoptivní dcera",
+                "gender": "f"
+              },
+              "en": {
+                "text": "adopted daughter",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "teta (přes osvojení)",
+            "gender": "f"
+          },
+          "en": {
+            "text": "aunt (through adoption)",
+            "gender": "f"
+          }
+        }
+      },
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 5,
+        "up": 3,
+        "down": 2,
+        "half": true,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000010"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000106013",
+            "term": {
+              "cs": {
+                "text": "syn",
+                "gender": "m"
+              },
+              "en": {
+                "text": "son",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000020",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000108020",
+            "term": {
+              "cs": {
+                "text": "dcera",
+                "gender": "f"
+              },
+              "en": {
+                "text": "daughter",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "polorodá teta z 2. kolena",
+            "gender": "f"
+          },
+          "en": {
+            "text": "half first cousin once removed",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000013",
+        "version": 1,
+        "sex": "male",
+        "given": "Karel",
+        "surname": "Novák",
+        "displayName": "Karel Novák",
+        "living": false,
+        "birth": "1827-01-28",
+        "death": "1887-09-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000019",
+        "version": 1,
+        "sex": "female",
+        "given": "Terezie",
+        "surname": "Černá",
+        "displayName": "Terezie Černá",
+        "living": false,
+        "birth": "1845",
+        "death": "1915-05-21",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000020",
+        "version": 1,
+        "sex": "female",
+        "given": "Marie",
+        "surname": "Nováková",
+        "displayName": "Marie Nováková",
+        "living": false,
+        "birth": "1885-12-08",
+        "death": "1950",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "21": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 1,
+        "up": 1,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000021"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "22": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000022",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 1,
+        "up": 1,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000022"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000022",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "matka",
+                "gender": "f"
+              },
+              "en": {
+                "text": "mother",
+                "gender": "f"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "matka",
+            "gender": "f"
+          },
+          "en": {
+            "text": "mother",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000022",
+        "version": 1,
+        "sex": "female",
+        "given": "Magdalena",
+        "surname": "Horáková",
+        "displayName": "Magdalena Horáková",
+        "living": false,
+        "birth": "1874-07-22",
+        "death": "1940",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "23": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "self",
+        "line": null,
+        "degree": null,
+        "up": 0,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": [],
+        "steps": [],
+        "term": {
+          "cs": {
+            "text": "vy",
+            "gender": "f"
+          },
+          "en": {
+            "text": "you",
+            "gender": "f"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "24": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000024",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 2,
+        "up": 1,
+        "down": 1,
+        "half": false,
+        "adoptive": false,
+        "possible": false,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000021", "0192f0c4-7a1e-7c3b-9d2a-000000000022"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000024",
+            "link": "child",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110024",
+            "term": {
+              "cs": {
+                "text": "syn",
+                "gender": "m"
+              },
+              "en": {
+                "text": "son",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "bratr",
+            "gender": "m"
+          },
+          "en": {
+            "text": "brother",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000022",
+        "version": 1,
+        "sex": "female",
+        "given": "Magdalena",
+        "surname": "Horáková",
+        "displayName": "Magdalena Horáková",
+        "living": false,
+        "birth": "1874-07-22",
+        "death": "1940",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000024",
+        "version": 1,
+        "sex": "male",
+        "given": "Jaroslav",
+        "surname": "Novák",
+        "displayName": "Jaroslav Novák",
+        "living": true,
+        "birth": "1936-10-02",
+        "death": null,
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "25": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000025",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "collateral",
+        "degree": 2,
+        "up": 1,
+        "down": 1,
+        "half": false,
+        "adoptive": false,
+        "possible": true,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000021", "0192f0c4-7a1e-7c3b-9d2a-000000000022"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000025",
+            "link": "child",
+            "linkType": "birth",
+            "weak": true,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110025",
+            "term": {
+              "cs": {
+                "text": "syn",
+                "gender": "m"
+              },
+              "en": {
+                "text": "son",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "bratr",
+            "gender": "m"
+          },
+          "en": {
+            "text": "brother",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000022",
+        "version": 1,
+        "sex": "female",
+        "given": "Magdalena",
+        "surname": "Horáková",
+        "displayName": "Magdalena Horáková",
+        "living": false,
+        "birth": "1874-07-22",
+        "death": "1940",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000025",
+        "version": 1,
+        "sex": "male",
+        "given": "Bedřich",
+        "surname": "Novák",
+        "displayName": "Bedřich Novák",
+        "living": true,
+        "birth": null,
+        "death": null,
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "26": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000026",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 7,
+        "up": 7,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": true,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000026"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000103003",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000102001",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000026",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": true,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000101008",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "předek v 7. pokolení",
+            "gender": "m"
+          },
+          "en": {
+            "text": "5th great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+        "version": 1,
+        "sex": "male",
+        "given": "Václav",
+        "surname": "Novák",
+        "displayName": "Václav Novák",
+        "living": false,
+        "birth": "1745~",
+        "death": "1805-02-11",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+        "version": 1,
+        "sex": "male",
+        "given": "Prokop",
+        "surname": "Novák",
+        "displayName": "Prokop Novák",
+        "living": false,
+        "birth": "1720",
+        "death": "1780",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000026",
+        "version": 1,
+        "sex": "male",
+        "given": "Vojtěch",
+        "surname": "Novák",
+        "displayName": "Vojtěch Novák",
+        "living": false,
+        "birth": "1700",
+        "death": "1760",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "27": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000027",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [
+      {
+        "kind": "birth",
+        "line": "direct",
+        "degree": 8,
+        "up": 8,
+        "down": 0,
+        "half": false,
+        "adoptive": false,
+        "possible": true,
+        "commonAncestors": ["0192f0c4-7a1e-7c3b-9d2a-000000000027"],
+        "steps": [
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000110023",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000109021",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000107016",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000105010",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000103003",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": false,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000102001",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000026",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": true,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000101008",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          },
+          {
+            "person": "0192f0c4-7a1e-7c3b-9d2a-000000000027",
+            "link": "parent",
+            "linkType": "birth",
+            "weak": true,
+            "recordId": "0192f0c4-7a1e-7c3b-9d2a-000000100026",
+            "term": {
+              "cs": {
+                "text": "otec",
+                "gender": "m"
+              },
+              "en": {
+                "text": "father",
+                "gender": "m"
+              }
+            }
+          }
+        ],
+        "term": {
+          "cs": {
+            "text": "předek v 8. pokolení",
+            "gender": "m"
+          },
+          "en": {
+            "text": "6th great-grandfather",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000001",
+        "version": 1,
+        "sex": "male",
+        "given": "Václav",
+        "surname": "Novák",
+        "displayName": "Václav Novák",
+        "living": false,
+        "birth": "1745~",
+        "death": "1805-02-11",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000003",
+        "version": 1,
+        "sex": "male",
+        "given": "Tomáš",
+        "surname": "Novák",
+        "displayName": "Tomáš Novák",
+        "living": false,
+        "birth": "1772-12-21",
+        "death": "1831-10-06",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000008",
+        "version": 1,
+        "sex": "male",
+        "given": "Prokop",
+        "surname": "Novák",
+        "displayName": "Prokop Novák",
+        "living": false,
+        "birth": "1720",
+        "death": "1780",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000010",
+        "version": 1,
+        "sex": "male",
+        "given": "Jan",
+        "surname": "Novák",
+        "displayName": "Jan Novák",
+        "living": false,
+        "birth": "1801-03-12",
+        "death": "1850-11-03",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000016",
+        "version": 1,
+        "sex": "male",
+        "given": "Antonín",
+        "surname": "Novák",
+        "displayName": "Antonín Novák",
+        "living": false,
+        "birth": "1840-05-02",
+        "death": "1912-01-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000021",
+        "version": 1,
+        "sex": "male",
+        "given": "Bohumil",
+        "surname": "Novák",
+        "displayName": "Bohumil Novák",
+        "living": false,
+        "birth": "1870-08-28",
+        "death": "1938-12-01",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000026",
+        "version": 1,
+        "sex": "male",
+        "given": "Vojtěch",
+        "surname": "Novák",
+        "displayName": "Vojtěch Novák",
+        "living": false,
+        "birth": "1700",
+        "death": "1760",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000027",
+        "version": 1,
+        "sex": "male",
+        "given": "Šimon",
+        "surname": "Novák",
+        "displayName": "Šimon Novák",
+        "living": false,
+        "birth": "1675",
+        "death": "1730",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "28": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000028",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000028",
+        "version": 1,
+        "sex": "female",
+        "given": "Josefa",
+        "surname": "Kmotrová",
+        "displayName": "Josefa Kmotrová",
+        "living": false,
+        "birth": "1795",
+        "death": "1861",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  },
+  "29": {
+    "from": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+    "to": "0192f0c4-7a1e-7c3b-9d2a-000000000029",
+    "asOf": {
+      "logEntryId": null,
+      "at": null
+    },
+    "paths": [],
+    "more": false,
+    "connection": null,
+    "persons": [
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000023",
+        "version": 1,
+        "sex": "female",
+        "given": "Dorota",
+        "surname": "Nováková",
+        "displayName": "Dorota Nováková",
+        "living": false,
+        "birth": "1902-02-06",
+        "death": "1975-03-30",
+        "relation": "unrelated",
+        "familyRoot": false
+      },
+      {
+        "id": "0192f0c4-7a1e-7c3b-9d2a-000000000029",
+        "version": 1,
+        "sex": "male",
+        "given": "Jakub",
+        "surname": "Novák",
+        "displayName": "Jakub Novák",
+        "living": false,
+        "birth": "1790",
+        "death": "1850-04-04",
+        "relation": "unrelated",
+        "familyRoot": false
+      }
+    ]
+  }
+}

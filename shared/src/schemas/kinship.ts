@@ -36,6 +36,7 @@ export const KinshipStep = z
     linkType: ChildLinkType.nullable().describe('The type of the child link; null for a partner link'),
     weak: z.boolean().describe('The link has no Citation of normal or higher confidence'),
     recordId: Id.describe('The Family of a partner link, the child link of a parent or child link'),
+    term: KinshipTerm.describe('The next Person as the one before names them: otec, syn, manželka, pěstoun …'),
   })
   .meta({ id: 'KinshipStep' });
 
@@ -84,3 +85,7 @@ export const KinshipShort = z
 export const KinshipQuery = z.object({ from: Id.optional().describe("The starting Person; by default the caller's own Person. An Agent must name one") });
 
 export type KinshipShort = z.infer<typeof KinshipShort>;
+export type KinshipPath = z.infer<typeof KinshipPath>;
+export type KinshipStep = z.infer<typeof KinshipStep>;
+export type KinshipTerm = z.infer<typeof KinshipTerm>;
+export type KinshipConnection = z.infer<typeof KinshipConnection>;

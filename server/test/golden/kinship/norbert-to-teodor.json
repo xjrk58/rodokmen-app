@@ -14,28 +14,68 @@
         "link": "parent",
         "linkType": "birth",
         "weak": false,
-        "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77"
+        "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77",
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
       },
       {
         "person": "019b76da-b879-77ca-be96-d7de67411528",
         "link": "parent",
         "linkType": "birth",
         "weak": false,
-        "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b"
+        "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b",
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
       },
       {
         "person": "019b76da-b861-7543-9147-f89a157889c9",
         "link": "parent",
         "linkType": "birth",
         "weak": false,
-        "recordId": "019b76da-b87f-756c-8ee1-48561f8da742"
+        "recordId": "019b76da-b87f-756c-8ee1-48561f8da742",
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
       },
       {
         "person": "019b76da-b8ab-7197-bc9b-dd644e24259b",
         "link": "child",
         "linkType": "foster",
         "weak": true,
-        "recordId": "019b76da-b8ad-74da-b2d5-06b8310c481f"
+        "recordId": "019b76da-b8ad-74da-b2d5-06b8310c481f",
+        "term": {
+          "cs": {
+            "text": "svěřený syn",
+            "gender": "m"
+          },
+          "en": {
+            "text": "foster son",
+            "gender": "m"
+          }
+        }
       }
     ],
     "marriages": 0

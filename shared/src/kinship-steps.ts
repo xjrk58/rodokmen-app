@@ -20,11 +20,21 @@ import {
   isPossiblePath,
   kinshipDegree,
   kinshipLine,
+  ADOPTIVE_LINK,
+  STEP_LINK,
   type PathKey,
 } from './kinship.js';
 import { LINK_TYPE_NAMES, otherPartner, type KinshipGraph } from './kinship-graph.js';
 import { termsOf, type KinshipTermText } from './kinship-terms/index.js';
-import { SHAPE_CO_PARENT_IN_LAW, SHAPE_FOSTER, SHAPE_KIN_PARTNER, SHAPE_PARTNER, SHAPE_PARTNER_KIN, SHAPE_STEP_SIBLING } from './kinship-terms/shapes.js';
+import {
+  SHAPE_BIRTH,
+  SHAPE_CO_PARENT_IN_LAW,
+  SHAPE_FOSTER,
+  SHAPE_KIN_PARTNER,
+  SHAPE_PARTNER,
+  SHAPE_PARTNER_KIN,
+  SHAPE_STEP_SIBLING,
+} from './kinship-terms/shapes.js';
 import { isStrongLink, type FamilyLink } from './relation.js';
 import type { UiLanguage } from './schemas/common.js';
 import type { ChildLinkType } from './schemas/tree.js';
@@ -40,6 +50,8 @@ export interface PathStepOut {
   weak: boolean;
   /** The Family of a partner link, the child link of a parent or child link. */
   recordId: string;
+  /** The next Person as the one before names them: otec, syn, manželka, pěstoun … */
+  term: Record<UiLanguage, KinshipTermText>;
 }
 
 export interface KinshipPathOut {
@@ -193,11 +205,27 @@ export function otherPaths(g: KinshipGraph, from: number, to: number): Path[] {
 
 // ---------------------------------------------------------------- answers by id
 
+/** The word for one step: the next Person as the one before names them, by the link and the next Person's sex. */
+function stepTerm(g: KinshipGraph, to: number, link: 'parent' | 'child' | 'partner', type: number, married: boolean) {
+  const up = link === 'parent' ? 1 : 0;
+  const down = link === 'child' ? 1 : 0;
+  const marks = { half: false, adoptive: type === ADOPTIVE_LINK, married };
+  const sex = g.sex[to]!;
+  if (link === 'partner') return termsOf({ shape: SHAPE_PARTNER, up: 0, down: 0, sex, ...marks });
+  if (type === FOSTER_LINK) return termsOf({ shape: SHAPE_FOSTER, up, down, sex, ...marks });
+  if (type === STEP_LINK) return termsOf({ shape: up ? SHAPE_KIN_PARTNER : SHAPE_PARTNER_KIN, up, down, sex, ...marks });
+  return termsOf({ shape: SHAPE_BIRTH, up, down, sex, ...marks });
+}
+
 function stepOut(g: KinshipGraph, s: Step): PathStepOut {
   const weak = !isStrongLink(stepLink(g, s));
-  if (s.dir === ACROSS) return { person: g.ids[s.to]!, link: 'partner', linkType: null, weak, recordId: g.families[s.family]!.id };
+  if (s.dir === ACROSS) {
+    const f = g.families[s.family]!;
+    return { person: g.ids[s.to]!, link: 'partner', linkType: null, weak, recordId: f.id, term: stepTerm(g, s.to, 'partner', -1, f.married) };
+  }
   const l = g.parentLinks[s.parentLink]!;
-  return { person: g.ids[s.to]!, link: s.dir === UP ? 'parent' : 'child', linkType: LINK_TYPE_NAMES[l.type]!, weak, recordId: l.childLinkId };
+  const link = s.dir === UP ? 'parent' : 'child';
+  return { person: g.ids[s.to]!, link, linkType: LINK_TYPE_NAMES[l.type]!, weak, recordId: l.childLinkId, term: stepTerm(g, s.to, link, l.type, false) };
 }
 
 export function pathOut(g: KinshipGraph, to: number, p: Path): KinshipPathOut {
@@ -224,14 +252,26 @@ export function connectionOf(g: KinshipGraph, from: number, to: number): Kinship
   const steps = c.links.map((i, k): PathStepOut => {
     const l = g.links[i]!;
     const next = c.persons[k + 1]!;
-    if (l.partner) return { person: g.ids[next]!, link: 'partner', linkType: null, weak: !isStrongLink(l), recordId: g.families[l.ref]!.id };
+    if (l.partner) {
+      const f = g.families[l.ref]!;
+      return {
+        person: g.ids[next]!,
+        link: 'partner',
+        linkType: null,
+        weak: !isStrongLink(l),
+        recordId: f.id,
+        term: stepTerm(g, next, 'partner', -1, f.married),
+      };
+    }
     const pl = g.parentLinks[l.ref]!;
+    const link = pl.parent === next ? 'parent' : 'child';
     return {
       person: g.ids[next]!,
-      link: pl.parent === next ? 'parent' : 'child',
+      link,
       linkType: LINK_TYPE_NAMES[pl.type]!,
       weak: !isStrongLink(l),
       recordId: pl.childLinkId,
+      term: stepTerm(g, next, link, pl.type, false),
     };
   });
   return { steps, marriages: c.links.filter((i) => g.links[i]!.partner).length };

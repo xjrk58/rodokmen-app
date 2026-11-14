@@ -320,7 +320,7 @@ describe('kinship (kinship spec, "Kinship as data")', () => {
     adoptive: false,
     possible: false,
     commonAncestors: [kid(3), kid(4)],
-    steps: [{ person: kid(5), link: 'parent', linkType: 'birth', weak: false, recordId: kid(6) }],
+    steps: [{ person: kid(5), link: 'parent', linkType: 'birth', weak: false, recordId: kid(6), term: { cs: { text: 'otec', gender: 'm' }, en: { text: 'father', gender: 'm' } } }],
     term,
   };
   const answer = {
@@ -335,7 +335,7 @@ describe('kinship (kinship spec, "Kinship as data")', () => {
 
   it('a full answer and a connection parse', () => {
     ok(Kinship, answer);
-    const connection = { steps: [{ person: kid(2), link: 'partner', linkType: null, weak: true, recordId: kid(8) }], marriages: 1 };
+    const connection = { steps: [{ ...path.steps[0]!, person: kid(2), link: 'partner', linkType: null, weak: true, recordId: kid(8) }], marriages: 1 };
     ok(Kinship, { ...answer, paths: [], connection });
   });
 
