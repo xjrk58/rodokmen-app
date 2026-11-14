@@ -11,3 +11,9 @@ description = "Invented Garage key ID in the deploy script's test, which runs de
 condition = "AND"
 paths = ['''^deploy/scripts/deploy\.test\.sh$''']
 regexes = ['''GK0123456789abcdef01234567''']
+
+[[allowlists]]
+description = "Record ids of the fixture Tree in the Charts' golden models: a node's or a row's \"key\" is a Person or Family id (a UUID), not a secret"
+condition = "AND"
+paths = ['''^(shared|server)/test/golden/charts/[a-z0-9-]+\.json$''']
+regexes = ['''^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$''']
