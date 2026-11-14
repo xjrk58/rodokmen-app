@@ -27,3 +27,9 @@ export const REGISTER_CITED_BAPTISM = [
   ['N Vrbice, Kamenná Lhota 1784–1820', null, 'normal'],
   ['Vault (rodokmen-data)', 'people/viktorie-novakova-1804.md', 'low'],
 ];
+
+/** An invented session log note of about 12,000 characters, with line breaks: longer than a lead's reason before #136. */
+export const longLog = (topic: string): string =>
+  `---\ntype: log\ndate: 2026-10-25\ntopic: ${topic}\nagent: Invented agent\n---\n\n` +
+  Array.from({ length: 125 }, (_, i) => `Line ${i + 1} of an invented session log, long enough to need more than four thousand characters.`).join('\n') +
+  '\n';

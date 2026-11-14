@@ -1,5 +1,5 @@
 import { foldForSearch } from '@rodokmen/shared';
-import { linked, notesOf, unmapped, type MapContext } from './map-places.js';
+import { keep, linked, notesOf, unmapped, type MapContext } from './map-places.js';
 import { at, type PlannedProposal } from './plan.js';
 import { dateText, isRecord, isValidDate, linkOf, type VaultNote } from './reader.js';
 
@@ -113,7 +113,10 @@ export function ensurePerson(ctx: MapContext, p: PlannedProposal, note: VaultNot
     given = '?';
   }
   const sex = note.data.sex === 'M' ? 'male' : note.data.sex === 'F' ? 'female' : 'unknown';
-  if (note.data.sex !== undefined && sex === 'unknown') b.report('unmappedValue', note.path, `people.sex: ${JSON.stringify(note.data.sex)}`);
+  if (note.data.sex !== undefined && sex === 'unknown') {
+    b.report('unmappedValue', note.path, `people.sex: ${JSON.stringify(note.data.sex)}`);
+    keep(ctx, note, 'sex', note.data.sex);
+  }
   b.create(p, key, 'person', {
     op: 'createPerson',
     tempId: '',
@@ -142,8 +145,8 @@ export function ensurePerson(ctx: MapContext, p: PlannedProposal, note: VaultNot
     }),
   );
   for (const label of labelsOf(note)) b.link(p, `label:${note.id}:${foldForSearch(label)}`, 'label', { op: 'addLabel', personId: at(key), label });
-  notesOf(ctx, p, 'person', key, note);
   unmapped(ctx, note, KNOWN);
+  notesOf(ctx, p, 'person', key, note);
   return key;
 }
 
@@ -234,12 +237,52 @@ export function factEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, 
   return key;
 }
 
+/** Whether a fact or marriage cites a Source note (an entry, or a Source of its own), not a register note or nothing. */
+export function citesSourceNote(ctx: MapContext, source: unknown): boolean {
+  const s = linkOf(source);
+  return s !== null && ctx.vault.byId.get(s)?.folder === 'sources';
+}
+
+/** The marriages a Person note records to one spouse without a Source note, in order. */
+function unsourcedMarriagesTo(ctx: MapContext, note: VaultNote, spouse: VaultNote): Marriage[] {
+  return marriagesOf(note).filter((m) => !citesSourceNote(ctx, m.source) && ctx.vault.byId.get(linkOf(m.spouse) ?? '') === spouse);
+}
+
+/** A marriage's Place as the id of the note it links, so that an alias and the id compare equal. */
+const placeOf = (ctx: MapContext, m: Marriage) => ctx.vault.byId.get(linkOf(m.place) ?? '')?.id ?? linkOf(m.place);
+
+/**
+ * The same marriage in the spouse's note (#149), for a marriage without a Source note: the k-th
+ * marriage a note records to a spouse without a Source note is the k-th the spouse's note records
+ * back. With the same date and Place as written, both are one Event, created by the note that
+ * comes first in the Vault under the key an earlier run gave it. With another date or Place they
+ * stay two Events, and the dry run lists them (`marriageDiffers`).
+ */
+function spouseMarriage(ctx: MapContext, note: VaultNote, m: Marriage) {
+  const spouse = ctx.vault.byId.get(linkOf(m.spouse) ?? '');
+  if (spouse?.folder !== 'people' || spouse === note) return null;
+  const k = unsourcedMarriagesTo(ctx, note, spouse).findIndex((x) => x.index === m.index);
+  const other = k < 0 ? undefined : unsourcedMarriagesTo(ctx, spouse, note)[k];
+  if (!other) return null;
+  const same = dateText(m.date) === dateText(other.date) && placeOf(ctx, m) === placeOf(ctx, other);
+  return ctx.vault.notes.indexOf(note) < ctx.vault.notes.indexOf(spouse)
+    ? { same, first: note, index: m.index, second: spouse }
+    : { same, first: spouse, index: other.index, second: note };
+}
+
 /** A marriage, once for both spouses who record it, with partner Roles and their Family. Returns its key. */
 export function marriageEvent(ctx: MapContext, p: PlannedProposal, note: VaultNote, m: Marriage, citationKey: string, sourceId: string | null): string {
   const person = ensurePerson(ctx, p, note);
   const spouse = linkOf(m.spouse) ? linkedPerson(ctx, p, note, m.spouse, `marriages.${m.index}.spouse`) : null;
   const pair = [person, spouse ?? `?${note.id}:${m.index}`].sort().join('+');
-  const key = `event:marriage:${pair}:${sourceId ?? `vault:${note.id}:${m.index}`}`;
+  const match = sourceId === null ? spouseMarriage(ctx, note, m) : null;
+  if (match && !match.same && match.first === note)
+    ctx.b.report('marriageDiffers', note.path, `marriages.${m.index}: ${match.second.path} gives another date or Place; two marriage Events`);
+  const shared = match?.same ? match : null;
+  const own = `event:marriage:${pair}:vault:${note.id}:${m.index}`;
+  const key = sourceId !== null ? `event:marriage:${pair}:${sourceId}` : shared ? `event:marriage:${pair}:vault:${shared.first.id}:${shared.index}` : own;
+  // Before #149 the second spouse's note gave the marriage an Event of its own: a Tree imported then has both.
+  if (shared?.second === note) ctx.b.mergedMarriages.push({ key, earlierKey: own, paths: [shared.first.path, note.path] });
   const { date, description } = eventDate(ctx, note, m.date, `marriages.${m.index}.date`);
   ctx.b.create(p, key, 'event', {
     op: 'createEvent',

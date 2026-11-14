@@ -1,4 +1,4 @@
-import { foldForSearch } from '@rodokmen/shared';
+import { foldForSearch, LEAD_REASON_MAX } from '@rodokmen/shared';
 import type { MapContext } from './map-places.js';
 import type { PlannedLead, PlannedSearch } from './plan.js';
 import { dateText, linksIn, textOf, type VaultNote } from './reader.js';
@@ -77,17 +77,33 @@ export function searchesOf(ctx: MapContext, note: VaultNote): PlannedSearch[] {
 
 const firstHeading = (note: VaultNote) => /^#{1,3}\s+(.+)$/m.exec(note.body)?.[1]?.trim() ?? null;
 
+/** The longest reason a lead held before #136: an importer then kept the first 4,000 characters of a note. */
+const EARLIER_REASON_MAX = 4000;
+
 /** The leads of plans/ and log/. */
 export function mapLeads(ctx: MapContext): PlannedLead[] {
   const leads: PlannedLead[] = [];
   for (const note of ctx.vault.notes.filter((n) => n.folder === 'plans' || n.folder === 'log')) {
     const topic = typeof note.data.topic === 'string' && note.data.topic.trim() ? note.data.topic.trim() : null;
     const question = (topic ?? firstHeading(note) ?? note.id).slice(0, 1000);
-    const reason = (note.body.trim() || note.frontmatterText.trim() || note.path).slice(0, 4000);
-    if (note.body.trim().length > 4000) ctx.b.report('unmappedValue', note.path, `${note.folder}: the lead's reason holds the first 4,000 characters`);
+    // The whole note (#136), trimmed as the server stores it; a note too long even for that is cut and reported.
+    const text = note.body.trim() || note.frontmatterText.trim() || note.path;
+    const reason = text.slice(0, LEAD_REASON_MAX).trim();
+    if (text.length > LEAD_REASON_MAX) ctx.b.report('unmappedValue', note.path, `${note.folder}: the lead's reason holds the first 20,000 characters`);
+    const earlier = text.slice(0, EARLIER_REASON_MAX).trim();
     const searches = note.folder === 'log' ? searchesOf(ctx, note) : [];
     const status = note.folder === 'plans' || searches.length === 0 ? 'open' : searches.some((s) => s.found) ? 'found' : 'not_found';
-    leads.push({ key: `lead:${note.path}`, path: note.path, hash: note.hash, question, reason, ...linkedKeys(ctx, note), status, searches });
+    leads.push({
+      key: `lead:${note.path}`,
+      path: note.path,
+      hash: note.hash,
+      question,
+      reason,
+      earlierReason: earlier === reason ? null : earlier,
+      ...linkedKeys(ctx, note),
+      status,
+      searches,
+    });
   }
   return leads;
 }

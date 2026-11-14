@@ -5,6 +5,7 @@ date: 1801-03-12
 frame: 12
 url: https://archive.invalid/registers/123-4/12
 accessed: 2026-10-01
+evidence: A
 scans:
   - attachments/sources/n-vrbice-1801-f12.jpg
 ---
