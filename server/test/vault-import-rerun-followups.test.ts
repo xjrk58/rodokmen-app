@@ -24,9 +24,10 @@ import { startLiveServer, type LiveServer } from './live-server.js';
 
 /**
  * A later run over a Tree imported before the follow-ups of the Owner's real import: presumed deaths
- * (#132), fields the Tree has no place for (#134), long log notes (#136) and a marriage both spouses
- * record without a Source note (#149). The importer before them is this importer with its plan turned back into what the
- * earlier one planned; the second run is this importer as it is.
+ * (#132), fields the Tree has no place for (#134) with register entries' Citation notes (#157), long
+ * log notes (#136), Places that are part of a Municipality (#137) and a marriage both spouses record
+ * without a Source note (#149). The importer before them is this importer with its plan turned back
+ * into what the earlier one planned; the second run is this importer as it is.
  */
 const before = vi.hoisted(() => ({ fix: false }));
 
@@ -62,6 +63,16 @@ function before134(plan: Plan): void {
     }
 }
 
+/** The plan of the importer before #137: a Place was linked only to the Municipality of its own name. */
+function before137(plan: Plan): void {
+  for (const u of plan.updates.filter((x) => x.topic === 'municipality'))
+    for (const o of plan.proposals.flatMap((p) => p.ops))
+      if (o.key === u.freshKey) {
+        o.op = { ...o.op, ...u.before };
+        o.value = JSON.stringify(o.op);
+      }
+}
+
 /** The plan of the importer before #136: a lead's reason held the first 4,000 characters of its note. */
 function before136(plan: Plan): void {
   for (const lead of plan.leads) lead.reason = lead.earlierReason ?? lead.reason;
@@ -77,6 +88,7 @@ vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
         before132(plan);
         before134(plan);
         before136(plan);
+        before137(plan);
         before149(plan);
       }
       return plan;
@@ -86,7 +98,7 @@ vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
 
 const MUNICIPALITIES: Municipality[] = [{ code: '572128', name: 'Vrbice', district: 'Jičín', lat: 50.38, lon: 15.39 }];
 
-describe('a later run over a Tree imported before the follow-ups (#132, #134, #136, #149)', () => {
+describe('a later run over a Tree imported before the follow-ups (#132, #134, #136, #137, #149, #157)', () => {
   let s: LiveServer;
   let token: string;
   let owner: Account;
@@ -130,7 +142,10 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
   const person = async (key: string) => PersonDetail.parse((await asOwner('GET', `/api/persons/${await recordOf(key)}`)).json());
   const marriages = async () => (await person('person:marie-svobodova-1775')).events.filter((e) => e.event.type === 'marriage');
   const citations = (e: PersonDetail['events'][number]) => e.citations.map((c) => c.page).sort();
-  const place = async () => PlaceDetail.parse((await asOwner('GET', `/api/places/${await recordOf('place:kamenna-lhota')}`)).json());
+  const placeOf = async (key: string) => PlaceDetail.parse((await asOwner('GET', `/api/places/${await recordOf(key)}`)).json());
+  const place = async () => placeOf('place:kamenna-lhota');
+  const VRBICE = { code: '572128', name: 'Vrbice' };
+  const JINDE = { code: '500011', name: 'Jinde' };
   const JAN = 'Baptism found; the death is known from the family only. Check the death register of 1850.';
   const lead = async (question: string) => LeadList.parse((await asOwner('GET', '/api/leads?limit=50')).json()).items.find((l) => l.question === question)!;
   const whole = (topic: string) => longLog(topic).split('---\n').slice(2).join('---\n').trim();
@@ -144,6 +159,9 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     vault = await fixtureVault();
     await writeFile(join(vault.path, 'log/2026-10-25-long.md'), longLog('A long invented session'));
     await writeFile(join(vault.path, 'log/2026-10-26-edited.md'), longLog('A long session the Owner edits'));
+    // Two invented hamlets that are part of the Municipality of Vrbice: named by name, and by RÚIAN code.
+    await writeFile(join(vault.path, 'places/horni-ves.md'), '---\ntype: place\nname: Horní Ves\nkind: osada\nmunicipality: Vrbice\n---\n');
+    await writeFile(join(vault.path, 'places/dolni-ves.md'), '---\ntype: place\nname: Dolní Ves\nkind: osada\nmunicipality: 572128\n---\n');
   }, 60_000);
   afterAll(async () => {
     await s?.close();
@@ -199,6 +217,29 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
       ],
     });
     expect(death.statusCode, death.body).toBe(201);
+    // The hamlets came in without a Municipality, and the Owner links one of them to another in the app.
+    expect((await placeOf('place:horni-ves')).municipality).toBeNull();
+    const dolni = await placeOf('place:dolni-ves');
+    expect(dolni.municipality).toBeNull();
+    const linked = await asOwner('POST', '/api/proposals', {
+      formatVersion: OPERATIONS_VERSION,
+      idempotencyKey: 'owner-dolni-ves',
+      direct: true,
+      operations: [
+        {
+          op: 'createCitation',
+          tempId: 'tmp:c',
+          sourceId: await recordOf('vault-source'),
+          page: null,
+          transcription: 'Dolní Ves belongs to Jinde today (invented).',
+          readOn: '2026-11-01',
+          confidence: 'low',
+          note: null,
+        },
+        { op: 'setField', record: 'place', id: dolni.id, baseVersion: dolni.version, set: { municipality: JINDE } },
+      ],
+    });
+    expect(linked.statusCode, linked.body).toBe(201);
   });
 
   it('a later run submits only what the fixes add, and its batch is accepted whole', async () => {
@@ -255,6 +296,26 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     // The Owner's Parish notes stay as they are.
     const parish = ParishDetail.parse((await asOwner('GET', `/api/parishes/${await recordOf('parish:vrbice')}`)).json());
     expect(parish.notes).toMatch(/Ask the parish office\.$/);
+  });
+
+  it('a Place that still has no Municipality gets the one its note names; one the Owner linked otherwise since is listed and left alone (#137)', async () => {
+    for (const run of [dry, second])
+      expect(run.run.updates.municipality).toEqual({ added: 1, notUpdated: [{ path: 'places/dolni-ves.md', lines: ['Vrbice (572128, Jičín)'] }] });
+    expect(second.report).toContain('- places/dolni-ves.md: Vrbice (572128, Jičín)');
+    // A Municipality is a fact: the Proposal cites the note again, as the Place's own Proposal does.
+    const { items } = ProposalList.parse((await asOwner('GET', `/api/batches/${second.run.batch!.id}/proposals`)).json());
+    const linked = items.filter((p) => p.note?.endsWith('(the Municipality it is part of)'));
+    expect(linked.map((p) => [p.note, p.operations.map((o) => o.operation)])).toEqual([
+      [
+        'Vault: places/horni-ves.md (the Municipality it is part of)',
+        [
+          expect.objectContaining({ op: 'createCitation', sourceId: await recordOf('vault-source'), page: 'places/horni-ves.md', confidence: 'low' }),
+          expect.objectContaining({ op: 'setField', record: 'place', id: await recordOf('place:horni-ves'), set: { municipality: VRBICE } }),
+        ],
+      ],
+    ]);
+    expect((await placeOf('place:horni-ves')).municipality).toEqual(VRBICE);
+    expect((await placeOf('place:dolni-ves')).municipality).toEqual(JINDE);
   });
 
   it('a lead an earlier run cut gets the whole note; one the Owner changed since is listed and left alone (#136)', async () => {

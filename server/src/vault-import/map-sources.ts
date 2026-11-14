@@ -163,6 +163,7 @@ function citation(ctx: MapContext, p: PlannedProposal, note: VaultNote, confiden
       before: { note: before },
       after: { note: citationNote },
       freshKey: key,
+      evidence: null,
       path: note.path,
       lines,
     });

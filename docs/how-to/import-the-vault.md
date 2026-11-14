@@ -59,7 +59,15 @@ folder) and never paste it into an issue or a pull request. It lists:
 - the marriages both spouses record without a Source note but with different dates or Places, which become two
   Events.
 
-Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left.
+Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left. A Place listed
+with `places.district: no Municipality of that name in that district` is often a village or hamlet that is part of
+a larger Municipality: name that one in its note, by name or by RÚIAN code, and the Place is linked to it:
+
+```yaml
+name: Horní Ves
+district: Jičín
+municipality: Vrbice # or 572128
+```
 
 ## 4. Import
 
@@ -111,6 +119,12 @@ Proposal per record. It adds the evidence class of a register entry to its Citat
 still holds what that import wrote; such a Proposal has no new Citation, as a Citation's note states no fact. Notes
 you changed since are left as they are, and the report lists their lines under **Fields not mapped, on records
 imported before #134**.
+
+An import made before #137 read no `municipality` in Place notes. Once you add it to a Place note, the next run links
+that Place to the Municipality it names, in a small Proposal per Place that cites the note again, if the Place still
+has the Municipality the import gave it. A Place you have linked otherwise in the app since is left as it is and listed
+under **Municipalities, on Places imported before #137**. The note itself is listed under **Changed notes**, as you
+changed it.
 
 An import made before #136 kept the first 4,000 characters of a long log or plan note in its Research lead. The
 next run gives such a lead the whole note, if the lead still holds exactly what that run wrote. A lead you changed

@@ -103,6 +103,34 @@ describe('mapping the fixture Vault', () => {
     for (const u of p.updates) expect(op(u.freshKey)).toMatchObject(u.after);
   });
 
+  it('a Place that is part of a Municipality: linked to the one its note names, by name in its district or by code; one not found is reported and kept (#137)', async () => {
+    const place = (id: string, fields: string) => writeFile(join(vault.path, `places/${id}.md`), `---\ntype: place\nkind: osada\n${fields}---\n`);
+    await place('horni-ves', 'name: Horní Ves\ndistrict: Jičín\nmunicipality: Vrbice\nlat: 50.39\nlon: 15.41\n');
+    await place('dolni-ves', 'name: Dolní Ves\nmunicipality: 572128\n');
+    await place('zadni-ves', 'name: Zadní Ves\ndistrict: Jičín\nmunicipality: Nikde\n');
+    const p = await plan();
+    const op = (key: string) => ops(p).find((o) => o.key === key)!.op;
+    const vrbice = { code: '572128', name: 'Vrbice' };
+    // Linked, but a part keeps its own point, or none: the Municipality's point is not the Place's.
+    expect(op('place:horni-ves')).toMatchObject({ municipality: vrbice, location: { lat: 50.39, lon: 15.41 } });
+    expect(op('place:dolni-ves')).toMatchObject({ municipality: vrbice, location: null });
+    expect(op('place:zadni-ves')).toMatchObject({ municipality: null, location: null });
+    expect(p.issues.filter((i) => i.path === 'places/zadni-ves.md').map((i) => i.detail)).toEqual([
+      'places.district: no Municipality of that name in that district',
+      'places.municipality: no such Municipality',
+    ]);
+    expect(op('notes:place:zadni-ves')).toMatchObject({ notes: 'From the Vault, not mapped:\n- district: Jičín\n- municipality: Nikde' });
+    // What an importer before #137 wrote instead: no Municipality, for a later run to add with the note's Citation as evidence.
+    const updates = p.updates.filter((u) => u.topic === 'municipality');
+    expect(updates.map((u) => [u.recordKey, u.before, u.after, u.lines])).toEqual([
+      ['place:dolni-ves', { municipality: null }, { municipality: vrbice }, ['Vrbice (572128, Jičín)']],
+      ['place:horni-ves', { municipality: null }, { municipality: vrbice }, ['Vrbice (572128, Jičín)']],
+    ]);
+    const evidence = updates[1]!.evidence!;
+    expect(evidence.transcription).toContain('municipality: Vrbice');
+    expect([evidence.readOn, evidence.note]).toEqual(['2026-11-02', null]);
+  });
+
   describe('a marriage both spouses record without a Source note (#149)', () => {
     const marriages = (p: Plan) => ops(p).filter((o) => o.op.op === 'createEvent' && o.op.type === 'marriage' && o.key.includes(':vault:'));
 

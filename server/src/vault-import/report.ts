@@ -26,7 +26,8 @@ export interface RunSummary {
   /**
    * Records an earlier importer wrote otherwise, by what they wait for (plan.updates): the fields
    * the Tree has no place for, added to research notes and register entries' Citation notes that
-   * still held what it wrote (#134, #157). Records changed since are not updated, and listed.
+   * still held what it wrote (#134, #157); the Municipality a Place's note names, linked to Places
+   * that still had none or their namesake (#137). Records changed since are not updated, and listed.
    */
   updates: Record<UpdateTopic, { added: number; notUpdated: Array<{ path: string; lines: string[] }> }>;
   /** Persons an earlier run imported whose presumed death (#132) is left out: the Tree has a death, burial or birth date for them now. */
@@ -141,22 +142,34 @@ function cutLeads(run: RunSummary): string[] {
   ];
 }
 
-/** Fields the Tree has no place for, on records an earlier importer wrote without them (#134, #157). */
-function fieldsNotMapped(run: RunSummary): string[] {
-  const { added, notUpdated } = run.updates.fields;
+/** How the report speaks of each kind of update (plan.updates): its heading, what got it, and what was changed since. */
+const UPDATE_TEXTS: Record<UpdateTopic, { title: string; what: string; changed: string }> = {
+  // Fields the Tree has no place for, on records an earlier importer wrote without them (#134, #157).
+  fields: {
+    title: 'Fields not mapped, on records imported before #134',
+    what: "Research notes and register entries' Citation notes {verb} the fields the Tree has no place for",
+    changed: 'Research notes and Citation notes changed since the import, left as they are ({n}); add these lines by hand if you want them:',
+  },
+  // Places an earlier importer linked to no Municipality, or to their namesake, while their note names the one they are part of (#137).
+  municipality: {
+    title: 'Municipalities, on Places imported before #137',
+    what: 'Places {verb} the Municipality their note names in `municipality`',
+    changed: 'Places whose Municipality was changed in the app since the import, left as they are ({n}); link these by hand if you want them:',
+  },
+};
+
+/** Records an earlier importer wrote otherwise: how many a later run updated, and those changed since, listed. */
+function updated(run: RunSummary, topic: UpdateTopic): string[] {
+  const { added, notUpdated } = run.updates[topic];
   if (!added && !notUpdated.length) return [];
+  const text = UPDATE_TEXTS[topic];
   return [
-    '## Fields not mapped, on records imported before #134',
+    `## ${text.title}`,
     '',
-    `Research notes and register entries' Citation notes ${run.dryRun ? 'that would get' : 'that got'} the fields the Tree has no place for: ${added}.`,
+    `${text.what.replace('{verb}', run.dryRun ? 'that would get' : 'that got')}: ${added}.`,
     '',
     ...(notUpdated.length
-      ? [
-          `Research notes and Citation notes changed since the import, left as they are (${notUpdated.length}); add these lines by hand if you want them:`,
-          '',
-          ...notUpdated.map((u) => `- ${u.path}: ${u.lines.join('; ')}`),
-          '',
-        ]
+      ? [text.changed.replace('{n}', String(notUpdated.length)), '', ...notUpdated.map((u) => `- ${u.path}: ${u.lines.join('; ')}`), '']
       : []),
   ];
 }
@@ -223,7 +236,7 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
       ...run.changed.notUpdated.map((k) => `- ${k}`),
       '',
     );
-  lines.push(...presumedLeftOut(run), ...fieldsNotMapped(run), ...duplicateMarriages(run));
+  lines.push(...presumedLeftOut(run), ...updated(run, 'fields'), ...updated(run, 'municipality'), ...duplicateMarriages(run));
   for (const kind of ISSUE_ORDER) {
     const title = ISSUE_TITLES[kind];
     const list = plan.issues.filter((i) => i.kind === kind);

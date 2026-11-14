@@ -286,25 +286,37 @@ async function checkPresumed(r: Run): Promise<void> {
 /** A record as the API returns it: its version, and the fields an update reads. */
 const Current = z.looseObject({ version: z.number().int() });
 
-/** What an update writes: research notes with setNotes, any other field with setField (only the fields it changes). */
-function updateOperation(u: PlannedUpdate, id: string, baseVersion: number): Record<string, unknown> {
-  if ('notes' in u.after) return { op: 'setNotes', record: u.record, id, baseVersion, notes: u.after.notes };
+/**
+ * The operations of an update: its evidence when it changes facts, a new Citation of the Vault
+ * provenance Source (attached to an Event); then research notes with setNotes, any other field
+ * with setField (only the fields it changes).
+ */
+function updateOperations(u: PlannedUpdate, id: string, baseVersion: number, vaultSource: string | null): Array<Record<string, unknown>> {
+  const ops: Array<Record<string, unknown>> = [];
+  if (u.evidence && vaultSource) {
+    const { transcription, readOn, note } = u.evidence;
+    ops.push({ op: 'createCitation', tempId: 'tmp:c', sourceId: vaultSource, page: u.path, transcription, readOn, confidence: 'low', note });
+    if (u.record === 'event') ops.push({ op: 'attachCitation', citationId: 'tmp:c', eventId: id, baseVersion });
+  }
+  if ('notes' in u.after) return [...ops, { op: 'setNotes', record: u.record, id, baseVersion, notes: u.after.notes }];
   const set = Object.fromEntries(Object.entries(u.after).filter(([field, value]) => !isDeepStrictEqual(value, u.before[field])));
-  return { op: 'setField', record: u.record, id, baseVersion, set };
+  return [...ops, { op: 'setField', record: u.record, id, baseVersion, set }];
 }
 
 const UPDATE_NOTES: Record<UpdateTopic, string> = {
   fields: 'fields the Tree has no place for',
+  municipality: 'the Municipality it is part of',
 };
 
 /**
  * Records an earlier importer wrote otherwise than this one (plan.updates): research notes and
- * register entries' Citation notes without the fields the Tree has no place for (#134, #157). A
- * record this run creates, or a run since the fix created, is as this importer writes it already.
- * A record that still holds exactly what the earlier run wrote is updated, each in a Proposal of
- * its own with the version read, so a change made after this run is a conflict for the Owner to
- * resolve. A record changed in the app since is left alone and listed. A Citation's note alone
- * needs no new evidence (proposals spec, "Evidence is required").
+ * register entries' Citation notes without the fields the Tree has no place for (#134, #157), and
+ * Places without the Municipality their note names (#137). A record this run creates, or a run
+ * since the fix created, is as this importer writes it already. A record that still holds exactly
+ * what the earlier run wrote is updated, each in a Proposal of its own with the version read, so a
+ * change made after this run is a conflict for the Owner to resolve. A record changed in the app
+ * since is left alone and listed. A Citation's note alone needs no new evidence (proposals spec,
+ * "Evidence is required"); a fact cites the note again, as a fresh import does.
  */
 async function updates(r: Run): Promise<void> {
   const planned = new Map(r.plan.proposals.flatMap((p) => p.ops.map((o) => [o.key, o.value] as const)));
@@ -315,8 +327,9 @@ async function updates(r: Run): Promise<void> {
     if (fresh && value !== undefined && fresh.noteHash === sha256(Buffer.from(value))) continue;
     const before = r.state.map.get(u.recordKey);
     if (!before || !imported(r.state, u.recordKey) || imported(r.state, u.key)) continue;
-    if (!before.recordId) {
-      r.summary.deferred.push({ key: u.key, reason: `${u.recordKey} waits for an earlier Import batch to be accepted` });
+    const vaultSource = u.evidence ? (r.state.map.get('vault-source')?.recordId ?? null) : null;
+    if (!before.recordId || (u.evidence && !vaultSource)) {
+      r.summary.deferred.push({ key: u.key, reason: `${before.recordId ? 'vault-source' : u.recordKey} waits for an earlier Import batch to be accepted` });
       continue;
     }
     const current = Current.parse(await r.client.get(`/api/${ROUTES[u.record]}/${before.recordId}`));
@@ -338,12 +351,15 @@ async function updates(r: Run): Promise<void> {
         formatVersion: OPERATIONS_VERSION,
         idempotencyKey: `vault-${b.id.slice(-12)}-u${index}`,
         note: `Vault: ${u.path} (${UPDATE_NOTES[u.topic]})`,
-        operations: [updateOperation(u, before.recordId, current.version)],
+        operations: updateOperations(u, before.recordId, current.version, vaultSource),
       }),
     );
     r.summary.submitted++;
-    const hash = sha256(Buffer.from(JSON.stringify(u.after)));
-    await record(r, [{ key: u.key, kind: u.topic, noteHash: hash, batchId: b.id, proposalId: view.id, tempId: null, recordId: null }]);
+    const entry = { batchId: b.id, proposalId: view.id, recordId: null };
+    await record(r, [
+      { ...entry, key: u.key, kind: u.topic, noteHash: sha256(Buffer.from(JSON.stringify(u.after))), tempId: null },
+      ...(u.evidence ? [{ ...entry, key: `${u.key}:citation`, kind: 'citation', noteHash: null, tempId: 'tmp:c' }] : []),
+    ]);
   }
 }
 
@@ -408,7 +424,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     leads: { created: 0, waiting: 0, unchanged: 0, updated: 0, notUpdated: [] },
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
-    updates: { fields: { added: 0, notUpdated: [] } },
+    updates: { fields: { added: 0, notUpdated: [] }, municipality: { added: 0, notUpdated: [] } },
     presumedLeftOut: [],
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.
