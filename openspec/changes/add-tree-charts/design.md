@@ -211,3 +211,23 @@ Points for the Owner. The specs and tasks follow the recommended answer. An answ
 7. **Foster and step children** shown and not followed (planned): right for the family's charts?
 8. **The look**: EB Garamond with a Grenze Gotisch title, a fixed ornament, A3 landscape as the default paper, 4 generations by default. Should anything from the Vault sheets carry over as a fixed design element (described in words only)?
 9. **Fonts**: precached for offline printing (planned, about 350 KB), or loaded on the first Chart?
+
+### Decisions taken at implementation
+
+The Owner gave the go-ahead on 2026-11-14 without answering the points above on #126, so the change is built with the recommended or planned answer to each. Every one can still be changed; the PR lists them.
+
+1. **Pedigree Sheet**: not in this change. It is recommended as the next change, and an issue is opened for it only when the Owner agrees.
+2. **Holders, occupation and House names**: not recorded. The House chart shows residents and Family links only, and its legend says that rows are residents, not holders.
+3. **Full details of Living people on a Sheet**: no. A Sheet is always reduced.
+4. **Leaving Living people out of a Sheet entirely**: no third option. A Sheet is reduced, or reduced without names.
+5. **Who may print and download**: every Member, with the action `read`.
+6. **"Died young"**: before the 15th birthday. The birth day is the earliest day of the birth, else of the baptism; the death day is the latest day of the death, else of the burial.
+7. **Foster and step children**: shown in their Family with a dashed line, and not followed.
+8. **The look**: EB Garamond for the text, Grenze Gotisch for the title, a fixed ornament, A3 landscape as the default paper and 4 generations by default. Nothing is carried over from the Vault sheets.
+9. **Fonts**: precached, so that a Sheet prints offline.
+
+Found while building, and settled the same way:
+
+- **One reduction.** `add-exports-and-erasure` was built first, so a Sheet reuses its proved Export view, `exportRecord()` in `shared/src/export.ts`. `sheetPerson()` sits beside it in that file (a proof may not call into another file, docs/verification.md), and adds only the step without names. Every card of a Sheet is the Export view of its Person: a Living person keeps name, sex, relationships and birth year, and an Event in which a Living person has a Role (a marriage with a Living partner, say) is left out of every card, as in an Export. `shared/src/sheet-reduction.ts` maps a card to that view and back.
+- **A card without a name** (`sheet=nameless`) says only that the Person is living, as the spec says: it drops the birth year too, and keeps the lines to the family.
+- **Sources on a Sheet** are those cited for the facts the reduced cards still show, so a Source cited only for a Living person's birth is not named.
