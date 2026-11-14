@@ -150,8 +150,3 @@ export async function fillKinship(db: Db, fromId: string, summaries: readonly Pe
     summary.kinship = known.get(summary.id) ?? null;
   }
 }
-
-/** Forgets the link copy of a database: for tests that change the Tree's records without an accepted change. */
-export function forgetLinkCopy(db: Db): void {
-  copies.delete(db);
-}

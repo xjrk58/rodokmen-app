@@ -23,14 +23,21 @@ export const FEMALE = 1;
 export const UNKNOWN_SEX = 2;
 
 /** The grammatical gender of a term; COMBINED for a form such as "bratranec/sestřenice". */
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const MASCULINE = 0;
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const FEMININE = 1;
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const NEUTER = 2;
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const COMBINED = 3;
 
 /** How a term says adoption: not at all, as a word ("adoptivní otec"), or after it ("(přes osvojení)"). */
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const NOT_ADOPTIVE = 0;
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const ADOPTIVE_WORD = 1;
+/** @public cs.ts and en.ts repeat it; shared/test/kinship-terms.test.ts checks that they match. */
 export const THROUGH_ADOPTION = 2;
 
 /**

@@ -177,7 +177,10 @@ export function isFollowed(link: ParentLink): boolean {
   return link.type === BIRTH_LINK || link.type === ADOPTIVE_LINK;
 }
 
-/** Whether a Person reached by a search up came there from a child one generation lower, through a followed link. */
+/**
+ * Whether a Person reached by a search up came there from a child one generation lower, through a followed link.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function isStepUp(dist: readonly number[], via: readonly number[], links: readonly ParentLink[], v: number): boolean {
   //@ verify
   //@ requires 0 <= v && v < dist.length && dist.length === via.length
@@ -255,7 +258,10 @@ export function chainsUp(count: number, start: number, links: readonly ParentLin
   return { dist, via };
 }
 
-/** Whether step `k` of a chain goes from its Person `k` down to Person `k + 1` through a followed link. */
+/**
+ * Whether step `k` of a chain goes from its Person `k` down to Person `k + 1` through a followed link.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function linkedAt(links: readonly ParentLink[], used: readonly number[], persons: readonly number[], k: number): boolean {
   //@ verify
   //@ requires 0 <= k && k < used.length && used.length < persons.length
@@ -532,7 +538,10 @@ export function joins(links: readonly FamilyLink[], i: number, u: number, w: num
   return (links[i]!.a === u && links[i]!.b === w) || (links[i]!.a === w && links[i]!.b === u);
 }
 
-/** Whether step `k` of a chain joins its Person `k` and Person `k + 1` through a Family link. */
+/**
+ * Whether step `k` of a chain joins its Person `k` and Person `k + 1` through a Family link.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function joinsAt(links: readonly FamilyLink[], used: readonly number[], persons: readonly number[], k: number): boolean {
   //@ verify
   //@ requires 0 <= k && k < used.length && used.length < persons.length
@@ -541,7 +550,10 @@ export function joinsAt(links: readonly FamilyLink[], used: readonly number[], p
   return joins(links, i, persons[k]!, persons[k + 1]!);
 }
 
-/** Whether a Person a search reached came there through a link from a Person one step nearer its start. */
+/**
+ * Whether a Person a search reached came there through a link from a Person one step nearer its start.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function isStepNearer(dist: readonly number[], via: readonly number[], links: readonly FamilyLink[], v: number): boolean {
   //@ verify
   //@ requires 0 <= v && v < dist.length && dist.length === via.length

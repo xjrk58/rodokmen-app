@@ -320,7 +320,16 @@ describe('kinship (kinship spec, "Kinship as data")', () => {
     adoptive: false,
     possible: false,
     commonAncestors: [kid(3), kid(4)],
-    steps: [{ person: kid(5), link: 'parent', linkType: 'birth', weak: false, recordId: kid(6), term: { cs: { text: 'otec', gender: 'm' }, en: { text: 'father', gender: 'm' } } }],
+    steps: [
+      {
+        person: kid(5),
+        link: 'parent',
+        linkType: 'birth',
+        weak: false,
+        recordId: kid(6),
+        term: { cs: { text: 'otec', gender: 'm' }, en: { text: 'father', gender: 'm' } },
+      },
+    ],
     term,
   };
   const answer = {

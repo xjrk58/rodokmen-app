@@ -62,9 +62,6 @@ export function shortKinship(person) {
   return k ? kinshipText(k) : null;
 }
 
-/** Whether a short form says "possibly". @param {PersonSummary | object} person */
-export const shortIsPossible = (person) => ('kinship' in person && person.kinship ? person.kinship.possible : false);
-
 /**
  * Whether a full answer belongs to the Member signed in now: an answer kept on the device for
  * another own Person is not shown.
