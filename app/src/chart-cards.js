@@ -122,6 +122,7 @@ export function cardText(metrics, labels, p, box, extra = {}) {
   };
   // A partner's card carries the couple's marriage.
   if (extra.marriage) factLine('marriage', labels.fact(extra.marriage) || ' ');
+  if (extra.pointer) symbols.push({ kind: 'pointer', x: box.x + box.w - 34, y: box.y + 8 });
   if (extra.pointer) {
     lines.push({
       ...fit(metrics, 'italic', SIZE.fact, labels.t('chart.pointer'), inner),
@@ -140,6 +141,8 @@ export function cardText(metrics, labels, p, box, extra = {}) {
   // The marks line at the foot of the card.
   const marks = [];
   if (p.living) marks.push(labels.t('chart.mark.living'));
+  // The mark is text; the legend lists it all the same (a symbol with no drawing).
+  if (p.living) symbols.push({ kind: 'living', x: box.x, y: box.y });
   if (extra.leftOut) marks.push(labels.count('chart.leftOut', extra.leftOut));
   if (marks.length > 0) {
     lines.push({

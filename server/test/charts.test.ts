@@ -151,8 +151,8 @@ describe('Chart routes on the fixture Tree', () => {
     const model = await house();
     const row = (familyId: string) => model.rows.find((r) => r.familyId === familyId);
     expect(row(L.janFirstFamily)?.link.kind).toBe('son');
-    expect(row(L.magdalenaFirstFamily)).toMatchObject({ link: { kind: 'daughter', personId: L.magdalena }, marriedIn: L.sonInLaw });
-    expect(row(L.magdalenaSecondFamily)).toMatchObject({ link: { kind: 'remarriage', rowKey: L.magdalenaFirstFamily, personId: L.magdalena } });
+    expect(row(L.daughterFirstFamily)).toMatchObject({ link: { kind: 'daughter', personId: L.daughter }, marriedIn: L.sonInLaw });
+    expect(row(L.daughterSecondFamily)).toMatchObject({ link: { kind: 'remarriage', rowKey: L.daughterFirstFamily, personId: L.daughter } });
     // "Unrelated lodgers": hidden until asked for, then a row of their own with no link.
     expect(row(L.lodgerFamily)).toBeUndefined();
     expect(model.hiddenUnrelated).toBeGreaterThan(0);

@@ -320,7 +320,7 @@ function stubText(
       ...base.lines.slice(0, 2),
       textLine(metrics, 'italic', SIZE.fact, labels.t('chart.continued', { n: sheet }), box.w - 30, box.x + box.w / 2, box.y + box.h - 18, 'middle'),
     ],
-    symbols: [],
+    symbols: [{ kind: 'continued', x: box.x + box.w - 34, y: box.y + 8 }],
   };
 }
 

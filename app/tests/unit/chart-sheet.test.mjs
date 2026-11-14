@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import { fontFaceCss, FONT_FILES } from '../../src/chart-fonts.js';
 import { layoutHouse } from '../../src/chart-house-layout.js';
 import { layoutLine } from '../../src/chart-line-layout.js';
-import { NotASheet, sheetFile } from '../../src/chart-sheet.js';
+import { NotASheet, sheetFile, SYMBOLS } from '../../src/chart-sheet.js';
 import { chartLabels, defaultTitle } from '../../src/chart-text.js';
 import { layoutTree } from '../../src/chart-tree-layout.js';
 import { fontMetrics, goldenHouse, goldenTree, NOVAK, novakChart, texts } from './chart-models.mjs';
@@ -76,21 +76,19 @@ test('"Two languages": the Czech and English files differ only in their text', a
 
 test('"Legend": exactly the symbols and marks the Sheet uses', async () => {
   const legend = (/** @type {string} */ svg) => [...svg.matchAll(/data-legend="([^"]+)"/g)].map((m) => m[1]);
+  const chartPart = (/** @type {string} */ svg) => svg.slice(0, svg.indexOf('data-layer="legend"'));
   const tree = svgOf(await goldenTree('novak-tree-reduced'), 'cs');
-  // Anna died at two: the mark is there; the line form has no child who died young.
-  assert.ok(legend(tree).includes('diedYoung'));
-  assert.ok(legend(tree).includes('nonBirth'));
-  const line = svgOf(novakChart({ form: 'line', line: NOVAK.petr, sheet: 'reduced', generations: 4 }), 'cs');
-  const noYoung = svgOf(await goldenHouse('house-a-sheet'), 'cs');
-  for (const svg of [line, noYoung]) {
-    const used = legend(svg);
-    for (const kind of used) assert.ok(svg.includes(`data-legend="${kind}"`));
-  }
-  // Every legend entry stands for something drawn.
-  for (const kind of legend(tree).filter((k) => !['living', 'residents', 'line', 'nonBirth', 'weak', 'marriedIn'].includes(k)))
-    assert.match(tree, new RegExp(`d="[^"]+" fill="(none|#3b2f22)"`), kind);
-  assert.ok(legend(noYoung).includes('residents'), 'a House chart says its rows are residents');
-  assert.ok(!legend(noYoung).includes('diedYoung'));
+  // Anna died at two, Petr is Living, Václav was adopted and Tomáš is a step child, and Bohumil's link is weak.
+  for (const kind of ['birth', 'baptism', 'marriage', 'death', 'diedYoung', 'living', 'nonBirth', 'weak', 'possible'])
+    assert.ok(legend(tree).includes(kind), kind);
+  // Every entry with a symbol stands for one drawn on the Chart itself.
+  for (const kind of legend(tree).filter((k) => SYMBOLS[k] !== undefined)) assert.ok(chartPart(tree).includes(`d="${SYMBOLS[kind]}"`), kind);
+  // Scenario "Legend": no child on the House's Sheet died young, and nobody Living is left on it.
+  const house = svgOf(await goldenHouse('house-a-sheet'), 'cs');
+  assert.ok(!legend(house).includes('diedYoung'));
+  assert.ok(!legend(house).includes('living'));
+  assert.ok(legend(house).includes('residents'), 'a House chart says its rows are residents');
+  for (const kind of legend(house).filter((k) => SYMBOLS[k] !== undefined)) assert.ok(chartPart(house).includes(`d="${SYMBOLS[kind]}"`), kind);
 });
 
 test('"Colophon": Rodokmen, the state of the Tree, the day of the Living rule, and the Sources of the facts shown', async () => {

@@ -152,7 +152,7 @@ describe('MCP tools on the fixture Tree', () => {
     const days = chart.rows.filter((r) => r.earliest !== null).map((r) => r.earliest!);
     expect(days).toEqual([...days].sort());
     for (const row of chart.rows) expect(row.numbers.length).toBeGreaterThan(0);
-    expect(chart.rows.find((r) => r.familyId === L.magdalenaFirstFamily)).toMatchObject({ link: { kind: 'daughter' }, marriedIn: L.sonInLaw });
+    expect(chart.rows.find((r) => r.familyId === L.daughterFirstFamily)).toMatchObject({ link: { kind: 'daughter' }, marriedIn: L.sonInLaw });
     // A Chart's content, no picture; and no holder of the House anywhere.
     expect(JSON.stringify(chart)).not.toMatch(/svg|png|holder/i);
   });

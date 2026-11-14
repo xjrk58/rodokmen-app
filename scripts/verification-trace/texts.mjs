@@ -56,8 +56,9 @@ export const SCOPES = [
   Proved, for any Persons, Families and child links: the start is generation 1 and nobody else is, nobody is beyond the
   generations asked for; closed: a birth or adoptive link from a partner the Chart goes on from leads to a Person in it at
   most one generation further; sound: everyone else came through a birth or adoptive link (never a foster or step link)
-  from a partner one generation up, so each Person is at the smallest number of such links from the start, once
-  ("Descended in two ways"); from a start Family, its partners go on only through it ("From a couple"). Not proved: the
+  from a partner one generation up; together these make each Person's generation the smallest number of such links from
+  the start, plus 1, once ("Descended in two ways"), though no lemma states that as such; from a start Family, its
+  partners go on only through it ("From a couple"). Not proved: the
   rows the server gathers (server/src/charts/gather.ts), and how the shell writes the nodes depth first, gives each
   Person one main place and points to it from later ones, and shows foster and step children unfollowed
   (shared/src/charts-model.ts); shared/test/charts-model.test.ts and server/test/charts.test.ts test those.`,

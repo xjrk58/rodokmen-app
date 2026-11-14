@@ -15,7 +15,7 @@
  * - A marriage whose only evidence is a Family account given in 2026.
  * - A far-away village (Horní Bukovina) for the map query, and Living people born after 1926.
  * - House A's succession for the House chart (added last, so earlier ids stay as they were): Jan's
- *   parents, Jan's Families, then Jan's daughter Magdalena (1848), who married Vojtěch Kolář of Vrbice
+ *   parents, Jan's Families, then Jan's daughter Cecílie (1848), who married Vojtěch Kolář of Vrbice
  *   there in 1868 (a son-in-law from another village); widowed in 1874, she married Ondřej Pokorný of
  *   Dolní Kamenec in 1876, and both Families had children baptised at House A. A lodger Family
  *   (Šimon Hruška and Viktorie) had a child baptised there in 1867, while Antonín's Family lived there.
@@ -103,10 +103,10 @@ export interface Landmarks {
   undated: string;
   pageImage: string;
   /** Jan's daughter of House A, married there to a man from another village, widowed and remarried. */
-  magdalena: string;
-  magdalenaFirstFamily: string;
+  daughter: string;
+  daughterFirstFamily: string;
   sonInLaw: string;
-  magdalenaSecondFamily: string;
+  daughterSecondFamily: string;
   /** A lodger Family of Unrelated people with a child baptised at House A. */
   lodgerFamily: string;
   /** The founder of the large family (more than 500 cards in 6 generations). */
@@ -1190,20 +1190,20 @@ function houseASuccession(
   },
 ): void {
   const L = b.m.landmarks;
-  const magdalena = x.child(x.famJan2, 'female', FEMALE[5]!, '1848-07-22');
+  const daughter = x.child(x.famJan2, 'female', FEMALE[15]!, '1848-07-22');
   const vojtech = b.person('male', MALE[4]!, SURNAMES[16]!, 4, 1842);
   vojtech.home = x.vrbice;
   b.event('baptism', '1842-03-03', { houseId: x.vrbice }, [[vojtech, 'child']]);
-  const first = x.wed(vojtech, magdalena, '1868-01-28', x.houseA);
+  const first = x.wed(vojtech, daughter, '1868-01-28', x.houseA);
   x.child(first, 'male', MALE[0]!, '1869-02-11');
   x.child(first, 'female', FEMALE[0]!, '1872-09-30');
-  b.die(vojtech, '1874-04-18', { houseId: x.houseA }, magdalena);
+  b.die(vojtech, '1874-04-18', { houseId: x.houseA }, daughter);
   const ondrej = b.person('male', MALE[11]!, SURNAMES[5]!, 4, 1844);
   ondrej.home = x.kamenec;
   b.event('baptism', '1844-11-05', { houseId: x.kamenec }, [[ondrej, 'child']]);
-  const second = x.wed(ondrej, magdalena, '1876-02-15', x.houseA);
-  x.child(second, 'male', MALE[1]!, '1877-05-06');
-  b.die(magdalena, '1911-12-01', { houseId: x.houseA });
+  const second = x.wed(ondrej, daughter, '1876-02-15', x.houseA);
+  x.child(second, 'male', MALE[11]!, '1877-05-06');
+  b.die(daughter, '1911-12-01', { houseId: x.houseA });
   b.die(ondrej, '1905-06-14', { houseId: x.houseA });
   // Lodgers, Unrelated to the family, while Antonín's Family lived at House A.
   const simon = b.person('male', MALE[13]!, SURNAMES[29]!, 4, 1838);
@@ -1218,7 +1218,7 @@ function houseASuccession(
   b.childLink(lodgers, lodgerChild);
   b.baptise(lodgerChild, simon, viktorie, { houseId: x.houseA }, '1867-10-08');
   b.event('death', '1940', null, [[lodgerChild, 'deceased']]);
-  Object.assign(L, { magdalena: magdalena.id, magdalenaFirstFamily: first.id, sonInLaw: vojtech.id, magdalenaSecondFamily: second.id, lodgerFamily: lodgers });
+  Object.assign(L, { daughter: daughter.id, daughterFirstFamily: first.id, sonInLaw: vojtech.id, daughterSecondFamily: second.id, lodgerFamily: lodgers });
 }
 
 /**

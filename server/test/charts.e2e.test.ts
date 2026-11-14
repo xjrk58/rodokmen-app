@@ -175,7 +175,17 @@ describe('Charts in the app (Chromium, phone and desktop, fixture Tree)', () => 
       });
 
       it('"One A3 page" and "Split into pages": print to PDF', async () => {
-        // A family of 4 generations: Antonín's, who adopted Marie.
+        // A family of 4 generations: Antonín's, who adopted Marie. (The spec's family of 60 Persons
+        // still takes 3 A3 pages: see app/tests/unit/chart-layout.test.mjs and the follow-up issue.)
+        const small = (
+          await server.app.inject({
+            method: 'GET',
+            url: `/api/charts/descendants?family=${L.adoptedAdoptiveFamily}`,
+            headers: { cookie: await signIn(server.t.db, server.clock, member) },
+          })
+        ).json<{ persons: unknown[]; shown: number }>();
+        expect(small.shown).toBe(4);
+        expect(small.persons.length).toBe(26);
         const page = await open(member, size, `#chart/descendants/family/${L.adoptedAdoptiveFamily}`);
         await page.getByTestId('chart').locator('[data-card]').first().waitFor();
         await page.locator('[data-testid="chart-screen"][data-sheet-ready="true"]').waitFor();
