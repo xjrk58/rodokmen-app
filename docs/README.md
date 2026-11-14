@@ -32,6 +32,7 @@ Researching:
 
 - [Work with Research leads](how-to/work-with-research-leads.md): write a lead, take it on, record searches, close it, start a Proposal from it, and decide on suggested leads.
 - [Record research as an Agent](how-to/record-research-as-an-agent.md): the lead tools of the MCP server, from looking up what was searched to naming the leads a Proposal answers.
+- [Make a Chart](how-to/make-a-chart.md): open a Descendant chart or a House chart, choose the form, the generations, the Direct line or the period, open a branch, print a Sheet and download it as SVG or PNG.
 - [Read a scan and check it](how-to/read-a-scan.md): have a register page read, check each entry against the scan on a phone or a computer, choose who each person is, keep the next steps as leads, and submit.
 
 Keeping the repo public-safe:

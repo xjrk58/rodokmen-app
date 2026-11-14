@@ -14,6 +14,14 @@
  * - Marie Nováková (born 1885) is a birth child of one Family and an adoptive child of another.
  * - A marriage whose only evidence is a Family account given in 2026.
  * - A far-away village (Horní Bukovina) for the map query, and Living people born after 1926.
+ * - House A's succession for the House chart (added last, so earlier ids stay as they were): Jan's
+ *   parents, Jan's Families, then Jan's daughter Magdalena (1848), who married Vojtěch Kolář of Vrbice
+ *   there in 1868 (a son-in-law from another village); widowed in 1874, she married Ondřej Pokorný of
+ *   Dolní Kamenec in 1876, and both Families had children baptised at House A. A lodger Family
+ *   (Šimon Hruška and Viktorie) had a child baptised there in 1867, while Antonín's Family lived there.
+ * - A large family for the Chart's size limit: the Zástěra founders (1770) and three children in every
+ *   Family down to generation 6, every descendant before it married, about 600 Persons with undated
+ *   Families and Events without a Place: more than 500 cards in 6 generations, 242 in the first 5.
  *
  * The generator is deterministic: the same seed always gives the same records and ids.
  */
@@ -94,6 +102,15 @@ export interface Landmarks {
   /** A Person with no birth and no death Event. */
   undated: string;
   pageImage: string;
+  /** Jan's daughter of House A, married there to a man from another village, widowed and remarried. */
+  magdalena: string;
+  magdalenaFirstFamily: string;
+  sonInLaw: string;
+  magdalenaSecondFamily: string;
+  /** A lodger Family of Unrelated people with a child baptised at House A. */
+  lodgerFamily: string;
+  /** The founder of the large family (more than 500 cards in 6 generations). */
+  largeFounder: string;
 }
 
 // ---------------------------------------------------------------- deterministic helpers
@@ -226,6 +243,7 @@ const NOVAK = s('Novák', 'Nováková', 'Nowak', 'Nowakowa');
 const SVOBODA = s('Svoboda', 'Svobodová', 'Swoboda', 'Swobodowa');
 const PROCHAZKA = s('Procházka', 'Procházková', 'Prochaska', 'Prochaskowa');
 const VESELY = s('Veselý', 'Veselá', 'Wesely', 'Wesela');
+const ZASTERA = s('Zástěra', 'Zástěrová', 'Zastiera', 'Zastierowa');
 const HORAK = SURNAMES[2]!;
 
 const LATIN_MONTHS = ['Januarii', 'Februarii', 'Martii', 'Aprilis', 'Maii', 'Junii', 'Julii', 'Augusti', 'Septembris', 'Octobris', 'Novembris', 'Decembris'];
@@ -1148,5 +1166,100 @@ export function generateFixture(seed = 267): FixtureModel {
     storageKey: 'fixtures/portrait-proband.webp',
   });
 
+  houseASuccession(b, { jan, ludmila, famJan2, houseA, vrbice: vrbiceHouses[0]!, kamenec: kamenecHouses[0]!, child, wed });
+  largeFamily(b);
   return b.m;
+}
+
+/**
+ * House A after Jan (House chart, "Succession in a House chart"): his daughter's Family with a
+ * son-in-law from another village, her second Family as a widow, and a lodger Family meanwhile.
+ * Built after everything else, so that the ids of the earlier records stay as they were.
+ */
+function houseASuccession(
+  b: Builder,
+  x: {
+    jan: PersonInfo;
+    ludmila: PersonInfo;
+    famJan2: FamilyInfo;
+    houseA: string;
+    vrbice: string;
+    kamenec: string;
+    child: (fam: FamilyInfo, sex: 'male' | 'female', given: GivenName, date: string) => PersonInfo;
+    wed: (husband: PersonInfo, wife: PersonInfo, date: string, home: string) => FamilyInfo;
+  },
+): void {
+  const L = b.m.landmarks;
+  const magdalena = x.child(x.famJan2, 'female', FEMALE[5]!, '1848-07-22');
+  const vojtech = b.person('male', MALE[4]!, SURNAMES[16]!, 4, 1842);
+  vojtech.home = x.vrbice;
+  b.event('baptism', '1842-03-03', { houseId: x.vrbice }, [[vojtech, 'child']]);
+  const first = x.wed(vojtech, magdalena, '1868-01-28', x.houseA);
+  x.child(first, 'male', MALE[0]!, '1869-02-11');
+  x.child(first, 'female', FEMALE[0]!, '1872-09-30');
+  b.die(vojtech, '1874-04-18', { houseId: x.houseA }, magdalena);
+  const ondrej = b.person('male', MALE[11]!, SURNAMES[5]!, 4, 1844);
+  ondrej.home = x.kamenec;
+  b.event('baptism', '1844-11-05', { houseId: x.kamenec }, [[ondrej, 'child']]);
+  const second = x.wed(ondrej, magdalena, '1876-02-15', x.houseA);
+  x.child(second, 'male', MALE[1]!, '1877-05-06');
+  b.die(magdalena, '1911-12-01', { houseId: x.houseA });
+  b.die(ondrej, '1905-06-14', { houseId: x.houseA });
+  // Lodgers, Unrelated to the family, while Antonín's Family lived at House A.
+  const simon = b.person('male', MALE[13]!, SURNAMES[29]!, 4, 1838);
+  const viktorie = b.person('female', FEMALE[14]!, SURNAMES[29]!, 4, 1841);
+  for (const p of [simon, viktorie]) {
+    p.home = x.houseA;
+    b.event('birth', String(p.birthYear), null, [[p, 'child']]);
+    b.event('death', String(p.birthYear + 60), null, [[p, 'deceased']]);
+  }
+  const lodgers = b.family(simon, viktorie);
+  const lodgerChild = b.person('female', FEMALE[1]!, SURNAMES[29]!, 5, 1867);
+  b.childLink(lodgers, lodgerChild);
+  b.baptise(lodgerChild, simon, viktorie, { houseId: x.houseA }, '1867-10-08');
+  b.event('death', '1940', null, [[lodgerChild, 'deceased']]);
+  Object.assign(L, { magdalena: magdalena.id, magdalenaFirstFamily: first.id, sonInLaw: vojtech.id, magdalenaSecondFamily: second.id, lodgerFamily: lodgers });
+}
+
+/**
+ * A family large enough for the Chart's size limit (tree-charts spec, "Size of a Chart"): three
+ * children in every Family down to generation 6, everyone before it married, half of generation 6
+ * married too. Births are year-only Events with no Place, so the map and the registers do not change.
+ */
+function largeFamily(b: Builder): void {
+  const born = (p: PersonInfo, parents: PersonInfo[]) =>
+    b.event('birth', String(p.birthYear), null, [[p, 'child'], ...parents.map((q): [PersonInfo, RoleType] => [q, q.sex === 'male' ? 'father' : 'mother'])]);
+  const spouse = (p: PersonInfo, n: number) => {
+    const sex = p.sex === 'male' ? 'female' : 'male';
+    const q = b.person(sex, (sex === 'male' ? MALE : FEMALE)[n % 12]!, SURNAMES[n % SURNAMES.length]!, p.generation, p.birthYear + (n % 5) - 2);
+    born(q, []);
+    return q;
+  };
+  /** A partner for a descendant; in the last generation their Family too, since it has no children here. */
+  const marry = (kid: PersonInfo, gen: number): [PersonInfo, PersonInfo] => {
+    const other = spouse(kid, n);
+    const couple: [PersonInfo, PersonInfo] = kid.sex === 'male' ? [kid, other] : [other, kid];
+    if (gen === 6) b.family(couple[0], couple[1]);
+    return couple;
+  };
+  const founder = b.person('male', MALE[6]!, ZASTERA, 1, 1770);
+  born(founder, []);
+  b.m.landmarks.largeFounder = founder.id;
+  let n = 0;
+  let couples: Array<[PersonInfo, PersonInfo]> = [[founder, spouse(founder, n++)]];
+  for (let gen = 2; gen <= 6; gen++) {
+    const next: Array<[PersonInfo, PersonInfo]> = [];
+    for (const [husband, wife] of couples) {
+      const famId = b.family(husband, wife);
+      for (let i = 0; i < 3; i++) {
+        const sex = i === 1 ? 'female' : 'male';
+        const kid = b.person(sex, (sex === 'male' ? MALE : FEMALE)[(n + i) % 12]!, ZASTERA, gen, husband.birthYear + 27 + 2 * i);
+        b.childLink(famId, kid);
+        born(kid, [husband, wife]);
+        n++;
+        if (gen < 6 || n % 2 === 0) next.push(marry(kid, gen));
+      }
+    }
+    couples = gen < 6 ? next : [];
+  }
 }

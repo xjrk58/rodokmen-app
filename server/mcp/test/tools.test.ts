@@ -1,6 +1,8 @@
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import {
   CitationDetail,
+  DescendantChart,
+  HouseChart,
   LeadDetail,
   LeadList,
   EstateDetail,
@@ -61,6 +63,7 @@ describe('MCP tools on the fixture Tree', () => {
       'close_lead',
       'create_lead',
       'get_ancestors',
+      'get_chart',
       'get_descendants',
       'get_reading',
       'get_record',
@@ -141,6 +144,35 @@ describe('MCP tools on the fixture Tree', () => {
     const down = Pedigree.parse(await json('get_descendants', { personId: L.founder, generations: 6 }));
     expect(down.persons.map((p) => p.person.id)).toContain(L.proband);
     expect(Pedigree.parse(await json('get_ancestors', { personId: L.proband, generations: 2 })).generations).toBe(2);
+  });
+
+  it('get_chart "Who lived at a House": the rows in the order the app draws them, with periods, house numbers and links', async () => {
+    const chart = HouseChart.parse(await json('get_chart', { kind: 'house', houseId: L.houseA, unrelated: true }));
+    expect(chart.rows.length).toBeGreaterThan(3);
+    const days = chart.rows.filter((r) => r.earliest !== null).map((r) => r.earliest!);
+    expect(days).toEqual([...days].sort());
+    for (const row of chart.rows) expect(row.numbers.length).toBeGreaterThan(0);
+    expect(chart.rows.find((r) => r.familyId === L.magdalenaFirstFamily)).toMatchObject({ link: { kind: 'daughter' }, marriedIn: L.sonInLaw });
+    // A Chart's content, no picture; and no holder of the House anywhere.
+    expect(JSON.stringify(chart)).not.toMatch(/svg|png|holder/i);
+  });
+
+  it('get_chart "Same answer as the app": the same Persons, order and marks as the route a Member uses, as one read request', async () => {
+    const w = world();
+    const reads = async () =>
+      (await w.t.db.selectFrom('agent_rate_window').select('count').where('account_id', '=', w.agent.id).where('kind', '=', 'read').execute()).reduce(
+        (n, r) => n + r.count,
+        0,
+      );
+    const before = await reads();
+    const viaTool = DescendantChart.parse(await json('get_chart', { kind: 'descendants', personId: L.janNovak, generations: 3, line: L.proband }));
+    expect(await reads()).toBe(before + 1);
+    const viaApp = await w.as('editor', 'GET', `/api/charts/descendants?person=${L.janNovak}&generations=3&line=${L.proband}`);
+    expect(viaApp.statusCode).toBe(200);
+    expect(viaTool).toEqual(viaApp.json());
+    expect(viaTool.line.at(-1)).toBe(L.proband);
+    // The Agent gets the screen variant: no Sheet option exists in the tool.
+    expect(viaTool.sheet).toBeNull();
   });
 
   it('assistant submits a finding: a baptism Proposal with its Citation appears in the review queue labelled with the Agent’s name', async () => {

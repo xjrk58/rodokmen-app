@@ -1,0 +1,739 @@
+{
+  "kind": "descendants",
+  "form": "tree",
+  "start": {
+    "personId": null,
+    "familyId": "019b76da-a972-71f7-b4a7-6dfdaeb92318"
+  },
+  "generations": 3,
+  "shown": 3,
+  "leftOut": 0,
+  "cards": 13,
+  "line": [],
+  "lineBeyond": false,
+  "nodes": [
+    {
+      "key": "019b76da-a94b-76e6-8068-e87c63fa6339",
+      "personId": "019b76da-a94b-76e6-8068-e87c63fa6339",
+      "generation": 1,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": false,
+      "families": [
+        {
+          "familyId": "019b76da-a972-71f7-b4a7-6dfdaeb92318",
+          "partnerId": "019b76da-a95b-7189-bf13-1b566e3ededc",
+          "pointer": false,
+          "children": [
+            "019b76da-a97a-77f6-94b7-5baaaf2ccdae",
+            "019b76da-b3ea-7a1c-a2f2-7d432a7724f8",
+            "019b76da-a984-7ad4-a448-92b75680a457",
+            "019b76da-a98e-74b6-9769-55fbc1e75d42"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "019b76da-a97a-77f6-94b7-5baaaf2ccdae",
+      "personId": "019b76da-a97a-77f6-94b7-5baaaf2ccdae",
+      "generation": 2,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": false,
+      "families": [
+        {
+          "familyId": "019b76da-aa12-7293-8a14-84418b24018e",
+          "partnerId": "019b76da-aa0b-76eb-8bdc-eba8bedb7b32",
+          "pointer": false,
+          "children": [
+            "019b76da-aa1b-756b-9422-bdefd5a56019"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "019b76da-aa1b-756b-9422-bdefd5a56019",
+      "personId": "019b76da-aa1b-756b-9422-bdefd5a56019",
+      "generation": 3,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": false,
+      "families": []
+    },
+    {
+      "key": "019b76da-b3ea-7a1c-a2f2-7d432a7724f8",
+      "personId": "019b76da-b3ea-7a1c-a2f2-7d432a7724f8",
+      "generation": 2,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": false,
+      "families": [
+        {
+          "familyId": "019b76da-b3f7-773b-a757-fc9086873b3b",
+          "partnerId": "019b76da-b3f5-7953-9db4-95370ffdbbe9",
+          "pointer": false,
+          "children": [
+            "019b76da-b3ff-7a74-a280-81275526d30f",
+            "019b76da-b44a-7103-b45a-0516a3d5fe1c"
+          ]
+        }
+      ]
+    },
+    {
+      "key": "019b76da-b3ff-7a74-a280-81275526d30f",
+      "personId": "019b76da-b3ff-7a74-a280-81275526d30f",
+      "generation": 3,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": true,
+      "families": [
+        {
+          "familyId": "019b76da-b40b-73d0-9777-e0c2e3de5857",
+          "partnerId": "019b76da-b409-7c66-bb4e-9164d7365f35",
+          "pointer": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "key": "019b76da-b44a-7103-b45a-0516a3d5fe1c",
+      "personId": "019b76da-b44a-7103-b45a-0516a3d5fe1c",
+      "generation": 3,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": true,
+      "families": [
+        {
+          "familyId": "019b76da-b45b-7e31-95b9-9707da9e97fe",
+          "partnerId": "019b76da-b454-771b-bede-a09ca3cf5733",
+          "pointer": false,
+          "children": []
+        }
+      ]
+    },
+    {
+      "key": "019b76da-a984-7ad4-a448-92b75680a457",
+      "personId": "019b76da-a984-7ad4-a448-92b75680a457",
+      "generation": 2,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": false,
+      "families": []
+    },
+    {
+      "key": "019b76da-a98e-74b6-9769-55fbc1e75d42",
+      "personId": "019b76da-a98e-74b6-9769-55fbc1e75d42",
+      "generation": 2,
+      "followed": true,
+      "pointer": false,
+      "onLine": false,
+      "leftOut": 0,
+      "moreBelow": false,
+      "families": []
+    }
+  ],
+  "rows": [],
+  "sheet": null,
+  "asOf": {
+    "logEntryId": null,
+    "acceptedAt": null
+  },
+  "livingOn": "2026-11-14",
+  "persons": [
+    {
+      "id": "019b76da-a94b-76e6-8068-e87c63fa6339",
+      "sex": "male",
+      "given": "Jan",
+      "surname": "Novák",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-a950-74f5-990d-235dc7939b96",
+        "type": "baptism",
+        "date": "1801-03-12",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "12"
+      },
+      "died": {
+        "eventId": "019b76da-a9cc-7705-af2b-abcdeee3b14c",
+        "type": "death",
+        "date": "1850-11-03",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1801,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-a95b-7189-bf13-1b566e3ededc",
+      "sex": "female",
+      "given": "Kateřina",
+      "surname": "Procházková",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-a95f-70e3-a598-02df570311c7",
+        "type": "baptism",
+        "date": "1804-04-29",
+        "placeId": "019b76da-a808-7e9c-ba72-8a7eec9dd020",
+        "place": "Vrbice",
+        "houseId": "019b76da-a82d-7bdf-9734-10f99055fb5d",
+        "houseNumber": "44"
+      },
+      "died": {
+        "eventId": "019b76da-a999-7f25-89a2-96c0532d6966",
+        "type": "death",
+        "date": "1835-03-02",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1804,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-a97a-77f6-94b7-5baaaf2ccdae",
+      "sex": "male",
+      "given": "Karel",
+      "surname": "Novák",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-a97d-7612-96fc-99a28df01d5b",
+        "type": "baptism",
+        "date": "1827-01-28",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "died": {
+        "eventId": "019b76da-aa2e-74bb-9b30-632805a6fbed",
+        "type": "death",
+        "date": "1887-09-30",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a81e-7f8c-9a61-1e16d9a94bcd",
+        "houseNumber": "3"
+      },
+      "birthYear": 1827,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-a984-7ad4-a448-92b75680a457",
+      "sex": "female",
+      "given": "Marie",
+      "surname": "Nováková",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-a987-70a3-9a39-2bfe109f01eb",
+        "type": "baptism",
+        "date": "1829-07-02",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "died": {
+        "eventId": "019b76da-b791-7d0e-8ce1-5f72b79a0121",
+        "type": "death",
+        "date": "1899-05-20",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1829,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-a98e-74b6-9769-55fbc1e75d42",
+      "sex": "male",
+      "given": "Vojtěch",
+      "surname": "Novák",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-a991-7abb-ad13-ecbc5709d19d",
+        "type": "baptism",
+        "date": "1832-04-23",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "died": {
+        "eventId": "019b76da-b798-7301-b0a6-b230f22c4174",
+        "type": "death",
+        "date": "1914-07-21",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1832,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-aa0b-76eb-8bdc-eba8bedb7b32",
+      "sex": "female",
+      "given": "Rozálie",
+      "surname": "Musilová",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-aa0d-7272-a537-b7f25631c002",
+        "type": "baptism",
+        "date": "1858-02-28",
+        "placeId": "019b76da-a808-7e9c-ba72-8a7eec9dd020",
+        "place": "Vrbice",
+        "houseId": "019b76da-a82d-7bdf-9734-10f99055fb5d",
+        "houseNumber": "44"
+      },
+      "died": {
+        "eventId": "019b76da-aa26-7e15-abf0-98b3ddf52d5d",
+        "type": "death",
+        "date": "1886-02-17",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a81e-7f8c-9a61-1e16d9a94bcd",
+        "houseNumber": "3"
+      },
+      "birthYear": 1858,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-aa1b-756b-9422-bdefd5a56019",
+      "sex": "female",
+      "given": "Marie",
+      "surname": "Nováková",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-aa1e-7225-95c9-f194c490ff51",
+        "type": "baptism",
+        "date": "1885-12-08",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a81e-7f8c-9a61-1e16d9a94bcd",
+        "houseNumber": "3"
+      },
+      "died": {
+        "eventId": "019b76da-b7b4-733f-a626-43fd44ede3b1",
+        "type": "death",
+        "date": "1946-11-30",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1885,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-b3ea-7a1c-a2f2-7d432a7724f8",
+      "sex": "male",
+      "given": "Pavel",
+      "surname": "Novák",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-b3ee-769d-9bc9-e8fca5d117cb",
+        "type": "baptism",
+        "date": "1827-02-15",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "died": {
+        "eventId": "019b76da-b4c6-74d0-a51b-5521d6b0cb80",
+        "type": "death",
+        "date": "1874-11-01",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1827,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-b3f5-7953-9db4-95370ffdbbe9",
+      "sex": "female",
+      "given": "Magdalena",
+      "surname": "Štěpánková",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": null,
+      "died": {
+        "eventId": "019b76da-b4ce-7be5-8a53-fc8e4817b772",
+        "type": "death",
+        "date": "1901-11-02",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": null,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-b3ff-7a74-a280-81275526d30f",
+      "sex": "female",
+      "given": "Barbora",
+      "surname": "Nováková",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-b402-7b06-a55c-f89487a02cb4",
+        "type": "baptism",
+        "date": "1854-07-05",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "died": {
+        "eventId": "019b76da-b443-7475-8993-a0447ef6ba94",
+        "type": "death",
+        "date": "1900-08-20",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a820-74fb-9303-106b9b83ab13",
+        "houseNumber": "21"
+      },
+      "birthYear": 1854,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-b409-7c66-bb4e-9164d7365f35",
+      "sex": "male",
+      "given": "Vincenc",
+      "surname": "Blažek",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": null,
+      "died": {
+        "eventId": "019b76da-b43b-7c03-8450-7b841e077a01",
+        "type": "death",
+        "date": "1905-08-01",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a820-74fb-9303-106b9b83ab13",
+        "houseNumber": "21"
+      },
+      "birthYear": null,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-b44a-7103-b45a-0516a3d5fe1c",
+      "sex": "male",
+      "given": "Jakub",
+      "surname": "Novák",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-b44d-7744-8068-1c2344328098",
+        "type": "baptism",
+        "date": "1855-11-06",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "died": {
+        "eventId": "019b76da-b4a2-7364-bece-7d97f9e38094",
+        "type": "death",
+        "date": "1917-02-26",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1855,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    },
+    {
+      "id": "019b76da-b454-771b-bede-a09ca3cf5733",
+      "sex": "female",
+      "given": "Marie",
+      "surname": "Kadlecová",
+      "birthSurname": null,
+      "living": false,
+      "relation": "possible",
+      "familyRoot": false,
+      "born": {
+        "eventId": "019b76da-b456-737c-bbe5-0b369d74429f",
+        "type": "baptism",
+        "date": "1857-02-08",
+        "placeId": "019b76da-a808-7e9c-ba72-8a7eec9dd020",
+        "place": "Vrbice",
+        "houseId": "019b76da-a82b-7eae-ba56-462e693f3016",
+        "houseNumber": "30"
+      },
+      "died": {
+        "eventId": "019b76da-b4aa-7bf3-b915-12526c25f42b",
+        "type": "death",
+        "date": "1926-04-23",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "birthYear": 1857,
+      "diedYoung": false,
+      "reduced": false,
+      "nameless": false
+    }
+  ],
+  "families": [
+    {
+      "id": "019b76da-a972-71f7-b4a7-6dfdaeb92318",
+      "partner1Id": "019b76da-a94b-76e6-8068-e87c63fa6339",
+      "partner2Id": "019b76da-a95b-7189-bf13-1b566e3ededc",
+      "marriage": {
+        "eventId": "019b76da-a974-7115-9ba0-4a33668308a9",
+        "type": "marriage",
+        "date": "1825-11-22",
+        "placeId": "019b76da-a808-7e9c-ba72-8a7eec9dd020",
+        "place": "Vrbice",
+        "houseId": "019b76da-a82d-7bdf-9734-10f99055fb5d",
+        "houseNumber": "44"
+      },
+      "weakLink": false,
+      "children": [
+        {
+          "personId": "019b76da-a97a-77f6-94b7-5baaaf2ccdae",
+          "linkType": "birth",
+          "weakLink": false
+        },
+        {
+          "personId": "019b76da-b3ea-7a1c-a2f2-7d432a7724f8",
+          "linkType": "birth",
+          "weakLink": true
+        },
+        {
+          "personId": "019b76da-a984-7ad4-a448-92b75680a457",
+          "linkType": "birth",
+          "weakLink": false
+        },
+        {
+          "personId": "019b76da-a98e-74b6-9769-55fbc1e75d42",
+          "linkType": "birth",
+          "weakLink": false
+        }
+      ]
+    },
+    {
+      "id": "019b76da-aa12-7293-8a14-84418b24018e",
+      "partner1Id": "019b76da-a97a-77f6-94b7-5baaaf2ccdae",
+      "partner2Id": "019b76da-aa0b-76eb-8bdc-eba8bedb7b32",
+      "marriage": {
+        "eventId": "019b76da-aa14-7591-899b-656492deaf13",
+        "type": "marriage",
+        "date": "1882-10-24",
+        "placeId": "019b76da-a808-7e9c-ba72-8a7eec9dd020",
+        "place": "Vrbice",
+        "houseId": "019b76da-a82d-7bdf-9734-10f99055fb5d",
+        "houseNumber": "44"
+      },
+      "weakLink": true,
+      "children": [
+        {
+          "personId": "019b76da-aa1b-756b-9422-bdefd5a56019",
+          "linkType": "birth",
+          "weakLink": true
+        }
+      ]
+    },
+    {
+      "id": "019b76da-b3f7-773b-a757-fc9086873b3b",
+      "partner1Id": "019b76da-b3ea-7a1c-a2f2-7d432a7724f8",
+      "partner2Id": "019b76da-b3f5-7953-9db4-95370ffdbbe9",
+      "marriage": {
+        "eventId": "019b76da-b3f9-70a1-9ba5-96e45585a61b",
+        "type": "marriage",
+        "date": "1851-11-10",
+        "placeId": "019b76da-a80c-7e08-b0bd-5e60cc608ae8",
+        "place": "Zálesí",
+        "houseId": "019b76da-a833-79a9-a406-36cb5fe57bc2",
+        "houseNumber": "2"
+      },
+      "weakLink": false,
+      "children": [
+        {
+          "personId": "019b76da-b3ff-7a74-a280-81275526d30f",
+          "linkType": "birth",
+          "weakLink": false
+        },
+        {
+          "personId": "019b76da-b44a-7103-b45a-0516a3d5fe1c",
+          "linkType": "birth",
+          "weakLink": false
+        }
+      ]
+    },
+    {
+      "id": "019b76da-b40b-73d0-9777-e0c2e3de5857",
+      "partner1Id": "019b76da-b409-7c66-bb4e-9164d7365f35",
+      "partner2Id": "019b76da-b3ff-7a74-a280-81275526d30f",
+      "marriage": {
+        "eventId": "019b76da-b40d-7036-8112-c3238c5953e4",
+        "type": "marriage",
+        "date": "1882-08-05",
+        "placeId": "019b76da-a800-75c9-90da-1d6b863367de",
+        "place": "Kamenná Lhota",
+        "houseId": "019b76da-a818-7dd9-a435-011c7671606d",
+        "houseNumber": "15"
+      },
+      "weakLink": false,
+      "children": [
+        {
+          "personId": "019b76da-b413-72ac-8e12-4ccb24d7b486",
+          "linkType": "birth",
+          "weakLink": false
+        },
+        {
+          "personId": "019b76da-b426-7cad-a0c3-9ce811e0efd8",
+          "linkType": "birth",
+          "weakLink": false
+        }
+      ]
+    },
+    {
+      "id": "019b76da-b45b-7e31-95b9-9707da9e97fe",
+      "partner1Id": "019b76da-b44a-7103-b45a-0516a3d5fe1c",
+      "partner2Id": "019b76da-b454-771b-bede-a09ca3cf5733",
+      "marriage": {
+        "eventId": "019b76da-b45d-7dae-863f-f06969932abe",
+        "type": "marriage",
+        "date": "1884-10-18",
+        "placeId": "019b76da-a808-7e9c-ba72-8a7eec9dd020",
+        "place": "Vrbice",
+        "houseId": "019b76da-a82b-7eae-ba56-462e693f3016",
+        "houseNumber": "30"
+      },
+      "weakLink": false,
+      "children": [
+        {
+          "personId": "019b76da-b463-7618-a992-b5cf9b648dee",
+          "linkType": "birth",
+          "weakLink": false
+        },
+        {
+          "personId": "019b76da-b471-7d09-b4da-aa3acbd9ae2c",
+          "linkType": "birth",
+          "weakLink": false
+        },
+        {
+          "personId": "019b76da-b47e-76f2-ba9e-c2ed60ef38b2",
+          "linkType": "birth",
+          "weakLink": false
+        }
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "019b76da-a957-715c-a4ab-9095332c6fd3",
+      "title": "Matrika narozených (N) Dolní Kamenec 1784–1830"
+    },
+    {
+      "id": "019b76da-a996-756d-91fe-fda124d338f1",
+      "title": "Matrika narozených (N) Dolní Kamenec 1831–1880"
+    },
+    {
+      "id": "019b76da-a964-7b4d-849c-efae36fbfe87",
+      "title": "Matrika narozených (N) Vrbice 1784–1830"
+    },
+    {
+      "id": "019b76da-a9fd-737c-9e5e-98ffd443197e",
+      "title": "Matrika narozených (N) Vrbice 1831–1880"
+    },
+    {
+      "id": "019b76da-aa23-7419-b85b-1cafb7cbbd51",
+      "title": "Matrika narozených (N) Vrbice 1881–1949"
+    },
+    {
+      "id": "019b76da-a9a8-7ff7-925b-455a852835dc",
+      "title": "Matrika oddaných (O) Dolní Kamenec 1831–1880"
+    },
+    {
+      "id": "019b76da-a93d-7648-ab17-ed94012d2299",
+      "title": "Matrika oddaných (O) Vrbice 1784–1830"
+    },
+    {
+      "id": "019b76da-aa18-7e0f-92af-4ce5887bb581",
+      "title": "Matrika oddaných (O) Vrbice 1881–1949"
+    }
+  ]
+}
