@@ -36,6 +36,7 @@ ShellCheck and gitleaks run in their pinned Docker image and fall back to the to
   - in `server/src/auth/`: `request.url`, `request.raw.url` or `originalUrl`;
   - in `server/` and `shared/`: `z.url()` without a `protocol` option;
   - in the app's browser code: a day taken from `toISOString()` (`.slice`, `.substring`, `.substr`, `.split`), and Leaflet tooltip or popup content given as a string;
+  - in the Chart's modules (`shared/src/charts.ts`, `charts-model.ts`, `house-chart.ts`, `sheet-reduction.ts`, `server/src/charts/` and `app/src/chart-*.js`): anything that makes a Chart depend on chance, the clock or the device, namely `Math.random`, `Date.now`, `new Date`, `performance.now`, `crypto.randomUUID`, `localeCompare`, `toLocale*String`, `Intl.DateTimeFormat`, `Intl.Collator`, `Intl.NumberFormat`, `Intl.PluralRules`, `getBBox` and `getComputedTextLength` (tree-charts spec, "Charts follow fixed rules");
   - everywhere: the identifiers GLOSSARY.md rejects and that mean nothing else here (`town`, `village`, `obec`, `farnost`, `manor`, `dominion`, `herrschaft`, `commune`, `moderator`, `superuser`, `proband`, and their plurals and capitals where listed);
   - in `app/tests/e2e/`: eslint-plugin-playwright's recommended rules, with `no-wait-for-timeout` an error and `test.skip(condition, reason)` allowed;
   - in `server/test/**/*.e2e.test.ts`: the plugin's rules on the page API only (fixed waits, `waitForSelector`, `networkidle`, element handles, `eval`, `force`, `page.pause()`, unused locators, needless `await`).

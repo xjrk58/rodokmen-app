@@ -132,6 +132,28 @@ export function guard(app: FastifyInstance) {
     assert.deepEqual(await findings(bug.replaceAll('town', 'placeName'), 'app/src/', '.js', 'id-denylist'), []);
   });
 
+  test('a Chart may not depend on chance, the clock or the device (tree-charts, "Charts follow fixed rules")', async () => {
+    // Two cards with the same birth day, ordered by chance or by the device's collation of names.
+    const bug = `export const order = (a, b) => a.born - b.born || a.name.localeCompare(b.name) || Math.random() - 0.5;\n`;
+    const found = await findings(bug, 'app/src/', 'chart-cards.js', 'no-restricted-syntax');
+    assert.equal(found.length, 2);
+    assert.match(found.join('\n'), /code units/);
+    assert.deepEqual(
+      await findings(
+        `export const order = (a, b) => a.born - b.born || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);\n`,
+        'app/src/',
+        'chart-cards.js',
+        'no-restricted-syntax',
+      ),
+      [],
+    );
+    // The same in the proved rules and the server's shell, with the clock and the device's date words.
+    const shared = `export const stamp = (d: { born: string }) => \`\${new Date().getFullYear()} \${new Date(d.born).toLocaleDateString()} \${Date.now()}\`;\n`;
+    assert.equal((await findings(shared, 'shared/src/', 'charts.ts', 'no-restricted-syntax')).length, 4);
+    // Elsewhere the app may still sort names for people (search results, pickers).
+    assert.deepEqual(await findings(bug, 'app/src/', 'pickers.js', 'no-restricted-syntax'), []);
+  });
+
   test('browser tests may not wait a fixed time (L18)', async () => {
     const app = `import { test } from '@playwright/test';\ntest('stops', async ({ page }) => {\n  await page.goto('./');\n  await page.waitForTimeout(1500);\n});\n`;
     assert.equal((await findings(app, 'app/tests/e2e/', '.spec.js', 'playwright/no-wait-for-timeout')).length, 1);

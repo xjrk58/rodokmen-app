@@ -217,3 +217,27 @@ method exportRecord(r: ExportRecord) returns (res: ExportRecord)
   var i_t12 := exportLinks(r.links);
   return ExportRecord(r.kind, r.id, false, r.concernsLiving, r.sex, i_t10, r.relations, r.birthYear, r.hasBirthYear, i_t11, r.facts, (if r.concernsLiving then "" else r.notes), i_t12);
 }
+
+method sheetPerson(r: ExportRecord, nameless: bool) returns (res: ExportRecord)
+  ensures (res.id == r.id)
+  ensures (res.kind == r.kind)
+  ensures (res.living == r.living)
+  ensures (res.sex == r.sex)
+  ensures (r.living ==> ((((|res.events| == 0) && (|res.facts| == 0)) && (|res.links| == 0)) && (res.notes == "")))
+  ensures (r.living ==> ((|res.names| <= 1) && forall i: nat :: ((i < |res.names|) ==> ((((|res.names[i].citations| == 0) && (res.names[i].asFound == "")) && (res.names[i].type_ == "")) && (res.names[i].language == "")))))
+  ensures (r.living ==> forall i: nat :: ((i < |res.relations|) ==> isLivingRelation(res.relations[i])))
+  ensures (r.living ==> !(nameless) ==> (|r.names| > 0) ==> (((|res.names| == 1) && (res.names[0].given == r.names[0].given)) && (res.names[0].surname == r.names[0].surname)))
+  ensures (r.living ==> !(nameless) ==> ((res.birthYear == r.birthYear) && (res.hasBirthYear == r.hasBirthYear)))
+  ensures (r.living ==> nameless ==> (((|res.names| == 0) && !(res.hasBirthYear)) && (res.birthYear == 0)))
+  ensures (!(r.living) ==> (((|res.names| == |r.names|) && (res.facts == r.facts)) && (res.relations == r.relations)))
+  ensures forall i: nat :: ((i < |res.events|) ==> !(hasLivingRole(res.events[i])))
+  ensures !(hasMedia(res.links))
+  ensures forall i: nat :: ((i < |res.events|) ==> forall k: nat :: ((k < |res.events[i].citations|) ==> !(hasMedia(res.events[i].citations[k].links))))
+{
+  var i_t13 := exportRecord(r);
+  var view := i_t13;
+  if (!(r.living) || !(nameless)) {
+    return view;
+  }
+  return ExportRecord(view.kind, view.id, view.living, view.concernsLiving, view.sex, [], view.relations, 0, false, view.events, view.facts, view.notes, view.links);
+}

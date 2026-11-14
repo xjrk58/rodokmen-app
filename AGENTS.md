@@ -33,7 +33,7 @@ For code quality, use a deterministic, reliable tool wherever one can do the job
 The checks, in the order `pnpm check` runs them, and how to fix what they find (step by step: [Fix a failed check](docs/how-to/fix-a-failed-check.md); each tool and its configuration: [Code checks](docs/reference/checks.md)):
 
 - **typecheck**: type errors in server/, shared/ and the app's JSDoc. Fix the types; narrow with a check, not a cast.
-- **ESLint**: promises nobody awaits, `any` and unchecked casts, and the shapes of past bugs: `request.url` in the sign-in hooks, `z.url()` without a protocol, a day from `toISOString()` in the app, Leaflet content as HTML, words GLOSSARY.md rejects, fixed waits in browser tests. Run `pnpm exec eslint --fix .`, then do what the message says. After fixing a recorded finding, `pnpm exec eslint --prune-suppressions .`.
+- **ESLint**: promises nobody awaits, `any` and unchecked casts, and the shapes of past bugs: `request.url` in the sign-in hooks, `z.url()` without a protocol, a day from `toISOString()` in the app, Leaflet content as HTML, the clock, chance or the device's locale in a Chart's modules, words GLOSSARY.md rejects, fixed waits in browser tests. Run `pnpm exec eslint --fix .`, then do what the message says. After fixing a recorded finding, `pnpm exec eslint --prune-suppressions .`.
 - **ShellCheck**: shell script mistakes. Follow the wiki page of the SC code.
 - **docs check**: a broken relative link in a Markdown file, or a page under `docs/` missing from the `docs/README.md` index. Fix the link, or add the page's line to the index.
 - **Prettier**: layout. Run `pnpm format`.
