@@ -28,3 +28,7 @@ export * from './matching.js';
 export * from './name-variants.js';
 export * from './reading-leads.js';
 export * from './reading-proposal.js';
+export { buildKinshipGraph, type KinshipData, type KinshipGraph } from './kinship-graph.js';
+export { FULL_BOUND, KinshipSearch, kinshipPaths, kinshipShort, MAX_PATHS, SHORT_BOUND } from './kinship-paths.js';
+export type { KindName, KinshipPathOut, KinshipResult, PathStepOut } from './kinship-steps.js';
+export { kinshipTerms, termsOf, type KinshipTermText } from './kinship-terms/index.js';
