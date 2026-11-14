@@ -70,6 +70,6 @@ Start only after the Owner's go-ahead on #166, and after reading the Owner's ans
 
 ## Workflow follow-up
 
-- Open an issue for the military survey overlays: the CENIA address in `app/data/layers.json` answers 404 and the new services offer only EPSG:5514 (design.md, "The stable cadastre: what is available"), and comment on #24.
+- The military survey overlays (the CENIA address answers 404, and the new services offer only EPSG:5514) are #169, not part of this change; the aerial photograph's contrast test in 4.5 uses whichever overlays #169 leaves on.
 - Open the issue for Places on their Municipality's point if the Owner answers yes to Open Question 10.
 - At archive, after `add-family-view` is archived, turn "Playing through time" into a MODIFIED "Year slider" in `family-map`, so that the main spec holds one play rule.
