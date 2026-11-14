@@ -14,7 +14,7 @@ A Proposal SHALL hold every change that one finding implies: new records, edits 
 - **THEN** one Proposal adds the child and the baptism Event, links the parents' Family and the godparents with their Roles, and attaches the Citation with its page image
 
 ### Requirement: Evidence is required
-A Proposal SHALL include at least one Citation. A Citation to a Family account Source counts as evidence. What changes no facts SHALL need no Citation: an Editor's merge of two Persons, an Editor's undo, both logged like any accepted Proposal, and a correction of Citations' notes alone.
+A Proposal SHALL include at least one Citation. A Citation to a Family account Source counts as evidence. What changes no facts SHALL need no Citation: an Editor's merge of two Persons or of two Events, an Editor's undo, all logged like any accepted Proposal, and a correction of Citations' notes alone.
 
 #### Scenario: Missing evidence
 - **WHEN** a Contributor tries to submit a Proposal without any Citation
@@ -23,6 +23,10 @@ A Proposal SHALL include at least one Citation. A Citation to a Family account S
 #### Scenario: Merge and undo need no Citation
 - **WHEN** an Editor merges two records of the same man without adding a Citation, and later undoes the merge without one
 - **THEN** both take effect at once, and the history of the Person shows the merge and the undo
+
+#### Scenario: An Event merge needs no Citation
+- **WHEN** an Editor merges a marriage Event recorded twice into the other without adding a Citation
+- **THEN** the merge takes effect at once, as it moves only what the Tree already holds and cites
 
 #### Scenario: A Citation's note needs no evidence
 - **WHEN** a Proposal only adds the line `Evidence class: A` to a Citation's note, and another only changes that Citation's confidence or transcription
