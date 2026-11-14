@@ -1,4 +1,4 @@
-import type { Plan } from './plan.js';
+import type { Plan, UpdateTopic } from './plan.js';
 import type { Issue, IssueKind, Vault } from './reader.js';
 
 /**
@@ -24,11 +24,11 @@ export interface RunSummary {
   /** Marriages an earlier importer gave two Events (#149), with the record ids of the Event to keep and of the other (null while pending). */
   duplicateMarriages: Array<{ paths: [string, string]; keep: string | null; other: string | null }>;
   /**
-   * Fields the Tree has no place for, on records an earlier importer wrote without them (#134):
-   * added to research notes that still held what it wrote; not added to notes changed since, nor
-   * to register entries' Citation notes.
+   * Records an earlier importer wrote otherwise, by what they wait for (plan.updates): the fields
+   * the Tree has no place for, added to research notes and register entries' Citation notes that
+   * still held what it wrote (#134, #157). Records changed since are not updated, and listed.
    */
-  updates: { added: number; notUpdated: Array<{ path: string; lines: string[]; why: 'changed' | 'citation' }> };
+  updates: Record<UpdateTopic, { added: number; notUpdated: Array<{ path: string; lines: string[] }> }>;
   /** Persons an earlier run imported whose presumed death (#132) is left out: the Tree has a death, burial or birth date for them now. */
   presumedLeftOut: string[];
 }
@@ -141,30 +141,20 @@ function cutLeads(run: RunSummary): string[] {
   ];
 }
 
-/** Fields the Tree has no place for, on records an earlier importer wrote without them (#134). */
+/** Fields the Tree has no place for, on records an earlier importer wrote without them (#134, #157). */
 function fieldsNotMapped(run: RunSummary): string[] {
-  if (!run.updates.added && !run.updates.notUpdated.length) return [];
-  const list = (why: 'changed' | 'citation') => run.updates.notUpdated.filter((u) => u.why === why).map((u) => `- ${u.path}: ${u.lines.join('; ')}`);
-  const changed = list('changed');
-  const citations = list('citation');
+  const { added, notUpdated } = run.updates.fields;
+  if (!added && !notUpdated.length) return [];
   return [
     '## Fields not mapped, on records imported before #134',
     '',
-    `Research notes ${run.dryRun ? 'that would get' : 'that got'} the fields the Tree has no place for: ${run.updates.added}.`,
+    `Research notes and register entries' Citation notes ${run.dryRun ? 'that would get' : 'that got'} the fields the Tree has no place for: ${added}.`,
     '',
-    ...(changed.length
+    ...(notUpdated.length
       ? [
-          `Research notes changed in the app since the import, left as they are (${changed.length}); add these lines by hand if you want them:`,
+          `Research notes and Citation notes changed since the import, left as they are (${notUpdated.length}); add these lines by hand if you want them:`,
           '',
-          ...changed,
-          '',
-        ]
-      : []),
-    ...(citations.length
-      ? [
-          `Register entries whose Citation note an earlier import wrote (${citations.length}): no Proposal can change a Citation's note without new evidence (#157), so these lines are kept here only:`,
-          '',
-          ...citations,
+          ...notUpdated.map((u) => `- ${u.path}: ${u.lines.join('; ')}`),
           '',
         ]
       : []),

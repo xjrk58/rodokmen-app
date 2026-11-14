@@ -184,30 +184,62 @@ export function fixedWindow(windowStart: number, count: number, limit: number, w
 
 // ---------------------------------------------------------------- evidence
 
+/**
+ * What the evidence rule reads of an operation: its name and, for a `setField`, the record it
+ * changes and the fields it sets. Other operations have no record ('') and no fields.
+ */
+export interface EvidenceOperation {
+  readonly op: string;
+  readonly record: string;
+  readonly fields: readonly string[];
+}
+
 /** Operations that bring a Citation into a Proposal. */
-export function isCitationOperation(op: string): boolean {
+export function isCitationOperation(o: EvidenceOperation): boolean {
   //@ verify
-  return op === 'createCitation' || op === 'attachCitation';
+  return o.op === 'createCitation' || o.op === 'attachCitation';
+}
+
+/**
+ * A correction of a Citation's note and nothing else (#157): the note says where and how the entry
+ * was read, such as the note path or an evidence class, not what the entry says.
+ */
+function isCitationNoteOnly(o: EvidenceOperation): boolean {
+  //@ verify
+  return o.op === 'setField' && o.record === 'citation' && o.fields.length === 1 && o.fields[0] === 'note';
 }
 
 /**
  * Operations that change no facts and so need no evidence: merges, the server's undo steps,
- * marking Family roots, and research notes and Labels, which state no fact about the family
- * (tree-model spec, "Research notes on records").
+ * marking Family roots, research notes and Labels, which state no fact about the family
+ * (tree-model spec, "Research notes on records"), and a Citation's note on its own (proposals spec,
+ * "Evidence is required"). Any other `setField` changes facts, a Citation's page, transcription,
+ * reading day or confidence among them.
  */
-export function isFactFreeOperation(op: string): boolean {
+export function isFactFreeOperation(o: EvidenceOperation): boolean {
   //@ verify
-  return op === 'mergePersons' || op === 'restoreRecord' || op === 'setFamilyRoot' || op === 'setNotes' || op === 'addLabel' || op === 'removeLabel';
+  //@ ensures o.op === 'setField' && o.record === 'citation' ==> \result === (o.fields.length === 1 && o.fields[0] === 'note')
+  //@ ensures o.op === 'setField' && o.record !== 'citation' ==> !\result
+  const op = o.op;
+  return (
+    op === 'mergePersons' ||
+    op === 'restoreRecord' ||
+    op === 'setFamilyRoot' ||
+    op === 'setNotes' ||
+    op === 'addLabel' ||
+    op === 'removeLabel' ||
+    isCitationNoteOnly(o)
+  );
 }
 
 /**
  * The evidence rule (proposals spec, "Evidence is required"): a Proposal includes at least one
  * Citation, created or attached. A Citation of a Family account Source is a Citation like any
- * other, so it counts. Proposals made only of merges, undo steps, Family roots, research notes
- * and Labels change no facts and are exempt (tree-model spec, "Research notes on records"). An
- * empty Proposal has no evidence.
+ * other, so it counts. Proposals made only of merges, undo steps, Family roots, research notes,
+ * Labels and corrections of Citations' notes change no facts and are exempt (tree-model spec,
+ * "Research notes on records"). An empty Proposal has no evidence.
  */
-export function satisfiesEvidenceRule(ops: readonly string[]): boolean {
+export function satisfiesEvidenceRule(ops: readonly EvidenceOperation[]): boolean {
   //@ verify
   //@ contract proposals: Evidence is required
   //@ contract tree-model: Research notes on records
@@ -218,7 +250,11 @@ export function satisfiesEvidenceRule(ops: readonly string[]): boolean {
   // Merges and undo steps alone change no facts; an empty Proposal has no evidence.
   //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> isFactFreeOperation(ops[i])) ==> \result
   // Scenario "A note needs no evidence": research notes and Labels alone need no Citation.
-  //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i] === 'setNotes' || ops[i] === 'addLabel' || ops[i] === 'removeLabel') ==> \result
+  //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i].op === 'setNotes' || ops[i].op === 'addLabel' || ops[i].op === 'removeLabel') ==> \result
+  // Scenario "A Citation's note needs no evidence": setting only Citations' notes needs no Citation ...
+  //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i].op === 'setField' && ops[i].record === 'citation' && ops[i].fields.length === 1 && ops[i].fields[0] === 'note') ==> \result
+  // ... while setting any other field of a Citation, its transcription or confidence among them, still does.
+  //@ ensures forall(i: nat, i < ops.length ==> !isCitationOperation(ops[i])) && exists(i: nat, i < ops.length && ops[i].op === 'setField' && ops[i].record === 'citation' && exists(j: nat, j < ops[i].fields.length && ops[i].fields[j] !== 'note')) ==> !\result
   //@ ensures ops.length === 0 ==> !\result
   if (ops.length === 0) return false;
   let factFree = true;

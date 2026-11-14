@@ -3,7 +3,7 @@
  * against its schema, temporary ids defined once and before use with the right kind, base
  * versions present, who may use which operation, and the evidence rule.
  */
-import { satisfiesEvidenceRule } from '../rules.js';
+import { satisfiesEvidenceRule, type EvidenceOperation } from '../rules.js';
 import { isPlaceOrNoteOperation, placeReferencesOf } from './place-operations.js';
 import { EDITOR_ONLY_OPERATIONS, Operation, OPERATION_NAMES, type OperationName, type SettableRecord } from './proposals.js';
 import { isNewRef, isTempId } from './refs.js';
@@ -125,6 +125,10 @@ export interface ProposalCheck {
 }
 
 const opNameOf = (value: unknown): unknown => (typeof value === 'object' && value !== null && 'op' in value ? value.op : undefined);
+
+/** What the evidence rule reads of an operation: its name, and the record and fields of a `setField`. */
+const evidenceOf = (op: Operation): EvidenceOperation =>
+  op.op === 'setField' ? { op: op.op, record: op.record, fields: Object.keys(op.set) } : { op: op.op, record: '', fields: [] };
 const tempIdOf = (op: Operation): string | undefined => ('tempId' in op ? op.tempId : undefined);
 
 /** One parsed operation in context: who may use it, and its temporary ids (recorded in `temps`). */
@@ -192,6 +196,6 @@ export function checkOperations(raw: readonly unknown[], options: CheckOptions):
     if (found.some((i) => i.code === 'not_allowed')) return;
     operations.push(parsed.data);
   });
-  if (issues.length === 0 && !satisfiesEvidenceRule(operations.map((o) => o.op))) issues.push({ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en });
+  if (issues.length === 0 && !satisfiesEvidenceRule(operations.map(evidenceOf))) issues.push({ code: 'evidence_missing', message: EVIDENCE_MESSAGE.en });
   return { operations, issues };
 }

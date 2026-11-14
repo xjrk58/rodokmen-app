@@ -53,12 +53,12 @@ function before132(plan: Plan): void {
 
 /** The plan of the importer before #134: research notes held the note's body alone (none without one), and a Citation's note the path. */
 function before134(plan: Plan): void {
-  for (const u of plan.updates)
+  for (const u of plan.updates.filter((x) => x.topic === 'fields'))
     for (const p of plan.proposals) {
       const i = p.ops.findIndex((o) => o.key === u.freshKey);
       if (i < 0) continue;
-      const op = { ...p.ops[i]!.op, ...(u.field === 'notes' ? { notes: u.before } : { note: u.before }) };
-      p.ops = u.before === null ? p.ops.filter((_, j) => j !== i) : p.ops.map((o, j) => (j === i ? { ...o, op, value: JSON.stringify(op) } : o));
+      const op = { ...p.ops[i]!.op, ...u.before };
+      p.ops = u.before.notes === null ? p.ops.filter((_, j) => j !== i) : p.ops.map((o, j) => (j === i ? { ...o, op, value: JSON.stringify(op) } : o));
     }
 }
 
@@ -225,34 +225,36 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect([marie.living, marie.events.filter((e) => e.event.type === 'death')]).toEqual([true, []]);
   });
 
-  it('research notes that hold what the import wrote get the fields not mapped; those changed since, and Citation notes, are listed (#134)', async () => {
+  it('research notes and Citation notes that hold what the import wrote get the fields not mapped; those changed since are listed (#134, #157)', async () => {
     for (const run of [dry, second]) {
-      expect(run.run.updates.added).toBe(3);
-      expect(run.run.updates.notUpdated).toEqual([
-        { path: 'parishes/vrbice.md', lines: ['denomination: římskokatolická'], why: 'changed' },
-        { path: 'sources/n-vrbice-1801-f12.md', lines: ['Evidence class: A'], why: 'citation' },
-      ]);
+      expect(run.run.updates.fields.added).toBe(4);
+      expect(run.run.updates.fields.notUpdated).toEqual([{ path: 'parishes/vrbice.md', lines: ['denomination: římskokatolická'] }]);
     }
     expect(second.report).toContain('- parishes/vrbice.md: denomination: římskokatolická');
-    expect(second.report).toContain('- sources/n-vrbice-1801-f12.md: Evidence class: A');
-    // Each update is a Proposal of one operation, at the version the importer read.
+    expect(second.report).not.toContain('- sources/n-vrbice-1801-f12.md: Evidence class: A');
+    // Each update is a Proposal of one operation, at the version the importer read; a Citation's note needs no new Citation.
     const { items } = ProposalList.parse((await asOwner('GET', `/api/batches/${second.run.batch!.id}/proposals`)).json());
     const notes = items.filter((p) => p.note?.endsWith('(fields the Tree has no place for)'));
     expect(notes.map((p) => [p.note, p.operations.map((o) => o.operation.op)])).toEqual([
       ['Vault: places/kamenna-lhota.md (fields the Tree has no place for)', ['setNotes']],
+      ['Vault: sources/n-vrbice-1801-f12.md (fields the Tree has no place for)', ['setField']],
       ['Vault: people/jan-novak-1801.md (fields the Tree has no place for)', ['setNotes']],
       ['Vault: sources/rod-novaku.md (fields the Tree has no place for)', ['setNotes']],
     ]);
+    expect(notes[1]!.operations[0]!.operation).toMatchObject({
+      record: 'citation',
+      set: { note: 'Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12\nEvidence class: A' },
+    });
     // Accepted, the records are as a fresh import makes them (vault-import.test.ts).
     expect((await person('person:jan-novak-1801')).notes).toBe(`${JAN}\n\nFrom the Vault, not mapped:\n- occupation: sedlák`);
     expect((await place()).notes).toBe('From the Vault, not mapped:\n- district: Invented District\n- names.en: Stone Lhota');
     const source = SourceDetail.parse((await asOwner('GET', `/api/sources/${await recordOf('source:rod-novaku')}`)).json());
     expect(source.notes).toMatch(/\n\nFrom the Vault, not mapped:\n- Evidence class: C$/);
-    // The Owner's Parish notes and the register entry's Citation note stay as they are.
+    const citation = CitationDetail.parse((await asOwner('GET', `/api/citations/${await recordOf('citation:n-vrbice-1801-f12')}`)).json());
+    expect(citation.note).toBe('Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12\nEvidence class: A');
+    // The Owner's Parish notes stay as they are.
     const parish = ParishDetail.parse((await asOwner('GET', `/api/parishes/${await recordOf('parish:vrbice')}`)).json());
     expect(parish.notes).toMatch(/Ask the parish office\.$/);
-    const citation = CitationDetail.parse((await asOwner('GET', `/api/citations/${await recordOf('citation:n-vrbice-1801-f12')}`)).json());
-    expect(citation.note).toBe('Vault: sources/n-vrbice-1801-f12.md\nScan: https://archive.invalid/registers/123-4/12');
   });
 
   it('a lead an earlier run cut gets the whole note; one the Owner changed since is listed and left alone (#136)', async () => {

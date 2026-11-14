@@ -158,7 +158,11 @@ A record an earlier run wrote and a newer importer writes otherwise, such as a l
 
 #### Scenario: Research notes imported before the fields not mapped
 - **WHEN** an earlier import wrote a record's research notes without the fields the Tree has no place for, and the Owner runs the importer again
-- **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since, and the Citation notes of register entries, are listed in the report and stay as they are
+- **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since are listed in the report and stay as they are
+
+#### Scenario: Evidence class imported before
+- **WHEN** an earlier import wrote a register entry's Citation note with the note path only, the entry has `evidence: A`, and the Owner runs the importer again
+- **THEN** a Proposal of that one change, with no new Citation, adds `Evidence class: A` to the Citation's note if the note still holds exactly what that import wrote; otherwise the report lists it and the note stays as it is
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.

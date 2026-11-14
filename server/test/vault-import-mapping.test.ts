@@ -92,14 +92,15 @@ describe('mapping the fixture Vault', () => {
     expect(p.issues).toContainEqual({ kind: 'unmappedField', path: 'people/jan-novak-1801.md', detail: 'people.occupation' });
     expect(p.issues).toContainEqual({ kind: 'unmappedField', path: 'sources/n-vrbice-1801-f12.md', detail: 'sources.evidence' });
     // What an importer before #134 wrote instead, for a Tree imported then: the body alone, or nothing.
-    expect(p.updates.map((u) => [u.recordKey, u.field, u.before === null ? null : u.before.slice(0, 20), u.lines])).toEqual([
-      ['place:kamenna-lhota', 'notes', null, ['district: Invented District', 'names.en: Stone Lhota']],
-      ['parish:vrbice', 'notes', 'The invented parish ', ['denomination: římskokatolická']],
-      ['citation:n-vrbice-1801-f12', 'note', 'Vault: sources/n-vrb', ['Evidence class: A']],
-      ['person:jan-novak-1801', 'notes', 'Baptism found; the d', ['occupation: sedlák']],
-      ['source:rod-novaku', 'notes', '# Rod Nováků (invent', ['Evidence class: C']],
+    const start = (v: unknown) => (typeof v === 'string' ? v.slice(0, 20) : v);
+    expect(p.updates.map((u) => [u.recordKey, u.topic, Object.entries(u.before).map(([k, v]) => [k, start(v)]), u.lines])).toEqual([
+      ['place:kamenna-lhota', 'fields', [['notes', null]], ['district: Invented District', 'names.en: Stone Lhota']],
+      ['parish:vrbice', 'fields', [['notes', 'The invented parish ']], ['denomination: římskokatolická']],
+      ['citation:n-vrbice-1801-f12', 'fields', [['note', 'Vault: sources/n-vrb']], ['Evidence class: A']],
+      ['person:jan-novak-1801', 'fields', [['notes', 'Baptism found; the d']], ['occupation: sedlák']],
+      ['source:rod-novaku', 'fields', [['notes', '# Rod Nováků (invent']], ['Evidence class: C']],
     ]);
-    for (const u of p.updates) expect(op(u.freshKey)).toMatchObject(u.field === 'notes' ? { notes: u.after } : { note: u.after });
+    for (const u of p.updates) expect(op(u.freshKey)).toMatchObject(u.after);
   });
 
   describe('a marriage both spouses record without a Source note (#149)', () => {

@@ -84,20 +84,27 @@ export interface MergedMarriage {
 }
 
 /**
- * A value an importer before #134 wrote without the fields the Tree has no place for: research
- * notes (`notes`), or a register entry's Citation note (`note`). A fresh import writes `after` with
- * the operation `freshKey`; on a Tree imported before, a later run writes it only while the record
- * still holds `before` (run.ts), and records that under `key`.
+ * What a record an earlier importer wrote is waiting for: the fields the Tree has no place for, in
+ * research notes or a register entry's Citation note (#134, #157).
+ */
+export type UpdateTopic = 'fields';
+
+/**
+ * Values an earlier importer wrote otherwise than this one, by field: research notes (`notes`,
+ * written with setNotes), or fields of a record (written with setField), such as a register
+ * entry's Citation note (`note`). A fresh import writes `after` with the operation `freshKey`; on a
+ * Tree imported before, a later run writes it only while the record still holds `before`
+ * (run.ts), and records that under `key`.
  */
 export interface PlannedUpdate {
   key: string;
   recordKey: string;
   record: 'person' | 'place' | 'house' | 'parish' | 'source' | 'citation';
-  field: 'notes' | 'note';
-  before: string | null;
-  after: string;
+  topic: UpdateTopic;
+  before: Record<string, unknown>;
+  after: Record<string, unknown>;
   freshKey: string;
-  /** The note, and the lines `after` adds, for the report. */
+  /** The note, and what `after` adds, for the report. */
   path: string;
   lines: string[];
 }

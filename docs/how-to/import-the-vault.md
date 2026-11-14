@@ -107,9 +107,10 @@ out**.
 
 An import made before #134 left out the fields the Tree has no place for, such as a Person's occupation. The next run
 adds them below the research notes of each record whose notes still hold exactly what that import wrote, in a small
-Proposal per record. Notes you changed in the app since are left as they are, and the report lists their lines under
-**Fields not mapped, on records imported before #134**. It also lists the evidence classes of register entries,
-which belong in their Citation's note: no Proposal can change that without new evidence yet (#157).
+Proposal per record. It adds the evidence class of a register entry to its Citation's note the same way, if the note
+still holds what that import wrote; such a Proposal has no new Citation, as a Citation's note states no fact. Notes
+you changed since are left as they are, and the report lists their lines under **Fields not mapped, on records
+imported before #134**.
 
 An import made before #136 kept the first 4,000 characters of a long log or plan note in its Research lead. The
 next run gives such a lead the whole note, if the lead still holds exactly what that run wrote. A lead you changed

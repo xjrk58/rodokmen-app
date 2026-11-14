@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
-import { promisify } from 'node:util';
+import { isDeepStrictEqual, promisify } from 'node:util';
 import {
   baseTargetOf,
   BatchView,
@@ -19,7 +19,7 @@ import { z } from 'zod';
 import { ApiError, apiClient, loadMap, sha256, type Client } from './client.js';
 import { mapVault } from './mapper.js';
 import type { Municipality } from './map-places.js';
-import type { Plan, PlannedFile, PlannedLead } from './plan.js';
+import type { Plan, PlannedFile, PlannedLead, PlannedUpdate, UpdateTopic } from './plan.js';
 import { readVault, type Vault } from './reader.js';
 import { countsOf, reportMarkdown, type Counts, type RunSummary } from './report.js';
 import { imported, resolveProposal, type RunState } from './resolve.js';
@@ -114,6 +114,7 @@ const ROUTES: Record<string, string> = {
   parish: 'parishes',
   estate: 'estates',
   source: 'sources',
+  citation: 'citations',
 };
 const Versioned = z.object({ version: z.number().int() });
 
@@ -282,15 +283,28 @@ async function checkPresumed(r: Run): Promise<void> {
   }
 }
 
-const NotesOf = z.object({ version: z.number().int(), notes: z.string().nullable() });
+/** A record as the API returns it: its version, and the fields an update reads. */
+const Current = z.looseObject({ version: z.number().int() });
+
+/** What an update writes: research notes with setNotes, any other field with setField (only the fields it changes). */
+function updateOperation(u: PlannedUpdate, id: string, baseVersion: number): Record<string, unknown> {
+  if ('notes' in u.after) return { op: 'setNotes', record: u.record, id, baseVersion, notes: u.after.notes };
+  const set = Object.fromEntries(Object.entries(u.after).filter(([field, value]) => !isDeepStrictEqual(value, u.before[field])));
+  return { op: 'setField', record: u.record, id, baseVersion, set };
+}
+
+const UPDATE_NOTES: Record<UpdateTopic, string> = {
+  fields: 'fields the Tree has no place for',
+};
 
 /**
- * What an importer before #134 wrote without the fields the Tree has no place for (plan.updates).
- * A record this run creates, or a run since #134 created, has them already. Research notes that
- * still hold exactly what the earlier run wrote get them, each in a Proposal of its own with the
- * version read, so a change made after this run is a conflict for the Owner to resolve. Notes
- * changed in the app since are left alone and listed, and so are register entries' Citation notes:
- * a Proposal that changes a Citation's note needs new evidence, which the importer does not have.
+ * Records an earlier importer wrote otherwise than this one (plan.updates): research notes and
+ * register entries' Citation notes without the fields the Tree has no place for (#134, #157). A
+ * record this run creates, or a run since the fix created, is as this importer writes it already.
+ * A record that still holds exactly what the earlier run wrote is updated, each in a Proposal of
+ * its own with the version read, so a change made after this run is a conflict for the Owner to
+ * resolve. A record changed in the app since is left alone and listed. A Citation's note alone
+ * needs no new evidence (proposals spec, "Evidence is required").
  */
 async function updates(r: Run): Promise<void> {
   const planned = new Map(r.plan.proposals.flatMap((p) => p.ops.map((o) => [o.key, o.value] as const)));
@@ -305,17 +319,15 @@ async function updates(r: Run): Promise<void> {
       r.summary.deferred.push({ key: u.key, reason: `${u.recordKey} waits for an earlier Import batch to be accepted` });
       continue;
     }
-    if (u.record === 'citation') {
-      r.summary.updates.notUpdated.push({ path: u.path, lines: u.lines, why: 'citation' });
+    const current = Current.parse(await r.client.get(`/api/${ROUTES[u.record]}/${before.recordId}`));
+    const now = Object.fromEntries(Object.keys(u.after).map((field) => [field, current[field] ?? null]));
+    if (isDeepStrictEqual(now, u.after)) continue;
+    const summary = r.summary.updates[u.topic];
+    if (!isDeepStrictEqual(now, u.before)) {
+      summary.notUpdated.push({ path: u.path, lines: u.lines });
       continue;
     }
-    const current = NotesOf.parse(await r.client.get(`/api/${ROUTES[u.record]}/${before.recordId}`));
-    if (current.notes === u.after) continue;
-    if (current.notes !== u.before) {
-      r.summary.updates.notUpdated.push({ path: u.path, lines: u.lines, why: 'changed' });
-      continue;
-    }
-    r.summary.updates.added++;
+    summary.added++;
     if (r.options.dryRun) {
       r.summary.submitted++;
       continue;
@@ -325,12 +337,13 @@ async function updates(r: Run): Promise<void> {
       await r.client.send('POST', `/api/batches/${b.id}/proposals`, {
         formatVersion: OPERATIONS_VERSION,
         idempotencyKey: `vault-${b.id.slice(-12)}-u${index}`,
-        note: `Vault: ${u.path} (fields the Tree has no place for)`,
-        operations: [{ op: 'setNotes', record: u.record, id: before.recordId, baseVersion: current.version, notes: u.after }],
+        note: `Vault: ${u.path} (${UPDATE_NOTES[u.topic]})`,
+        operations: [updateOperation(u, before.recordId, current.version)],
       }),
     );
     r.summary.submitted++;
-    await record(r, [{ key: u.key, kind: 'notes', noteHash: sha256(Buffer.from(u.after)), batchId: b.id, proposalId: view.id, tempId: null, recordId: null }]);
+    const hash = sha256(Buffer.from(JSON.stringify(u.after)));
+    await record(r, [{ key: u.key, kind: u.topic, noteHash: hash, batchId: b.id, proposalId: view.id, tempId: null, recordId: null }]);
   }
 }
 
@@ -395,7 +408,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     leads: { created: 0, waiting: 0, unchanged: 0, updated: 0, notUpdated: [] },
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
-    updates: { added: 0, notUpdated: [] },
+    updates: { fields: { added: 0, notUpdated: [] } },
     presumedLeftOut: [],
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.
