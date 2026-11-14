@@ -43,8 +43,8 @@ The Owner answered every point of design.md, "Open Questions", as planned and ga
 
 ## 6. MCP
 
-- [ ] 6.1 Add the tool `get_kinship` to `server/mcp/src/server.ts` (`fromPersonId`, `toPersonId`, passing the route's JSON through, one read request) and say in the server's instructions that both Persons must be named. Verify in `server/mcp/test/tools.test.ts`: "How two Persons are related", "Same answer as the app" and "App and assistant agree" (the tool's answer equals the route's), and that the rate limit counts it.
-- [ ] 6.2 Docs, reference: `get_kinship` in `docs/reference/mcp-tools.md`. Verify with `pnpm lint:docs`.
+- [x] 6.1 Add the tool `get_kinship` to `server/mcp/src/server.ts` (`fromPersonId`, `toPersonId`, passing the route's JSON through, one read request) and say in the server's instructions that both Persons must be named. Verify in `server/mcp/test/tools.test.ts`: "How two Persons are related", "Same answer as the app" and "App and assistant agree" (the tool's answer equals the route's), and that the rate limit counts it. **Done:** server/mcp/test/tools.test.ts: How two Persons are related, Same answer as the app (the tool's answer equals the route's), one read request counted in agent_rate_window, and both Persons required.
+- [x] 6.2 Docs, reference: `get_kinship` in `docs/reference/mcp-tools.md`. Verify with `pnpm lint:docs`. **Done:** pnpm lint:docs passes.
 
 ## 7. The app
 

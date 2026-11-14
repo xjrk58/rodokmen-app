@@ -33,6 +33,7 @@ const INSTRUCTIONS = `Rodokmen is a private family tree of the Czech lands. You 
 A Proposal bundles everything one finding changes (for example a baptism entry: the child, the Event, the Roles, and the Citation of the register page), and needs at least one Citation as evidence. Editors review every Proposal; it changes the Tree only when accepted.
 Search before you propose, and refer to existing Persons, Places and Sources by id instead of creating duplicates. Dates are EDTF (1801-03-12, 1801~, 1801/1803). A Name has a type (birth, married, nickname or other) and, apart, the language it is written in as a BCP 47 tag (cs, la, de, pl …), or null when not known: a Latin form from a register is type other with language la.
 Research leads are the family's plans: a question, where to look and what came of it. They state no fact, so you write them directly, without review. Before searching a register, list the leads of the Person or Place: a search record shows what was already looked at. Record every search you make, including one that found nothing; a lead closes as not found only with a search record. A Proposal may name the leads it answers (answersLeads): accepting it marks them found.
+To say how two Persons are related, get_kinship works it out from the Family links; you have no own Person, so name both.
 Your Agent is limited to 60 Proposals and 1,000 other requests per hour; a refused request says when to try again.
 When the Owner has switched scan reading on, read_scan has the server read register scans (sent to Anthropic's API) into entries; check them, choose for every read person an existing Person or "new", and propose_reading submits them, marked "read by AI".`;
 
@@ -180,6 +181,21 @@ export function createRodokmenServer(api: Api): McpServer {
       annotations: readOnly,
     },
     async ({ personId, generations }) => call(() => api.get(`/api/persons/${personId}/descendants`, { generations })),
+  );
+
+  server.registerTool(
+    'get_kinship',
+    {
+      title: 'How two Persons are related',
+      description:
+        'How the second Person is related to the first, worked out from the Family links by fixed rules: every path between them, the closest first, each with its common ancestors, every Person on the way, the line and degree as the Czech civil code counts them, whether it is half, through adoption or only possible (a link without a confirming Citation), and the kinship term in Czech and English. Name both Persons.',
+      inputSchema: z.object({
+        fromPersonId: Id.describe('The Person the kinship is relative to'),
+        toPersonId: Id.describe('The Person whose kinship to the first you want'),
+      }),
+      annotations: readOnly,
+    },
+    async ({ fromPersonId, toPersonId }) => call(() => api.get(`/api/persons/${toPersonId}/kinship`, { from: fromPersonId })),
   );
 
   server.registerTool(
