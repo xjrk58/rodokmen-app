@@ -163,7 +163,7 @@ test('"One A3 page" and "Split into pages": the same pages every run, branches m
   assert.equal(one.length, 1);
   assert.ok(one[0].scale >= MIN_SCALE);
   // A family of 60 Persons in 4 generations on A3 landscape: the spec's "One A3 page" asks for one
-  // page; this layout still needs 3 (a follow-up issue makes the tree form more compact).
+  // page; this layout still needs 3 (#178 makes the tree form more compact).
   const sixty = generatedChart(7, { generations: 4, most: 5 });
   assert.equal(sixty.persons.length, 60);
   assert.equal(sixty.shown, 4);

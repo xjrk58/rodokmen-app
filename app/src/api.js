@@ -198,6 +198,12 @@ export const setDisabled = (id, disabled) => api(`members/${encodeURIComponent(i
 /** @param {string} id @param {string | null} personId @returns {Promise<import('./types.js').MemberView>} */
 export const linkPerson = (id, personId) => api(`members/${encodeURIComponent(id)}/person`, { method: 'PUT', body: { personId } });
 
+/** Gives a Member a new address, which takes effect once the link sent to it is confirmed. @param {string} id @param {string} email @returns {Promise<import('./types.js').MemberView>} */
+export const changeMemberEmail = (id, email) => api(`members/${encodeURIComponent(id)}/email-change`, { method: 'POST', body: { email } });
+
+/** Withdraws a new address waiting for confirmation. @param {string} id @returns {Promise<null>} */
+export const withdrawEmailChange = (id) => api(`members/${encodeURIComponent(id)}/email-change`, { method: 'DELETE' });
+
 // ---------------------------------------------------------------- the Owner's Agents
 
 /** Every Agent with its tokens (by prefix) and this hour's use of its limits. @param {AbortSignal} [signal] @returns {Promise<import('./types.js').AgentList>} */
@@ -247,6 +253,9 @@ export const requestEmailLink = (email) => api('auth/email-link', { method: 'POS
 
 /** @param {string} token @returns {Promise<import('./types.js').SignedIn>} */
 export const verifyEmailLink = (token) => api('auth/email-link/verify', { method: 'POST', body: { token } });
+
+/** Confirms a new address with the token from its link; signs nobody in. @param {string} token @returns {Promise<import('./types.js').EmailChangeConfirmed>} */
+export const confirmEmailChange = (token) => api('auth/email-change/confirm', { method: 'POST', body: { token } });
 
 /** @param {string} q @returns {Promise<PersonSearchResult>} */
 export const searchPersons = (q) => api(`persons?q=${encodeURIComponent(q)}&limit=8`);

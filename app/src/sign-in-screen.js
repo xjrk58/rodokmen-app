@@ -9,14 +9,18 @@
 // up"). The page shows the invited address before accepting, since a link that came through a
 // chat does not prove the relative reads it (family-view spec, "The invited address on the
 // invitation page").
+//
+// The link that confirms a new address the Owner gave a Member (#address/<token>) opens here too:
+// opening it changes nothing, and only the button confirms it (family-view spec, "The address
+// confirmation page"). Confirming signs nobody in.
 
-import { acceptInvitation, ApiError, checkInvitation, messageOf, requestEmailLink, verifyEmailLink } from './api.js';
+import { acceptInvitation, ApiError, checkInvitation, confirmEmailChange, messageOf, requestEmailLink, verifyEmailLink } from './api.js';
 import { language, setLanguage, storedLanguage, t } from './i18n.js';
 import { html, useEffect, useState } from './ui.js';
 import { passkeysSupported, registerPasskey, signInWithPasskey } from './webauthn.js';
 
 /** @typedef {import('./types.js').Me} Me */
-/** @typedef {{ onSignedIn: (me: Me) => Promise<void>, go: (hash: string) => void }} Shell */
+/** @typedef {{ onSignedIn: (me: Me) => Promise<void>, go: (hash: string) => void, me: Me | null, refreshMe: () => Promise<void> }} Shell */
 
 const AFTER_KEY = 'rodokmen.afterSignIn';
 
@@ -180,6 +184,46 @@ function EmailLink({ token, shell }) {
   </div>`;
 }
 
+/**
+ * Confirms a new address with the token from its link. 410 (used, expired, withdrawn or replaced)
+ * and 409 (another Member's by now) get texts in the reader's language.
+ * @param {{ token: string, shell: Shell }} props
+ */
+function AddressConfirmation({ token, shell }) {
+  const [status, setStatus] = useState({ text: '', error: false });
+  const [email, setEmail] = useState(/** @type {string | null} */ (null));
+  const [busy, setBusy] = useState(false);
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      const result = await confirmEmailChange(token);
+      setEmail(result.email);
+      // A Member signed in on this device sees their new address in Settings.
+      if (shell.me) await shell.refreshMe().catch(() => undefined);
+    } catch (error) {
+      const text =
+        error instanceof ApiError && error.status === 410
+          ? t('address.invalid')
+          : error instanceof ApiError && error.status === 409
+            ? t('address.taken')
+            : failure(error);
+      setStatus({ text, error: true });
+      setBusy(false);
+    }
+  };
+  if (email !== null) {
+    return html`<div data-testid="address-confirmed">
+      <${Status} text=${t('address.done', { email })} />
+      <button type="button" class="button primary" data-testid="address-open" onClick=${() => shell.go('')}>${t('address.open')}</button>
+    </div>`;
+  }
+  return html`<div>
+    <p class="muted">${t('address.text')}</p>
+    <button type="button" class="button primary" data-testid="address-confirm" disabled=${busy} onClick=${() => void confirm()}>${t('address.confirm')}</button>
+    ${status.text ? html`<${Status} text=${status.text} error=${status.error} />` : null}
+  </div>`;
+}
+
 /** @param {{ shell: Shell, then: string | null }} props then: where to go once signed in, null to stay */
 function SignInChoices({ shell, then }) {
   const [status, setStatus] = useState({ text: '', error: false });
@@ -224,18 +268,19 @@ function SignInChoices({ shell, then }) {
 }
 
 /**
- * @param {{ mode: 'sign-in' | 'required' | 'invite' | 'link', token?: string, shell: Shell }} props
+ * @param {{ mode: 'sign-in' | 'required' | 'invite' | 'link' | 'address', token?: string, shell: Shell }} props
  */
 export function SignInScreen({ mode, token, shell }) {
   // The token is read once from the address and kept only here.
   useEffect(() => {
-    if ((mode === 'invite' || mode === 'link') && token) history.replaceState(null, '', `${location.pathname}${location.search}#${mode}`);
+    if ((mode === 'invite' || mode === 'link' || mode === 'address') && token) history.replaceState(null, '', `${location.pathname}${location.search}#${mode}`);
     if (mode === 'required') rememberAfterSignIn(location.hash);
   }, [mode, token]);
-  const title = mode === 'invite' ? t('signIn.inviteTitle') : t('signIn.title');
+  const title = mode === 'invite' ? t('signIn.inviteTitle') : mode === 'address' ? t('address.title') : t('signIn.title');
   let body;
   if (mode === 'invite' && token) body = html`<${Invitation} token=${token} shell=${shell} />`;
   else if (mode === 'link' && token) body = html`<${EmailLink} token=${token} shell=${shell} />`;
+  else if (mode === 'address' && token) body = html`<${AddressConfirmation} token=${token} shell=${shell} />`;
   else
     body = html`${mode === 'required' ? html`<p class="muted" data-testid="sign-in-required">${t('signIn.required')}</p>` : null}<${SignInChoices}
         shell=${shell}

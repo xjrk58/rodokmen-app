@@ -239,8 +239,9 @@ export class Shell {
         refreshMe=${() => this.refreshMe()}
       />`;
     else if (screen === 'sign-in' || screen === 'required') content = html`<${SignInScreen} mode=${screen} shell=${this} />`;
-    else if ((screen === 'invite' || screen === 'link') && (route.screen === 'invite' || route.screen === 'link'))
-      content = html`<${SignInScreen} key=${route.token} mode=${screen} token=${route.token} shell=${this} />`;
+    // The links with a token: an invitation, an emailed sign-in link, a new address to confirm.
+    else if ('token' in route && screen === route.screen)
+      content = html`<${SignInScreen} key=${route.token} mode=${route.screen} token=${route.token} shell=${this} />`;
     mount(
       html`${content ? html`<main class="screen" data-testid="screen" data-screen=${screen}>${this.offline ? html`<p class="offline-note" role="status">${t('family.offlineMode')}</p>` : null}${content}</main>` : null}
       ${me ? html`<${TabBar} route=${route} me=${me} />` : null}`,

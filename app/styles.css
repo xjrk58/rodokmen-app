@@ -1639,6 +1639,23 @@ body.signed-in .screen {
   display: grid;
   gap: 8px;
 }
+/* A Member's new address: the form, and the address waiting for confirmation */
+.member-pending-email {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.member-email-form {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+.member-email-form p {
+  margin: 0;
+}
 /* The Owner's Agents: each with its tokens; a new token shown once; revoking asked in the page */
 .agent h4,
 .token-once h4 {

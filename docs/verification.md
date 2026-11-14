@@ -35,6 +35,7 @@ this page with `node scripts/verification-trace.mjs`.
 | exports: Living people are reduced in every Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportedPersonLinks` | shared/src/leads.ts | nothing beyond the trusted base |
 | exports: No images in any Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportLinks` | shared/src/export.ts | nothing beyond the trusted base |
 | exports: No images in any Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportRecord` | shared/src/export.ts | nothing beyond the trusted base |
+| member-accounts: The Owner corrects a Member's address | openspec/changes/add-address-correction/specs/member-accounts/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | research-leads: Findings link back to leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `leadsOnAccept` | shared/src/leads.ts | nothing beyond the trusted base |
@@ -322,6 +323,13 @@ Where a proof covers less than its requirement, exactly what it does and does no
   Tree in server/test/reading-proposals.test.ts); that a new Person is created only when the Member chooses so (the
   app's check screen and the Agent's builder, shared/src/reading-proposal.ts, which refuses a read person without a
   choice).
+- **Correcting a Member's address** (`mayDo`, shared/src/rules.ts; member-accounts "The Owner corrects a Member's
+  address"). Proved: only the Owner may `manageAccounts`, the action of the routes that ask for, and withdraw, a change
+  of a Member's address; an Editor, a Contributor and an Agent are refused it ("An Editor tries to change an address").
+  Not proved: that those routes name `manageAccounts` and that the server asks `mayDo` before them (tested in
+  server/test/email-change.test.ts and, for every route, server/test/agents.test.ts); that the new address takes effect
+  only once the link sent to it is confirmed, that the link works once for 7 days, and what is refused
+  (server/src/auth/accounts.ts, tested in server/test/email-change.test.ts).
 
 ## Trusted base
 

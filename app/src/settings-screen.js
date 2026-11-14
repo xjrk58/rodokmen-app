@@ -1,7 +1,8 @@
 // Settings (family-view spec, "Owner settings in the app"): every Member's own language,
 // passkeys and sessions, and sign-out; for the Owner also the Family roots, the family
 // (invitations, with a new one's WhatsApp message in src/settings-invitation.js, roles,
-// disabling and enabling Members, and the link from each Member to their Person), the Agents
+// disabling and enabling Members, correcting their addresses in src/settings-email-change.js,
+// and the link from each Member to their Person), the Agents
 // (src/settings-agents.js) and scan reading (src/settings-scan-reading.js).
 // Other Members see nothing about anyone else.
 
@@ -9,6 +10,7 @@ import * as API from './api.js';
 import { LANGUAGES, language, t } from './i18n.js';
 import { formatTime, PersonLine, useDebounced } from './screen-parts.js';
 import { AgentsSection } from './settings-agents.js';
+import { MemberEmail } from './settings-email-change.js';
 import { InvitationShare } from './settings-invitation.js';
 import { ScanReadingSection } from './settings-scan-reading.js';
 import { Status, useAction, useLoad } from './settings-parts.js';
@@ -171,6 +173,7 @@ function MemberRow({ member, me, onChange }) {
       <strong>${member.displayName}</strong> <span class="muted small">${member.email}</span>
       ${member.disabled ? html`<span class="chip status-rejected">${t('settings.disabled')}</span>` : null}
     </div>
+    <${MemberEmail} member=${member} onChange=${onChange} />
     <div class="member-controls">
       <label class="small"
         >${t('settings.role')}

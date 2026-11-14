@@ -212,4 +212,11 @@ export const SCOPES = [
   Tree in server/test/reading-proposals.test.ts); that a new Person is created only when the Member chooses so (the
   app's check screen and the Agent's builder, shared/src/reading-proposal.ts, which refuses a read person without a
   choice).`,
+  `**Correcting a Member's address** (\`mayDo\`, shared/src/rules.ts; member-accounts "The Owner corrects a Member's
+  address"). Proved: only the Owner may \`manageAccounts\`, the action of the routes that ask for, and withdraw, a change
+  of a Member's address; an Editor, a Contributor and an Agent are refused it ("An Editor tries to change an address").
+  Not proved: that those routes name \`manageAccounts\` and that the server asks \`mayDo\` before them (tested in
+  server/test/email-change.test.ts and, for every route, server/test/agents.test.ts); that the new address takes effect
+  only once the link sent to it is confirmed, that the link works once for 7 days, and what is refused
+  (server/src/auth/accounts.ts, tested in server/test/email-change.test.ts).`,
 ];

@@ -176,7 +176,7 @@ describe('Charts in the app (Chromium, phone and desktop, fixture Tree)', () => 
 
       it('"One A3 page" and "Split into pages": print to PDF', async () => {
         // A family of 4 generations: Antonín's, who adopted Marie. (The spec's family of 60 Persons
-        // still takes 3 A3 pages: see app/tests/unit/chart-layout.test.mjs and the follow-up issue.)
+        // still takes 3 A3 pages: see app/tests/unit/chart-layout.test.mjs and #178.)
         const small = (
           await server.app.inject({
             method: 'GET',
