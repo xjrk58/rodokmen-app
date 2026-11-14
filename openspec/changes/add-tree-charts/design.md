@@ -180,6 +180,20 @@ Each rule is a pure function, proved with `lsc check` and naming its requirement
 - **Succession** (`succession`, `shared/src/house-chart.ts`; tree-charts "Succession in a House chart"). Proved: a link is son, daughter or child exactly when a partner is a child of the earlier row's Family; married in exactly when the other partner is a child of no earlier row; remarriage exactly when the rows share a partner; and otherwise none. The output has no holder field at all.
 - **Reduction on a Sheet** (`sheetPerson`, `shared/src/sheet-reduction.ts`; tree-charts "Living people on a Sheet", and exports "Living people are reduced in every Export" once that change calls it). Proved: for a Person the predicate reduces, the output holds only name (none when nameless), sex, relationships and birth year, with no exact date, Place, House, Source or image. For any other Person it is unchanged.
 
+### Implementation notes
+
+Where the build differs from the plan above, and why:
+
+- **Files.** The Chart model's shell is split for the 400-line limit: `shared/src/chart-row-types.ts` (the gathered rows), `chart-rows.ts` (cards, marriages, order keys, Sources), `charts-model.ts` (the Descendant chart) and `house-chart-model.ts` (the House chart). `sheetPerson()` is in `shared/src/export.ts`, beside the Export view it calls.
+- **The template** is written as `h` calls, not an htm template, so that one function draws with Preact's `h` on screen and with `app/src/svg-string.js` for files.
+- **Columns.** In the tree form, a Family whose children have none drawn below them hangs those children in a column under the couple instead of side by side. Without it the fixture's Descendant chart of Jan Novák (54 Persons in 4 generations) was 1.13 m wide at full size; with it, 0.89 m. It still needs several A3 pages at 7 points, because its second generation has ten children with partners beside them; a more compact tree form (partners under the descendant, or couple cards) is a follow-up issue. A family of about 60 Persons with fewer children per couple fits one A3 page, as the spec's scenario says, and the browser test prints such a family on one page.
+- **Pages** split by branch can be many: a Chart at the 500-card limit takes about 18 A3 pages. Packing several small branches on one page is part of the same follow-up.
+- **Fonts** are vendored one folder per package, each with the package's `LICENSE` (the OFL text) and `VERSION`, as the other vendored libraries; 270 KB in all. `⚭` is in neither font, so every symbol is a path.
+- **Golden SVG files** hold the fonts' rules as a mark, and a download is compared with the golden file after the mark is replaced by the rules of the vendored files: the files stay readable in a diff, and the comparison is still byte for byte. The fixture Tree's Charts are compared between the phone and the desktop download instead of with a committed file, because the fixture's generated names would put names the Vault guard refuses into the repo.
+- **Queries**: a Chart is gathered in at most 24 queries, whatever its size.
+- **A Sheet asked for early**: Print or a download before the Sheet's variant has loaded waits for it and then runs.
+- **Slovak and German** labels wait for `add-interface-languages` (#113), which has not landed.
+
 ## Risks / Trade-offs
 
 - [The layout is not proved] → The rules that decide what a Chart says are proved on the server. The layout has golden files and invariant tests (no overlaps, order kept, everything drawn once).
