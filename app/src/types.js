@@ -102,6 +102,7 @@
 /** @typedef {{ items: import('../../shared/src/schemas/accounts.js').SessionView[] }} SessionList */
 /** @typedef {{ items: { id: string, name: string, createdAt: string, lastUsedAt: string | null, backedUp: boolean }[] }} PasskeyList */
 /** @typedef {import('../../shared/src/schemas/accounts.js').InvitationCheck} InvitationCheck */
+/** @typedef {import('../../shared/src/schemas/accounts.js').EmailChangeConfirmed} EmailChangeConfirmed */
 /** @typedef {{ ok: true, member: Me }} SignedIn */
 /** @typedef {import('../../shared/src/schemas/accounts.js').AgentView} AgentView */
 /** @typedef {import('../../shared/src/schemas/accounts.js').AgentTokenView} AgentTokenView */

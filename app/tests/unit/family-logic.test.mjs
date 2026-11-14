@@ -23,9 +23,12 @@ test('addresses: the tree focus is #person-<id>, and every screen has its own', 
   assert.deepEqual(parseRoute('#sign-in'), { screen: 'sign-in' });
   assert.deepEqual(parseRoute('#invite/abcdefghijklmnopqrstuvwxyz_-0123'), { screen: 'invite', token: 'abcdefghijklmnopqrstuvwxyz_-0123' });
   assert.deepEqual(parseRoute('#link/abcdefghijklmnopqrstuvwxyz_-0123'), { screen: 'link', token: 'abcdefghijklmnopqrstuvwxyz_-0123' });
+  // The link that confirms a new address (family-view spec, "The address confirmation page"): it opens without signing in.
+  assert.deepEqual(parseRoute('#address/abcdefghijklmnopqrstuvwxyz_-0123'), { screen: 'address', token: 'abcdefghijklmnopqrstuvwxyz_-0123' });
+  assert.equal(needsMember(parseRoute('#address/abcdefghijklmnopqrstuvwxyz_-0123')), false);
   assert.deepEqual(parseRoute('#work/review/x'), { screen: 'work', view: 'review' });
   assert.deepEqual(parseRoute('#work'), { screen: 'work', view: 'propose' });
-  for (const odd of ['#person-123', '#people/x', '#invite/short', '#elsewhere']) assert.deepEqual(parseRoute(odd), { screen: 'home' }, odd);
+  for (const odd of ['#person-123', '#people/x', '#invite/short', '#address/short', '#elsewhere']) assert.deepEqual(parseRoute(odd), { screen: 'home' }, odd);
 });
 
 test('addresses of Research leads: the list, at a Place, one lead, and writing one about a Person or a Place', () => {

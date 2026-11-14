@@ -58,7 +58,8 @@ function isOwnerAction(action: string): boolean {
  *   "Gap finder suggests leads": until a Member accepts or dismisses it);
  * - `review`: see the review queue; `accept`, `reject`, `merge`, `undo`; `directEdit`: change the Tree at once;
  * - `ownAccount`: your own sessions, passkeys and email settings;
- * - `manageAccounts`: Members, invitations, roles, Agents and their tokens;
+ * - `manageAccounts`: Members and their addresses (member-accounts spec, "The Owner corrects a
+ *   Member's address"), invitations, roles, Agents and their tokens;
  * - `markFamilyRoots`: mark and unmark Family roots (tree-model spec, "Family roots");
  * - `acceptBatch`: accept a whole Import batch at once (review spec, "Accept a whole Import batch");
  * - `manageSettings`: the Tree's settings, such as the switch and daily limit of scan reading
@@ -84,6 +85,7 @@ export function mayDo(role: string, action: string): boolean {
   //@ contract scan-reading: The Owner switches it on
   //@ contract erasure: Owner erases a Living person
   //@ contract exports: GEDCOM download for the Owner
+  //@ contract member-accounts: The Owner corrects a Member's address
   // An Agent token allows reading the Tree, submitting Proposals, and writing Research leads and their search records ...
   //@ ensures role === 'agent' && action === 'read' ==> \result
   //@ ensures role === 'agent' && action === 'propose' ==> \result
@@ -117,6 +119,12 @@ export function mayDo(role: string, action: string): boolean {
   //@ ensures action === 'accept' || action === 'reject' || action === 'merge' || action === 'undo' ==> \result === mayDecide(role)
   // Only the Owner manages accounts; a role or action not listed is refused.
   //@ ensures action === 'manageAccounts' ==> \result === (role === 'owner')
+  // Scenario "An Editor tries to change an address": correcting a Member's address is managing
+  // accounts (member-accounts spec, "The Owner corrects a Member's address"); Editors,
+  // Contributors and Agents are refused it, and the Owner may.
+  //@ ensures role === 'editor' && action === 'manageAccounts' ==> !\result
+  //@ ensures role === 'contributor' && action === 'manageAccounts' ==> !\result
+  //@ ensures role === 'owner' && action === 'manageAccounts' ==> \result
   // Only the Owner marks Family roots (tree-model spec, "Family roots").
   //@ ensures action === 'markFamilyRoots' ==> \result === (role === 'owner')
   // Scenario "Editor cannot accept a batch": only the Owner accepts a whole Import batch; an Editor accepts its Proposals one by one.

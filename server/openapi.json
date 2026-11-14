@@ -3708,6 +3708,13 @@
               }
             ],
             "description": "The Person who is this Member in the Tree, when the Owner has linked one"
+          },
+          "pendingEmail": {
+            "description": "A new address the Owner gave this Member, waiting until the link sent to it is confirmed; until then sign-in links go to `email`. Null when none waits",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -3720,7 +3727,8 @@
           "disabled",
           "createdAt",
           "lastSeenAt",
-          "person"
+          "person",
+          "pendingEmail"
         ]
       },
       "MemberListInput": {
@@ -4079,6 +4087,38 @@
           "token",
           "displayName",
           "language"
+        ]
+      },
+      "EmailChangeBodyInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+            "description": "The new address. It takes effect once the link sent to it is confirmed"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "EmailChangeConfirmedInput": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "email": {
+            "type": "string",
+            "description": "The address now in effect, where sign-in links go"
+          }
+        },
+        "required": [
+          "ok",
+          "email"
         ]
       },
       "EmailLinkRequestBodyInput": {
@@ -13617,6 +13657,13 @@
               }
             ],
             "description": "The Person who is this Member in the Tree, when the Owner has linked one"
+          },
+          "pendingEmail": {
+            "description": "A new address the Owner gave this Member, waiting until the link sent to it is confirmed; until then sign-in links go to `email`. Null when none waits",
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -13629,7 +13676,8 @@
           "disabled",
           "createdAt",
           "lastSeenAt",
-          "person"
+          "person",
+          "pendingEmail"
         ],
         "additionalProperties": false
       },
@@ -14001,6 +14049,40 @@
           "token",
           "displayName",
           "language"
+        ],
+        "additionalProperties": false
+      },
+      "EmailChangeBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+            "description": "The new address. It takes effect once the link sent to it is confirmed"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
+      "EmailChangeConfirmed": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "email": {
+            "type": "string",
+            "description": "The address now in effect, where sign-in links go"
+          }
+        },
+        "required": [
+          "ok",
+          "email"
         ],
         "additionalProperties": false
       },
@@ -25516,6 +25598,147 @@
         }
       }
     },
+    "/api/members/{id}/email-change": {
+      "post": {
+        "summary": "Give a Member a new address (Owner only). It takes effect once the link emailed to it, valid once for 7 days, is confirmed; until then sign-in links go to the old one. Asking again replaces a change that waits",
+        "tags": [
+          "Members"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Withdraw a Member's new address that waits for confirmation (Owner only): its link stops working",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/invitations": {
       "get": {
         "summary": "Invitations, newest first (Owner only)",
@@ -26283,6 +26506,67 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/email-change/confirm": {
+      "post": {
+        "summary": "Confirm a Member's new address with the token from the emailed link. It does not sign in",
+        "tags": [
+          "Sign-in"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeConfirmed"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

@@ -1,6 +1,6 @@
 // add-family-view task 1.2 (family-view spec, "Sign-in in the app") and add-whatsapp-invitations
 // task 2.2 (family-view spec, "The invited address on the invitation page"), against the mocked
-// API at both viewports. Registering and using a real passkey with a virtual authenticator is in
+// API at both viewports. The page that confirms a new address is in family-address.spec.js. Registering and using a real passkey with a virtual authenticator is in
 // server/test/passkeys.e2e.test.ts, against the real server.
 import { member, mockFamilyApi } from './family-api.js';
 import { P } from './family-data.js';

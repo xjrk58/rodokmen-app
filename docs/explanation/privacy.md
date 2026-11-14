@@ -28,6 +28,14 @@ Anyone who holds the link can accept it, and a chat message is easier to forward
 
 The Owner does not have to open Settings to see a new Member: every accepted invitation sends the Owner an email with the name the new Member chose and the address the invitation went to. That shortens the time a wrong person could look around unnoticed. The email is sent only after the acceptance is stored, and a failure to send it does not undo the acceptance: it is a notice about the acceptance, so it must not decide it. There is no switch to turn it off, because it is rare, one per new Member, and turning it off would bring the risk back.
 
+## A Member's address
+
+Whoever reads a Member's mailbox can ask for a sign-in link and become that Member, so the address is as sensitive as a password. That is why only the Owner can change it, and why a new address does nothing until someone confirms the link Rodokmen sends there. A typo in the correction then cannot hand the account to a stranger: the stranger would have to press a button on an email that names someone else and says to ignore it. Until the link is confirmed, the old address keeps working and the Owner can withdraw the change. Confirming does not sign anyone in. It proves the mailbox, which is all the change needs, and a link valid for 7 days should not double as a sign-in link.
+
+When the new address takes effect, the sign-in links already sent to the old one stop working, since the old mailbox may be the stranger's. Sessions and passkeys stay, because correcting an address is for a Member whose account is theirs but whose address is wrong. If someone else got into the account, the remedy is to disable the Member: correcting the address would leave that person's sessions and passkeys in place.
+
+The old address is told that Rodokmen no longer uses it, so that a Member whose address was changed without their knowing finds out. The notice names neither the Member nor the new address, because the old mailbox may belong to a stranger who was never meant to learn either.
+
 ## Living people
 
 A Person counts as Living when they were born within the last 100 years with no recorded death, or when neither birth nor death is recorded. Rodokmen computes this from the Events and never lets it be set by hand: a flag someone must remember to tick is a flag someone forgets. The rule errs on the side of caution, since a Person with no dates at all is treated as Living. It is one of the proved rules.

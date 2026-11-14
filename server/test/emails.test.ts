@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addressChangedEmail,
+  addressConfirmEmail,
   alertEmail,
   digestEmail,
   invitationAcceptedEmail,
@@ -179,5 +181,48 @@ describe('Proposal emails in Czech and English', () => {
     });
     expect(e.subject).toBe('Your Proposal was accepted');
     expect(e.text).not.toContain('Note:');
+  });
+});
+
+// member-accounts spec, "The Owner corrects a Member's address" and "After an address is corrected".
+describe("emails about a Member's new address in Czech and English", () => {
+  const confirmLink = 'https://rodokmen.example/#address/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq';
+  const confirm = (language: 'cs' | 'en', displayName = 'Marta Invented') =>
+    addressConfirmEmail({ to: 'marta.new@example.test', language, displayName, ownerName: 'Petr Dvořák', link: confirmLink, days: 7 });
+
+  for (const language of ['cs', 'en'] as const) {
+    it(`renders the confirmation of a new address in ${language}`, async () => {
+      const email = confirm(language);
+      await expect(`Subject: ${email.subject}\n\n${email.text}`).toMatchFileSnapshot(`__snapshots__/emails/address-confirm.${language}.txt`);
+      await expect(email.html).toMatchFileSnapshot(`__snapshots__/emails/address-confirm.${language}.html`);
+    });
+
+    it(`renders the notice to the old address in ${language}`, async () => {
+      const email = addressChangedEmail({ to: 'marta.old@example.test', language, ownerName: 'Petr Dvořák' });
+      await expect(`Subject: ${email.subject}\n\n${email.text}`).toMatchFileSnapshot(`__snapshots__/emails/address-changed.${language}.txt`);
+      await expect(email.html).toMatchFileSnapshot(`__snapshots__/emails/address-changed.${language}.html`);
+    });
+  }
+
+  it('the confirmation names the Member, the Owner, the link and its limits, and escapes names in HTML', () => {
+    for (const language of ['cs', 'en'] as const) {
+      const email = confirm(language);
+      expect(email.to).toBe('marta.new@example.test');
+      for (const part of ['Marta Invented', 'Petr Dvořák', confirmLink]) expect(email.text).toContain(part);
+      expect(email.text).toMatch(/7 (dní|days)/);
+      const hostile = confirm(language, '<b>x</b>');
+      expect(hostile.html).not.toContain('<b>x</b>');
+      expect(hostile.html).toContain('&lt;b&gt;x&lt;/b&gt;');
+    }
+  });
+
+  it('the notice to the old address names neither the Member nor a new address, and has no link', () => {
+    for (const language of ['cs', 'en'] as const) {
+      const email = addressChangedEmail({ to: 'marta.old@example.test', language, ownerName: 'Petr Dvořák' });
+      expect(email.to).toBe('marta.old@example.test');
+      expect(email.text).toContain('Petr Dvořák');
+      expect(email.text).not.toMatch(/@|https?:/);
+      expect(email.html).not.toContain('<a ');
+    }
   });
 });
