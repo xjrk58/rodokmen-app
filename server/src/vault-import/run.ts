@@ -306,12 +306,14 @@ function updateOperations(u: PlannedUpdate, id: string, baseVersion: number, vau
 const UPDATE_NOTES: Record<UpdateTopic, string> = {
   fields: 'fields the Tree has no place for',
   municipality: 'the Municipality it is part of',
+  date: 'the date of a residence',
 };
 
 /**
  * Records an earlier importer wrote otherwise than this one (plan.updates): research notes and
- * register entries' Citation notes without the fields the Tree has no place for (#134, #157), and
- * Places without the Municipality their note names (#137). A record this run creates, or a run
+ * register entries' Citation notes without the fields the Tree has no place for (#134, #157),
+ * Places without the Municipality their note names (#137), and residences left undated (#135). A
+ * record this run creates, or a run
  * since the fix created, is as this importer writes it already. A record that still holds exactly
  * what the earlier run wrote is updated, each in a Proposal of its own with the version read, so a
  * change made after this run is a conflict for the Owner to resolve. A record changed in the app
@@ -424,7 +426,7 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     leads: { created: 0, waiting: 0, unchanged: 0, updated: 0, notUpdated: [] },
     changed: { updated: 0, notUpdated: [] },
     duplicateMarriages: [],
-    updates: { fields: { added: 0, notUpdated: [] }, municipality: { added: 0, notUpdated: [] } },
+    updates: { fields: { added: 0, notUpdated: [] }, municipality: { added: 0, notUpdated: [] }, date: { added: 0, notUpdated: [] } },
     presumedLeftOut: [],
   };
   // Notes changed since the run that imported them: their new records come as new keys; the rest is listed.

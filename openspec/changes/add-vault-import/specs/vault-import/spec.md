@@ -97,6 +97,17 @@ The body of each Vault note SHALL become the research notes of the record it des
 - **WHEN** a Source note of a register entry has `evidence: A`
 - **THEN** its Citation's note holds `Evidence class: A` below the note path
 
+### Requirement: Residences keep their periods
+A residence's `from` and `to` SHALL become the date of its Event, as an interval. An end that is itself an interval SHALL give its outer end; an end that is about or uncertain stays so. When the date stored differs from the period as written, the Event's description SHALL keep the text, and the dry run SHALL list it.
+
+#### Scenario: End given as an interval
+- **WHEN** a residence has `from: 1861` and `to: 1864/1866`
+- **THEN** its Event is dated `1861/1866`, its description says `Date as written in the Vault: 1861/1864/1866`, and the dry run lists it
+
+#### Scenario: Approximate end
+- **WHEN** a residence has `from: 1801` and `to: 1803~`
+- **THEN** its Event is dated `1801/1803~`, with no description
+
 ### Requirement: Places are linked to their Municipality
 A Place SHALL be linked to the Municipality of its own name in its `district`. A Place that is part of another Municipality SHALL be linked to the one its note names in `municipality`: by RÚIAN code, or by name, in its district when the note gives one. A name or code that finds no single Municipality SHALL be reported and kept as a line. Such a Place SHALL NOT take the Municipality's point.
 
@@ -170,6 +181,10 @@ A record an earlier run wrote and a newer importer writes otherwise, such as a l
 #### Scenario: Research notes imported before the fields not mapped
 - **WHEN** an earlier import wrote a record's research notes without the fields the Tree has no place for, and the Owner runs the importer again
 - **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since are listed in the report and stay as they are
+
+#### Scenario: Residence dated after an earlier import
+- **WHEN** an earlier import left a residence with an end such as `1803~` or `1864/1866` undated, with the period as written in its description, and the Owner runs the importer again
+- **THEN** a Proposal dates it, attaching a new Citation of the Person note to it, if the Event still has no date and that description; one changed since is listed in the report and stays as it is
 
 #### Scenario: Municipality after an earlier import
 - **WHEN** an earlier import gave a Place whose note names its Municipality in `municipality` no Municipality, and the Owner runs the importer again

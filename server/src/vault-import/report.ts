@@ -27,7 +27,8 @@ export interface RunSummary {
    * Records an earlier importer wrote otherwise, by what they wait for (plan.updates): the fields
    * the Tree has no place for, added to research notes and register entries' Citation notes that
    * still held what it wrote (#134, #157); the Municipality a Place's note names, linked to Places
-   * that still had none or their namesake (#137). Records changed since are not updated, and listed.
+   * that still had none or their namesake (#137); the dates of residences left undated (#135).
+   * Records changed since are not updated, and listed.
    */
   updates: Record<UpdateTopic, { added: number; notUpdated: Array<{ path: string; lines: string[] }> }>;
   /** Persons an earlier run imported whose presumed death (#132) is left out: the Tree has a death, burial or birth date for them now. */
@@ -156,6 +157,12 @@ const UPDATE_TEXTS: Record<UpdateTopic, { title: string; what: string; changed: 
     what: 'Places {verb} the Municipality their note names in `municipality`',
     changed: 'Places whose Municipality was changed in the app since the import, left as they are ({n}); link these by hand if you want them:',
   },
+  // Residences an earlier importer left undated: an end was qualified (1801/1803~) or itself an interval (#135).
+  date: {
+    title: 'Residence dates, on Events imported before #135',
+    what: 'Residences {verb} the date their note gives',
+    changed: 'Residences whose date or description was changed in the app since the import, left as they are ({n}); date these by hand if you want them:',
+  },
 };
 
 /** Records an earlier importer wrote otherwise: how many a later run updated, and those changed since, listed. */
@@ -236,7 +243,7 @@ export function reportMarkdown(vault: Vault, plan: Plan, run: RunSummary): strin
       ...run.changed.notUpdated.map((k) => `- ${k}`),
       '',
     );
-  lines.push(...presumedLeftOut(run), ...updated(run, 'fields'), ...updated(run, 'municipality'), ...duplicateMarriages(run));
+  lines.push(...presumedLeftOut(run), ...updated(run, 'fields'), ...updated(run, 'municipality'), ...updated(run, 'date'), ...duplicateMarriages(run));
   for (const kind of ISSUE_ORDER) {
     const title = ISSUE_TITLES[kind];
     const list = plan.issues.filter((i) => i.kind === kind);

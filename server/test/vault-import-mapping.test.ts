@@ -131,6 +131,50 @@ describe('mapping the fixture Vault', () => {
     expect([evidence.readOn, evidence.note]).toEqual(['2026-11-02', null]);
   });
 
+  it('residence periods: qualified ends kept, an end that is an interval gives its outer end, and the text kept when the date differs (#135)', async () => {
+    const periods: Array<[from: string | null, to: string | null]> = [
+      ['1801', '1803~'],
+      ['1799~', '1800/1801'],
+      ['1861/1864', '1866'],
+      [null, '1864/1866'],
+      ['1801', '1803'],
+      ['1825', null],
+      ['spring 1801', '1803'],
+    ];
+    const residences = periods.map(([from, to]) => `  - place: '[[kamenna-lhota]]'\n${from ? `    from: '${from}'\n` : ''}${to ? `    to: '${to}'\n` : ''}`);
+    await writeFile(
+      join(vault.path, 'people/krystof-vymysleny-1790.md'),
+      `---\ntype: person\nname:\n  given: Kryštof\n  surname: Vymyšlený\nsex: M\nresidences:\n${residences.join('')}---\n`,
+    );
+    const p = await plan();
+    const event = (i: number) => ops(p).find((o) => o.key === `event:krystof-vymysleny-1790:residence:${i}`)!.op;
+    expect(periods.map((_, i) => [event(i).date, event(i).description])).toEqual([
+      ['1801/1803~', null],
+      ['1799~/1801', 'Date as written in the Vault: 1799~/1800/1801'],
+      ['1861/1866', 'Date as written in the Vault: 1861/1864/1866'],
+      ['../1866', 'Date as written in the Vault: ../1864/1866'],
+      ['1801/1803', null],
+      ['1825', null],
+      [null, 'Date as written in the Vault: spring 1801/1803'],
+    ]);
+    // The dry run lists every date as written that is not EDTF, with the date it gets, if any.
+    expect(p.issues.filter((i) => i.path === 'people/krystof-vymysleny-1790.md' && i.kind === 'badDate').map((i) => i.detail)).toEqual([
+      'residences.1: 1799~/1800/1801 (dated 1799~/1801)',
+      'residences.2: 1861/1864/1866 (dated 1861/1866)',
+      'residences.3: ../1864/1866 (dated ../1866)',
+      'residences.6: spring 1801/1803',
+    ]);
+    // An importer before #135 left the first four undated: a later run dates them, citing the note again.
+    const updates = p.updates.filter((u) => u.topic === 'date');
+    expect(updates.map((u) => [u.recordKey.split(':').at(-1), u.before.date, u.after.date, u.lines])).toEqual([
+      ['0', null, '1801/1803~', ['residences.0: 1801/1803~ → 1801/1803~']],
+      ['1', null, '1799~/1801', ['residences.1: 1799~/1800/1801 → 1799~/1801']],
+      ['2', null, '1861/1866', ['residences.2: 1861/1864/1866 → 1861/1866']],
+      ['3', null, '../1866', ['residences.3: ../1864/1866 → ../1866']],
+    ]);
+    expect(updates[0]!.evidence).toMatchObject({ note: 'The date of residences.0 in the note' });
+  });
+
   describe('a marriage both spouses record without a Source note (#149)', () => {
     const marriages = (p: Plan) => ops(p).filter((o) => o.op.op === 'createEvent' && o.op.type === 'marriage' && o.key.includes(':vault:'));
 

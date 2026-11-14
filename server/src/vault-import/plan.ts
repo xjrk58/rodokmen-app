@@ -85,10 +85,10 @@ export interface MergedMarriage {
 
 /**
  * What a record an earlier importer wrote is waiting for: the fields the Tree has no place for, in
- * research notes or a register entry's Citation note (#134, #157); or the Municipality a Place is
- * part of (#137).
+ * research notes or a register entry's Citation note (#134, #157); the Municipality a Place is
+ * part of (#137); or the date of a residence (#135).
  */
-export type UpdateTopic = 'fields' | 'municipality';
+export type UpdateTopic = 'fields' | 'municipality' | 'date';
 
 /**
  * Values an earlier importer wrote otherwise than this one, by field: research notes (`notes`,
