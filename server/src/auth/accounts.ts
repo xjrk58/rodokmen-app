@@ -12,7 +12,7 @@ import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 import type { Account } from '../db/types.js';
 import type { Mailer } from '../mail/mailer.js';
-import { invitationEmail, invitationShareText, signInLinkEmail } from '../mail/templates.js';
+import { invitationAcceptedEmail, invitationEmail, invitationShareText, signInLinkEmail } from '../mail/templates.js';
 import type { Clock } from '../clock.js';
 import { ApiProblem } from './problem.js';
 import { createSession, endAllSessions, hashToken, newToken, type SessionOptions } from './sessions.js';
@@ -23,6 +23,8 @@ export interface AccountDeps {
   mailer: Mailer;
   publicOrigin: string;
   session: SessionOptions;
+  /** Where failures that must not fail the request go, such as an email sent after a commit. */
+  log?: (msg: string, error?: unknown) => void;
 }
 
 /** Sign-in link requests allowed per Member per hour; more are dropped silently. */
@@ -162,8 +164,34 @@ export async function acceptInvitation(deps: AccountDeps, token: string, display
     await tx.updateTable('invitation').set({ accepted_at: now, accepted_account_id: account.id }).where('id', '=', invitation.id).execute();
     return account;
   });
+  await tellOwnerOfAcceptance(deps, result, now);
   const session = await createSession(deps.db, deps.clock, deps.session, result.id, 'invitation', userAgent);
   return { account: result, session };
+}
+
+/**
+ * Tells the Owner of the moment, in their language, that an invitation was accepted
+ * (member-accounts spec, "The Owner is told when an invitation is accepted"). Sent once the
+ * acceptance is committed, and only on that path, so one acceptance sends one email. A failure
+ * is logged and never undoes the acceptance ("Accepting does not wait on the Owner's email").
+ */
+async function tellOwnerOfAcceptance(deps: AccountDeps, member: Account, acceptedAt: Date): Promise<void> {
+  try {
+    const owner = await deps.db.selectFrom('account').selectAll().where('role', '=', 'owner').executeTakeFirst();
+    if (!owner?.email || !member.email) return;
+    await deps.mailer.send(
+      invitationAcceptedEmail({
+        to: owner.email,
+        language: owner.language,
+        memberName: member.display_name,
+        email: member.email,
+        acceptedAt,
+        settingsLink: `${deps.publicOrigin}/#settings`,
+      }),
+    );
+  } catch (error) {
+    deps.log?.('could not tell the Owner that an invitation was accepted', error);
+  }
 }
 
 // ---------------------------------------------------------------- emailed sign-in links

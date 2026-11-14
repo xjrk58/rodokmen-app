@@ -26,6 +26,8 @@ A link that came through a chat does not prove that the relative reads the invit
 
 Anyone who holds the link can accept it, and a chat message is easier to forward than an email and is kept in backups. That risk is accepted, because the link works only once and only for 7 days, the message asks the relative not to forward it, the page shows whose address it is, and the Owner sees every new Member and can disable one at once.
 
+The Owner does not have to open Settings to see a new Member: every accepted invitation sends the Owner an email with the name the new Member chose and the address the invitation went to. That shortens the time a wrong person could look around unnoticed. The email is sent only after the acceptance is stored, and a failure to send it does not undo the acceptance: it is a notice about the acceptance, so it must not decide it. There is no switch to turn it off, because it is rare, one per new Member, and turning it off would bring the risk back.
+
 ## Living people
 
 A Person counts as Living when they were born within the last 100 years with no recorded death, or when neither birth nor death is recorded. Rodokmen computes this from the Events and never lets it be set by hand: a flag someone must remember to tick is a flag someone forgets. The rule errs on the side of caution, since a Person with no dates at all is treated as Living. It is one of the proved rules.

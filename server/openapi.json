@@ -26149,7 +26149,7 @@
     },
     "/api/auth/invitation/accept": {
       "post": {
-        "summary": "Accept an invitation: set display name and language, become a Contributor and sign in",
+        "summary": "Accept an invitation: set display name and language, become a Contributor and sign in. The Owner is then told by email",
         "tags": [
           "Sign-in"
         ],
