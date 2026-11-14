@@ -21,7 +21,7 @@ The ČÚZK Archiv link of a place sheet SHALL open the viewer at the location of
 - **THEN** the viewer opens centred on Vrbinov, where the Member chooses the imperial imprint or the indication sketch
 
 ### Requirement: Today's aerial photograph for placing
-The map SHALL offer today's aerial photograph of the Czech lands from ČÚZK as a layer, with its credit, for placing Houses and comparing with the old maps.
+The map SHALL offer today's aerial photograph of the Czech lands from ČÚZK as a layer, with its credit, for placing Houses and comparing with the old maps, for as long as ČÚZK serves it in the app's map projection under its open data terms.
 
 #### Scenario: Comparing with the old map
 - **WHEN** a Member switches on the aerial photograph at a village

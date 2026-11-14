@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Map lines between Places
-For signed-in Members, the family map SHALL draw Map lines: a generation line from where a parent was born to where their child was born, and a marriage line between where two partners who married were born. Where a Person was born SHALL be the position of their birth Event, else their baptism Event: its House when the House has its own position, else its Place. A line whose two ends are the same point SHALL NOT be drawn.
+For signed-in Members, the family map SHALL draw Map lines: a generation line from where a parent was born to where their child was born, and a marriage line between where two partners who married were born. A line whose two ends are the same point SHALL NOT be drawn. A child SHALL count once on a line, even when both parents were born at its start.
 
 #### Scenario: A son born in another village
 - **WHEN** Karel Novák was born in Vrbinov and his son Jan was born in Habrová Lhota in 1834
@@ -17,15 +17,26 @@ For signed-in Members, the family map SHALL draw Map lines: a generation line fr
 - **WHEN** a daughter was born in the village where her mother was born, and neither birth has a House with its own position
 - **THEN** no line is drawn for them
 
+#### Scenario: Both parents from one village
+- **WHEN** both parents of a child were born in Vrbinov and the child in Habrová Lhota
+- **THEN** one generation line runs from Vrbinov to Habrová Lhota, and it counts the child once
+
 #### Scenario: No known birthplace
 - **WHEN** a father has neither a birth nor a baptism Event with a Place or House
 - **THEN** no generation line leads from him to his children
+
+### Requirement: Where a Person was born
+For Map lines, where a Person was born SHALL be the position of the birth Event in which they are the child, else of such a baptism Event: its House when the House has its own position, else its Place.
+
+#### Scenario: Baptised in the parish church's village
+- **WHEN** a child has no birth Event and was baptised in Vrbinov at čp. 3, which has its own position
+- **THEN** the child's lines start or end at čp. 3 of Vrbinov
 
 ### Requirement: Map lines join Relatives only
 A Map line SHALL be drawn only when every Person at its ends is a Relative: the parent and the child of a generation line, both partners of a marriage line. Possible relatives and Unrelated people SHALL NOT appear in Map lines, whatever the switch for Unrelated people says. The lines SHALL follow the relation to the family as the server last computed it, so they change when a Family root is marked or unmarked.
 
 #### Scenario: A weak father link
-- **WHEN** a child is a Relative but the only Citation of her father link is of low confidence, so the father is a Possible relative
+- **WHEN** a child is a Relative and her father is a Possible relative
 - **THEN** no generation line leads from the father to her
 
 #### Scenario: Including Unrelated people
@@ -35,6 +46,13 @@ A Map line SHALL be drawn only when every Person at its ends is a Relative: the 
 #### Scenario: A new Family root
 - **WHEN** the Owner marks a Family root in another line of the family and a Member reopens the map
 - **THEN** the lines of that line's Relatives appear
+
+### Requirement: Switching Map lines
+Map lines SHALL be shown with the family layer, with a switch in the year control to hide them, on by default and remembered on the device.
+
+#### Scenario: Hiding the lines
+- **WHEN** a Member switches Map lines off and reopens the app the next day
+- **THEN** the map shows the family pins without lines, and the play control still moves the range
 
 ### Requirement: Map lines follow the year range
 The family map SHALL show a Map line when at least one of its births or marriages falls in the year range, dated by the earliest year its Event could be. An Event whose date has an open start, or no date, SHALL give no line.

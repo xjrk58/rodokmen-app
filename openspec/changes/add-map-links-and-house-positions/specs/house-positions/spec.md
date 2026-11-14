@@ -7,7 +7,7 @@ Let the family place each House where it stood, with the stable cadastre map as 
 ## ADDED Requirements
 
 ### Requirement: A House position is a fact with evidence
-A House SHALL have at most one position of its own. Setting, moving or clearing it SHALL be a change to the Tree like any other: through a reviewed Proposal, or an Editor's direct change, that includes a Citation supporting it. The House SHALL keep the Citation its position came from, and its history SHALL show every change of position.
+A House SHALL have at most one position of its own. Setting, moving or clearing it SHALL be a change to the Tree like any other: through a reviewed Proposal, or an Editor's direct change, that creates a Citation supporting it. The House SHALL keep the Citation its position came from, and its history SHALL show every change of position.
 
 #### Scenario: Placing a House
 - **WHEN** a Contributor places čp. 7 of Vrbinov on the map and cites the stable cadastre map sheet
@@ -33,11 +33,11 @@ The system SHALL offer a Source of the kind map, for a map such as the stable ca
 - **THEN** the app offers the map Source created for the first one
 
 ### Requirement: The stable cadastre beside the map
-While placing a House, the app SHALL let the Member see the stable cadastre map of the Place: as an overlay where one is offered (historical-maps spec), and otherwise in the ČÚZK Archiv viewer, beside the map on a computer and in its own tab on a phone. Returning from the viewer SHALL bring the Member back to the same step with nothing lost.
+While placing a House, the app SHALL let the Member see the stable cadastre map of the Place: as an overlay where one is offered (historical-maps spec), and otherwise by opening the ČÚZK Archiv viewer at the Place in another tab or window. Returning from the viewer SHALL bring the Member back to the same step with nothing lost.
 
-#### Scenario: Side by side on a computer
+#### Scenario: Two windows on a computer
 - **WHEN** a Member places a House at 1280 px wide and no stable cadastre overlay is offered
-- **THEN** the ČÚZK Archiv viewer opens beside the map, and the Member places the House on the map while reading the old map
+- **THEN** "Open the stable cadastre" opens the ČÚZK Archiv viewer at Vrbinov in a new window, and the placing step stays as it was
 
 #### Scenario: Switching on a phone
 - **WHEN** a Member on a phone opens the stable cadastre, reads it, and comes back to the app
