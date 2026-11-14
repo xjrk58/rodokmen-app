@@ -4,7 +4,7 @@ import type { ColumnType, Generated } from 'kysely';
 type Timestamp = ColumnType<Date, Date | string | undefined, Date | string>;
 type CreatedAt = ColumnType<Date, Date | string | undefined, never>;
 
-/** Members and Agents (migrations 0003 and 0006), with their own Person (0007) and a request to be linked to one (0016). */
+/** Members and Agents (migrations 0003 and 0006), with their own Person (0007) and a request to be linked to one (0017). */
 export interface AccountTable {
   id: Generated<string>;
   version: Generated<number>;

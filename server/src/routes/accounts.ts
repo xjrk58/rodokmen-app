@@ -3,6 +3,7 @@ import {
   ChangeRoleBody,
   CreatedInvitation,
   CreateInvitationBody,
+  EmailChangeBody,
   IdParams,
   InvitationList,
   LinkPersonBody,
@@ -36,6 +37,7 @@ import {
   updateOwnAccount,
   type AccountDeps,
 } from '../auth/accounts.js';
+import { pendingEmails, requestEmailChange, withdrawEmailChange } from '../auth/email-change.js';
 import { ApiProblem } from '../auth/problem.js';
 import { endSession } from '../auth/sessions.js';
 import type { Clock } from '../clock.js';
@@ -114,6 +116,11 @@ export async function meView(deps: { db: Db; clock: Clock }, a: Account): Promis
 /** Members as the Owner sees them, each with their linked Person. Agents are listed with their tokens instead (auth/agents.ts). */
 async function memberViews(deps: { db: Db; clock: Clock }, accounts: readonly Account[]): Promise<MemberView[]> {
   const persons = await linkedPersons(deps, accounts);
+  const pending = await pendingEmails(
+    deps.db,
+    accounts.map((a) => a.id),
+    deps.clock.now(),
+  );
   const requests = await personRequests(deps, accounts);
   return accounts.map((a) => {
     if (a.role === 'agent' || a.email === null) throw new Error(`account ${a.id} is an Agent, not a Member`);
@@ -128,6 +135,7 @@ async function memberViews(deps: { db: Db; clock: Clock }, accounts: readonly Ac
       createdAt: new Date(a.created_at).toISOString(),
       lastSeenAt: a.last_seen_at ? new Date(a.last_seen_at).toISOString() : null,
       person: persons.get(a.id) ?? null,
+      pendingEmail: pending.get(a.id) ?? null,
       personRequest: requests.get(a.id) ?? null,
     };
   });
@@ -291,6 +299,35 @@ export async function accountRoutes(fastify: FastifyInstance, deps: AccountDeps)
       response: { 200: MemberView, 404: ApiError, ...ownerOnly },
     },
     handler: async (req) => memberView(deps, await linkPerson(deps, req.params.id, req.body.personId)),
+  });
+
+  // member-accounts spec, "The Owner corrects a Member's address": the new address takes effect
+  // once the link sent to it is confirmed (POST /api/auth/email-change/confirm, routes/auth.ts).
+  app.post('/api/members/:id/email-change', {
+    ...owner,
+    schema: {
+      tags: ['Members'],
+      summary:
+        'Give a Member a new address (Owner only). It takes effect once the link emailed to it, valid once for 7 days, is confirmed; until then sign-in links go to the old one. Asking again replaces a change that waits',
+      params: IdParams,
+      body: EmailChangeBody,
+      response: { 200: MemberView, 400: ApiError, 404: ApiError, 409: ApiError, ...ownerOnly },
+    },
+    handler: async (req) => memberView(deps, await requestEmailChange(deps, req.member!, req.params.id, req.body.email)),
+  });
+
+  app.delete('/api/members/:id/email-change', {
+    ...owner,
+    schema: {
+      tags: ['Members'],
+      summary: "Withdraw a Member's new address that waits for confirmation (Owner only): its link stops working",
+      params: IdParams,
+      response: { 204: z.null(), 404: ApiError, ...ownerOnly },
+    },
+    handler: async (req, reply) => {
+      await withdrawEmailChange(deps, req.params.id);
+      return reply.code(204).send(null);
+    },
   });
 
   app.put('/api/me/person-request', {

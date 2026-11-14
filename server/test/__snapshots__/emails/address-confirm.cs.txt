@@ -1,0 +1,13 @@
+Subject: Potvrďte svou novou adresu v Rodokmenu
+
+Dobrý den, Marta Invented,
+
+Petr Dvořák, správce Rodokmenu, nastavil(a) tuto adresu jako vaši novou adresu v Rodokmenu. Sem vám Rodokmen bude posílat odkazy k přihlášení. Změna platí, až ji potvrdíte tímto odkazem. Odkaz platí 7 dní a dá se použít jen jednou.
+
+https://rodokmen.example/#address/EXAMPLE_TOKEN_0123456789abcdefghijklmnopq
+
+Dokud adresu nepotvrdíte, chodí odkazy k přihlášení na vaši dosavadní adresu. Přístupové klíče (passkeys) fungují dál.
+
+Pokud nejste Marta Invented nebo jste tuto změnu nečekali, odkaz neotvírejte a e-mail ignorujte. Bez potvrzení se nic nezmění.
+
+Rodokmen

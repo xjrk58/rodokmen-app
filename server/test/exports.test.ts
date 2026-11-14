@@ -218,6 +218,8 @@ describe('Exports', () => {
     expect(gedcomDate('1801/1805')).toBe('BET 1801 AND 1805');
     expect(gedcomDate('../1801-03')).toBe('BEF MAR 1801');
     expect(gedcomDate('1801/..')).toBe('AFT 1801');
+    // GEDCOM has no qualified end of a range (#135): the date is written as a note instead.
+    for (const qualified of ['1801/1805~', '1801~/1805', '../1805~', '1801?/..']) expect(gedcomDate(qualified)).toBeNull();
     expect(yearOf('2010-03-04')).toBe(2010);
     expect(yearOf('2010~')).toBe(2010);
     expect(yearOf('2008/2010')).toBeNull();

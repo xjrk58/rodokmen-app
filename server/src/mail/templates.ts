@@ -14,21 +14,26 @@ interface Body {
   subject: string;
   /** Paragraphs before the button. */
   intro: string[];
-  button: { label: string; url: string };
+  /** The one link of the email; a notice that asks nothing of the reader has none. */
+  button: { label: string; url: string } | null;
   /** Paragraphs after the button. */
   outro: string[];
   signature: string;
 }
 
 function render(to: string, body: Body): MailMessage {
-  const text = [...body.intro, body.button.url, ...body.outro, body.signature].join('\n\n') + '\n';
+  const text = [...body.intro, ...(body.button ? [body.button.url] : []), ...body.outro, body.signature].join('\n\n') + '\n';
   const p = (t: string) => `<p style="margin:0 0 16px${t.includes('\n') ? ';white-space:pre-line' : ''}">${escapeHtml(t)}</p>`;
   const html = [
     '<!doctype html>',
     `<html><body style="font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.5;color:#1f2933;max-width:560px;margin:0 auto;padding:24px">`,
     ...body.intro.map(p),
-    `<p style="margin:24px 0"><a href="${escapeHtml(body.button.url)}" style="background:#7a3e1d;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block">${escapeHtml(body.button.label)}</a></p>`,
-    `<p style="margin:0 0 16px;font-size:13px;color:#52606d;word-break:break-all">${escapeHtml(body.button.url)}</p>`,
+    ...(body.button
+      ? [
+          `<p style="margin:24px 0"><a href="${escapeHtml(body.button.url)}" style="background:#7a3e1d;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;display:inline-block">${escapeHtml(body.button.label)}</a></p>`,
+          `<p style="margin:0 0 16px;font-size:13px;color:#52606d;word-break:break-all">${escapeHtml(body.button.url)}</p>`,
+        ]
+      : []),
     ...body.outro.map(p),
     `<p style="margin:24px 0 0;color:#52606d">${escapeHtml(body.signature)}</p>`,
     '</body></html>',
@@ -106,6 +111,62 @@ export function invitationShareText(m: InvitationShareText): string {
   ].join('\n\n');
 }
 
+export interface InvitationAcceptedEmail {
+  /** The Owner's address. */
+  to: string;
+  /** The Owner's language. */
+  language: UiLanguage;
+  /** The display name the relative chose: their own text, so it stays out of the subject. */
+  memberName: string;
+  /** The invited address, now the new Member's. */
+  email: string;
+  acceptedAt: Date;
+  /** Settings, where the Owner can disable the new Member. */
+  settingsLink: string;
+}
+
+const timeFormat = (language: UiLanguage, d: Date) =>
+  new Intl.DateTimeFormat(language === 'cs' ? 'cs-CZ' : 'en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Prague',
+  }).format(d);
+
+/**
+ * Tells the Owner that a relative accepted an invitation (member-accounts spec, "The Owner is
+ * told when an invitation is accepted"), so that a wrong person can be disabled at once.
+ */
+export function invitationAcceptedEmail(e: InvitationAcceptedEmail): MailMessage {
+  const when = timeFormat(e.language, e.acceptedAt);
+  if (e.language === 'cs') {
+    return render(e.to, {
+      subject: 'Pozvánka do Rodokmenu byla přijata',
+      intro: [
+        'Dobrý den,',
+        `pozvánku na adresu ${e.email} přijal ${when} nový člen pod jménem „${e.memberName}“. Je teď přispěvatelem a vidí celý rodokmen včetně žijících osob.`,
+        'Pokud to není ten, koho jste zvali, zablokujte ho v Nastavení, v části Členové, tlačítkem Zablokovat. Tím skončí všechna jeho přihlášení. Potom pozvěte správnou adresu.',
+      ],
+      button: { label: 'Otevřít Nastavení', url: e.settingsLink },
+      outro: ['Tento e-mail dostane správce Rodokmenu pokaždé, když někdo přijme pozvánku.'],
+      signature: 'Rodokmen',
+    });
+  }
+  return render(e.to, {
+    subject: 'Your Rodokmen invitation was accepted',
+    intro: [
+      'Hello,',
+      `The invitation sent to ${e.email} was accepted on ${when} by someone who chose the name “${e.memberName}”. They are now a Contributor and see the whole Tree, Living people included.`,
+      'If this is not the person you invited, click Disable next to them in Settings, under Members. That ends all their sessions at once. Then invite the right address.',
+    ],
+    button: { label: 'Open Settings', url: e.settingsLink },
+    outro: ['The Owner of Rodokmen gets this email whenever someone accepts an invitation.'],
+    signature: 'Rodokmen',
+  });
+}
+
 export interface SignInLinkEmail {
   to: string;
   language: UiLanguage;
@@ -140,6 +201,97 @@ export function signInLinkEmail(e: SignInLinkEmail): MailMessage {
     outro: [
       'Once you are signed in, you can save a passkey on this device, so next time you sign in without email.',
       'If you did not ask to sign in, ignore this email. Nobody can sign in without this link.',
+    ],
+    signature: 'Rodokmen',
+  });
+}
+
+export interface AddressConfirmEmail {
+  /** The new address, which the link proves. */
+  to: string;
+  /** The Member's language. */
+  language: UiLanguage;
+  displayName: string;
+  /** The Owner who asked for the change. */
+  ownerName: string;
+  link: string;
+  days: number;
+}
+
+/**
+ * The link that confirms a Member's new address (member-accounts spec, "The Owner corrects a
+ * Member's address"). It names the Member, so that anyone else whose address was typed by
+ * mistake can see it is not for them.
+ */
+export function addressConfirmEmail(e: AddressConfirmEmail): MailMessage {
+  if (e.language === 'cs') {
+    return render(e.to, {
+      subject: 'Potvrďte svou novou adresu v Rodokmenu',
+      intro: [
+        `Dobrý den, ${e.displayName},`,
+        `${e.ownerName}, správce Rodokmenu, nastavil(a) tuto adresu jako vaši novou adresu v Rodokmenu. Sem vám Rodokmen bude posílat odkazy k přihlášení. Změna platí, až ji potvrdíte tímto odkazem. Odkaz platí ${e.days} dní a dá se použít jen jednou.`,
+      ],
+      button: { label: 'Potvrdit adresu', url: e.link },
+      outro: [
+        'Dokud adresu nepotvrdíte, chodí odkazy k přihlášení na vaši dosavadní adresu. Přístupové klíče (passkeys) fungují dál.',
+        `Pokud nejste ${e.displayName} nebo jste tuto změnu nečekali, odkaz neotvírejte a e-mail ignorujte. Bez potvrzení se nic nezmění.`,
+      ],
+      signature: 'Rodokmen',
+    });
+  }
+  return render(e.to, {
+    subject: 'Confirm your new address for Rodokmen',
+    intro: [
+      `Hello ${e.displayName},`,
+      `${e.ownerName}, the Owner of Rodokmen, set this as your new address in Rodokmen, where it will send your sign-in links. The change takes effect once you confirm it with this link. The link is valid for ${e.days} days and works only once.`,
+    ],
+    button: { label: 'Confirm the address', url: e.link },
+    outro: [
+      'Until you confirm it, sign-in links still go to your old address. Your passkeys keep working.',
+      `If you are not ${e.displayName}, or did not expect this change, do not open the link and ignore this email. Nothing changes without the confirmation.`,
+    ],
+    signature: 'Rodokmen',
+  });
+}
+
+export interface AddressChangedEmail {
+  /** The old address. */
+  to: string;
+  /** The Member's language. */
+  language: UiLanguage;
+  /** The Owner who asked for the change. */
+  ownerName: string;
+}
+
+/**
+ * Tells the old address that Rodokmen no longer uses it (member-accounts spec, "After an address
+ * is corrected"). The old address may be a stranger's mailbox, typed by mistake, so the notice
+ * names neither the Member nor the new address.
+ */
+export function addressChangedEmail(e: AddressChangedEmail): MailMessage {
+  if (e.language === 'cs') {
+    return render(e.to, {
+      subject: 'Rodokmen už tuto adresu nepoužívá',
+      intro: [
+        'Dobrý den,',
+        `${e.ownerName}, správce Rodokmenu, společného rodokmenu jedné rodiny, změnil(a) adresu člena, který dosud používal tuto, a nová adresa byla potvrzena. Rodokmen sem už nic posílat nebude a odkazy k přihlášení, které sem přišly dřív, už nefungují.`,
+      ],
+      button: null,
+      outro: [
+        `Pokud to byla vaše adresa a změnu jste nečekali, obraťte se na správce Rodokmenu (${e.ownerName}). Pokud Rodokmen neznáte, někdo vaši adresu kdysi omylem zadal. E-mail můžete ignorovat.`,
+      ],
+      signature: 'Rodokmen',
+    });
+  }
+  return render(e.to, {
+    subject: 'Rodokmen no longer uses this address',
+    intro: [
+      'Hello,',
+      `${e.ownerName}, the Owner of Rodokmen, one family's shared family tree, changed the address of the Member who used this one, and the new address was confirmed. Rodokmen will send nothing more here, and sign-in links sent here before no longer work.`,
+    ],
+    button: null,
+    outro: [
+      `If this was your address and you did not expect the change, contact ${e.ownerName}. If you do not know Rodokmen, someone once typed your address by mistake, and you can ignore this email.`,
     ],
     signature: 'Rodokmen',
   });

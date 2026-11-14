@@ -126,6 +126,12 @@ export const MemberView = z
     createdAt: z.iso.datetime(),
     lastSeenAt: z.iso.datetime().nullable(),
     person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, when the Owner has linked one'),
+    pendingEmail: z
+      .string()
+      .nullable()
+      .describe(
+        'A new address the Owner gave this Member, waiting until the link sent to it is confirmed; until then sign-in links go to `email`. Null when none waits',
+      ),
     personRequest: PersonRequest.nullable().describe('The Person this Member asked to be linked to, waiting for the Owner to confirm or refuse'),
   })
   .meta({ id: 'MemberView' });
@@ -220,6 +226,19 @@ export const InvitationCheck = z
 export const AcceptInvitationBody = z
   .object({ token: z.string().min(20).max(200), displayName: DisplayName, language: UiLanguage })
   .meta({ id: 'AcceptInvitationBody' });
+
+// ---------------------------------------------------------------- correcting a Member's address
+
+/** How long the link that confirms a new address works (member-accounts spec, "The Owner corrects a Member's address"). */
+export const EMAIL_CHANGE_DAYS = 7;
+
+export const EmailChangeBody = z
+  .object({ email: Email.describe('The new address. It takes effect once the link sent to it is confirmed') })
+  .meta({ id: 'EmailChangeBody' });
+
+export const EmailChangeConfirmed = z
+  .object({ ok: z.literal(true), email: z.string().describe('The address now in effect, where sign-in links go') })
+  .meta({ id: 'EmailChangeConfirmed' });
 
 // ---------------------------------------------------------------- sign-in
 
@@ -327,3 +346,4 @@ export type InvitationView = z.infer<typeof InvitationView>;
 export type CreatedInvitation = z.infer<typeof CreatedInvitation>;
 export type InvitationCheck = z.infer<typeof InvitationCheck>;
 export type InvitationStatus = z.infer<typeof InvitationStatus>;
+export type EmailChangeConfirmed = z.infer<typeof EmailChangeConfirmed>;

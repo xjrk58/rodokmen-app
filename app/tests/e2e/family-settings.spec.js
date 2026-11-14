@@ -1,6 +1,7 @@
 // add-family-view task 2.4 (family-view spec, "Owner settings in the app"), default-to-czech
 // task 1.3 and add-whatsapp-invitations task 2.1 (family-view spec, "Sending an invitation through
 // WhatsApp"): every Member's own settings, and the Owner's Member management, against the mocked API.
+// Correcting a Member's address is in family-address.spec.js.
 import { member, mockFamilyApi } from './family-api.js';
 import { ID, P, summary } from './family-data.js';
 import { expect, test } from './fixtures.js';
@@ -50,6 +51,7 @@ const memberView = (n, name, role) => ({
   lastSeenAt: null,
   personRequest: null,
   person: null,
+  pendingEmail: null,
 });
 
 test("Contributor's settings: their own language, sessions and passkeys, and nothing about other Members", async ({ page }) => {
@@ -64,6 +66,7 @@ test("Contributor's settings: their own language, sessions and passkeys, and not
   await expect(page.getByTestId('session').first()).toContainText('This device');
   await expect(page.getByTestId('passkey')).toHaveCount(1);
   await expect(page.getByTestId('settings-family')).toHaveCount(0);
+  await expect(page.getByTestId('member-email')).toHaveCount(0);
   await expect(page.getByTestId('settings-agents')).toHaveCount(0);
   await expect(page.getByText('Members', { exact: true })).toHaveCount(0);
   expect(calls.some((c) => c.startsWith('GET members') || c.startsWith('GET invitations') || c.startsWith('GET agents'))).toBe(false);

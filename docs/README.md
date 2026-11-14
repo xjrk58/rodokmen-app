@@ -20,7 +20,7 @@ Running Rodokmen:
 - [Deploy to netcup and go live](how-to/go-live.md): the Owner's steps, still in the deploy guide for now.
 - [Restore from a Backup](how-to/restore-from-a-backup.md): rebuild the server after a loss, or check that a Backup restores.
 - [Connect an AI assistant through MCP](how-to/connect-an-assistant.md): create an Agent and its token, and connect the assistant.
-- [Invite a Member](how-to/invite-a-member.md): invite a relative by email, also send the link from your own WhatsApp, and withdraw an invitation.
+- [Invite a Member](how-to/invite-a-member.md): invite a relative by email, also send the link from your own WhatsApp, check who accepted it, withdraw an invitation, and correct a Member's address.
 - [Mark Family roots and link Members to their Persons](how-to/mark-family-roots.md): tell Rodokmen where the family starts and who each Member is.
 - [Import the Vault](how-to/import-the-vault.md): the Owner's one-time import of the Vault as an Import batch, from the dry run to accepting the batch.
 - [Switch scan reading on](how-to/switch-on-scan-reading.md): the Owner's API key, the switch and the daily limit, watching the use, and switching it off.
@@ -71,7 +71,7 @@ Developing:
 
 - [The architecture](explanation/architecture.md): one TypeScript codebase, one database, one domain, and how the parts fit. The diagrams are in [C4 architecture](architecture/README.md), also as [Mermaid](architecture/generated/mermaid.md).
 - [Proposals and review](explanation/proposals-and-review.md): why every change to the Tree is a reviewed Proposal, and why the Vault import comes as Import batches.
-- [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, Living people in Exports, erasure, images, the Vault and this public repo.
+- [Privacy and the public/private split](explanation/privacy.md): the public map and the private Tree, invitation links and Members' addresses, Living people in Exports, erasure, images, the Vault and this public repo.
 - [The relation to the family](explanation/relation-to-the-family.md): Relatives, Possible relatives and Unrelated people, and why they are computed from the evidence.
 - [Kinship](explanation/kinship.md): why kinship is relative to the Member's own Person, how the degree is counted, several paths, the evidence, and what is proved.
 - [Research leads](explanation/research-leads.md): why leads sit beside the Tree and change without review, how the gap finder picks gaps, registers and years, and what is proved.

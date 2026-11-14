@@ -35,7 +35,7 @@
         "type": "string",
         "minLength": 4,
         "maxLength": 32,
-        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after)",
+        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after); an end of an interval may be about or uncertain too (1801/1803~)",
         "examples": [
           "1801-03-12",
           "1801~",
@@ -4044,6 +4044,13 @@
             ],
             "description": "The Person who is this Member in the Tree, when the Owner has linked one"
           },
+          "pendingEmail": {
+            "description": "A new address the Owner gave this Member, waiting until the link sent to it is confirmed; until then sign-in links go to `email`. Null when none waits",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "personRequest": {
             "anyOf": [
               {
@@ -4067,6 +4074,7 @@
           "createdAt",
           "lastSeenAt",
           "person",
+          "pendingEmail",
           "personRequest"
         ]
       },
@@ -4426,6 +4434,38 @@
           "token",
           "displayName",
           "language"
+        ]
+      },
+      "EmailChangeBodyInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+            "description": "The new address. It takes effect once the link sent to it is confirmed"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "EmailChangeConfirmedInput": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "email": {
+            "type": "string",
+            "description": "The address now in effect, where sign-in links go"
+          }
+        },
+        "required": [
+          "ok",
+          "email"
         ]
       },
       "EmailLinkRequestBodyInput": {
@@ -10291,7 +10331,7 @@
         "type": "string",
         "minLength": 4,
         "maxLength": 32,
-        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after)",
+        "description": "Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after); an end of an interval may be about or uncertain too (1801/1803~)",
         "examples": [
           "1801-03-12",
           "1801~",
@@ -14392,6 +14432,13 @@
             ],
             "description": "The Person who is this Member in the Tree, when the Owner has linked one"
           },
+          "pendingEmail": {
+            "description": "A new address the Owner gave this Member, waiting until the link sent to it is confirmed; until then sign-in links go to `email`. Null when none waits",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "personRequest": {
             "anyOf": [
               {
@@ -14415,6 +14462,7 @@
           "createdAt",
           "lastSeenAt",
           "person",
+          "pendingEmail",
           "personRequest"
         ],
         "additionalProperties": false
@@ -14787,6 +14835,40 @@
           "token",
           "displayName",
           "language"
+        ],
+        "additionalProperties": false
+      },
+      "EmailChangeBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email",
+            "pattern": "^(?:[A-Za-z0-9_'+\\-]+\\.)*[A-Za-z0-9_'+\\-]*[A-Za-z0-9_+-]@(?:[A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$",
+            "description": "The new address. It takes effect once the link sent to it is confirmed"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false
+      },
+      "EmailChangeConfirmed": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "email": {
+            "type": "string",
+            "description": "The address now in effect, where sign-in links go"
+          }
+        },
+        "required": [
+          "ok",
+          "email"
         ],
         "additionalProperties": false
       },
@@ -26470,6 +26552,147 @@
         }
       }
     },
+    "/api/members/{id}/email-change": {
+      "post": {
+        "summary": "Give a Member a new address (Owner only). It takes effect once the link emailed to it, valid once for 7 days, is confirmed; until then sign-in links go to the old one. Asking again replaces a change that waits",
+        "tags": [
+          "Members"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailChangeBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Withdraw a Member's new address that waits for confirmation (Owner only): its link stops working",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/person-request": {
       "put": {
         "summary": "Ask the Owner to link your account to the Person who is you in the Tree (\"This is me\"). A new request replaces the old",
@@ -27271,7 +27494,7 @@
     },
     "/api/auth/invitation/accept": {
       "post": {
-        "summary": "Accept an invitation: set display name and language, become a Contributor and sign in",
+        "summary": "Accept an invitation: set display name and language, become a Contributor and sign in. The Owner is then told by email",
         "tags": [
           "Sign-in"
         ],
@@ -27405,6 +27628,67 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SignedIn"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/email-change/confirm": {
+      "post": {
+        "summary": "Confirm a Member's new address with the token from the emailed link. It does not sign in",
+        "tags": [
+          "Sign-in"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 20,
+                    "maxLength": 200
+                  }
+                },
+                "required": [
+                  "token"
+                ]
+              }
+            }
+          }
+        },
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailChangeConfirmed"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }

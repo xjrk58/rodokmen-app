@@ -30,6 +30,7 @@ import type {
   VaultImportMapTable,
 } from './vault-import-types.js';
 import type { ReadingTable, ScanReadingSettingTable } from './reading-types.js';
+import type { EmailChangeTable, SignInLinkTable } from './emailed-link-types.js';
 import type { ErasureTable, ExportSlugTable } from './export-types.js';
 import type { AccountTable } from './account-types.js';
 
@@ -265,15 +266,6 @@ export interface InvitationTable {
   revoked_at: Timestamp | null;
 }
 
-export interface SignInLinkTable {
-  id: Generated<string>;
-  token_hash: Buffer;
-  account_id: string;
-  created_at: CreatedAt;
-  expires_at: Timestamp;
-  used_at: Timestamp | null;
-}
-
 export interface AgentTokenTable {
   id: Generated<string>;
   account_id: string;
@@ -413,6 +405,7 @@ export interface Database {
   webauthn_challenge: WebauthnChallengeTable;
   invitation: InvitationTable;
   sign_in_link: SignInLinkTable;
+  email_change: EmailChangeTable;
   agent_token: AgentTokenTable;
   agent_rate_window: AgentRateWindowTable;
   proposal: ProposalTable;

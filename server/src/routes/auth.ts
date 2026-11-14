@@ -2,6 +2,7 @@ import {
   AcceptInvitationBody,
   Accepted,
   ApiError,
+  EmailChangeConfirmed,
   EmailLinkRequestBody,
   InvitationCheck,
   PasskeyLoginVerifyBody,
@@ -23,6 +24,7 @@ import {
   verifyRegistration,
   type PasskeyDeps,
 } from '../auth/passkeys.js';
+import { confirmEmailChange } from '../auth/email-change.js';
 import { sessionCookieOptions, unauthorized } from '../auth/plugin.js';
 import { createSession, endSession, SESSION_COOKIE } from '../auth/sessions.js';
 import type { Account } from '../db/types.js';
@@ -63,7 +65,7 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
     config: pub,
     schema: {
       tags: ['Sign-in'],
-      summary: 'Accept an invitation: set display name and language, become a Contributor and sign in',
+      summary: 'Accept an invitation: set display name and language, become a Contributor and sign in. The Owner is then told by email',
       body: AcceptInvitationBody,
       response: { 201: SignedIn, 404: ApiError, 409: ApiError, 410: ApiError },
     },
@@ -96,6 +98,17 @@ export async function authRoutes(fastify: FastifyInstance, deps: AuthRouteDeps) 
       const { account, session } = await consumeEmailLink(deps, req.body.token, req.headers['user-agent']);
       return signIn(reply, account, session);
     },
+  });
+
+  app.post('/api/auth/email-change/confirm', {
+    config: pub,
+    schema: {
+      tags: ['Sign-in'],
+      summary: "Confirm a Member's new address with the token from the emailed link. It does not sign in",
+      body: TokenBody,
+      response: { 200: EmailChangeConfirmed, 409: ApiError, 410: ApiError },
+    },
+    handler: async (req) => ({ ok: true as const, ...(await confirmEmailChange(deps, req.body.token)) }),
   });
 
   app.post('/api/auth/passkey/authentication/options', {

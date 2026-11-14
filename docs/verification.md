@@ -52,6 +52,7 @@ this page with `node scripts/verification-trace.mjs`.
 | kinship: Line and degree of kinship by marriage | openspec/changes/add-kinship/specs/kinship/spec.md | `kinshipLine` | shared/src/kinship.ts | see below |
 | kinship: Paths in a fixed order | openspec/changes/add-kinship/specs/kinship/spec.md | `closestPath` | shared/src/kinship.ts | see below |
 | kinship: Paths in a fixed order | openspec/changes/add-kinship/specs/kinship/spec.md | `compareKinshipPaths` | shared/src/kinship.ts | nothing beyond the trusted base |
+| member-accounts: The Owner corrects a Member's address | openspec/changes/add-address-correction/specs/member-accounts/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Evidence is required | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `satisfiesEvidenceRule` | shared/src/rules.ts | nothing beyond the trusted base |
 | proposals: Proposals record what they were based on | openspec/changes/add-proposals-and-review/specs/proposals/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | research-leads: Findings link back to leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `leadsOnAccept` | shared/src/leads.ts | nothing beyond the trusted base |
@@ -73,6 +74,7 @@ this page with `node scripts/verification-trace.mjs`.
 | tree-history: Undo a whole Proposal | openspec/changes/add-proposals-and-review/specs/tree-history/spec.md | `undoBlockers` | shared/src/rules.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `compareByEarliest` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `dayDate` | shared/src/edtf.ts | see below |
+| tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `endRange` | shared/src/edtf.ts | nothing beyond the trusted base |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `monthDate` | shared/src/edtf.ts | see below |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `rangeOf` | shared/src/edtf.ts | see below |
 | tree-model: Dates allow uncertainty | openspec/changes/add-tree-backend/specs/tree-model/spec.md | `widenAbout` | shared/src/edtf.ts | nothing beyond the trusted base |
@@ -94,7 +96,7 @@ A verified function's `requires` are proved wherever a verified function calls i
 - `monthDate` (shared/src/edtf.ts):
   - its requires, where unverified code calls it (`parseSimple`): `1 <= month && month <= 12`
 - `rangeOf` (shared/src/edtf.ts):
-  - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)`; `s.kind === 'before' ==> isValidDay(s.end.last)`; `s.kind === 'after' ==> isValidDay(s.start.first)`
+  - its requires, where unverified code calls it (`parseEdtf`): `spread.year >= 0 && spread.month >= 0 && spread.day >= 0`; `s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)`; `s.kind === 'between' ==> isValidDay(s.start.date.first) && isValidDay(s.start.date.last) && s.start.date.first.year >= 1 && s.start.date.last.year >= 1`; `s.kind === 'between' ==> isValidDay(s.end.date.first) && isValidDay(s.end.date.last) && s.end.date.first.year >= 1 && s.end.date.last.year >= 1`; `s.kind === 'before' ==> isValidDay(s.end.date.first) && isValidDay(s.end.date.last) && s.end.date.first.year >= 1 && s.end.date.last.year >= 1`; `s.kind === 'after' ==> isValidDay(s.start.date.first) && isValidDay(s.start.date.last) && s.start.date.first.year >= 1 && s.start.date.last.year >= 1`
 - `termCs` (shared/src/kinship-terms/cs.ts):
   - its requires, where unverified code calls it (shared/src/kinship-terms/index.ts): `t.up >= 0 && t.down >= 0`
 - `termEn` (shared/src/kinship-terms/en.ts):
@@ -142,7 +144,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 - shared/src/presumed-death.ts: `anchorBound`, `endsAt`, `isStep`, `checkChain`
 - shared/src/reading.ts: `copyToSend`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
-- shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
+- shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isCitationNoteOnly`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
 ## Proof additions
 
@@ -321,6 +323,13 @@ Where a proof covers less than its requirement, exactly what it does and does no
   Tree in server/test/reading-proposals.test.ts); that a new Person is created only when the Member chooses so (the
   app's check screen and the Agent's builder, shared/src/reading-proposal.ts, which refuses a read person without a
   choice).
+- **Correcting a Member's address** (`mayDo`, shared/src/rules.ts; member-accounts "The Owner corrects a Member's
+  address"). Proved: only the Owner may `manageAccounts`, the action of the routes that ask for, and withdraw, a change
+  of a Member's address; an Editor, a Contributor and an Agent are refused it ("An Editor tries to change an address").
+  Not proved: that those routes name `manageAccounts` and that the server asks `mayDo` before them (tested in
+  server/test/email-change.test.ts and, for every route, server/test/agents.test.ts); that the new address takes effect
+  only once the link sent to it is confirmed, that the link works once for 7 days, and what is refused
+  (server/src/auth/accounts.ts, tested in server/test/email-change.test.ts).
 
 ## Trusted base
 
