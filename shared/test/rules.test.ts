@@ -89,20 +89,33 @@ describe('the fixed-window limit', () => {
 });
 
 describe('the evidence rule', () => {
+  /** Operations as the evidence rule reads them: by name, with no record or fields (not a setField). */
+  const named = (...ops: string[]) => ops.map((op) => ({ op, record: '', fields: [] }));
+  const setField = (record: string, ...fields: string[]) => ({ op: 'setField', record, fields });
   it('needs at least one Citation, created or attached', () => {
-    expect(satisfiesEvidenceRule(['createPerson', 'createEvent', 'addRole'])).toBe(false);
-    expect(satisfiesEvidenceRule(['createPerson', 'createSource', 'createCitation'])).toBe(true);
-    expect(satisfiesEvidenceRule(['setField', 'attachCitation'])).toBe(true);
+    expect(satisfiesEvidenceRule(named('createPerson', 'createEvent', 'addRole'))).toBe(false);
+    expect(satisfiesEvidenceRule(named('createPerson', 'createSource', 'createCitation'))).toBe(true);
+    expect(satisfiesEvidenceRule([setField('event', 'date'), ...named('attachCitation')])).toBe(true);
     expect(satisfiesEvidenceRule([])).toBe(false);
   });
   it('a Family account Source is cited like any other, so it counts', () => {
     // createSource(type family_account) + createCitation of it
-    expect(satisfiesEvidenceRule(['createSource', 'createCitation', 'attachCitation'])).toBe(true);
+    expect(satisfiesEvidenceRule(named('createSource', 'createCitation', 'attachCitation'))).toBe(true);
   });
   it('merges and undo steps change no facts and need none, unless mixed with facts', () => {
-    expect(satisfiesEvidenceRule(['mergePersons'])).toBe(true);
-    expect(satisfiesEvidenceRule(['restoreRecord', 'restoreRecord'])).toBe(true);
-    expect(satisfiesEvidenceRule(['mergePersons', 'setField'])).toBe(false);
+    expect(satisfiesEvidenceRule(named('mergePersons'))).toBe(true);
+    expect(satisfiesEvidenceRule(named('restoreRecord', 'restoreRecord'))).toBe(true);
+    expect(satisfiesEvidenceRule([...named('mergePersons'), setField('event', 'date')])).toBe(false);
+  });
+  it("a Citation's note alone needs none; its other fields, and other records' fields, still do (#157)", () => {
+    expect(satisfiesEvidenceRule([setField('citation', 'note')])).toBe(true);
+    expect(satisfiesEvidenceRule([setField('citation', 'note'), setField('citation', 'note'), ...named('setNotes')])).toBe(true);
+    for (const field of ['transcription', 'confidence', 'page', 'readOn']) {
+      expect(satisfiesEvidenceRule([setField('citation', field)])).toBe(false);
+      expect(satisfiesEvidenceRule([setField('citation', 'note', field)])).toBe(false);
+    }
+    expect(satisfiesEvidenceRule([setField('citation')])).toBe(false);
+    expect(satisfiesEvidenceRule([setField('house', 'note')])).toBe(false);
   });
 });
 

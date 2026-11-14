@@ -97,6 +97,28 @@ The body of each Vault note SHALL become the research notes of the record it des
 - **WHEN** a Source note of a register entry has `evidence: A`
 - **THEN** its Citation's note holds `Evidence class: A` below the note path
 
+### Requirement: Residences keep their periods
+A residence's `from` and `to` SHALL become the date of its Event, as an interval. An end that is itself an interval SHALL give its outer end; an end that is about or uncertain stays so. When the date stored differs from the period as written, the Event's description SHALL keep the text, and the dry run SHALL list it.
+
+#### Scenario: End given as an interval
+- **WHEN** a residence has `from: 1861` and `to: 1864/1866`
+- **THEN** its Event is dated `1861/1866`, its description says `Date as written in the Vault: 1861/1864/1866`, and the dry run lists it
+
+#### Scenario: Approximate end
+- **WHEN** a residence has `from: 1801` and `to: 1803~`
+- **THEN** its Event is dated `1801/1803~`, with no description
+
+### Requirement: Places are linked to their Municipality
+A Place SHALL be linked to the Municipality of its own name in its `district`. A Place that is part of another Municipality SHALL be linked to the one its note names in `municipality`: by RÚIAN code, or by name, in its district when the note gives one. A name or code that finds no single Municipality SHALL be reported and kept as a line. Such a Place SHALL NOT take the Municipality's point.
+
+#### Scenario: Hamlet of a larger Municipality
+- **WHEN** a Place note has `name: Horní Ves`, `district: Jičín` and `municipality: Vrbice`
+- **THEN** the Place is linked to the Municipality Vrbice in the district of Jičín and keeps its own point, or none
+
+#### Scenario: Municipality not found
+- **WHEN** a Place note names a Municipality that the list does not have in its district
+- **THEN** the Place has no Municipality, the dry run lists it, and its research notes keep the line `municipality: …`
+
 ### Requirement: Scans and documents are uploaded
 Images listed in a Source note's `scans` SHALL be uploaded as that Citation's images. PDF files SHALL be attached as documents to the Source. DOC files SHALL be converted to PDF once and attached the same way, keeping the original file as well. Files the importer can't read SHALL be listed in the report and skipped.
 
@@ -158,7 +180,19 @@ A record an earlier run wrote and a newer importer writes otherwise, such as a l
 
 #### Scenario: Research notes imported before the fields not mapped
 - **WHEN** an earlier import wrote a record's research notes without the fields the Tree has no place for, and the Owner runs the importer again
-- **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since, and the Citation notes of register entries, are listed in the report and stay as they are
+- **THEN** a Proposal adds them below the body if the notes still hold exactly what that import wrote; notes the Owner changed since are listed in the report and stay as they are
+
+#### Scenario: Residence dated after an earlier import
+- **WHEN** an earlier import left a residence with an end such as `1803~` or `1864/1866` undated, with the period as written in its description, and the Owner runs the importer again
+- **THEN** a Proposal dates it, attaching a new Citation of the Person note to it, if the Event still has no date and that description; one changed since is listed in the report and stays as it is
+
+#### Scenario: Municipality after an earlier import
+- **WHEN** an earlier import gave a Place whose note names its Municipality in `municipality` no Municipality, and the Owner runs the importer again
+- **THEN** a Proposal links it to that Municipality, citing the Place note again, if the Place still has no Municipality; one linked otherwise since is listed in the report and stays as it is
+
+#### Scenario: Evidence class imported before
+- **WHEN** an earlier import wrote a register entry's Citation note with the note path only, the entry has `evidence: A`, and the Owner runs the importer again
+- **THEN** a Proposal of that one change, with no new Citation, adds `Evidence class: A` to the Citation's note if the note still holds exactly what that import wrote; otherwise the report lists it and the note stays as it is
 
 ### Requirement: Submitted as an Agent
 The importer SHALL submit through the public API with an Agent token. Every imported Proposal is therefore labelled as Agent work, and all of them belong to one Import batch named after the run.

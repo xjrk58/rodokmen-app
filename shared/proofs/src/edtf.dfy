@@ -43,7 +43,9 @@ datatype CalendarDay = CalendarDay(year: int, month: int, day: int)
 
 datatype SimpleDate = SimpleDate(precision: EdtfPrecision, first: CalendarDay, last: CalendarDay)
 
-datatype EdtfSyntax = single(qualifier: EdtfQualifier, date: SimpleDate) | between(start: SimpleDate, end: SimpleDate) | before(end: SimpleDate) | after(start: SimpleDate)
+datatype IntervalEnd = IntervalEnd(qualifier: EdtfQualifier, date: SimpleDate)
+
+datatype EdtfSyntax = single(qualifier: EdtfQualifier, date: SimpleDate) | between(start: IntervalEnd, end: IntervalEnd) | before(end: IntervalEnd) | after(start: IntervalEnd)
 
 datatype EdtfRange = closed(earliest: CalendarDay, latest: CalendarDay) | openStart(latest: CalendarDay) | openEnd(earliest: CalendarDay) | reversed
 
@@ -300,39 +302,74 @@ method widenAbout(date: SimpleDate, spread: Spread) returns (res: SimpleDate)
   return SimpleDate(date.precision, i_t4, i_t5);
 }
 
+method endRange(e: IntervalEnd, spread: Spread) returns (res: SimpleDate)
+  requires isValidDay(e.date.first)
+  requires isValidDay(e.date.last)
+  requires (e.date.first.year >= 1)
+  requires (e.date.last.year >= 1)
+  requires (spread.year >= 0)
+  requires (spread.month >= 0)
+  requires (spread.day >= 0)
+  ensures isValidDay(res.first)
+  ensures isValidDay(res.last)
+  ensures (dayNumber(res.first) <= dayNumber(e.date.first))
+  ensures (dayNumber(e.date.last) <= dayNumber(res.last))
+  ensures ((!e.qualifier.approximate?) ==> (res == e.date))
+{
+  if e.qualifier.approximate? {
+    var i_t6 := widenAbout(e.date, spread);
+    return i_t6;
+  }
+  return e.date;
+}
+
 method rangeOf(s: EdtfSyntax, spread: Spread) returns (res: EdtfRange)
   requires (spread.year >= 0)
   requires (spread.month >= 0)
   requires (spread.day >= 0)
   requires (s.single? ==> ((((isValidDay(s.date.first) && isValidDay(s.date.last)) && (s.date.first.year >= 1)) && (s.date.last.year >= 1)) && (dayNumber(s.date.first) <= dayNumber(s.date.last))))
-  requires (s.between? ==> (isValidDay(s.start.first) && isValidDay(s.end.last)))
-  requires (s.before? ==> isValidDay(s.end.last))
-  requires (s.after? ==> isValidDay(s.start.first))
+  requires (s.between? ==> (((isValidDay(s.start.date.first) && isValidDay(s.start.date.last)) && (s.start.date.first.year >= 1)) && (s.start.date.last.year >= 1)))
+  requires (s.between? ==> (((isValidDay(s.end.date.first) && isValidDay(s.end.date.last)) && (s.end.date.first.year >= 1)) && (s.end.date.last.year >= 1)))
+  requires (s.before? ==> (((isValidDay(s.end.date.first) && isValidDay(s.end.date.last)) && (s.end.date.first.year >= 1)) && (s.end.date.last.year >= 1)))
+  requires (s.after? ==> (((isValidDay(s.start.date.first) && isValidDay(s.start.date.last)) && (s.start.date.first.year >= 1)) && (s.start.date.last.year >= 1)))
   ensures (match res { case closed(i_result_earliest, i_result_latest) => ((isValidDay(i_result_earliest) && isValidDay(i_result_latest)) && (dayNumber(i_result_earliest) <= dayNumber(i_result_latest))) case _ => true })
   ensures (match res { case openStart(i_result_latest) => isValidDay(i_result_latest) case _ => true })
   ensures (match res { case openEnd(i_result_earliest) => isValidDay(i_result_earliest) case _ => true })
   ensures (match res { case reversed => s.between? case _ => true })
   ensures (match s { case single(i_s_qualifier, i_s_date) => ((res.closed? && (dayNumber(res.earliest) <= dayNumber(i_s_date.first))) && (dayNumber(i_s_date.last) <= dayNumber(res.latest))) case _ => true })
   ensures (s.single? ==> (!s.qualifier.approximate?) ==> ((res.closed? && (res.earliest == s.date.first)) && (res.latest == s.date.last)))
-  ensures (match s { case between(i_s_start, i_s_end) => (((res.closed? && (res.earliest == i_s_start.first)) && (res.latest == i_s_end.last)) || (res.reversed? && (dayNumber(i_s_start.first) > dayNumber(i_s_end.last)))) case _ => true })
-  ensures (match s { case before(i_s_end) => (res.openStart? && (res.latest == i_s_end.last)) case _ => true })
-  ensures (match s { case after(i_s_start) => (res.openEnd? && (res.earliest == i_s_start.first)) case _ => true })
+  ensures (match s { case between(i_s_start, i_s_end) => (res.reversed? == (dayNumber(i_s_start.date.first) > dayNumber(i_s_end.date.last))) case _ => true })
+  ensures (s.between? ==> res.closed? ==> ((dayNumber(res.earliest) <= dayNumber(s.start.date.first)) && (dayNumber(s.end.date.last) <= dayNumber(res.latest))))
+  ensures (match s { case before(i_s_end) => (res.openStart? && (dayNumber(i_s_end.date.last) <= dayNumber(res.latest))) case _ => true })
+  ensures (match s { case after(i_s_start) => (res.openEnd? && (dayNumber(res.earliest) <= dayNumber(i_s_start.date.first))) case _ => true })
+  ensures (s.between? ==> res.closed? ==> (!s.start.qualifier.approximate?) ==> (res.earliest == s.start.date.first))
+  ensures (s.between? ==> res.closed? ==> (!s.end.qualifier.approximate?) ==> (res.latest == s.end.date.last))
+  ensures (s.before? ==> (!s.end.qualifier.approximate?) ==> (res.openStart? && (res.latest == s.end.date.last)))
+  ensures (s.after? ==> (!s.start.qualifier.approximate?) ==> (res.openEnd? && (res.earliest == s.start.date.first)))
 {
   match s {
     case single(i_s_qualifier, i_s_date) =>
-      var i_t6 := widenAbout(i_s_date, spread);
-      var date := (if i_s_qualifier.approximate? then i_t6 else i_s_date);
+      var i_t7 := widenAbout(i_s_date, spread);
+      var date := (if i_s_qualifier.approximate? then i_t7 else i_s_date);
       return closed(date.first, date.last);
     case between(i_s_start, i_s_end) =>
-      var i_t7 := dayNumber(i_s_start.first);
-      var i_t8 := dayNumber(i_s_end.last);
-      if (i_t7 > i_t8) {
+      var i_t8 := dayNumber(i_s_start.date.first);
+      var i_t9 := dayNumber(i_s_end.date.last);
+      if (i_t8 > i_t9) {
         return EdtfRange.reversed;
       }
-      return closed(i_s_start.first, i_s_end.last);
+      var i_t10 := endRange(i_s_start, spread);
+      var start := i_t10;
+      var i_t11 := endRange(i_s_end, spread);
+      var end := i_t11;
+      return closed(start.first, end.last);
     case before(i_s_end) =>
-      return openStart(i_s_end.last);
+      var i_t12 := endRange(i_s_end, spread);
+      var end := i_t12;
+      return openStart(end.last);
     case after(i_s_start) =>
-      return openEnd(i_s_start.first);
+      var i_t13 := endRange(i_s_start, spread);
+      var start := i_t13;
+      return openEnd(start.first);
   }
 }

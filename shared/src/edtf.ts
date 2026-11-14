@@ -11,13 +11,17 @@
  * | about       | `1801~`            | 1799-01-01   | 1803-12-31   |
  * | uncertain   | `1801?`            | 1801-01-01   | 1801-12-31   |
  * | between     | `1801/1803`        | 1801-01-01   | 1803-12-31   |
+ * | between     | `1801/1803~`       | 1801-01-01   | 1805-12-31   |
  * | before      | `../1805`          | (open)       | 1805-12-31   |
  * | after       | `1790/..`          | 1790-01-01   | (open)       |
  *
  * "About" (`~`) widens the range by {@link APPROXIMATE_SPREAD} of its precision
  * (2 years for a year, 1 month for a month, 7 days for a day). "Uncertain" (`?`)
  * keeps the stated range: the value is doubtful, not vague. Either qualifier may
- * follow a day, month or year. Interval ends are plain days, months or years.
+ * follow a day, month or year, alone or as an end of an interval (`1801~/1803~`,
+ * `../1805~`, `1801?/1803`): an interval runs from the earliest day its start could
+ * be to the latest day its end could be, each end read as the single date it is.
+ * An interval whose ends as written are in the wrong order is refused.
  *
  * `earliest` and `latest` are ISO days (`YYYY-MM-DD`); `null` means the range
  * is open on that side. Events sort by `earliest` (open sorts first).
@@ -38,6 +42,7 @@ export interface ParsedEdtf {
   /** The date exactly as written. */
   readonly input: string;
   readonly form: EdtfForm;
+  /** Of a single date; an interval is 'exact', whatever its ends say. */
   readonly qualifier: EdtfQualifier;
   /** Precision of a single date; for intervals the precision of the coarser end. */
   readonly precision: EdtfPrecision;
@@ -170,12 +175,18 @@ interface SimpleDate {
   readonly last: CalendarDay;
 }
 
+/** An end of an interval: a plain day, month or year, possibly about (`~`) or uncertain (`?`). */
+interface IntervalEnd {
+  readonly qualifier: EdtfQualifier;
+  readonly date: SimpleDate;
+}
+
 /** What the text says, before any day arithmetic. */
 type EdtfSyntax =
   | { readonly kind: 'single'; readonly qualifier: EdtfQualifier; readonly date: SimpleDate }
-  | { readonly kind: 'between'; readonly start: SimpleDate; readonly end: SimpleDate }
-  | { readonly kind: 'before'; readonly end: SimpleDate }
-  | { readonly kind: 'after'; readonly start: SimpleDate };
+  | { readonly kind: 'between'; readonly start: IntervalEnd; readonly end: IntervalEnd }
+  | { readonly kind: 'before'; readonly end: IntervalEnd }
+  | { readonly kind: 'after'; readonly start: IntervalEnd };
 
 /** The days a date could be: both ends, one end open, or an interval that ends before it starts. */
 type EdtfRange =
@@ -239,39 +250,69 @@ function widenAbout(date: SimpleDate, spread: Spread): SimpleDate {
   return { precision: date.precision, first: addMonths(date.first, -months), last: addMonths(date.last, months) };
 }
 
+/** The days an interval end could be: as stated, or widened like a single date when it is "about" (#135). */
+function endRange(e: IntervalEnd, spread: Spread): SimpleDate {
+  //@ verify
+  //@ contract tree-model: Dates allow uncertainty
+  //@ requires isValidDay(e.date.first) && isValidDay(e.date.last) && e.date.first.year >= 1 && e.date.last.year >= 1
+  //@ requires spread.year >= 0 && spread.month >= 0 && spread.day >= 0
+  //@ ensures isValidDay(\result.first) && isValidDay(\result.last)
+  //@ ensures dayNumber(\result.first) <= dayNumber(e.date.first) && dayNumber(e.date.last) <= dayNumber(\result.last)
+  //@ ensures e.qualifier !== 'approximate' ==> \result === e.date
+  if (e.qualifier === 'approximate') return widenAbout(e.date, spread);
+  return e.date;
+}
+
 /**
- * The days a date could be, for every form in the table above. A closed range never ends
- * before it starts: an interval that would is reported as "reversed" and refused.
+ * The days a date could be, for every form in the table above. An interval runs from the
+ * earliest day its start could be to the latest day its end could be, each end read as the
+ * single date it is (`1801~/1803` from 1799-01-01). A closed range never ends before it starts:
+ * an interval whose ends as written are in the wrong order is reported as "reversed" and refused.
  */
 function rangeOf(s: EdtfSyntax, spread: Spread): EdtfRange {
   //@ verify
   //@ contract tree-model: Dates allow uncertainty
   //@ requires spread.year >= 0 && spread.month >= 0 && spread.day >= 0
   //@ requires s.kind === 'single' ==> isValidDay(s.date.first) && isValidDay(s.date.last) && s.date.first.year >= 1 && s.date.last.year >= 1 && dayNumber(s.date.first) <= dayNumber(s.date.last)
-  //@ requires s.kind === 'between' ==> isValidDay(s.start.first) && isValidDay(s.end.last)
-  //@ requires s.kind === 'before' ==> isValidDay(s.end.last)
-  //@ requires s.kind === 'after' ==> isValidDay(s.start.first)
+  //@ requires s.kind === 'between' ==> isValidDay(s.start.date.first) && isValidDay(s.start.date.last) && s.start.date.first.year >= 1 && s.start.date.last.year >= 1
+  //@ requires s.kind === 'between' ==> isValidDay(s.end.date.first) && isValidDay(s.end.date.last) && s.end.date.first.year >= 1 && s.end.date.last.year >= 1
+  //@ requires s.kind === 'before' ==> isValidDay(s.end.date.first) && isValidDay(s.end.date.last) && s.end.date.first.year >= 1 && s.end.date.last.year >= 1
+  //@ requires s.kind === 'after' ==> isValidDay(s.start.date.first) && isValidDay(s.start.date.last) && s.start.date.first.year >= 1 && s.start.date.last.year >= 1
   //@ ensures \result.kind === 'closed' ==> isValidDay(\result.earliest) && isValidDay(\result.latest) && dayNumber(\result.earliest) <= dayNumber(\result.latest)
   //@ ensures \result.kind === 'openStart' ==> isValidDay(\result.latest)
   //@ ensures \result.kind === 'openEnd' ==> isValidDay(\result.earliest)
   //@ ensures \result.kind === 'reversed' ==> s.kind === 'between'
   //@ ensures s.kind === 'single' ==> \result.kind === 'closed' && dayNumber(\result.earliest) <= dayNumber(s.date.first) && dayNumber(s.date.last) <= dayNumber(\result.latest)
   //@ ensures s.kind === 'single' && s.qualifier !== 'approximate' ==> \result.kind === 'closed' && \result.earliest === s.date.first && \result.latest === s.date.last
-  //@ ensures s.kind === 'between' ==> (\result.kind === 'closed' && \result.earliest === s.start.first && \result.latest === s.end.last) || (\result.kind === 'reversed' && dayNumber(s.start.first) > dayNumber(s.end.last))
-  //@ ensures s.kind === 'before' ==> \result.kind === 'openStart' && \result.latest === s.end.last
-  //@ ensures s.kind === 'after' ==> \result.kind === 'openEnd' && \result.earliest === s.start.first
+  // An interval is refused exactly when its ends as written are in the wrong order; otherwise it holds both ends whole ...
+  //@ ensures s.kind === 'between' ==> (\result.kind === 'reversed') === (dayNumber(s.start.date.first) > dayNumber(s.end.date.last))
+  //@ ensures s.kind === 'between' && \result.kind === 'closed' ==> dayNumber(\result.earliest) <= dayNumber(s.start.date.first) && dayNumber(s.end.date.last) <= dayNumber(\result.latest)
+  //@ ensures s.kind === 'before' ==> \result.kind === 'openStart' && dayNumber(s.end.date.last) <= dayNumber(\result.latest)
+  //@ ensures s.kind === 'after' ==> \result.kind === 'openEnd' && dayNumber(\result.earliest) <= dayNumber(s.start.date.first)
+  // ... and an end that is not "about" exactly as stated, as before qualified ends were allowed.
+  //@ ensures s.kind === 'between' && \result.kind === 'closed' && s.start.qualifier !== 'approximate' ==> \result.earliest === s.start.date.first
+  //@ ensures s.kind === 'between' && \result.kind === 'closed' && s.end.qualifier !== 'approximate' ==> \result.latest === s.end.date.last
+  //@ ensures s.kind === 'before' && s.end.qualifier !== 'approximate' ==> \result.kind === 'openStart' && \result.latest === s.end.date.last
+  //@ ensures s.kind === 'after' && s.start.qualifier !== 'approximate' ==> \result.kind === 'openEnd' && \result.earliest === s.start.date.first
   switch (s.kind) {
     case 'single': {
       const date = s.qualifier === 'approximate' ? widenAbout(s.date, spread) : s.date;
       return { kind: 'closed', earliest: date.first, latest: date.last };
     }
-    case 'between':
-      if (dayNumber(s.start.first) > dayNumber(s.end.last)) return { kind: 'reversed' };
-      return { kind: 'closed', earliest: s.start.first, latest: s.end.last };
-    case 'before':
-      return { kind: 'openStart', latest: s.end.last };
-    case 'after':
-      return { kind: 'openEnd', earliest: s.start.first };
+    case 'between': {
+      if (dayNumber(s.start.date.first) > dayNumber(s.end.date.last)) return { kind: 'reversed' };
+      const start = endRange(s.start, spread);
+      const end = endRange(s.end, spread);
+      return { kind: 'closed', earliest: start.first, latest: end.last };
+    }
+    case 'before': {
+      const end = endRange(s.end, spread);
+      return { kind: 'openStart', latest: end.last };
+    }
+    case 'after': {
+      const start = endRange(s.start, spread);
+      return { kind: 'openEnd', earliest: start.first };
+    }
   }
 }
 
@@ -292,6 +333,14 @@ function parseSimple(text: string, input: string): SimpleDate {
   return dayDate(day);
 }
 
+/** A day, month or year with an optional qualifier: a single date, or an end of an interval. */
+function parseQualified(text: string, input: string): IntervalEnd {
+  const last = text.at(-1);
+  if (last === '~') return { qualifier: 'approximate', date: parseSimple(text.slice(0, -1), input) };
+  if (last === '?') return { qualifier: 'uncertain', date: parseSimple(text.slice(0, -1), input) };
+  return { qualifier: 'exact', date: parseSimple(text, input) };
+}
+
 function parseSyntax(input: string): EdtfSyntax {
   if (typeof input !== 'string' || input.length === 0) throw new EdtfError(String(input), 'empty');
   if (input !== input.trim()) throw new EdtfError(input, 'leading or trailing spaces');
@@ -303,16 +352,13 @@ function parseSyntax(input: string): EdtfSyntax {
     if (startText === '..' && endText === '..') throw new EdtfError(input, 'an interval needs at least one end');
     if (startText === '') throw new EdtfError(input, 'use "../" for an open start');
     if (endText === '') throw new EdtfError(input, 'use "/.." for an open end');
-    if (startText === '..') return { kind: 'before', end: parseSimple(endText, input) };
-    if (endText === '..') return { kind: 'after', start: parseSimple(startText, input) };
-    const start = parseSimple(startText, input);
-    return { kind: 'between', start, end: parseSimple(endText, input) };
+    if (startText === '..') return { kind: 'before', end: parseQualified(endText, input) };
+    if (endText === '..') return { kind: 'after', start: parseQualified(startText, input) };
+    const start = parseQualified(startText, input);
+    return { kind: 'between', start, end: parseQualified(endText, input) };
   }
 
-  const last = input.at(-1);
-  if (last === '~') return { kind: 'single', qualifier: 'approximate', date: parseSimple(input.slice(0, -1), input) };
-  if (last === '?') return { kind: 'single', qualifier: 'uncertain', date: parseSimple(input.slice(0, -1), input) };
-  return { kind: 'single', qualifier: 'exact', date: parseSimple(input, input) };
+  return { kind: 'single', ...parseQualified(input, input) };
 }
 
 function pad(n: number, width: number): string {
@@ -341,11 +387,13 @@ function precisionOf(s: EdtfSyntax): EdtfPrecision {
     case 'single':
       return s.date.precision;
     case 'before':
-      return s.end.precision;
+      return s.end.date.precision;
     case 'after':
-      return s.start.precision;
-    case 'between':
-      return PRECISION_RANK[s.start.precision] >= PRECISION_RANK[s.end.precision] ? s.start.precision : s.end.precision;
+      return s.start.date.precision;
+    case 'between': {
+      const [a, b] = [s.start.date.precision, s.end.date.precision];
+      return PRECISION_RANK[a] >= PRECISION_RANK[b] ? a : b;
+    }
   }
 }
 

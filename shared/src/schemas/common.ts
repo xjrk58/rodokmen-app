@@ -18,7 +18,8 @@ export const EdtfDate = z
   })
   .meta({
     id: 'EdtfDate',
-    description: 'Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after)',
+    description:
+      'Date in the EDTF subset: 1801-03-12, 1801-03, 1801, 1801~ (about), 1801? (uncertain), 1801/1803 (between), ../1805 (before), 1790/.. (after); an end of an interval may be about or uncertain too (1801/1803~)',
     examples: ['1801-03-12', '1801~', '../1805'],
   });
 

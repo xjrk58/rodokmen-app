@@ -59,7 +59,16 @@ folder) and never paste it into an issue or a pull request. It lists:
 - the marriages both spouses record without a Source note but with different dates or Places, which become two
   Events.
 
-Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left.
+Fix what you want fixed in the Vault, commit, and run the dry run again until you accept what is left. A Place listed
+with `places.district: no Municipality of that name in that district` is often a village or hamlet that is part of
+a larger Municipality: name that one in its note, by name or by RÚIAN code, and the Place is linked to it and leaves
+that list:
+
+```yaml
+name: Horní Ves
+district: Jičín
+municipality: Vrbice # or 572128
+```
 
 ## 4. Import
 
@@ -107,9 +116,22 @@ out**.
 
 An import made before #134 left out the fields the Tree has no place for, such as a Person's occupation. The next run
 adds them below the research notes of each record whose notes still hold exactly what that import wrote, in a small
-Proposal per record. Notes you changed in the app since are left as they are, and the report lists their lines under
-**Fields not mapped, on records imported before #134**. It also lists the evidence classes of register entries,
-which belong in their Citation's note: no Proposal can change that without new evidence yet (#157).
+Proposal per record. It adds the evidence class of a register entry to its Citation's note the same way, if the note
+still holds what that import wrote; such a Proposal has no new Citation, as a Citation's note states no fact. Notes
+you changed since are left as they are, and the report lists their lines under **Fields not mapped, on records
+imported before #134**.
+
+An import made before #135 left a residence undated when an end of its period was "about" (`1803~`) or itself an
+interval (`1864/1866`), with the period as written in the Event's description. The next run dates each such residence
+that still has no date and that description, in a small Proposal per residence that attaches a new Citation of the
+Person note to it, so the Event cites that note twice. A residence you have dated in the app since is left as it is
+and listed under **Residence dates, on Events imported before #135**.
+
+An import made before #137 read no `municipality` in Place notes. Once you add it to a Place note, the next run links
+that Place to the Municipality it names, in a small Proposal per Place that cites the note again, if the Place still
+has the Municipality the import gave it. A Place you have linked otherwise in the app since is left as it is and listed
+under **Municipalities, on Places imported before #137**. The note itself is listed under **Changed notes**, as you
+changed it.
 
 An import made before #136 kept the first 4,000 characters of a long log or plan note in its Research lead. The
 next run gives such a lead the whole note, if the lead still holds exactly what that run wrote. A lead you changed
