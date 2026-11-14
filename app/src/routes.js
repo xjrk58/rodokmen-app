@@ -8,6 +8,7 @@
 //   #settings        Settings
 //   #map, #map=z/lat/lon   the map; #life/<id> the map with that Person's life path
 //   #sign-in, #invite/<token>, #link/<token>   signing in
+//   #address/<token>  confirming a new address the Owner gave a Member
 //   #leads, #leads/place/<id>   Research leads, all or at a Place; #leads/<id> one lead
 //   #leads/new[/person/<id> | /place/<id>]   writing a lead
 //   #work/…          the work panel (Propose, Drafts, review, history; src/work.js)
@@ -18,7 +19,7 @@ const TOKEN = '[A-Za-z0-9_-]{20,200}';
 /**
  * @typedef {{ screen: 'home' } | { screen: 'tree', focus: string | null } | { screen: 'people' }
  *   | { screen: 'person', id: string } | { screen: 'settings' } | { screen: 'map', life: string | null }
- *   | { screen: 'sign-in' } | { screen: 'invite', token: string } | { screen: 'link', token: string }
+ *   | { screen: 'sign-in' } | { screen: 'invite', token: string } | { screen: 'link', token: string } | { screen: 'address', token: string }
  *   | { screen: 'work', view: string } | { screen: 'leads', place: string | null } | { screen: 'lead', id: string }
  *   | { screen: 'lead-new', person: string | null, place: string | null }} Route
  */
@@ -42,6 +43,7 @@ export function parseRoute(hash) {
   if (h === 'sign-in') return { screen: 'sign-in' };
   if ((m = new RegExp(`^invite/(${TOKEN})$`).exec(h))) return { screen: 'invite', token: m[1] };
   if ((m = new RegExp(`^link/(${TOKEN})$`).exec(h))) return { screen: 'link', token: m[1] };
+  if ((m = new RegExp(`^address/(${TOKEN})$`).exec(h))) return { screen: 'address', token: m[1] };
   if ((m = /^work(?:\/([a-z]+))?/.exec(h))) return { screen: 'work', view: m[1] ?? 'propose' };
   return { screen: 'home' };
 }
