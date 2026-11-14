@@ -113,6 +113,11 @@ describe('kinship on the server (kinship spec)', () => {
     const tree = PersonDetail.parse((await call(reader, 'GET', `/api/persons/${K.norbert}`)).json());
     const child = tree.familiesAsPartner.flatMap((f) => f.children).find((c) => c.person.id === K.viktor)!.person;
     expect({ ...viktor, kinship: undefined }).toEqual({ ...child, kinship: undefined });
+    // The Owner's GEDCOM download holds the family, and no kinship: nothing about it is stored.
+    const gedcom = await call(owner, 'GET', '/api/export/family.ged');
+    expect(gedcom.statusCode, gedcom.body).toBe(200);
+    expect(gedcom.body).toContain('Javorník');
+    expect(gedcom.body).not.toMatch(/kinship|sestřenice|second cousin|praděd|great-grandfather|z 2\. kolena/i);
   });
 
   it('an Agent names both, and gets what the Member gets with the first as their own Person', async () => {
