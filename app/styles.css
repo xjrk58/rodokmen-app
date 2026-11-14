@@ -2105,7 +2105,10 @@ pre.transcription {
   }
 }
 
-/* The Chart screen (src/chart-screen.js): the Chart pans and zooms like the tree. */
+/* The Chart screen (src/chart-screen.js): the Chart pans and zooms like the tree, as wide as the window. */
+.screen-body.chart-screen {
+  max-width: none;
+}
 .chart-screen {
   display: flex;
   flex-direction: column;

@@ -98,7 +98,10 @@ export interface HouseRows {
   readonly last: number[];
 }
 
-/** Whether placement `i` places its Person, with a date that bounds its row's period. */
+/**
+ * Whether placement `i` places its Person, with a date that bounds its row's period.
+ * @public Only the proofs use it (docs/verification.md), which knip cannot see.
+ */
 export function bounds(placements: readonly Placement[], i: number): boolean {
   //@ verify
   //@ requires 0 <= i && i < placements.length

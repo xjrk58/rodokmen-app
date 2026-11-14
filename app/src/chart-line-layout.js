@@ -19,6 +19,9 @@ import { card, finish, GAP } from './chart-tree-layout.js';
 /** The couple's width: two cards and the gap between them; the list under it is as wide. */
 export const COUPLE_W = 2 * CARD.w + GAP.couple;
 const ROW_GAP = 150;
+/** The children list: right of the line, which runs down the middle of the line Person's card. */
+const LIST_X = -CARD.w / 2;
+const LIST_W = COUPLE_W / 2 - LIST_X;
 const SIDE_GAP = 60;
 
 /**
@@ -65,13 +68,13 @@ export function layoutLine(model, metrics, labels, part = {}) {
       const child = persons.get(c.personId);
       if (!child) return [];
       const next = c.personId === row.nextId;
-      return [listLine(metrics, labels, child, -COUPLE_W / 2 + 34, listY + 30 + SMALL.line * i, COUPLE_W - 50, next ? 'semibold' : 'regular')];
+      return [listLine(metrics, labels, child, LIST_X + 34, listY + 30 + SMALL.line * i, LIST_W - 50, next ? 'semibold' : 'regular')];
     });
     const listH = row.children.length === 0 ? 0 : 40 + SMALL.line * row.children.length;
     if (listH > 0) {
       const nextAt = row.children.findIndex((c) => c.personId === row.nextId);
-      const symbols = nextAt < 0 ? [] : [{ kind: 'line', x: -COUPLE_W / 2 + 8, y: listY + 30 + SMALL.line * nextAt - 18 }];
-      cards.push(card(`list:${row.personId}`, null, 'list', { x: -COUPLE_W / 2, y: listY, w: COUPLE_W, h: listH }, false, false, { lines: list, symbols }));
+      const symbols = nextAt < 0 ? [] : [{ kind: 'line', x: LIST_X + 8, y: listY + 30 + SMALL.line * nextAt - 18 }];
+      cards.push(card(`list:${row.personId}`, null, 'list', { x: LIST_X, y: listY, w: LIST_W, h: listH }, false, false, { lines: list, symbols }));
     }
     // The siblings of the next Person, outward on each side.
     let left = -COUPLE_W / 2 - SIDE_GAP;

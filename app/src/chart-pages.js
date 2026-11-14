@@ -16,9 +16,6 @@ import { layoutTree, subtreeWidths } from './chart-tree-layout.js';
 /** @typedef {'a4-portrait' | 'a4-landscape' | 'a3-portrait' | 'a3-landscape'} Paper */
 /** @typedef {{ number: number, layout: ChartLayout, scale: number }} Page */
 
-export const PAPERS = /** @type {const} */ (['a3-landscape', 'a3-portrait', 'a4-landscape', 'a4-portrait']);
-export const DEFAULT_PAPER = 'a3-landscape';
-
 /** The sheet's frame: the margin to the paper's edge, the title above the content and the legend and colophon below. */
 export const SHEET = { margin: 80, inset: 50, header: 230, footer: 300 };
 /** Names are set at 9 points, and may shrink to 7 on paper. */

@@ -9,7 +9,7 @@
  * Events, with every Role and Source), and reads back only what the view keeps; the tests in
  * shared/test/charts-model.test.ts check that no other field survives.
  */
-import type { RowEvent, RowName, RowPerson } from './chart-rows.js';
+import type { RowEvent, RowName, RowPerson } from './chart-row-types.js';
 import { hasLivingRole, sheetPerson, type ExportEvent, type ExportRecord } from './export.js';
 
 function exportEvent(e: RowEvent, living: (id: string) => boolean): ExportEvent {
