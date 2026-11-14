@@ -220,9 +220,9 @@
       "given": "Ignác",
       "surname": "Javorník",
       "displayName": "Ignác Javorník",
-      "living": true,
+      "living": false,
       "birth": null,
-      "death": null,
+      "death": "1891-02-03",
       "relation": "unrelated",
       "familyRoot": false
     },

@@ -1265,6 +1265,14 @@ function javornikFamily(b: Builder, place: string, home: string): void {
   // Their son, born 1932 and with no recorded death: a Living person.
   const viktor = person('male', given('Viktor', 'Victor', 'Viktor'), JAVORNIK, 5, 1932);
   born(fNorbert, viktor, norbert, radka, '1932-02-20');
+  // Those whose own birth is not recorded have died, so the Living rule does not keep them Living.
+  const deaths: Array<[PersonInfo, string]> = [
+    [ignac, '1891-02-03'],
+    [hynek, '1880-11-20'],
+    [johana, '1886-04-02'],
+    [eliska, '1899-08-16'],
+  ];
+  for (const [p, date] of deaths) b.die(p, date, at);
   for (const p of [
     ignac,
     kristina,
