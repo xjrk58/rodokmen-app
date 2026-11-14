@@ -94,3 +94,6 @@ restoreRecord
 restoreRecord
   cs: odebírá událost: úmrtí 1850
   en: removes the death of 1850
+mergeEvents
+  cs: slučuje událost úmrtí 1850 (2) do události úmrtí 1850
+  en: merges the death of 1850 (2) into the death of 1850

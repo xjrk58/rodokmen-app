@@ -206,6 +206,7 @@ describe('Read and propose only', () => {
     expect((await asAgent('POST', `/api/proposals/${p.id}/undo`, { choices: [] })).statusCode).toBe(403);
     const merge = { mergeId: L.adoptedChild, keepBaseVersion: 1, mergeBaseVersion: 1, note: null };
     expect((await asAgent('POST', `/api/persons/${L.janNovak}/merge`, merge)).statusCode).toBe(403);
+    expect((await asAgent('POST', `/api/events/${L.janBaptism}/merge`, { ...merge, mergeId: L.event1840 })).statusCode).toBe(403);
     expect(await statusOf(p.id)).toBe('pending');
   });
 
@@ -217,6 +218,10 @@ describe('Read and propose only', () => {
     // A merge inside a Proposal is an Editor's direct change too.
     const merge = await submit([{ op: 'mergePersons', keepId: L.janNovak, mergeId: L.adoptedChild, keepBaseVersion: 1, mergeBaseVersion: 1 }]);
     expect(merge.statusCode).toBe(403);
+    // So is a merge of Events (#154).
+    const mergeEvents = await submit([{ op: 'mergeEvents', keepId: L.janBaptism, mergeId: L.event1840, keepBaseVersion: 1, mergeBaseVersion: 1 }]);
+    expect(mergeEvents.statusCode).toBe(403);
+    expect(errorOf(mergeEvents).message).toContain('only Editors merge Events');
     expect(await t.db.selectFrom('proposal').select('id').where('author_id', '=', agent.id).execute()).toEqual(before);
     expect(await t.db.selectFrom('log_entry').select('id').where('author_id', '=', agent.id).execute()).toEqual([]);
   });

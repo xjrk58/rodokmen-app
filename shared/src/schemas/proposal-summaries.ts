@@ -342,6 +342,8 @@ export function describeOperation(op: Operation, ctx: SummaryContext, language: 
       return setField(op, say);
     case 'mergePersons':
       return cs ? `slučuje osobu ${L(op.mergeId)} do osoby ${L(op.keepId)}` : `merges ${L(op.mergeId)} into ${L(op.keepId)}`;
+    case 'mergeEvents':
+      return cs ? `slučuje událost ${L(op.mergeId)} do události ${L(op.keepId)}` : `merges ${L(op.mergeId)} into ${L(op.keepId)}`;
     case 'restoreRecord':
       return restoreRecord(op, say);
     case 'setFamilyRoot':

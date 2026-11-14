@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACTIONS, detectConflict, fixedWindow, mayDecide, mayDo, permissionsFor, satisfiesEvidenceRule, undoBlockers } from '../src/index.js';
+import { ACTIONS, detectConflict, fixedWindow, mayDecide, mayDo, mayUseOperation, permissionsFor, satisfiesEvidenceRule, undoBlockers } from '../src/index.js';
 
 describe('who may accept, reject or merge', () => {
   it('Editors and the Owner only; never Contributors or Agents', () => {
@@ -73,6 +73,16 @@ describe('what a role may do', () => {
   });
 });
 
+describe('who may use which operation', () => {
+  it("only Editors use the merges of Persons and of Events; every other operation is anyone's", () => {
+    for (const op of ['mergePersons', 'mergeEvents']) {
+      expect(mayUseOperation(false, op), op).toBe(false);
+      expect(mayUseOperation(true, op), op).toBe(true);
+    }
+    for (const op of ['createEvent', 'addRole', 'setField', 'attachCitation']) expect(mayUseOperation(false, op), op).toBe(true);
+  });
+});
+
 describe('the fixed-window limit', () => {
   const HOUR = 3_600_000;
   it('allows up to the limit in one window, then refuses until the window ends', () => {
@@ -110,6 +120,11 @@ describe('the evidence rule', () => {
     expect(satisfiesEvidenceRule(named('mergePersons'))).toBe(true);
     expect(satisfiesEvidenceRule(named('restoreRecord', 'restoreRecord'))).toBe(true);
     expect(satisfiesEvidenceRule([...named('mergePersons'), setField('event', 'date')])).toBe(false);
+  });
+  it('a merge of Events needs none either (#154), unless mixed with facts', () => {
+    expect(satisfiesEvidenceRule(named('mergeEvents'))).toBe(true);
+    expect(satisfiesEvidenceRule(named('mergeEvents', 'mergeEvents', 'restoreRecord'))).toBe(true);
+    expect(satisfiesEvidenceRule([...named('mergeEvents'), setField('event', 'date')])).toBe(false);
   });
   it("a Citation's note alone needs none; its other fields, and other records' fields, still do (#157)", () => {
     expect(satisfiesEvidenceRule([setField('citation', 'note')])).toBe(true);

@@ -42,6 +42,7 @@ export interface ProposalDeps {
 function targetColumns(op: Operation): { target_table: string | null; target_id: string | null; base_version: number | null } {
   const t = baseTargetOf(op);
   if (op.op === 'mergePersons') return { target_table: 'person', target_id: op.mergeId, base_version: op.mergeBaseVersion };
+  if (op.op === 'mergeEvents') return { target_table: 'event', target_id: op.mergeId, base_version: op.mergeBaseVersion };
   if (op.op === 'restoreRecord') return { target_table: op.table, target_id: op.id, base_version: op.baseVersion };
   if (op.op === 'setFamilyRoot') return { target_table: 'person', target_id: op.personId, base_version: null };
   if (!t) return { target_table: null, target_id: null, base_version: null };
@@ -437,28 +438,6 @@ async function sendOutcome(deps: ProposalDeps, p: Proposal, view: ProposalView):
   } catch (error) {
     deps.log?.('could not send the outcome email', error);
   }
-}
-
-// ---------------------------------------------------------------- merge
-
-/** Merging two Persons is an Editor's direct change (review spec, "Merging duplicate Persons"). */
-export async function mergePersons(
-  deps: ProposalDeps,
-  editor: Account,
-  keepId: string,
-  body: { mergeId: string; keepBaseVersion: number; mergeBaseVersion: number; note: string | null },
-): Promise<ProposalView> {
-  const op = { op: 'mergePersons', keepId, mergeId: body.mergeId, keepBaseVersion: body.keepBaseVersion, mergeBaseVersion: body.mergeBaseVersion };
-  const { view } = await submitProposal(deps, editor, {
-    formatVersion: OPERATIONS_VERSION,
-    idempotencyKey: `merge-${keepId}-${body.mergeId}-${deps.clock.now().getTime()}`,
-    note: body.note,
-    direct: true,
-    operations: [op],
-    answersLeads: [],
-    reader: null,
-  });
-  return view;
 }
 
 export { insertProposal, acceptInTransaction, transaction, finishMoves, lockPending };

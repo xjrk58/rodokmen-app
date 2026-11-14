@@ -166,6 +166,13 @@ export const PersonDetail = z
     notes: NotesField,
     names: z.array(NameView),
     events: z.array(PersonEventView).describe('Ordered by the earliest date each could be'),
+    mergeableEvents: z
+      .array(
+        z.object({ keepId: Id.describe('The Event suggested to keep: more Citations, else the older'), mergeId: Id.describe('The Event to merge into it') }),
+      )
+      .describe(
+        'Pairs of these Events that look like one: of one type, with this Person in the same Role, and agreeing on every fact a merge of Events checks. Editors may merge them (POST /api/events/{id}/merge)',
+      ),
     familiesAsPartner: z.array(PartnerFamilyView),
     familiesAsChild: z.array(ChildFamilyView),
     portraits: z.array(z.lazy(() => ImageView)),

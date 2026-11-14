@@ -1,6 +1,7 @@
 import { isTempId, type Operation, type RestorableTable } from '@rodokmen/shared';
 import { ApiProblem } from '../auth/problem.js';
 import type { Db } from '../db/db.js';
+import { eventMergedInto } from '../tree/merged-events.js';
 import { snapshot, type ChangeSet, type Rows } from './records.js';
 
 /** An operation based on a version of a record that is no longer current. */
@@ -55,6 +56,8 @@ export function ref(ctx: Ctx, value: string): string {
 /** Checks that the record exists and still has the version the Member saw. */
 export async function checkBase(ctx: Ctx, position: number, name: RestorableTable, id: string, baseVersion: number | null | undefined, what: string) {
   const current = await snapshot(ctx.db, name, id);
+  if (!current && name === 'event' && (await eventMergedInto(ctx.db, id)))
+    throw new ApiProblem(409, 'event_merged', `Operation ${position + 1}: this Event was merged into another; propose against the remaining Event.`);
   if (!current) throw new ApiProblem(409, 'record_missing', `Operation ${position + 1}: ${what} no longer exists.`);
   if (name === 'person' && current.merged_into_id)
     throw new ApiProblem(409, 'person_merged', `Operation ${position + 1}: this Person was merged into another; propose against the remaining Person.`);

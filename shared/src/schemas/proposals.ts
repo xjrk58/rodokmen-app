@@ -46,6 +46,9 @@ export * from './place-operations.js';
 export const OPERATIONS_VERSION = 1;
 
 const text = (max: number) => z.string().max(max);
+
+/** The longest description of an Event. */
+export const EVENT_DESCRIPTION_MAX = 4000;
 const nonEmpty = (max: number) => z.string().trim().min(1).max(max);
 
 const NameFields = {
@@ -92,7 +95,7 @@ export const CreateEvent = z
     date: EdtfDate.nullable(),
     placeId: Ref.nullable().default(null).describe('A Place of the Tree, or one created earlier in the same Proposal or Import batch'),
     houseId: Ref.nullable().default(null).describe('A House of the Tree, or one created earlier in the same Proposal or Import batch'),
-    description: text(4000).nullable().default(null),
+    description: text(EVENT_DESCRIPTION_MAX).nullable().default(null),
   })
   .refine((e) => e.placeId === null || e.houseId === null, { message: 'give either a Place or a House, not both', path: ['houseId'] })
   .refine((e) => e.type !== 'other' || (e.typeDetail ?? '').trim() !== '', { message: 'an Event of type "other" needs a typeDetail', path: ['typeDetail'] })
@@ -199,7 +202,7 @@ export const SETTABLE_FIELDS = {
     date: EdtfDate.nullable(),
     placeId: Id.nullable(),
     houseId: Id.nullable(),
-    description: text(4000).nullable(),
+    description: text(EVENT_DESCRIPTION_MAX).nullable(),
   },
   role: { role: RoleType, roleDetail: text(200).nullable() },
   childLink: { linkType: ChildLinkType },
@@ -257,6 +260,21 @@ export const MergePersons = z
   })
   .refine((m) => m.keepId !== m.mergeId, { message: 'a Person cannot be merged into itself', path: ['mergeId'] })
   .meta({ id: 'MergePersons', description: 'Editors only: moves every Name, Role, Family link and Citation to the kept Person' });
+
+export const MergeEvents = z
+  .object({
+    op: z.literal('mergeEvents'),
+    keepId: Id.describe('The Event that remains'),
+    mergeId: Id.describe('The Event merged into it, which then no longer exists'),
+    keepBaseVersion: Version,
+    mergeBaseVersion: Version,
+  })
+  .refine((m) => m.keepId !== m.mergeId, { message: 'an Event cannot be merged into itself', path: ['mergeId'] })
+  .meta({
+    id: 'MergeEvents',
+    description:
+      'Editors only: moves the Roles and Citations the kept Event lacks to it, fills its unknown date, Place or House and type detail, adds the description and research notes, and deletes the merged Event. Refused when the two disagree on a fact',
+  });
 
 /** Tables an undo may restore. */
 export const RESTORABLE_TABLES = [
@@ -317,6 +335,7 @@ export const Operation = z
     AddImage,
     SetField,
     MergePersons,
+    MergeEvents,
     RestoreRecord,
     SetFamilyRoot,
     CreatePlace,
@@ -338,9 +357,6 @@ export type Operation = z.infer<typeof Operation>;
 export type OperationInput = z.input<typeof Operation>;
 export type OperationName = Operation['op'];
 export const OPERATION_NAMES: OperationName[] = Operation.options.map((o) => o.shape.op.value);
-
-/** Merges are Editors' only. */
-export const EDITOR_ONLY_OPERATIONS: readonly OperationName[] = ['mergePersons'];
 
 // ---------------------------------------------------------------- whole Proposals
 

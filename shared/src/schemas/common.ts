@@ -98,6 +98,14 @@ export const ApiError = z
   })
   .meta({ id: 'ApiError' });
 
+/** 409 of a merge of Events: with the code `merge_conflict`, the facts the two Events disagree on. */
+export const MergeRefused = ApiError.safeExtend({
+  facts: z
+    .string()
+    .optional()
+    .describe('With the code merge_conflict: the facts the two Events disagree on, comma-separated, from type, date, place, roles, description and notes'),
+}).meta({ id: 'MergeRefused' });
+
 /** Paging of search results: at most 200 at a time. */
 export const Paging = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(50),
