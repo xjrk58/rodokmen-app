@@ -289,6 +289,58 @@ describe('Merging duplicate Events', () => {
     expect(await rolesOf(last)).toEqual([`Bohumil VymyšlenýF:partner`, `Ludmila VymyšlenáF:partner`]);
   });
 
+  it("an Editor's merge in review that the Events no longer agree on: accepting it is a conflict, and resolved, a refusal; a direct one too", async () => {
+    const couple = await marriageTwice('R');
+    const [keep, gone] = [await event(couple.kept), await event(couple.other)];
+    const op = { op: 'mergeEvents' as const, keepId: couple.kept, mergeId: couple.other, keepBaseVersion: keep.version, mergeBaseVersion: gone.version };
+    const pending = ProposalView.parse((await submit(editor, [op])).json());
+    // Meanwhile one of the two is dated a day later, with its evidence.
+    const dated = await submit(
+      editor,
+      [
+        ...citation('RD'),
+        { op: 'setField', record: 'event', id: couple.other, baseVersion: gone.version, set: { date: '1801-11-21' } },
+        { op: 'attachCitation', citationId: 'tmp:citRD', eventId: couple.other, baseVersion: gone.version },
+      ],
+      { direct: true },
+    );
+    expect(dated.statusCode, dated.body).toBe(201);
+    const conflict = await call(owner, 'POST', `/api/proposals/${pending.id}/accept`, {});
+    expect(conflict.statusCode, conflict.body).toBe(409);
+    expect(errorOf(conflict).code).toBe('conflict');
+    const refused = await call(owner, 'POST', `/api/proposals/${pending.id}/accept`, { resolutions: [{ position: 0, fields: {} }] });
+    expect(refused.statusCode, refused.body).toBe(409);
+    expect(errorOf(refused).code).toBe('merge_conflict');
+    const direct = await submit(editor, [{ ...op, mergeBaseVersion: (await event(couple.other)).version }], { direct: true });
+    expect(direct.statusCode, direct.body).toBe(409);
+    expect(errorOf(direct).code).toBe('merge_conflict');
+    expect((await event(couple.other)).date).toBe('1801-11-21');
+    expect(await rolesOf(couple.kept)).toEqual([`Bohumil VymyšlenýR:partner`, `Ludmila VymyšlenáR:partner`]);
+  });
+
+  it('undoing the undo of a merge whose Roles and Citations moved merges the Events again', async () => {
+    const ids = await accepted([
+      { op: 'createPerson', tempId: 'tmp:x', sex: 'male', name: { given: 'Hynek', surname: 'Vymyšlený', type: 'birth', asFound: 'Ignatius' } },
+      { op: 'createPerson', tempId: 'tmp:y', sex: 'female', name: { given: 'Běta', surname: 'Vymyšlená', type: 'birth', asFound: 'Elisabetha' } },
+      { op: 'createEvent', tempId: 'tmp:e1', type: 'burial', date: '1840-01-05', placeId: L.kamennaLhota },
+      { op: 'addRole', eventId: 'tmp:e1', personId: 'tmp:x', role: 'deceased' },
+      { op: 'createEvent', tempId: 'tmp:e2', type: 'burial', date: '1840-01-05', placeId: L.kamennaLhota },
+      { op: 'addRole', eventId: 'tmp:e2', personId: 'tmp:x', role: 'deceased' },
+      { op: 'addRole', eventId: 'tmp:e2', personId: 'tmp:y', role: 'informant' },
+      ...citation('U1'),
+      { op: 'attachCitation', citationId: 'tmp:citU1', eventId: 'tmp:e1' },
+      ...citation('U2'),
+      { op: 'attachCitation', citationId: 'tmp:citU2', eventId: 'tmp:e2' },
+    ]);
+    const [kept, other] = [ids.get('tmp:e1')!, ids.get('tmp:e2')!];
+    const merged = ProposalView.parse((await merge(kept, other)).json());
+    const undo = ProposalView.parse((await call(editor, 'POST', `/api/proposals/${merged.id}/undo`, {})).json());
+    const again = await call(editor, 'POST', `/api/proposals/${undo.id}/undo`, {});
+    expect(again.statusCode, again.body).toBe(200);
+    expect((await call(contributor, 'GET', `/api/events/${other}`)).statusCode).toBe(308);
+    expect(await rolesOf(kept)).toEqual(['Běta Vymyšlená:informant', 'Hynek Vymyšlený:deceased']);
+  });
+
   it('two residences in different years are not offered', async () => {
     const ids = await accepted([
       { op: 'createPerson', tempId: 'tmp:r', sex: 'male', name: { given: 'Václav', surname: 'Vymyšlený', type: 'birth', asFound: 'Wenzel' } },

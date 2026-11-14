@@ -201,7 +201,8 @@ async function loggedChanges(db: Db, proposalId: string): Promise<LoggedChange[]
 export async function undoPreview(db: Db, proposalId: string): Promise<{ laterEdits: LaterEdit[]; blockedBy: string[] }> {
   const { changes, edits, current } = await laterEdits(db, proposalId);
   const deletions = changes.filter((c) => c.before === null && current.get(`${c.table}:${c.id}`)).map((c) => ({ table: c.table, id: c.id }));
-  return { laterEdits: edits, blockedBy: await blockingProposals(db, proposalId, deletions) };
+  const restored = new Map(changes.flatMap((c) => (c.before ? [[`${c.table}:${c.id}`, c.before] as const] : [])));
+  return { laterEdits: edits, blockedBy: await blockingProposals(db, proposalId, deletions, restored) };
 }
 
 /** Records changed again after the Proposal, field by field (tree-history spec, "Undo after later edits"). */
@@ -237,12 +238,24 @@ export async function laterEdits(
 /**
  * Later accepted Proposals that attach records to ones this undo would delete (a Name or Role
  * added to a Person the undone Proposal created, a child linked to its Family …), newest first.
- * Deleting would cascade into them unseen, so the Editor undoes those first.
+ * Deleting would cascade into them unseen, so the Editor undoes those first. A record the undo
+ * itself writes back whole (`restored`, by table and id), to values that no longer point at the
+ * deleted one, is not left behind: undoing the undo of a merge of Events moves the Roles and
+ * Citations back before it deletes the merged Event again.
  */
-export async function blockingProposals(db: Db, proposalId: string, deletions: ReadonlyArray<{ table: RestorableTable; id: string }>): Promise<string[]> {
+export async function blockingProposals(
+  db: Db,
+  proposalId: string,
+  deletions: ReadonlyArray<{ table: RestorableTable; id: string }>,
+  restored: ReadonlyMap<string, Record<string, unknown>> = new Map(),
+): Promise<string[]> {
   // Gather the inputs; the rule itself is undoBlockers (shared/src/rules.ts).
+  const movedAway = (dep: { table: RestorableTable; id: string }, from: string) => {
+    const values = restored.get(`${dep.table}:${dep.id}`);
+    return values !== undefined && !Object.values(values).includes(from);
+  };
   const dependencies: Dependency[] = [];
-  for (const d of deletions) for (const dep of await dependentsOf(db, d.table, d.id)) dependencies.push({ of: d, dependent: dep });
+  for (const d of deletions) for (const dep of await dependentsOf(db, d.table, d.id)) if (!movedAway(dep, d.id)) dependencies.push({ of: d, dependent: dep });
   if (dependencies.length === 0) return [];
   const touches = await db
     .selectFrom('log_change as c')
@@ -352,7 +365,11 @@ export async function undoProposal(deps: ProposalDeps, editor: Account, proposal
       const ops = await undoOperations(tx, logged, body);
       if (ops.length === 0) throw new ApiProblem(409, 'nothing_to_undo', 'Every change of this Proposal is kept; there is nothing to undo.');
       const deletions = ops.flatMap((o) => (o.op === 'restoreRecord' && o.values === null ? [{ table: o.table, id: o.id }] : []));
-      const blockedBy = await blockingProposals(tx, proposalId, deletions);
+      // Only a whole restore surely writes every reference back; one limited to some fields may keep the reference.
+      const restored = new Map(
+        ops.flatMap((o) => (o.op === 'restoreRecord' && o.values !== null && !o.fields ? [[`${o.table}:${o.id}`, o.values] as const] : [])),
+      );
+      const blockedBy = await blockingProposals(tx, proposalId, deletions, restored);
       if (blockedBy.length) throw blockedProblem(blockedBy);
 
       const created = await insertProposal(

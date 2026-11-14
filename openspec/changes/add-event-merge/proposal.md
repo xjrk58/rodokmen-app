@@ -59,7 +59,7 @@ Main specs are empty because no change is archived yet, so these deltas add requ
   - a new proved file `shared/src/event-merge.ts`, for when two Events agree, what the kept one holds and which pairs the person page offers;
   - `shared/src/rules.ts` (fact-free merges, and a new proved `mayUseOperation`);
   - the `mergeEvents` operation and its check;
-  - the `MergeEventsBody` and `mergeableEvents` schemas;
+  - `MergeBody` reused for the route, the `MergeRefused` answer (409 with `facts`) and the `mergeableEvents` field;
   - the sentence for review and history.
 - **Server:**
   - applying, conflicts and views of the operation;

@@ -34,7 +34,7 @@ See `proposal.md` for why. How the Tree works today:
 
 ### 1. The operation and the route
 
-`mergeEvents { keepId, mergeId, keepBaseVersion, mergeBaseVersion }`, with `keepId ≠ mergeId`, beside `mergePersons` in the closed operation set. `POST /api/events/{id}/merge` takes the same body as the Person merge (`MergeBody`: `mergeId`, both base versions, an optional note). It submits a direct Proposal of that one operation, as `mergePersons` in `service.ts` does. An Editor may also put the operation in a Proposal for review, like `mergePersons`. The operation set stays at version 1: a new operation leaves every stored Proposal valid, as `setNotes` and the Label operations did.
+`mergeEvents { keepId, mergeId, keepBaseVersion, mergeBaseVersion }`, with `keepId ≠ mergeId`, beside `mergePersons` in the closed operation set. `POST /api/events/{id}/merge` takes the same body as the Person merge (`MergeBody`: `mergeId`, both base versions, an optional note). It submits a direct Proposal of that one operation, as `mergePersons` does; both now live in `server/src/proposals/merges.ts`. An Editor may also put the operation in a Proposal for review, like `mergePersons`. The operation set stays at version 1: a new operation leaves every stored Proposal valid, as `setNotes` and the Label operations did.
 
 ### 2. What moves, what is filled, what is refused
 
@@ -81,6 +81,8 @@ Apply, in `apply.ts`:
 Removing twins first matters: the imported pairs are all twins once the #158 run is accepted. Moving a twin would break `unique (event_id, person_id, role)` and answer 23505.
 
 The undo needs nothing new. It replays the logged changes newest first: the merged Event comes back first (`rows.restore` re-inserts it from its snapshot), then the kept Event's fields, then the Citation links and Roles, moved back or re-inserted. Later edits of a moved Role or of the kept Event's fields ask the Editor per field, as for any undo. No undo blocker arises, because the undo deletes nothing.
+
+Undoing that undo merges the Events again, and deletes the merged Event once more. Its Roles and Citation links still point at it when the undo is checked, so the check of what an undo would leave behind (`blockingProposals` in `server/src/proposals/history.ts`) took them for records left behind, and named the Proposal that created them. It now leaves out a record the same undo writes back whole, to values that no longer point at the deleted record. The proved rule (`undoBlockers`) is unchanged; only what the server gathers for it is.
 
 ### 5. Rights and evidence
 
@@ -145,6 +147,10 @@ Built with the suggested answer; each can change later without a migration.
    - Suggested: **not now**. The person page offers each pair, and the importer's report links the 25. A list is worth it if Members' duplicates turn up.
 5. **An Event page in the app?** There is none; the merge panel shows the two Events side by side.
    - Suggested: **not for this**. It belongs with a wider change of how Events are shown.
+6. **Which Roles must agree?**
+   - Suggested: child, father, mother, deceased and partner must agree, and the other Roles add up. Each of those five agrees when one Event's Persons in it are all among the other's.
+   - So partners A and B merge with A alone, but not with A and C. Partner A alone against partner B alone is refused too, although it would make only two. One Person in two of those Roles, such as child in one Event and father in the other, is refused.
+   - Built: as suggested. The other Roles, godparent, witness, priest, informant and other, add up freely.
 
 ## Rules proved with LemmaScript
 
@@ -154,6 +160,8 @@ Built with the suggested answer; each can change later without a migration.
 | `mergeOffer`: whether the person page offers a pair, and which Event it suggests keeping | family-view: Merge duplicate Events from the person page | `shared/src/event-merge.ts` |
 | `isFactFreeOperation` and `satisfiesEvidenceRule`: a merge of Events needs no Citation | proposals: Evidence is required | `shared/src/rules.ts` |
 | `mayUseOperation`: only Editors use the merge operations | review: Contributors never accept or merge; review: Merging duplicate Events | `shared/src/rules.ts` |
+
+The person page asks `mergeOffer` only for pairs of one type and Role that already agree on date and Place. A priest or godparent can be in hundreds of Events in one Role, and the Roles are read only for those pairs, in one query.
 
 Unknown values are the empty string, not `null`, so no optional is ever compared with `<` (the known swapped-comparison issue). The text limits are parameters, since constants are not emitted. Not proved, because they read the database or the network: applying the merge, the redirect lookup, the queries that gather the inputs, and the importer's report.
 
