@@ -17,8 +17,9 @@
       // index.html loads app.js, sw-client.js registers sw.js, and types.d.ts declares modules for tsc.
       "entry": ["app.js", "sw.js", "scripts/*.mjs", "scripts/types.d.ts", "tests/unit/*.test.mjs"],
       "project": ["src/**/*.js", "scripts/**/*.{mjs,ts}", "tests/**/*.{js,mjs}"],
-      // Copied into app/vendor/ by scripts/vendor-preact.mjs, which finds them by folder; the app imports the copies.
-      "ignoreDependencies": ["preact", "htm"],
+      // Copied into app/vendor/ by scripts/vendor-preact.mjs and vendor-fonts.mjs, which find them by folder; the app
+      // imports the copies, and styles.css declares the fonts.
+      "ignoreDependencies": ["preact", "htm", "@fontsource/eb-garamond", "@fontsource/grenze-gotisch"],
       // Shell.onSignedIn is called through the Shell typedef in src/sign-in-screen.js, a structural
       // type that knip's reference search does not link to the class.
       "ignoreMembers": ["onSignedIn"],

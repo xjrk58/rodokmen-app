@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/server';
 import {
-  CloseLeadBody,
-  CreateLeadBody,
-  LeadStatus,
   Operation,
   OPERATIONS_VERSION,
   ProposalStatus,
@@ -12,12 +9,12 @@ import {
   ReadingView,
   readingOperations,
   RELATIONS,
-  SearchRecordBody,
   unchosenPersons,
-  UpdateLeadBody,
 } from '@rodokmen/shared';
 import { z } from 'zod';
 import { ApiCallError, type Api } from './api.js';
+import { registerLeadTools } from './lead-tools.js';
+import { call, Id, Paging, readOnly } from './tool-parts.js';
 
 /**
  * The Rodokmen MCP server (agent-access spec, "MCP server" and "Agents write Research leads"): an
@@ -37,12 +34,6 @@ To say how two Persons are related, get_kinship works it out from the Family lin
 Your Agent is limited to 60 Proposals and 1,000 other requests per hour; a refused request says when to try again.
 When the Owner has switched scan reading on, read_scan has the server read register scans (sent to Anthropic's API) into entries; check them, choose for every read person an existing Person or "new", and propose_reading submits them, marked "read by AI".`;
 
-const Id = z.uuid();
-const Paging = {
-  limit: z.number().int().min(1).max(200).optional().describe('At most this many results (default 50)'),
-  offset: z.number().int().min(0).optional().describe('Skip this many results, for the next page'),
-};
-
 /** Records that can be read by id, and the API route of each. */
 const RECORD_KINDS = ['person', 'family', 'event', 'place', 'house', 'parish', 'estate', 'source', 'citation', 'lead'] as const;
 const RECORDS: Record<(typeof RECORD_KINDS)[number], string> = {
@@ -57,25 +48,6 @@ const RECORDS: Record<(typeof RECORD_KINDS)[number], string> = {
   citation: 'citations',
   lead: 'leads',
 };
-
-function describeError(e: ApiCallError): string {
-  if (e.status === 401) return 'The Agent token was refused: it is not valid, was revoked, or the Agent was disabled. Ask the Owner for a new token.';
-  if (e.status === 429) return `${e.message}${e.retryAt ? ` (retry after ${e.retryAt})` : ''}`;
-  return `The API refused the request (${e.status}${e.code ? ` ${e.code}` : ''}): ${e.message}`;
-}
-
-/** One API call as a tool result: its JSON answer, or an error the assistant can read. */
-async function call(fn: () => Promise<unknown>) {
-  try {
-    const result = await fn();
-    return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-  } catch (error) {
-    const text = error instanceof ApiCallError ? describeError(error) : 'The Rodokmen API could not be reached. Try again later.';
-    return { isError: true, content: [{ type: 'text' as const, text }] };
-  }
-}
-
-const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
 /** How long read_scan waits for a reading, and how often it looks. */
 export const READING_WAIT_MS = 5 * 60_000;
@@ -181,6 +153,40 @@ export function createRodokmenServer(api: Api): McpServer {
       annotations: readOnly,
     },
     async ({ personId, generations }) => call(() => api.get(`/api/persons/${personId}/descendants`, { generations })),
+  );
+
+  server.registerTool(
+    'get_chart',
+    {
+      title: 'Read a Chart',
+      description:
+        "A Chart's content as data, as the app gets it (no picture): a Descendant chart from a Person or a Family (who is in it, in the Chart's order, with each card's facts and marks, and the Direct line to a descendant), or a House chart (the Families who lived at a House, in time order, with their periods, house numbers and how each is linked to an earlier row). Living people are shown as in the tree.",
+      inputSchema: z.object({
+        kind: z.enum(['descendants', 'house']).describe('descendants: from a Person or a Family; house: the Families of a House'),
+        personId: Id.optional().describe('descendants: start at this Person'),
+        familyId: Id.optional().describe('descendants: start at this Family'),
+        houseId: Id.optional().describe('house: the House'),
+        generations: z
+          .number()
+          .int()
+          .min(2)
+          .max(8)
+          .optional()
+          .describe('descendants: generations in the tree form, the start counting as the first (default 4)'),
+        form: z.enum(['tree', 'line']).optional().describe('descendants: tree (every branch) or line (the Direct line down the centre)'),
+        line: Id.optional().describe('descendants: the end of the Direct line, a descendant of the start; needed for the line form'),
+        from: z.number().int().optional().describe('house: only rows whose period could reach this year or later'),
+        to: z.number().int().optional().describe('house: only rows whose period could reach this year or earlier'),
+        unrelated: z.boolean().optional().describe('house: also the rows of Unrelated people'),
+      }),
+      annotations: readOnly,
+    },
+    async ({ kind, personId, familyId, houseId, generations, form, line, from, to, unrelated }) =>
+      call(() =>
+        kind === 'house'
+          ? api.get(`/api/charts/house/${houseId ?? ''}`, { from, to, unrelated: unrelated === undefined ? undefined : String(unrelated) })
+          : api.get('/api/charts/descendants', { person: personId, family: familyId, generations, form, line }),
+      ),
   );
 
   server.registerTool(
@@ -348,76 +354,4 @@ export function createRodokmenServer(api: Api): McpServer {
 
   registerLeadTools(server, api);
   return server;
-}
-
-const writes = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
-
-/** Research leads (research-leads spec): the Agent lists, writes, updates and closes them, and records its searches. */
-function registerLeadTools(server: McpServer, api: Api): void {
-  server.registerTool(
-    'list_leads',
-    {
-      title: 'List Research leads',
-      description:
-        'Research leads: written next steps of the research, with their search records. Filter by status, Person, Place, archive or who is working on them. Look here before searching a register: a search record says what was already looked at, by whom and with what result.',
-      inputSchema: z.object({
-        status: z.array(LeadStatus).min(1).optional().describe('Only leads with these statuses, such as ["open", "in_progress"]'),
-        personId: Id.optional().describe('Only leads about this Person'),
-        placeId: Id.optional().describe('Only leads about this Place'),
-        archive: z.string().min(1).max(400).optional().describe('Only leads to look in this archive'),
-        assigneeId: Id.optional().describe('Only leads this Member or Agent is working on'),
-        ...Paging,
-      }),
-      annotations: readOnly,
-    },
-    async ({ status, ...args }) => call(() => api.get('/api/leads', { ...args, ...(status ? { status: [...new Set(status)].join(',') } : {}) })),
-  );
-
-  server.registerTool(
-    'create_lead',
-    {
-      title: 'Write a Research lead',
-      description:
-        'Write a Research lead: a question and its reason, where to look (archive, register Source, years, pages) and the Persons and Places it concerns. It is written at once, without review, under your name. Searches already made may come with it; a lead may start closed as not found only with the search that found nothing.',
-      inputSchema: CreateLeadBody,
-      annotations: writes,
-    },
-    async (body) => call(() => api.post('/api/leads', body)),
-  );
-
-  server.registerTool(
-    'update_lead',
-    {
-      title: 'Change a Research lead',
-      description:
-        'Change fields of a Research lead (its question, where to look, the Persons and Places, who works on it, its status), naming the version you read; a lead changed since is refused, so read it again. Not found needs a search record (close_lead does both at once).',
-      inputSchema: z.object({ leadId: Id, ...UpdateLeadBody.shape }),
-      annotations: writes,
-    },
-    async ({ leadId, ...body }) => call(() => api.patch(`/api/leads/${leadId}`, body)),
-  );
-
-  server.registerTool(
-    'add_search_record',
-    {
-      title: 'Record a search',
-      description:
-        'Record one search made on a lead: the register Source or the archive, the years and pages looked at, when (EDTF, today when left out), who looked (you when left out) and what was found, including nothing.',
-      inputSchema: z.object({ leadId: Id, search: SearchRecordBody }),
-      annotations: writes,
-    },
-    async ({ leadId, search }) => call(() => api.post(`/api/leads/${leadId}/searches`, search)),
-  );
-
-  server.registerTool(
-    'close_lead',
-    {
-      title: 'Close a Research lead',
-      description:
-        'Close a lead as found or not found, with the outcome and the search that closes it, naming the version you read. Not found needs at least one search record: give the search here, or record it first. A fact you found still goes in a Proposal that names the lead (submit_proposal, answersLeads).',
-      inputSchema: z.object({ leadId: Id, ...CloseLeadBody.shape }),
-      annotations: writes,
-    },
-    async ({ leadId, ...body }) => call(() => api.post(`/api/leads/${leadId}/close`, body)),
-  );
 }

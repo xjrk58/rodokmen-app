@@ -1,5 +1,99 @@
 /* Rodokmen map. Mobile first; the desktop layout starts at 768 px. */
 
+/*
+ * The fonts of the Charts (app/vendor/fonts/, SIL Open Font License 1.1): EB Garamond for the
+ * text, Grenze Gotisch for the title. Each face comes in Fontsource's latin-ext and latin files,
+ * with Fontsource's unicode ranges. scripts/font-metrics.mjs reads these rules for the widths in
+ * data/chart-fonts.json, and tests/unit/chart-fonts.test.mjs checks them.
+ */
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(vendor/fonts/eb-garamond/eb-garamond-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(vendor/fonts/eb-garamond/eb-garamond-latin-400-normal.woff2) format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  src: url(vendor/fonts/eb-garamond/eb-garamond-latin-ext-400-italic.woff2) format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: italic;
+  font-display: swap;
+  font-weight: 400;
+  src: url(vendor/fonts/eb-garamond/eb-garamond-latin-400-italic.woff2) format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(vendor/fonts/eb-garamond/eb-garamond-latin-ext-600-normal.woff2) format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url(vendor/fonts/eb-garamond/eb-garamond-latin-600-normal.woff2) format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Grenze Gotisch';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(vendor/fonts/grenze-gotisch/grenze-gotisch-latin-ext-400-normal.woff2) format('woff2');
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB,
+    U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Grenze Gotisch';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(vendor/fonts/grenze-gotisch/grenze-gotisch-latin-400-normal.woff2) format('woff2');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215,
+    U+FEFF, U+FFFD;
+}
+
 :root {
   --paper: #f7f4ed;
   --card: #fffdf8;
@@ -2025,6 +2119,130 @@ pre.transcription {
   }
   .scan-page img {
     max-height: 80vh;
+  }
+}
+
+/* The Chart screen (src/chart-screen.js): the Chart pans and zooms like the tree, as wide as the window. */
+.screen-body.chart-screen {
+  max-width: none;
+}
+.chart-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.chart-head h1 {
+  margin: 0;
+}
+.chart-options summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.chart-options .field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: 8px 0;
+}
+.chart-options .field-row input[type='number'] {
+  width: 6.5em;
+}
+.chart-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chart-area {
+  position: relative;
+  height: 70vh;
+  min-height: 320px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fffdf6;
+  overflow: hidden;
+}
+.chart-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+.chart-canvas:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+.chart-view {
+  transform-origin: 0 0;
+}
+.chart-canvas [data-person] {
+  cursor: pointer;
+}
+
+/* Printing a Sheet: the pages, each an SVG the size of its paper, and nothing else. The paper is
+   chosen by a class, so that no style attribute is needed (the Content-Security-Policy). */
+#chart-print-root {
+  display: none;
+}
+@page a3-landscape {
+  size: A3 landscape;
+  margin: 0;
+}
+@page a3-portrait {
+  size: A3 portrait;
+  margin: 0;
+}
+@page a4-landscape {
+  size: A4 landscape;
+  margin: 0;
+}
+@page a4-portrait {
+  size: A4 portrait;
+  margin: 0;
+}
+@media print {
+  body.chart-printing > *:not(#chart-print-root) {
+    display: none !important;
+  }
+  html:has(body.chart-printing),
+  body.chart-printing {
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    background: #fff;
+  }
+  body.chart-printing #chart-print-root {
+    display: block;
+  }
+  .chart-page {
+    break-after: page;
+  }
+  .chart-page:last-child {
+    break-after: auto;
+  }
+  .chart-page svg {
+    display: block;
+  }
+  .chart-page.a3-landscape {
+    page: a3-landscape;
+  }
+  .chart-page.a3-portrait {
+    page: a3-portrait;
+  }
+  .chart-page.a4-landscape {
+    page: a4-landscape;
+  }
+  .chart-page.a4-portrait {
+    page: a4-portrait;
   }
 }
 

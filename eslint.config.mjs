@@ -40,32 +40,6 @@ const restricted = {
     selector: "CallExpression[callee.property.name=/^(slice|substring|substr|split)$/][callee.object.callee.property.name='toISOString']",
     message: "toISOString() gives the UTC day, not the Member's: use today() from src/proposal-build.js, or getFullYear/getMonth/getDate.",
   },
-  // Kinship must give the same answer every time, on every device and locale (kinship spec, "Kinship
-  // follows fixed rules"): no chance, no clock, no locale in its modules. add-tree-charts adds its Chart
-  // modules to the same block.
-  ...Object.fromEntries(
-    [
-      [
-        "CallExpression[callee.object.name='Math'][callee.property.name='random']",
-        'Math.random() differs on every run: kinship takes every order from the ids.',
-      ],
-      [
-        "CallExpression[callee.object.name='Date'][callee.property.name='now'], NewExpression[callee.name='Date']",
-        'The clock never decides kinship: the server stamps the answer with the state of the Tree.',
-      ],
-      ["CallExpression[callee.object.name='performance'][callee.property.name='now']", 'The clock never decides kinship: count units of work, not time.'],
-      [
-        "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
-        'A random id differs on every run: kinship uses the ids of the records.',
-      ],
-      ["CallExpression[callee.property.name='localeCompare']", 'localeCompare depends on the locale: compare ids by code units (a < b ? -1 : a > b ? 1 : 0).'],
-      ['CallExpression[callee.property.name=/^toLocale/]', 'toLocale…String depends on the locale: kinship terms come from the tables in kinship-terms/.'],
-      [
-        "MemberExpression[object.name='Intl'][property.name=/^(DateTimeFormat|Collator)$/]",
-        'Intl depends on the locale: kinship terms come from the tables in kinship-terms/, ids compare by code units.',
-      ],
-    ].map(([selector, message], i) => [`determinism${i}`, { selector, message }]),
-  ),
   leafletHtml: {
     // Leaflet puts string content of tooltips and popups in as HTML; text from the Tree must go in as a node.
     selector:
@@ -73,6 +47,58 @@ const restricted = {
     message: 'Leaflet treats a string as HTML: pass an element with text (h() from src/dom.js) instead.',
   },
 };
+
+// A Chart is the same for the same Tree, options, language and day, byte for byte (tree-charts
+// spec, "Charts follow fixed rules"), and kinship gives the same answer every time, on every device
+// and locale (kinship spec, "Kinship follows fixed rules"). Their modules may not read the clock,
+// roll dice, or ask the device's locale data or layout engine, whose answers differ between devices
+// and browsers.
+const kinshipFiles = ['shared/src/kinship*.ts', 'shared/src/kinship-terms/**/*.ts'];
+const chartFiles = [
+  'shared/src/charts.ts',
+  'shared/src/chart-rows.ts',
+  'shared/src/charts-model.ts',
+  'shared/src/house-chart.ts',
+  'shared/src/house-chart-model.ts',
+  'shared/src/sheet-reduction.ts',
+  'server/src/charts/**/*.ts',
+];
+const chartAppFiles = ['app/src/chart-*.js'];
+const determinism = [
+  [
+    "MemberExpression[object.name='Math'][property.name='random']",
+    'Math.random() differs on every run: a Chart orders by dates, the recorded order and ids, and kinship takes every order from the ids.',
+  ],
+  [
+    "MemberExpression[object.name='Date'][property.name='now']",
+    'Date.now() reads the clock: a Chart gets its day as livingOn, from server/src/clock.ts, and the server stamps kinship with the state of the Tree.',
+  ],
+  [
+    "NewExpression[callee.name='Date']",
+    'new Date() reads the clock or parses by the device: a Chart gets its day as livingOn, and dates from the proved EDTF ranges; the clock never decides kinship.',
+  ],
+  [
+    "MemberExpression[object.name='performance'][property.name='now']",
+    'performance.now() reads the clock: a Chart may not depend on time, and kinship counts units of work, not time.',
+  ],
+  ["MemberExpression[property.name='randomUUID']", 'crypto.randomUUID() differs on every run: derive ids from record ids.'],
+  [
+    "MemberExpression[property.name='localeCompare']",
+    'localeCompare depends on the ICU data of the device: compare ids by code units (a < b) and never order by names.',
+  ],
+  [
+    'MemberExpression[property.name=/^toLocale/]',
+    'toLocale*String depends on the device: write dates and numbers by the fixed patterns of the chart.* texts, and kinship terms from the tables in kinship-terms/.',
+  ],
+  [
+    "MemberExpression[object.name='Intl'][property.name=/^(DateTimeFormat|Collator|NumberFormat|PluralRules)$/]",
+    'Intl output changes between ICU versions: use the fixed patterns and plural rules of src/chart-text.js, and the kinship terms of kinship-terms/.',
+  ],
+  [
+    'MemberExpression[property.name=/^(getBBox|getComputedTextLength)$/]',
+    'Measuring text in the browser differs between devices: fit text by app/data/chart-fonts.json (src/chart-cards.js).',
+  ],
+].map(([selector, message]) => ({ selector, message }));
 
 // Words GLOSSARY.md rejects that have no other meaning in this code, as exact identifiers
 // (`town` for a Place, #21 L23). Words with other meanings (record, tag, root, account) stay allowed.
@@ -150,19 +176,8 @@ export default defineConfig(
   },
   // The sign-in hooks.
   { files: ['server/src/auth/**/*.ts'], rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, restricted.rawRequestUrl] } },
-  // The kinship modules: the same answer every time.
-  {
-    files: ['shared/src/kinship*.ts', 'shared/src/kinship-terms/**/*.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        restricted.zodUrl,
-        ...Object.entries(restricted)
-          .filter(([k]) => k.startsWith('determinism'))
-          .map(([, v]) => v),
-      ],
-    },
-  },
+  // The Chart's rules and its server shell, and the kinship modules.
+  { files: [...chartFiles, ...kinshipFiles], rules: { 'no-restricted-syntax': ['error', restricted.zodUrl, ...determinism] } },
 
   // The MCP server is a client of the public API (add-agent-access design): it may not reach the
   // database or the server's code, so it can offer nothing the Agent token may not do there.
@@ -199,6 +214,8 @@ export default defineConfig(
     languageOptions: { globals: globals.browser },
     rules: { 'no-restricted-syntax': ['error', restricted.leafletHtml, restricted.utcDay] },
   },
+  // The Chart's layout and drawing.
+  { files: chartAppFiles, rules: { 'no-restricted-syntax': ['error', restricted.leafletHtml, restricted.utcDay, ...determinism] } },
   { files: ['app/sw.js'], languageOptions: { globals: globals.serviceworker } },
   // Node scripts and tests; Playwright's page.evaluate callbacks run in the browser.
   {

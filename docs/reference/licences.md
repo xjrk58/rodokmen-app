@@ -16,6 +16,7 @@ Every file of the repo not listed below (the licence text in `LICENSE` aside) is
 | `archives.json`       | written for Rodokmen; only its `municipalityOverrides` section is computed from the municipality list                                                                                                      | `AGPL-3.0-or-later`                                       |                                                                                                                                                                         |
 | `layers.json`         | written for Rodokmen                                                                                                                                                                                       | `AGPL-3.0-or-later`                                       |                                                                                                                                                                         |
 | `build-info.json`     | written by `app/scripts/build-data.mjs`: the URL and SHA-256 of each source file                                                                                                                           | `AGPL-3.0-or-later`                                       |                                                                                                                                                                         |
+| `chart-fonts.json`    | written by `app/scripts/font-metrics.mjs`: the advance widths of characters, read from the fonts in `app/vendor/fonts/` (below)                                                                            | `AGPL-3.0-or-later`                                       |                                                                                                                                                                         |
 
 The names and codes of the districts in `districts.geojson` also come from the municipality list. What each file holds is in [Map data files](app-data.md).
 
@@ -46,6 +47,17 @@ No bundled file holds OpenStreetMap data or other data under the Open Database L
 | [htm](https://github.com/developit/htm)      | 3.1.1   | [Apache-2.0](https://spdx.org/licenses/Apache-2.0.html)     | © 2018 Google Inc.                                     | `app/vendor/htm/LICENSE` (the package has no `NOTICE` file for Apache-2.0 §4(d) to pass on) |
 
 Each version is in the folder's `VERSION` file. The vendor scripts (`pnpm --filter @rodokmen/app vendor`) copy each library's `LICENSE` from its npm package together with the code, and the deploy serves the whole `app/vendor/` folder, `LICENSE` files included (`app/scripts/site-files.mjs`). Apart from the import path that `app/scripts/vendor-preact.mjs` rewrites in Preact's hooks module, the vendored files are as published and never edited by hand.
+
+## Fonts in `app/vendor/fonts/`
+
+The Charts draw their text in these fonts: the WOFF2 files of the Latin and Latin Extended subsets as [Fontsource](https://fontsource.org) publishes them on npm, copied unchanged by `app/scripts/vendor-fonts.mjs`.
+
+| Font                                                             | Faces                | Version (Fontsource) | Licence                                           | Copyright                                 | Notice kept in                            |
+| ---------------------------------------------------------------- | -------------------- | -------------------- | ------------------------------------------------- | ----------------------------------------- | ----------------------------------------- |
+| [EB Garamond](https://github.com/octaviopardo/EBGaramond12)      | 400, 400 italic, 600 | 5.3.0                | [OFL-1.1](https://spdx.org/licenses/OFL-1.1.html) | © 2017 The EB Garamond Project Authors    | `app/vendor/fonts/eb-garamond/LICENSE`    |
+| [Grenze Gotisch](https://github.com/Omnibus-Type/Grenze-Gotisch) | 400                  | 5.3.0                | [OFL-1.1](https://spdx.org/licenses/OFL-1.1.html) | © 2020 The Grenze Gotisch Project Authors | `app/vendor/fonts/grenze-gotisch/LICENSE` |
+
+Each `LICENSE` is the font's copyright line and the full SIL Open Font License, from its npm package, and each folder's `VERSION` holds the package version. Neither font names a Reserved Font Name, and the files are served as published, so the OFL's renaming clause does not apply. The OFL lets the fonts be bundled with software under any licence as long as they are not sold by themselves. `app/data/chart-fonts.json` holds the widths of their characters, read from the files by `app/scripts/font-metrics.mjs` with [fontkit](https://github.com/foliojs/fontkit) (MIT), a development dependency that is not deployed.
 
 ## Files written by OpenSpec
 

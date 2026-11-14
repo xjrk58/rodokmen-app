@@ -1,6 +1,6 @@
 {
-  "from": "019b76da-b910-78f3-9d0c-ff01728972b0",
-  "to": "019b76da-b897-751c-9b07-a711de64d592",
+  "from": "019b76da-c832-7a3f-b362-226e089c121d",
+  "to": "019b76da-c7b9-7b44-bdb8-1d809acbc779",
   "asOf": {
     "logEntryId": null,
     "at": null
@@ -16,15 +16,15 @@
       "adoptive": false,
       "possible": false,
       "commonAncestors": [
-        "019b76da-b897-751c-9b07-a711de64d592"
+        "019b76da-c7b9-7b44-bdb8-1d809acbc779"
       ],
       "steps": [
         {
-          "person": "019b76da-b8e8-7cc8-9150-38cb565421b5",
+          "person": "019b76da-c80a-788a-8641-ec5123408de7",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b912-7d1b-b5d2-3d3577424d77",
+          "recordId": "019b76da-c834-72e0-829d-f9515a5db90d",
           "term": {
             "cs": {
               "text": "otec",
@@ -37,11 +37,11 @@
           }
         },
         {
-          "person": "019b76da-b897-751c-9b07-a711de64d592",
+          "person": "019b76da-c7b9-7b44-bdb8-1d809acbc779",
           "link": "parent",
           "linkType": "birth",
           "weak": false,
-          "recordId": "019b76da-b8ec-7050-9ce3-3fb1152a2a9b",
+          "recordId": "019b76da-c80e-7a61-a3bd-bd6f54896b3b",
           "term": {
             "cs": {
               "text": "matka",
@@ -70,7 +70,7 @@
   "connection": null,
   "persons": [
     {
-      "id": "019b76da-b897-751c-9b07-a711de64d592",
+      "id": "019b76da-c7b9-7b44-bdb8-1d809acbc779",
       "version": 1,
       "sex": "female",
       "given": "Hedvika",
@@ -83,7 +83,7 @@
       "familyRoot": false
     },
     {
-      "id": "019b76da-b8e8-7cc8-9150-38cb565421b5",
+      "id": "019b76da-c80a-788a-8641-ec5123408de7",
       "version": 1,
       "sex": "male",
       "given": "Karel",
@@ -96,7 +96,7 @@
       "familyRoot": false
     },
     {
-      "id": "019b76da-b910-78f3-9d0c-ff01728972b0",
+      "id": "019b76da-c832-7a3f-b362-226e089c121d",
       "version": 1,
       "sex": "male",
       "given": "Norbert",

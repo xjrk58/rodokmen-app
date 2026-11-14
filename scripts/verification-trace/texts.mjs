@@ -36,21 +36,82 @@ export const KNOWN_ISSUES = [
 
 // What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
 export const SWAP_CHECK = [
-  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/edtf.ts, shared/src/erasure.ts,',
-  'shared/src/export.ts, shared/src/gaps.ts, shared/src/kinship.ts, shared/src/kinship-terms/cs.ts,',
-  'shared/src/kinship-terms/en.ts, shared/src/leads.ts, shared/src/living.ts, shared/src/matching.ts,',
-  'shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts and shared/src/rules.ts, no narrowed optional',
-  'is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification (optionals occur only in `===` and `!==`, where',
-  'order does not matter; the `!` index reads of relation.ts, gaps.ts, export.ts, presumed-death.ts and kinship.ts are not',
-  'compared at all or compare two plain integers, emitted in their order; erasure.ts, export.ts, gaps.ts, kinship.ts,',
-  'kinship-terms/cs.ts, kinship-terms/en.ts, leads.ts, matching.ts, presumed-death.ts and reading.ts have no optionals at',
-  'all: unknown years, houses, Places and Sources are a flag and 0, or the empty string, a Person without a chain has an',
+  'Checked for the swapped comparison: in every `//@ verify` function of shared/src/charts.ts, shared/src/edtf.ts,',
+  'shared/src/erasure.ts, shared/src/export.ts, shared/src/gaps.ts, shared/src/house-chart.ts, shared/src/kinship.ts,',
+  'shared/src/kinship-terms/cs.ts, shared/src/kinship-terms/en.ts, shared/src/leads.ts, shared/src/living.ts,',
+  'shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts and',
+  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
+  '(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of charts.ts, house-chart.ts,',
+  'relation.ts, gaps.ts, export.ts, presumed-death.ts and kinship.ts are not compared at all or compare two plain integers,',
+  'emitted in their order; charts.ts, erasure.ts, export.ts, gaps.ts, house-chart.ts, kinship.ts, kinship-terms/cs.ts,',
+  'kinship-terms/en.ts, leads.ts, matching.ts, presumed-death.ts and reading.ts have no optionals at all: unknown years,',
+  'days, houses, partners, Places and Sources are a flag and 0, -1, or the empty string, a Person without a chain has an',
   'empty one, and kinship marks "nobody", "no line" and "no degree" with -1 or 0), and the generated `.dfy.gen` was read',
   'for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
 ];
 
 // Exactly what a proof covers where that is less than its requirement, written by hand: update it with the proof.
 export const SCOPES = [
+  `**The order within a Chart** (\`compareChildren\`, \`compareFamilies\`, shared/src/charts.ts; \`compareRows\`,
+  shared/src/house-chart.ts; tree-charts "Order within a Chart" and "House chart"). Proved: each is antisymmetric, 0 only
+  for the same id or key, and transitive (the lemmas \`compareChildren_transitive\`, \`compareFamilies_transitive\` and
+  \`compareRows_transitive\`), so sorting by it gives one order whatever order the rows come in; the dated come before the
+  undated, the earlier day first ("A range of years": \`1803/1805\` from 1 January 1803 before 1 June 1804), and children
+  born the same day in the order their Family records them ("Twins"). Not proved: the keys the shell makes from the Tree
+  (shared/src/chart-rows.ts: the earliest day of a child's birth or baptism, a Family's marriage), and that it sorts by
+  them; shared/test/charts-model.test.ts tests both with the rows shuffled.`,
+  `**Who is in a Descendant chart** (\`selectDescendants\`, shared/src/charts.ts; tree-charts "Descendant chart").
+  Proved, for any Persons, Families and child links: the start is generation 1 and nobody else is, nobody is beyond the
+  generations asked for; closed: a birth or adoptive link from a partner the Chart goes on from leads to a Person in it at
+  most one generation further; sound: everyone else came through a birth or adoptive link (never a foster or step link)
+  from a partner one generation up; together these make each Person's generation the smallest number of such links from
+  the start, plus 1, once ("Descended in two ways"), though no lemma states that as such; from a start Family, its
+  partners go on only through it ("From a couple"). Not proved: the
+  rows the server gathers (server/src/charts/gather.ts), and how the shell writes the nodes depth first, gives each
+  Person one main place and points to it from later ones, and shows foster and step children unfollowed
+  (shared/src/charts-model.ts); shared/test/charts-model.test.ts and server/test/charts.test.ts test those.`,
+  `**The Direct line** (\`directLine\`, shared/src/charts.ts; tree-charts "Direct line"). Proved: the distance down to the
+  end is closed and sound (each Person's smallest number of birth or adoptive links to the end within the line's length);
+  the line is empty exactly when the start has no such distance ("Not a descendant"); otherwise it runs from the start to
+  the end, at most 12 Persons, each step a followed link to a child that still reaches the end in time ("Line to the
+  Member"), and at each step no earlier link in the Chart's order would ("Two ways down"). Not proved: that the links come
+  in the Chart's order (the shell sorts them by Family and child), and the rows the line form draws around it (the
+  children, and the siblings' Families beside each row).`,
+  `**The size of a Chart** (\`cutToSize\`, shared/src/charts.ts; tree-charts "Size of a Chart"). Proved, for any
+  generations and cards per generation: the Chart keeps whole generations, at least 2, as many as fit within the limit,
+  and more than fit only when 2 already exceed it; each Person of the last generation kept carries exactly the number of
+  descendants left out below them, counting someone reached in two ways once, below the ancestor they were selected
+  through, and the counts add up to the total left out ("A large family"). Not proved: the cards counted per generation
+  (descendants, partners and pointer cards, counted by the shell as it writes the nodes), and the cut of the second
+  generation in the Chart's order when even two generations exceed 500 cards (shared/src/charts-model.ts).`,
+  `**Died young** (\`diedYoung\`, shared/src/charts.ts; tree-charts "Marks on cards"). Proved: true exactly when both days
+  are known and the death day falls before the day 15 years after the birth day ("Died young", "Not certain"); born on 29
+  February, that is 1 March in a year without one. Not proved: that the shell passes the earliest day of the birth (else
+  the baptism) and the latest day of the death (else the burial); shared/test/charts.test.ts tests the days.`,
+  `**Living people on a Sheet** (\`sheetPerson\`, shared/src/export.ts; tree-charts "Living people on a Sheet"). Proved,
+  for any record: a Living person keeps the given name and surname of their primary Name, their sex, relationships and
+  birth year, and nothing else: no Event (so no exact date, Place or House), Source or image ("Living grandchild": born in
+  2010, the year and no place); without names, no Name and no birth year either ("Names left off"); no record keeps an
+  Event in which a Living person has a Role, nor an image; anyone else keeps their Names and facts. It is the Export view
+  (\`exportRecord\`) with only the nameless step added. Not proved: the mapping of a card to a record and back
+  (shared/src/sheet-reduction.ts), that the server marks Living people by the Living rule, and that the SVG builder
+  refuses a model that is not a Sheet; shared/test/charts-model.test.ts and app/tests/unit/chart-sheet.test.mjs test those.`,
+  `**The House chart's rows** (\`placesAtHouse\`, \`familyAt\`, \`houseRows\`, shared/src/house-chart.ts; tree-charts
+  "House chart"). Proved: a godparent, witness, priest or informant places nobody ("Godmother from next door"); a birth or
+  baptism places only the child and parents, a marriage only the partners; an Event belongs to the latest of a Person's
+  Families whose marriage is not known to be later; every row shown has an Event that places it; each row's period runs
+  from the earliest to the latest day of its dated placing Events, widened by open dates, and a row with none is undated.
+  Not proved: which Family the shell finds for a birth (the child's birth or adoptive Family) or a marriage (the couple's),
+  the row of someone with no Family (their birth Family's row if it is there, else their own), the house numbers of each
+  period, the 80-row limit and the period chosen, and the Unrelated rows hidden (shared/src/house-chart-model.ts);
+  shared/test/house-chart.test.ts and server/test/charts.test.ts test those.`,
+  `**Succession in a House chart** (\`succession\`, shared/src/house-chart.ts; tree-charts "Succession in a House chart").
+  Proved, for any rows: each row links to the latest earlier row a Family link connects it to, and to none when there is
+  none ("A new family"); the link is a son, daughter or child (by sex) exactly when a partner is a child of that row's
+  Family ("Son takes over"), the other partner then marked as married in exactly when they are a child of no earlier row
+  ("Son-in-law marries in"); a remarriage exactly when no partner is such a child and the rows share a partner ("Widow
+  remarries"); the result has no holder at all ("Overlapping periods"). Not proved: the child links and partners the shell
+  passes in for the rows shown.`,
   `**Presumed death** (\`presumedDead\`, shared/src/presumed-death.ts; vault-import "Presumed death when birth is provably
   long ago"). Proved, for any Persons, facts, parent links and offered chains: a Person is presumed dead only if they have
   no death or burial and no birth or baptism date of their own, and the chain offered for them ends at them, starts at a

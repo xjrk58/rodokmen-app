@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect } from 'vitest';
 
 /**
@@ -15,4 +16,11 @@ export function expectGolden(file: string, text: string): void {
   }
   expect(existsSync(file), `${file} is missing: run the test with UPDATE_GOLDEN=1 and read the file`).toBe(true);
   expect(text).toBe(readFileSync(file, 'utf8'));
+}
+
+const CHARTS = join(dirname(fileURLToPath(import.meta.url)), 'golden', 'charts');
+
+/** Compares a Chart model, as JSON, with its golden file in golden/charts/, or writes the file with UPDATE_GOLDEN=1. */
+export function golden(name: string, value: unknown): void {
+  expectGolden(join(CHARTS, `${name}.json`), `${JSON.stringify(value, null, 2)}\n`);
 }

@@ -138,6 +138,28 @@ _Avoid_: dump, download
 A complete, encrypted copy of the server's data, kept only for recovery and never reduced.
 _Avoid_: export, snapshot
 
+## Charts
+
+**Chart**:
+A drawing of part of the Tree that Rodokmen makes by fixed rules, so that the same Tree, options, language and day always give the same Chart: a Descendant chart or a House chart.
+_Avoid_: diagram, graph, family tree (for one Chart), AI drawing
+
+**Descendant chart**:
+A Chart of the descendants of a Person or a Family, each with their partners, generation by generation.
+_Avoid_: descendancy tree, offspring chart, rozrod (in English text)
+
+**House chart**:
+A Chart of the Families who lived at a House, in time order, each linked to an earlier one only by Family links.
+_Avoid_: house history, list of holders, owners
+
+**Direct line**:
+The chain of child links from the start of a Descendant chart down to one chosen descendant, such as the Member's own Person.
+_Avoid_: bloodline, lineage, main line, přímá linie (in English text)
+
+**Sheet**:
+A Chart made to be printed or downloaded, with a frame, title, legend and colophon, and with Living people reduced as in an Export.
+_Avoid_: printout, poster, report, PDF (for the Sheet itself)
+
 ## Places
 
 **Place**:

@@ -14,7 +14,8 @@ import { shortKinship } from './kinship.js';
 import { KinshipStrip } from './kinship-section.js';
 import { PeopleSearch } from './people-screen.js';
 import { familyRoots, isShown, relationKnown, relationOf, rootsKnown } from './relation.js';
-import { personAddress, treeAddress } from './routes.js';
+import { useGestures, zoomAt } from './pan-zoom.js';
+import { chartAddress, personAddress, treeAddress } from './routes.js';
 import { AsOf, ErrorLine, useCachedLoad } from './screen-parts.js';
 import { html, useEffect, useMemo, useRef, useState } from './ui.js';
 
@@ -22,17 +23,10 @@ import { html, useEffect, useMemo, useRef, useState } from './ui.js';
 /** @typedef {import('./types.js').Hourglass} Hourglass */
 /** @typedef {import('./hourglass-layout.js').Layout} Layout */
 /** @typedef {import('./hourglass-layout.js').LayoutNode} LayoutNode */
-/** @typedef {{ x: number, y: number, k: number }} View */
+/** @typedef {import('./pan-zoom.js').View} View */
 
-const LONG_PRESS_MS = 550;
-const TAP_SLOP_PX = 8;
-const MIN_ZOOM = 0.3;
-const MAX_ZOOM = 2.5;
 /** At first the tree is shrunk to fit the screen's width, but never below this. */
 const MIN_FIT = 0.72;
-
-/** @param {number} k */
-const clampZoom = (k) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, k));
 
 /**
  * Where the tree starts: the focus Person in the middle, the ancestors and the focus row as wide
@@ -118,127 +112,6 @@ function PersonBox({ node, focus, onTap }) {
     ${node.moreAbove ? html`<path class="more" data-testid="more-above" d=${`M${BOX.w - 15} 11l5 -5l5 5`} />` : null}
     ${node.moreBelow ? html`<path class="more" data-testid="more-below" d=${`M${BOX.w - 15} ${BOX.h - 11}l5 5l5 -5`} />` : null}
   </g>`;
-}
-
-/**
- * Pan with one finger or the mouse, pinch or wheel to zoom; a tap or a long press on a box.
- * @param {{ view: View, setView: (v: View | ((v: View) => View)) => void, onTap: (id: string) => void, onLongPress: (id: string) => void }} o
- */
-function useGestures(o) {
-  const ref = useRef(
-    /** @type {{ pointers: Map<number, { x: number, y: number }>, start: { x: number, y: number } | null, moved: boolean, target: string | null, timer: ReturnType<typeof setTimeout> | undefined, long: boolean, pinch: number | null }} */ ({
-      pointers: new Map(),
-      start: null,
-      moved: false,
-      target: null,
-      timer: undefined,
-      long: false,
-      pinch: null,
-    }),
-  );
-  const g = ref.current;
-  const { setView } = o;
-
-  /** @param {PointerEvent} e */
-  const down = (e) => {
-    const svg = /** @type {SVGSVGElement} */ (e.currentTarget);
-    try {
-      svg.setPointerCapture(e.pointerId);
-    } catch {
-      // a pointer the browser no longer tracks: nothing to capture
-    }
-    g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (g.pointers.size === 1) {
-      const el = e.target instanceof Element ? e.target.closest('[data-person]') : null;
-      g.target = el?.getAttribute('data-person') ?? null;
-      g.start = { x: e.clientX, y: e.clientY };
-      g.moved = false;
-      g.long = false;
-      clearTimeout(g.timer);
-      if (g.target) {
-        const id = g.target;
-        g.timer = setTimeout(() => {
-          if (!g.moved) {
-            g.long = true;
-            o.onLongPress(id);
-          }
-        }, LONG_PRESS_MS);
-      }
-    } else {
-      g.moved = true;
-      clearTimeout(g.timer);
-      const [a, b] = [...g.pointers.values()];
-      g.pinch = Math.hypot(a.x - b.x, a.y - b.y);
-    }
-  };
-
-  /** @param {PointerEvent} e */
-  const move = (e) => {
-    const last = g.pointers.get(e.pointerId);
-    if (!last) return;
-    const box = /** @type {SVGSVGElement} */ (e.currentTarget).getBoundingClientRect();
-    if (g.pointers.size === 1) {
-      if (g.start && Math.hypot(e.clientX - g.start.x, e.clientY - g.start.y) > TAP_SLOP_PX) {
-        g.moved = true;
-        clearTimeout(g.timer);
-      }
-      if (g.moved) {
-        const dx = e.clientX - last.x;
-        const dy = e.clientY - last.y;
-        setView((v) => ({ ...v, x: v.x + dx, y: v.y + dy }));
-      }
-      g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      return;
-    }
-    g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    const [a, b] = [...g.pointers.values()];
-    const distance = Math.hypot(a.x - b.x, a.y - b.y);
-    const ratio = g.pinch ? distance / g.pinch : 1;
-    g.pinch = distance;
-    const cx = (a.x + b.x) / 2 - box.left;
-    const cy = (a.y + b.y) / 2 - box.top;
-    setView((v) => zoomAt(v, v.k * ratio, cx, cy));
-  };
-
-  /** @param {PointerEvent} e */
-  const up = (e) => {
-    g.pointers.delete(e.pointerId);
-    if (g.pointers.size > 0) return;
-    clearTimeout(g.timer);
-    g.pinch = null;
-    if (!g.moved && !g.long && g.target) o.onTap(g.target);
-    g.target = null;
-  };
-
-  /** @param {PointerEvent} e */
-  const cancel = (e) => {
-    g.pointers.delete(e.pointerId);
-    clearTimeout(g.timer);
-    g.target = null;
-  };
-
-  /** @param {WheelEvent} e */
-  const wheel = (e) => {
-    e.preventDefault();
-    const box = /** @type {SVGSVGElement} */ (e.currentTarget).getBoundingClientRect();
-    const factor = Math.exp(-e.deltaY * 0.0015);
-    setView((v) => zoomAt(v, v.k * factor, e.clientX - box.left, e.clientY - box.top));
-  };
-
-  return { onPointerDown: down, onPointerMove: move, onPointerUp: up, onPointerCancel: cancel, onWheel: wheel };
-}
-
-/**
- * Zooms the view to `k`, keeping the point (cx, cy) of the screen where it is.
- * @param {View} v
- * @param {number} k
- * @param {number} cx
- * @param {number} cy
- * @returns {View}
- */
-export function zoomAt(v, k, cx, cy) {
-  const next = clampZoom(k);
-  return { k: next, x: cx - ((cx - v.x) * next) / v.k, y: cy - ((cy - v.y) * next) / v.k };
 }
 
 /**
@@ -336,6 +209,14 @@ function TreeCanvas({ data, depthKey }) {
       <button type="button" class="round-button" aria-label=${t('tree.zoomIn')} data-testid="zoom-in" onClick=${() => zoomBy(1.25)}>+</button>
       <button type="button" class="round-button" aria-label=${t('tree.zoomOut')} data-testid="zoom-out" onClick=${() => zoomBy(0.8)}>−</button>
       <button type="button" class="round-button" aria-label=${t('tree.fit')} data-testid="zoom-fit" onClick=${fitView}>⤢</button>
+      <a
+        class="round-button"
+        href=${chartAddress({ kind: 'descendants', start: 'person', id: data.focusId })}
+        aria-label=${t('chart.open')}
+        title=${t('chart.open')}
+        data-testid="tree-chart"
+        >▤</a
+      >
     </div>
     ${layout.otherParents.map(
       (o) =>

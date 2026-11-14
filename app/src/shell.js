@@ -17,6 +17,7 @@ import { needsMember, parseRoute } from './routes.js';
 import { SettingsScreen } from './settings-screen.js';
 import { SignInScreen } from './sign-in-screen.js';
 import { TreeScreen } from './tree-screen.js';
+import { ChartScreen } from './chart-screen.js';
 import { html, mount } from './ui.js';
 
 /** @typedef {import('./types.js').Me} Me */
@@ -55,11 +56,13 @@ function TabBar({ route, me }) {
   const active =
     current === 'person'
       ? 'people'
-      : current === 'lead' || current === 'lead-new'
-        ? 'leads'
-        : current === 'work' && route.screen === 'work' && route.view === 'review'
-          ? 'review'
-          : current;
+      : current === 'chart'
+        ? 'tree'
+        : current === 'lead' || current === 'lead-new'
+          ? 'leads'
+          : current === 'work' && route.screen === 'work' && route.view === 'review'
+            ? 'review'
+            : current;
   /** @type {[keyof typeof ICONS, string, string][]} */
   const tabs = [
     ['tree', '#tree', 'tabs.tree'],
@@ -81,7 +84,7 @@ function TabBar({ route, me }) {
 }
 
 /**
- * The Research lead screens (research-leads spec): the Leads list, one lead, writing one.
+ * The Research lead screens (research-leads spec): the Leads list, one lead, writing one; and a Chart (tree-charts spec).
  * @param {Route} route
  * @param {Me | null} me
  * @param {boolean} cache
@@ -90,6 +93,7 @@ function leadScreen(route, me, cache) {
   if (!me) return null;
   if (route.screen === 'leads') return html`<${LeadsScreen} key=${route.place ?? 'all'} me=${me} place=${route.place} cache=${cache} />`;
   if (route.screen === 'lead') return html`<${LeadScreen} key=${route.id} id=${route.id} me=${me} />`;
+  if (route.screen === 'chart') return html`<${ChartScreen} key=${`${route.chart.kind}:${route.chart.id}`} me=${me} chart=${route.chart} cache=${cache} />`;
   if (route.screen === 'lead-new')
     return html`<${NewLeadScreen} key=${`${route.person}:${route.place}`} me=${me} person=${route.person} place=${route.place} />`;
   return null;
@@ -228,7 +232,7 @@ export class Shell {
     else if (screen === 'people') content = html`<${PeopleScreen} cache=${cache} />`;
     else if (screen === 'person' && route.screen === 'person')
       content = html`<${PersonScreen} key=${route.id} id=${route.id} cache=${cache} me=${me} refreshMe=${() => this.refreshMe()} />`;
-    else if (screen.startsWith('lead')) content = leadScreen(route, me, cache);
+    else if (screen.startsWith('lead') || screen === 'chart') content = leadScreen(route, me, cache);
     else if (screen === 'settings' && me)
       content = html`<${SettingsScreen}
         me=${me}
