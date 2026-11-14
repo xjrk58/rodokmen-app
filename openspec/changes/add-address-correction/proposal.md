@@ -59,7 +59,7 @@ Main specs are empty because no change is archived yet, so these deltas add requ
   - golden files for both emails in `server/test/emails.test.ts`;
   - `server/test/migrations.test.ts` if it lists migrations;
   - `shared/test/rules.test.ts`;
-  - Playwright in `app/tests/e2e/family-settings.spec.js` and `family-sign-in.spec.js`, at phone and desktop sizes;
+  - Playwright in a new `app/tests/e2e/family-address.spec.js`, at phone and desktop sizes;
   - the routes unit test.
 - **Docs**:
   - `docs/how-to/invite-a-member.md`;

@@ -88,7 +88,7 @@ In one transaction: the account's `email` becomes the new address, the change is
 
 - **Sessions are kept.** The Owner corrects an address when the right person has the account and the address is wrong or unused. Ending their sessions would sign them out of every device for nothing. A Member whose account a wrong person got into needs to be disabled, not corrected. The how-to says so.
 - **Passkeys are kept.** They belong to the person's devices, not to the address.
-- **The old address is told** in the Member's language that Rodokmen no longer uses it, when, and by whose change. It does not name the new address or the Member. The old address may be the stranger's mistyped mailbox, and they need neither. The notice is sent after the commit, and a failure is logged (`AccountDeps.log`), as the acceptance email of #151 is. A failed notice must not undo a confirmed change.
+- **The old address is told** in the Member's language that Rodokmen no longer uses it, and by whose change. It does not name the new address or the Member. The old address may be the stranger's mistyped mailbox, and they need neither. The notice is sent after the commit, and a failure is logged (`AccountDeps.log`), as the acceptance email of #151 is. A failed notice must not undo a confirmed change.
 
 ### Storage
 
@@ -126,6 +126,7 @@ Nothing else qualifies (ADR 0009). Whether a change is still open is a compariso
 - [A wrong person had already signed in through the old address] → Correcting keeps sessions and passkeys, so it does not remove them. The how-to says to disable the Member in that case, not to correct the address.
 - [The relative never confirms] → Nothing changes; the old address keeps working. The link expires after 7 days, and the Owner can ask again.
 - [The notice to the old address reaches a stranger] → It names neither the Member nor the new address, only Rodokmen and the Owner, whom that address's invitation already named.
+- [A passkey saved before the change still shows the old address in the phone's list of passkeys] → The passkey keeps working: Rodokmen finds the Member by the passkey and the account's id, never by the address. The name shown is the address at the time the passkey was saved, which the phone keeps; a passkey saved after the change shows the new one.
 
 ## Migration Plan
 
