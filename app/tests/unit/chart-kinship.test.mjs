@@ -9,9 +9,11 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { NotASheet, sheet, sheetFile } from '../../src/chart-sheet.js';
 import { chartLabels } from '../../src/chart-text.js';
+import { layoutHouse } from '../../src/chart-house-layout.js';
+import { layoutLine } from '../../src/chart-line-layout.js';
 import { layoutTree } from '../../src/chart-tree-layout.js';
 import { h as stringH } from '../../src/svg-string.js';
-import { fontMetrics, goldenTree, NOVAK as P, texts } from './chart-models.mjs';
+import { fontMetrics, goldenHouse, goldenTree, NOVAK as P, texts } from './chart-models.mjs';
 
 // After chart-models.mjs, which loads shared-loader.mjs: these are TypeScript.
 const { buildKinshipGraph } = await import('../../../shared/src/kinship-graph.js');
@@ -101,6 +103,45 @@ test('"Switched on": each card shows its Person\'s kinship to the reader, on one
   // Each Member sees their own kinship: for Petr, Lukáš is his father.
   const forPetr = layoutTree(withKinship(screen, P.petr), metrics, labels.cs);
   assert.deepEqual(footOf(/** @type {any} */ (forPetr.cards.find((c) => c.personId === P.lukas && c.kind === 'person'))), ['otec']);
+});
+
+test('the line form and the House chart: the term on the foot line of each card, after the life years on a sibling card', async () => {
+  // The golden line form has no married sibling: give the first row one, a brother of the line.
+  const golden = await goldenTree('novak-line');
+  const rows = golden.rows.map((r, i) => (i === 0 ? { ...r, siblings: [{ personId: P.josef, side: /** @type {const} */ ('right'), families: [] }] } : r));
+  const line = withKinship(/** @type {DescendantChart} */ ({ ...golden, rows }), P.lukas);
+  const laid = layoutLine(line, metrics, labels.cs);
+  const persons = new Map(line.persons.map((p) => [p.id, p]));
+  const siblings = laid.cards.filter((c) => c.kind === 'sibling');
+  assert.ok(siblings.length > 0, 'the line form has sibling cards');
+  for (const c of siblings) {
+    const p = persons.get(/** @type {string} */ (c.personId));
+    const term = p ? labels.cs.kinship(p) : '';
+    assert.ok(term, c.key);
+    assert.ok(
+      c.lines.some((l) => l.text.endsWith(` · ${term}`) || l.text.startsWith(`${term}`)),
+      c.key,
+    );
+  }
+  for (const c of laid.cards.filter((x) => x.kind === 'person' || x.kind === 'partner')) {
+    const p = persons.get(/** @type {string} */ (c.personId));
+    if (p && labels.cs.kinship(p)) assert.equal(footOf(c)[0]?.split(' · ')[0], labels.cs.kinship(p), c.key);
+  }
+  // The House chart's Persons are another invented family: any short form shows the same way.
+  const house = await goldenHouse('house-a');
+  const strýc = {
+    kind: 'birth',
+    term: { cs: { text: 'strýc', gender: 'm' }, en: { text: 'uncle', gender: 'm' } },
+    possible: false,
+    line: 'collateral',
+    degree: 3,
+    others: 0,
+    more: false,
+  };
+  const withTerm = /** @type {typeof house} */ ({ ...house, persons: house.persons.map((p) => ({ ...p, kinship: strýc })) });
+  const houseCards = layoutHouse(withTerm, metrics, labels.cs).cards.filter((c) => c.kind === 'person' || c.kind === 'partner');
+  assert.ok(houseCards.length > 0);
+  for (const c of houseCards) assert.equal(footOf(c)[0]?.split(' · ')[0], 'strýc', c.key);
 });
 
 test('with kinship the layout is the same but for the line at the foot of each card', async () => {

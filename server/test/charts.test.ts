@@ -13,7 +13,7 @@ import type { Database } from '../src/db/types.js';
 import { generateFixture } from '../src/fixture/generate.js';
 import { recomputeRelations } from '../src/tree/relation.js';
 import { createTestDatabase, type TestDatabase } from './db.js';
-import { createMember, ensureOwner, errorOf, makeApp, signIn, TestClock, type TestApp } from './helpers.js';
+import { bearer, createAgentWithToken, createMember, ensureOwner, errorOf, makeApp, signIn, TestClock, type TestApp } from './helpers.js';
 
 const L = generateFixture().landmarks;
 const GOLDEN = join(dirname(fileURLToPath(import.meta.url)), 'golden', 'charts');
@@ -265,6 +265,16 @@ describe('Chart routes on the fixture Tree', () => {
         expect(kin, q).toEqual(await descendants(q));
       }
       expect(await house('kinship=1', owner)).toEqual(await house('', owner));
+    });
+
+    it('adds nothing for an Agent, which has no own Person, even when asked for it on the route', async () => {
+      const { token } = await createAgentWithToken(t.db, a.clock);
+      const url = `/api/charts/descendants?person=${L.founder}&generations=3`;
+      const plain = await a.app.inject({ method: 'GET', url, headers: bearer(token) });
+      const kin = await a.app.inject({ method: 'GET', url: `${url}&kinship=1`, headers: bearer(token) });
+      expect(kin.statusCode, kin.body).toBe(200);
+      expect(kin.body).not.toMatch(/kinship/);
+      expect(kin.body).toBe(plain.body);
     });
   });
 });

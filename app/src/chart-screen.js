@@ -215,8 +215,11 @@ function useScreenModel(chart, me, switchedOn, cache) {
   const asked = useCachedLoad(first.key, load(first.query), cache);
   const failed = asked.data === null && asked.error !== null && !asked.loading;
   const kept = useCachedLoad(failed && second ? second.key : null, load(second?.query ?? plain.query), cache);
-  if (!failed || kept.data === null) return { ...asked, kinshipMissing: false };
-  return { ...kept, data: withoutKinship(kept.data), kinshipMissing: first === kin };
+  // One model per load, so that the layout is not made again on every render.
+  const keptModel = /** @type {ChartModel | null} */ (kept.data);
+  const keptPlain = useMemo(() => (keptModel === null ? null : withoutKinship(keptModel)), [keptModel]);
+  if (!failed || keptPlain === null) return { ...asked, kinshipMissing: false };
+  return { ...kept, data: keptPlain, kinshipMissing: first === kin };
 }
 
 /**
