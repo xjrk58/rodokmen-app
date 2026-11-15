@@ -234,6 +234,24 @@ describe('Charts in the app (Chromium, phone and desktop, fixture Tree)', () => 
         expect(await view.evaluate(() => document.fonts.check('32px "EB Garamond"'))).toBe(true);
       });
 
+      it('"Switched on" and "Printing" (add-kinship 8.2): kinship on the cards on screen, and the same SVG file with it on and off', async () => {
+        const page = await open(member, size, chartOf(L.founder, `form=line&line=${L.proband}`));
+        const own = page.getByTestId('chart').locator(`[data-key="line:${L.proband}"]`);
+        await own.waitFor();
+        const off = (await downloadOf(page, 'chart-svg')).toString('utf8');
+        await page.getByTestId('chart-options').locator('summary').click();
+        await page.getByTestId('chart-kinship').check();
+        await expect.poll(() => own.textContent()).toContain('vy');
+        const founder = page.getByTestId('chart').locator(`[data-key="line:${L.founder}"]`);
+        await expect.poll(() => founder.textContent()).toMatch(/pra\S*děd/);
+        await shot(page, `chart-kinship-${size}`);
+        expect(page.url()).not.toContain('kinship');
+        const on = (await downloadOf(page, 'chart-svg')).toString('utf8');
+        expect(on === off).toBe(true);
+        expect(on).not.toMatch(/>vy<|pra\S*děd/);
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+      });
+
       it('a PNG within the canvas limits', async () => {
         const page = await open(member, size, chartOf(L.janNovak));
         await page.getByTestId('chart').locator('[data-card]').first().waitFor();

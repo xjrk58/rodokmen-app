@@ -161,11 +161,13 @@ export function chartAddress(c) {
 }
 
 /**
- * The API query of a Chart: what decides its model, without the title and the paper.
+ * The API query of a Chart: what decides its model, without the title and the paper. The variant
+ * is a Sheet's (`reduced`, `nameless`) or the screen's, plain (null) or with kinship on its cards;
+ * one value, so that no query asks for a Sheet with kinship (tree-charts spec, "Kinship on Chart cards").
  * @param {ChartRoute} c
- * @param {'reduced' | 'nameless' | null} sheet
+ * @param {'reduced' | 'nameless' | 'kinship' | null} variant
  */
-export function chartQuery(c, sheet) {
+export function chartQuery(c, variant) {
   /** @type {string[]} */
   const q = [];
   if (c.kind === 'house') {
@@ -178,7 +180,8 @@ export function chartQuery(c, sheet) {
     else if (c.generations !== CHART_DEFAULTS.generations) q.push(`generations=${c.generations}`);
     if (c.line !== null) q.push(`line=${c.line}`);
   }
-  if (sheet !== null) q.push(`sheet=${sheet}`);
+  if (variant === 'kinship') q.push('kinship=1');
+  else if (variant !== null) q.push(`sheet=${variant}`);
   const path = c.kind === 'house' ? `charts/house/${c.id}` : 'charts/descendants';
   return q.length > 0 ? `${path}?${q.join('&')}` : path;
 }

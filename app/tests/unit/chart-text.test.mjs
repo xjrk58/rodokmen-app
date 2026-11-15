@@ -144,3 +144,19 @@ test("a Chart's address: parsed and written back the same, defaults left out, ke
   // A bad address opens nothing.
   assert.equal(parseRoute('#chart/descendants/person/nope').screen, 'home');
 });
+
+test('"Kinship on Chart cards": kinship=1 only for the screen variant, never with sheet, and never in the address', () => {
+  const id = '0192f0c4-7a1e-7c3b-9d2a-000000000001';
+  const route = parseRoute(`#chart/descendants/person/${id}?generations=6&kinship=1`);
+  assert.equal(route.screen, 'chart');
+  if (route.screen !== 'chart') return;
+  // The address has no place for kinship: the switch is the device's.
+  assert.equal(chartAddress(route.chart), `#chart/descendants/person/${id}?generations=6`);
+  assert.equal(chartQuery(route.chart, 'kinship'), `charts/descendants?person=${id}&generations=6&kinship=1`);
+  for (const sheet of /** @type {const} */ (['reduced', 'nameless'])) {
+    assert.equal(chartQuery(route.chart, sheet), `charts/descendants?person=${id}&generations=6&sheet=${sheet}`);
+    assert.doesNotMatch(chartQuery({ ...route.chart, living: sheet }, sheet), /kinship/);
+  }
+  const house = parseRoute(`#chart/house/${id}`);
+  if (house.screen === 'chart') assert.equal(chartQuery(house.chart, 'kinship'), `charts/house/${id}?kinship=1`);
+});
