@@ -8,6 +8,7 @@ import {
   PersonDetail,
   PlaceDetail,
   ProposalList,
+  ProposalView,
   SourceDetail,
 } from '@rodokmen/shared';
 import { writeFile } from 'node:fs/promises';
@@ -16,7 +17,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import type { Municipality } from '../src/vault-import/map-places.js';
 import type * as Mapper from '../src/vault-import/mapper.js';
-import type { Plan, PlannedOp } from '../src/vault-import/plan.js';
 import { runImport, type ImportOptions, type ImportResult } from '../src/vault-import/run.js';
 import { createAgentWithToken, ensureOwner, signIn } from './helpers.js';
 import { fixtureVault, longLog } from './fixture-vault.js';
@@ -32,70 +32,13 @@ import { startLiveServer, type LiveServer } from './live-server.js';
  */
 const before = vi.hoisted(() => ({ fix: false }));
 
-/** The plan of the importer before #149: the second spouse's note gave the marriage an Event of its own. */
-function before149(plan: Plan): void {
-  const all = plan.proposals.flatMap((p) => p.ops);
-  for (const m of plan.mergedMarriages) {
-    const rekey = (o: PlannedOp): PlannedOp => ({
-      ...o,
-      key: o.key.replace(m.key, m.earlierKey),
-      op: { ...o.op, ...Object.fromEntries(Object.entries(o.op).map(([k, v]) => [k, v === `@${m.key}` ? `@${m.earlierKey}` : v])) },
-    });
-    const created = [all.find((o) => o.key === m.key)!, ...all.filter((o) => o.key.startsWith(`role:${m.key}:`))];
-    const p = plan.proposals.find((x) => x.path === m.paths[1])!;
-    const first = p.ops.findIndex((o) => o.key.includes(m.key));
-    p.ops = [...p.ops.slice(0, first), ...created.map(rekey), ...p.ops.slice(first).map((o) => (o.key.includes(m.key) ? rekey(o) : o))];
-  }
-}
-
-/** The plan of the importer before #132: no presumed death. */
-function before132(plan: Plan): void {
-  for (const p of plan.proposals) p.ops = p.ops.filter((o) => !o.key.includes(':presumed-death'));
-}
-
-/** The plan of the importer before #134: research notes held the note's body alone (none without one), and a Citation's note the path. */
-function before134(plan: Plan): void {
-  for (const u of plan.updates.filter((x) => x.topic === 'fields'))
-    for (const p of plan.proposals) {
-      const i = p.ops.findIndex((o) => o.key === u.freshKey);
-      if (i < 0) continue;
-      const op = { ...p.ops[i]!.op, ...u.before };
-      p.ops = u.before.notes === null ? p.ops.filter((_, j) => j !== i) : p.ops.map((o, j) => (j === i ? { ...o, op, value: JSON.stringify(op) } : o));
-    }
-}
-
-/**
- * The plan of the importer before #135 and #137, which created records otherwise: a residence with
- * a qualified end, or an end that is an interval, had no date (#135); a Place was linked only to the
- * Municipality of its own name (#137).
- */
-function before135and137(plan: Plan): void {
-  for (const u of plan.updates.filter((x) => x.topic === 'date' || x.topic === 'municipality'))
-    for (const o of plan.proposals.flatMap((p) => p.ops))
-      if (o.key === u.freshKey) {
-        o.op = { ...o.op, ...u.before };
-        o.value = JSON.stringify(o.op);
-      }
-}
-
-/** The plan of the importer before #136: a lead's reason held the first 4,000 characters of its note. */
-function before136(plan: Plan): void {
-  for (const lead of plan.leads) lead.reason = lead.earlierReason ?? lead.reason;
-}
-
 vi.mock('../src/vault-import/mapper.js', async (importOriginal) => {
   const mapper = await importOriginal<typeof Mapper>();
   return {
     ...mapper,
     mapVault: async (...args: Parameters<typeof mapper.mapVault>) => {
       const plan = await mapper.mapVault(...args);
-      if (!before.fix) {
-        before132(plan);
-        before134(plan);
-        before136(plan);
-        before135and137(plan);
-        before149(plan);
-      }
+      if (!before.fix) (await import('./vault-import-earlier.js')).asEarlierImporters(plan);
       return plan;
     },
   };
@@ -436,10 +379,13 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
     expect(attach).toMatchObject({ citationId: await recordOf('vault-citation:people/tomas-novak-1770.md') });
     // No marriage Event is created, and the one an earlier run created stays: no operation removes an Event.
     expect(items.flatMap((p) => p.operations).filter((o) => o.operation.op === 'createEvent' && o.operation.type === 'marriage')).toEqual([]);
+    const page = `${s.origin}/#people/${await recordOf('person:tomas-novak-1770')}`;
     expect(second.run.duplicateMarriages).toEqual([
-      { paths: ['people/marie-svobodova-1775.md', 'people/tomas-novak-1770.md'], keep, other: await recordOf(earlier) },
+      { paths: ['people/marie-svobodova-1775.md', 'people/tomas-novak-1770.md'], keep, other: await recordOf(earlier), page, otherWay: false },
     ]);
-    expect(second.report).toContain(`- people/marie-svobodova-1775.md and people/tomas-novak-1770.md: keep Event ${keep}`);
+    expect(second.report).toContain(
+      `- people/marie-svobodova-1775.md and people/tomas-novak-1770.md: keep Event ${keep}; the other is Event ${await recordOf(earlier)}; merge on ${page}`,
+    );
     const kept = (await marriages()).find((e) => e.event.id === keep)!;
     // The Event to keep is the one a fresh import gives (vault-import.test.ts): both partners, citing each note.
     expect(citations(kept)).toEqual(['people/marie-svobodova-1775.md', 'people/tomas-novak-1770.md']);
@@ -448,6 +394,32 @@ describe('a later run over a Tree imported before the follow-ups (#132, #134, #1
       ['partner', 'Marie Nováková'],
       ['partner', 'Tomáš Novák'],
     ]);
+  });
+
+  it('once the Owner merged the pair, a later run lists it no more; merged the other way round, it lists it apart (#154)', async () => {
+    const [keep, other] = [await recordOf(shared), await recordOf(earlier)];
+    const merge = async (into: string, from: string) => {
+      const version = async (id: string) => EventDetail.parse((await asOwner('GET', `/api/events/${id}`)).json()).version;
+      const res = await asOwner('POST', `/api/events/${into}/merge`, {
+        mergeId: from,
+        keepBaseVersion: await version(into),
+        mergeBaseVersion: await version(from),
+      });
+      expect(res.statusCode, res.body).toBe(200);
+      return ProposalView.parse(res.json()).id;
+    };
+    // The other way round first: the Event later runs refer to is gone.
+    const wrong = await merge(other, keep);
+    const listed = await runImport({ ...options(), dryRun: true });
+    expect(listed.run.duplicateMarriages).toMatchObject([{ keep, otherWay: true }]);
+    expect(listed.report).toContain('## Marriage Events merged the other way round (1)');
+    expect((await asOwner('POST', `/api/proposals/${wrong}/undo`, {})).statusCode).toBe(200);
+    // Then as the report says: the pair is done.
+    await merge(keep, other);
+    const done = await runImport({ ...options(), dryRun: true });
+    expect(done.run.duplicateMarriages).toEqual([]);
+    expect(done.report).not.toContain('Marriage Events');
+    expect((await marriages()).map((e) => e.event.id)).toEqual([keep]);
   });
 
   it('running once more submits nothing', async () => {

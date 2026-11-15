@@ -14,13 +14,13 @@ import { lifeYears } from './hourglass-layout.js';
 import { has, t } from './i18n.js';
 import { PersonLeads } from './leads-screen.js';
 import { chartAddress, lifeAddress, personAddress, treeAddress } from './routes.js';
-import { AsOf, ErrorLine, errorText, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
+import { EventMergeOffer } from './event-merge.js';
+import { AsOf, ErrorLine, errorText, eventWhere, Marks, personMarks, PersonLine, useCachedLoad } from './screen-parts.js';
 import { html, useState } from './ui.js';
 
 /** @typedef {import('./types.js').PersonDetail} PersonDetail */
 /** @typedef {import('./types.js').CitationSummary} CitationSummary */
 /** @typedef {import('./types.js').CitationDetail} CitationDetail */
-/** @typedef {import('./types.js').EventSummary} EventSummary */
 
 /**
  * One Citation: the Source, page and confidence; tapped, its transcription and page images.
@@ -83,25 +83,28 @@ function Citations({ citations, cache }) {
   </ul>`;
 }
 
-/** Where an Event happened: its Place, and the House with its number then. @param {EventSummary} e */
-function where(e) {
-  const place = e.place?.name ?? '';
-  if (e.house?.number) return t('person.atHouse', { place, number: e.house.number });
-  return place;
+/**
+ * The pairs of Events an Editor may merge, under the second of the two as the page lists them.
+ * @param {PersonDetail} person
+ * @param {number} index
+ */
+function offersAt(person, index) {
+  const at = (/** @type {string} */ id) => person.events.findIndex((e) => e.event.id === id);
+  return (person.mergeableEvents ?? []).filter((p) => Math.max(at(p.keepId), at(p.mergeId)) === index);
 }
 
-/** @param {{ person: PersonDetail, cache: boolean }} props */
-function Events({ person, cache }) {
+/** @param {{ person: PersonDetail, cache: boolean, canMerge: boolean, onMerged: () => void }} props */
+function Events({ person, cache, canMerge, onMerged }) {
   if (!person.events.length) return html`<p class="muted">${t('person.noEvents')}</p>`;
   return html`<ol class="events">
     ${person.events.map(
-      (e) =>
+      (e, i) =>
         html`<li class="card event" key=${e.roleId} data-testid="person-event" data-event=${e.event.id}>
           <header class="card-head">
             <strong>${t(`eventType.${e.event.type}`)}${e.event.typeDetail ? ` (${e.event.typeDetail})` : ''}</strong>
             <span class="chip" data-testid="role">${t(`role.${e.role}`)}${e.roleDetail ? `: ${e.roleDetail}` : ''}</span>
           </header>
-          <p class="small">${[e.event.date, where(e.event)].filter(Boolean).join(' · ')}</p>
+          <p class="small">${[e.event.date, eventWhere(e.event)].filter(Boolean).join(' · ')}</p>
           ${
             e.event.house
               ? html`<p class="small">
@@ -111,6 +114,7 @@ function Events({ person, cache }) {
           }
           ${e.event.description ? html`<p class="small muted">${e.event.description}</p>` : null}
           <${Citations} citations=${e.citations} cache=${cache} />
+          ${canMerge ? offersAt(person, i).map((pair) => html`<${EventMergeOffer} key=${pair.mergeId} pair=${pair} onMerged=${onMerged} />`) : null}
         </li>`,
     )}
   </ol>`;
@@ -261,7 +265,7 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     <h2>${t('person.names')}</h2>
     <${Names} person=${person} cache=${cache} />
     <h2>${t('person.events')}</h2>
-    <${Events} person=${person} cache=${cache} />
+    <${Events} person=${person} cache=${cache} canMerge=${me?.permissions.review === true} onMerged=${() => loaded.reload()} />
     <h2>${t('person.families')}</h2>
     <${Families} person=${person} />
     <${PersonLeads} personId=${person.id} me=${me} cache=${cache} />

@@ -2,6 +2,7 @@ export * from './edtf.js';
 export * from './living.js';
 export * from './presumed-death.js';
 export * from './rules.js';
+export * from './event-merge.js';
 export * from './leads.js';
 export * from './export.js';
 export * from './erasure.js';

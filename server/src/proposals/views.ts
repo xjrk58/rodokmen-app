@@ -55,6 +55,12 @@ function targetsOf(op: Operation): Target[] {
       { table: 'person', record: 'person', id: op.mergeId, base: op.mergeBaseVersion },
     ];
   }
+  if (op.op === 'mergeEvents') {
+    return [
+      { table: 'event', record: 'event', id: op.keepId, base: op.keepBaseVersion },
+      { table: 'event', record: 'event', id: op.mergeId, base: op.mergeBaseVersion },
+    ];
+  }
   const t = baseTargetOf(op);
   return t && t.baseVersion !== undefined && !isTempId(t.id) ? [{ table: RECORD_TABLES[t.record], record: t.record, id: t.id, base: t.baseVersion }] : [];
 }

@@ -46,6 +46,7 @@ import { fillKinship, kinshipBetween, ownPerson } from '../tree/kinship.js';
 import { getPerson, searchPersons, type TreeDeps } from '../tree/persons.js';
 import { findHousesByNumber, getEstate, getHouse, getParish, getPlace, searchPlaces } from '../tree/places.js';
 import { getCitation, getSource, searchSources } from '../tree/sources.js';
+import { eventMergedInto } from '../tree/merged-events.js';
 
 /** Members and Agents read; Agents within their hourly limit. */
 const read = { 401: ApiError, 429: RateLimited };
@@ -57,6 +58,7 @@ function found<T>(value: T | null, what: string): T {
 }
 
 const mergedRedirect = { 308: z.null().describe('Location: the same route for the Person this one was merged into') };
+const mergedEventRedirect = { 308: z.null().describe('Location: the Event this one was merged into') };
 
 /** Fills the short form of kinship on these summaries for a Member with an own Person; for anyone else the field stays absent. */
 async function withKinship<T>(deps: TreeDeps, member: Account | null, value: T, summaries: (v: T) => PersonSummary[]): Promise<T> {
@@ -173,11 +175,19 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
   app.get('/api/events/:id', {
     schema: {
       tags: ['Events'],
-      summary: 'An Event with its Roles, Citations, and the Parishes and Estates of its Place at that date',
+      summary:
+        'An Event with its Roles, Citations, and the Parishes and Estates of its Place at that date. An Event merged into another redirects to the one that remains',
       params: IdParams,
-      response: { 200: EventDetail, ...detail },
+      response: { 200: EventDetail, ...mergedEventRedirect, ...detail },
     },
-    handler: async (req) => found(await getEvent(deps, req.params.id), 'Event'),
+    handler: async (req, reply) => {
+      const event = await getEvent(deps, req.params.id);
+      if (event) return event;
+      // A merged Event is deleted; the log says which Event it went into (tree-read-api spec, "A merged Event answers with the kept one").
+      const kept = await eventMergedInto(deps.db, req.params.id);
+      if (kept) return reply.redirect(`/api/events/${kept}`, 308);
+      return found(null, 'Event');
+    },
   });
 
   app.get('/api/map/events', {

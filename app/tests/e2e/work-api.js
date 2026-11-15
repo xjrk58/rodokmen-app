@@ -173,6 +173,7 @@ export function personDetail(n, given, surname) {
       },
     ],
     events: [],
+    mergeableEvents: [],
     familiesAsPartner: [],
     familiesAsChild: [],
     portraits: [],

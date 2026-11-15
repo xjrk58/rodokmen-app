@@ -2122,6 +2122,46 @@ pre.transcription {
   }
 }
 
+/* Merging two Events from the person page (src/event-merge.js) */
+.event-merge-offer {
+  margin-top: 8px;
+}
+.event-merge {
+  margin-top: 10px;
+}
+.event-merge h3 {
+  margin: 0 0 4px;
+}
+.merge-sides {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 10px 0;
+}
+.merge-side {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.merge-side.chosen {
+  border-color: var(--accent, #2f6f4f);
+  box-shadow: 0 0 0 1px var(--accent, #2f6f4f);
+}
+.merge-side p {
+  margin: 4px 0;
+}
+.merge-choice {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-weight: 600;
+}
+@media (min-width: 768px) {
+  .merge-sides {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* The Chart screen (src/chart-screen.js): the Chart pans and zooms like the tree, as wide as the window. */
 .screen-body.chart-screen {
   max-width: none;

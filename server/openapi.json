@@ -184,6 +184,34 @@
           "message"
         ]
       },
+      "MergeRefusedInput": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "facts": {
+            "description": "With the code merge_conflict: the facts the two Events disagree on, comma-separated, from type, date, place, roles, description and notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "statusCode",
+          "error",
+          "message"
+        ]
+      },
       "SexInput": {
         "type": "string",
         "enum": [
@@ -2030,6 +2058,27 @@
             },
             "description": "Ordered by the earliest date each could be"
           },
+          "mergeableEvents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "keepId": {
+                  "description": "The Event suggested to keep: more Citations, else the older",
+                  "$ref": "#/components/schemas/IdInput"
+                },
+                "mergeId": {
+                  "description": "The Event to merge into it",
+                  "$ref": "#/components/schemas/IdInput"
+                }
+              },
+              "required": [
+                "keepId",
+                "mergeId"
+              ]
+            },
+            "description": "Pairs of these Events that look like one: of one type, with this Person in the same Role, and agreeing on every fact a merge of Events checks. Editors may merge them (POST /api/events/{id}/merge)"
+          },
           "familiesAsPartner": {
             "type": "array",
             "items": {
@@ -2060,6 +2109,7 @@
           "notes",
           "names",
           "events",
+          "mergeableEvents",
           "familiesAsPartner",
           "familiesAsChild",
           "portraits"
@@ -6045,6 +6095,37 @@
         ],
         "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
       },
+      "MergeEventsInput": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "mergeEvents"
+          },
+          "keepId": {
+            "description": "The Event that remains",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "mergeId": {
+            "description": "The Event merged into it, which then no longer exists",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/VersionInput"
+          }
+        },
+        "required": [
+          "op",
+          "keepId",
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ],
+        "description": "Editors only: moves the Roles and Citations the kept Event lacks to it, fills its unknown date, Place or House and type detail, adds the description and research notes, and deletes the merged Event. Refused when the two disagree on a fact"
+      },
       "RestorableTableInput": {
         "type": "string",
         "enum": [
@@ -6163,6 +6244,9 @@
           },
           {
             "$ref": "#/components/schemas/MergePersonsInput"
+          },
+          {
+            "$ref": "#/components/schemas/MergeEventsInput"
           },
           {
             "$ref": "#/components/schemas/RestoreRecordInput"
@@ -11978,6 +12062,35 @@
         ],
         "additionalProperties": false
       },
+      "MergeRefused": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "facts": {
+            "description": "With the code merge_conflict: the facts the two Events disagree on, comma-separated, from type, date, place, roles, description and notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "statusCode",
+          "error",
+          "message"
+        ],
+        "additionalProperties": false
+      },
       "Sex": {
         "type": "string",
         "enum": [
@@ -13865,6 +13978,28 @@
             },
             "description": "Ordered by the earliest date each could be"
           },
+          "mergeableEvents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "keepId": {
+                  "description": "The Event suggested to keep: more Citations, else the older",
+                  "$ref": "#/components/schemas/Id"
+                },
+                "mergeId": {
+                  "description": "The Event to merge into it",
+                  "$ref": "#/components/schemas/Id"
+                }
+              },
+              "required": [
+                "keepId",
+                "mergeId"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Pairs of these Events that look like one: of one type, with this Person in the same Role, and agreeing on every fact a merge of Events checks. Editors may merge them (POST /api/events/{id}/merge)"
+          },
           "familiesAsPartner": {
             "type": "array",
             "items": {
@@ -13895,6 +14030,7 @@
           "notes",
           "names",
           "events",
+          "mergeableEvents",
           "familiesAsPartner",
           "familiesAsChild",
           "portraits"
@@ -18017,6 +18153,38 @@
         "additionalProperties": false,
         "description": "Editors only: moves every Name, Role, Family link and Citation to the kept Person"
       },
+      "MergeEvents": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "const": "mergeEvents"
+          },
+          "keepId": {
+            "description": "The Event that remains",
+            "$ref": "#/components/schemas/Id"
+          },
+          "mergeId": {
+            "description": "The Event merged into it, which then no longer exists",
+            "$ref": "#/components/schemas/Id"
+          },
+          "keepBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          },
+          "mergeBaseVersion": {
+            "$ref": "#/components/schemas/Version"
+          }
+        },
+        "required": [
+          "op",
+          "keepId",
+          "mergeId",
+          "keepBaseVersion",
+          "mergeBaseVersion"
+        ],
+        "additionalProperties": false,
+        "description": "Editors only: moves the Roles and Citations the kept Event lacks to it, fills its unknown date, Place or House and type detail, adds the description and research notes, and deletes the merged Event. Refused when the two disagree on a fact"
+      },
       "RestorableTable": {
         "type": "string",
         "enum": [
@@ -18136,6 +18304,9 @@
           },
           {
             "$ref": "#/components/schemas/MergePersons"
+          },
+          {
+            "$ref": "#/components/schemas/MergeEvents"
           },
           {
             "$ref": "#/components/schemas/RestoreRecord"
@@ -24609,7 +24780,7 @@
     },
     "/api/events/{id}": {
       "get": {
-        "summary": "An Event with its Roles, Citations, and the Parishes and Estates of its Place at that date",
+        "summary": "An Event with its Roles, Citations, and the Parishes and Estates of its Place at that date. An Event merged into another redirects to the one that remains",
         "tags": [
           "Events"
         ],
@@ -24633,6 +24804,9 @@
                 }
               }
             }
+          },
+          "308": {
+            "description": "Location: the Event this one was merged into"
           },
           "401": {
             "description": "Default Response",
@@ -26309,6 +26483,96 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{id}/merge": {
+      "post": {
+        "summary": "Merge another Event of the same type into this one: the Roles and Citations this one lacks move here, its unknown date, Place or House and type detail are filled, the description and research notes are added, and the other Event is deleted; refused with merge_conflict when the two disagree on a fact (Editors only)",
+        "tags": [
+          "Review"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeBodyInput"
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposalView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeRefused"
                 }
               }
             }

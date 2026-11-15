@@ -2,6 +2,7 @@ import type { AcceptBody, Operation } from '@rodokmen/shared';
 import { ApiProblem } from '../auth/problem.js';
 import type { Db } from '../db/db.js';
 import { RECORD_TABLES } from './columns.js';
+import { eventMergedInto } from '../tree/merged-events.js';
 import { snapshot } from './records.js';
 import { findConflicts } from './views.js';
 
@@ -46,9 +47,11 @@ async function resolved(tx: Db, op: Operation, choice: AcceptBody['resolutions']
     const current = choice.fields.notes === 'current' ? ((await snapshot(tx, RECORD_TABLES[op.record], op.id))?.notes ?? null) : op.notes;
     return { ...op, notes: typeof current === 'string' ? current : null, baseVersion: currentVersion };
   }
-  if (op.op === 'mergePersons') {
-    const keep = await snapshot(tx, 'person', op.keepId);
-    const gone = await snapshot(tx, 'person', op.mergeId);
+  if (op.op === 'mergePersons' || op.op === 'mergeEvents') {
+    // Applying a merge of Events asks the merge rule again on the Events as they are then.
+    const table = op.op === 'mergePersons' ? 'person' : 'event';
+    const keep = await snapshot(tx, table, op.keepId);
+    const gone = await snapshot(tx, table, op.mergeId);
     return { ...op, keepBaseVersion: keep?.version ?? op.keepBaseVersion, mergeBaseVersion: gone?.version ?? op.mergeBaseVersion };
   }
   return currentVersion === null ? null : withBaseVersion(op, currentVersion);
@@ -75,6 +78,9 @@ export async function resolveConflicts(
   const [first] = conflicts.entries();
   if (first) {
     const [position, c] = first;
+    // An Event merged away is gone for good: say where it went rather than ask for a choice (tree-read-api spec).
+    if (c.currentVersion === null && c.record === 'event' && (await eventMergedInto(tx, c.id)))
+      throw new ApiProblem(409, 'event_merged', `Operation ${position + 1}: this Event was merged into another; propose against the remaining Event.`);
     const what = c.currentVersion === null ? 'no longer exists' : 'was changed since the Proposal was written';
     throw new ApiProblem(409, 'conflict', `Operation ${position + 1}: ${c.label.en} ${what}. Choose per field before accepting.`);
   }

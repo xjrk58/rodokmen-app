@@ -147,6 +147,34 @@ export function mayDo(role: string, action: string): boolean {
   return false;
 }
 
+// ---------------------------------------------------------------- who may use which operation
+
+/** The operations only Editors use: the merges of Persons and of Events. */
+export function isEditorOnlyOperation(op: string): boolean {
+  //@ verify
+  return op === 'mergePersons' || op === 'mergeEvents';
+}
+
+/**
+ * Whether the author of a Proposal may use an operation (review spec, "Contributors never accept
+ * or merge" and "Merging duplicate Events"): an Editor, or the Owner, any of them; anyone else, a
+ * Contributor or an Agent, every operation but the merges. `editor` is `mayDecide` of the author's
+ * role, which the server passes in (`checkOperations`).
+ */
+export function mayUseOperation(editor: boolean, op: string): boolean {
+  //@ verify
+  //@ contract review: Contributors never accept or merge
+  //@ contract review: Merging duplicate Events
+  // Scenario "Contributor tries to merge Events": a Contributor or an Agent never merges Events, nor Persons ...
+  //@ ensures !editor && op === 'mergeEvents' ==> !\result
+  //@ ensures !editor && op === 'mergePersons' ==> !\result
+  // ... and an Editor merges both.
+  //@ ensures editor ==> \result
+  // Every other operation is anyone's.
+  //@ ensures \result === (editor || !isEditorOnlyOperation(op))
+  return editor || !isEditorOnlyOperation(op);
+}
+
 // ---------------------------------------------------------------- rate limits
 
 /** The outcome of one request against a fixed window: the window after it, and when to retry if refused. */
@@ -218,7 +246,8 @@ function isCitationNoteOnly(o: EvidenceOperation): boolean {
 }
 
 /**
- * Operations that change no facts and so need no evidence: merges, the server's undo steps,
+ * Operations that change no facts and so need no evidence: merges of Persons and of Events (the
+ * Tree holds the same facts, Roles and Citations before and after), the server's undo steps,
  * marking Family roots, research notes and Labels, which state no fact about the family
  * (tree-model spec, "Research notes on records"), and a Citation's note on its own (proposals spec,
  * "Evidence is required"). Any other `setField` changes facts, a Citation's page, transcription,
@@ -226,11 +255,13 @@ function isCitationNoteOnly(o: EvidenceOperation): boolean {
  */
 export function isFactFreeOperation(o: EvidenceOperation): boolean {
   //@ verify
+  //@ ensures o.op === 'mergePersons' || o.op === 'mergeEvents' ==> \result
   //@ ensures o.op === 'setField' && o.record === 'citation' ==> \result === (o.fields.length === 1 && o.fields[0] === 'note')
   //@ ensures o.op === 'setField' && o.record !== 'citation' ==> !\result
   const op = o.op;
   return (
     op === 'mergePersons' ||
+    op === 'mergeEvents' ||
     op === 'restoreRecord' ||
     op === 'setFamilyRoot' ||
     op === 'setNotes' ||
@@ -243,8 +274,8 @@ export function isFactFreeOperation(o: EvidenceOperation): boolean {
 /**
  * The evidence rule (proposals spec, "Evidence is required"): a Proposal includes at least one
  * Citation, created or attached. A Citation of a Family account Source is a Citation like any
- * other, so it counts. Proposals made only of merges, undo steps, Family roots, research notes,
- * Labels and corrections of Citations' notes change no facts and are exempt (tree-model spec,
+ * other, so it counts. Proposals made only of merges (of Persons or Events), undo steps, Family roots,
+ * research notes, Labels and corrections of Citations' notes change no facts and are exempt (tree-model spec,
  * "Research notes on records"). An empty Proposal has no evidence.
  */
 export function satisfiesEvidenceRule(ops: readonly EvidenceOperation[]): boolean {
@@ -257,6 +288,8 @@ export function satisfiesEvidenceRule(ops: readonly EvidenceOperation[]): boolea
   //@ ensures forall(i: nat, i < ops.length ==> !isCitationOperation(ops[i])) && exists(i: nat, i < ops.length && !isFactFreeOperation(ops[i])) ==> !\result
   // Merges and undo steps alone change no facts; an empty Proposal has no evidence.
   //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> isFactFreeOperation(ops[i])) ==> \result
+  // Scenario "An Event merge needs no Citation": an Editor's merge of two Events alone needs none.
+  //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i].op === 'mergeEvents') ==> \result
   // Scenario "A note needs no evidence": research notes and Labels alone need no Citation.
   //@ ensures ops.length > 0 && forall(i: nat, i < ops.length ==> ops[i].op === 'setNotes' || ops[i].op === 'addLabel' || ops[i].op === 'removeLabel') ==> \result
   // Scenario "A Citation's note needs no evidence": setting only Citations' notes needs no Citation ...

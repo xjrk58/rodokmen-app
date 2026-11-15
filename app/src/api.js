@@ -34,12 +34,14 @@ export class ApiError extends Error {
    * @param {number} status 0 when the network failed
    * @param {string} code
    * @param {string} message
-   * @param {ErrorOptions} [options]
+   * @param {ErrorOptions & { facts?: string[] }} [options] facts: with code merge_conflict, the facts two Events disagree on
    */
   constructor(status, code, message, options) {
     super(message, options);
     this.status = status;
     this.code = code;
+    /** @type {string[]} */
+    this.facts = options?.facts ?? [];
   }
 
   get offline() {
@@ -54,15 +56,17 @@ export class ApiError extends Error {
 export const messageOf = (error) => (error instanceof Error ? error.message : String(error));
 
 /**
- * The code and message of an API error body ({ code, message }), when it has them.
+ * The code and message of an API error body ({ code, message }), when it has them, and the facts
+ * of a refused merge of Events (`facts`: "date,place").
  * @param {unknown} data
- * @returns {{ code?: string, message?: string }}
+ * @returns {{ code?: string, message?: string, facts?: string[] }}
  */
 function errorBody(data) {
   if (typeof data !== 'object' || data === null) return {};
   const code = 'code' in data && typeof data.code === 'string' ? data.code : undefined;
   const message = 'message' in data && typeof data.message === 'string' ? data.message : undefined;
-  return { code, message };
+  const facts = 'facts' in data && typeof data.facts === 'string' ? data.facts.split(',').filter(Boolean) : undefined;
+  return { code, message, facts };
 }
 
 /** @param {string} text @returns {unknown} */
@@ -100,9 +104,9 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   }
   const data = parseJson(await response.text());
   if (!response.ok) {
-    const { code, message } = errorBody(data);
+    const { code, message, facts } = errorBody(data);
     // HTTP/2 has no reason phrase, so statusText is often empty.
-    throw new ApiError(response.status, code ?? 'error', message ?? (response.statusText || `HTTP ${response.status}`));
+    throw new ApiError(response.status, code ?? 'error', message ?? (response.statusText || `HTTP ${response.status}`), { facts });
   }
   return /** @type {T} */ (data);
 }
@@ -140,6 +144,9 @@ export const listPersons = (o, signal) =>
 
 /** @param {string} id @param {AbortSignal} [signal] @returns {Promise<import('./types.js').CitationDetail>} */
 export const getCitation = (id, signal) => api(`citations/${encodeURIComponent(id)}`, { signal });
+
+/** An Event with its Roles and Citations; a merged one answers as the Event it went into. @param {string} id @param {AbortSignal} [signal] @returns {Promise<import('./types.js').EventDetail>} */
+export const getEvent = (id, signal) => api(`events/${encodeURIComponent(id)}`, { signal });
 
 /**
  * @param {{ bbox: [number, number, number, number], from: number, to: number, relation?: string | null }} q
@@ -305,6 +312,9 @@ export const rejectProposal = (id, body) => api(`proposals/${encodeURIComponent(
 
 /** @param {string} keepId @param {MergeBody} body @returns {Promise<ProposalView>} */
 export const mergePersons = (keepId, body) => api(`persons/${encodeURIComponent(keepId)}/merge`, { method: 'POST', body });
+
+/** Merges the Event `body.mergeId` into the Event `keepId` (Editors). @param {string} keepId @param {MergeBody} body @returns {Promise<ProposalView>} */
+export const mergeEvents = (keepId, body) => api(`events/${encodeURIComponent(keepId)}/merge`, { method: 'POST', body });
 
 /** @param {string} kind @param {string} id @param {AbortSignal} [signal] @returns {Promise<History>} */
 export const getHistory = (kind, id, signal) => api(`history/${encodeURIComponent(kind)}/${encodeURIComponent(id)}`, { signal });

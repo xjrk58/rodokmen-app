@@ -139,6 +139,39 @@ describe('MCP tools on the fixture Tree', () => {
     expect(r.error).toBe('The API refused the request (404 not_found): No Person with this id.');
   });
 
+  it('get_record answers an Event merged into another with the kept one (#154)', async () => {
+    const w = world();
+    const created = await w.as('editor', 'POST', '/api/proposals', {
+      formatVersion: 1,
+      idempotencyKey: 'mcp-death-recorded-twice',
+      note: null,
+      direct: true,
+      operations: [
+        { op: 'createPerson', tempId: 'tmp:p', sex: 'female', name: { given: 'Kunhuta', surname: 'Mcpová', type: 'birth', asFound: 'Kunigunde' } },
+        ...['tmp:d1', 'tmp:d2'].flatMap((d) => [
+          { op: 'createEvent', tempId: d, type: 'death', date: '1866-05-01', placeId: L.kamennaLhota },
+          { op: 'addRole', eventId: d, personId: 'tmp:p', role: 'deceased' },
+        ]),
+        { op: 'createSource', tempId: 'tmp:s', type: 'parish_register', title: 'Invented register of deaths' },
+        { op: 'createCitation', tempId: 'tmp:c', sourceId: 'tmp:s', page: '3', transcription: 'Invented entry.', readOn: '2026-11-01', confidence: 'high' },
+        { op: 'attachCitation', citationId: 'tmp:c', eventId: 'tmp:d1' },
+      ],
+    });
+    expect(created.statusCode).toBe(201);
+    const found = PersonSearchResult.parse((await w.as('editor', 'GET', '/api/persons?q=Mcpov%C3%A1')).json()).items[0]!;
+    const [pair] = PersonDetail.parse((await w.as('editor', 'GET', `/api/persons/${found.person.id}`)).json()).mergeableEvents;
+    const versions = await Promise.all(
+      [pair!.keepId, pair!.mergeId].map(async (id) => EventDetail.parse((await w.as('editor', 'GET', `/api/events/${id}`)).json()).version),
+    );
+    const merged = await w.as('editor', 'POST', `/api/events/${pair!.keepId}/merge`, {
+      mergeId: pair!.mergeId,
+      keepBaseVersion: versions[0],
+      mergeBaseVersion: versions[1],
+    });
+    expect(merged.statusCode).toBe(200);
+    expect(EventDetail.parse(await json('get_record', { kind: 'event', id: pair!.mergeId })).id).toBe(pair!.keepId);
+  });
+
   it('get_ancestors and get_descendants read the family tree both ways', async () => {
     const up = Pedigree.parse(await json('get_ancestors', { personId: L.proband, generations: 6 }));
     expect(up.direction).toBe('ancestors');

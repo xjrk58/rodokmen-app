@@ -15,6 +15,7 @@ const ids = {
   upload: '0192f0c4-7a1e-7c3b-9d2a-00000000000a',
   upload2: '0192f0c4-7a1e-7c3b-9d2a-00000000000c',
   dup: '0192f0c4-7a1e-7c3b-9d2a-00000000000b',
+  event2: '0192f0c4-7a1e-7c3b-9d2a-00000000000d',
 };
 const labels: Record<string, { cs: string; en: string }> = {
   [ids.anna]: { cs: 'Anna Králová', en: 'Anna Králová' },
@@ -27,6 +28,7 @@ const labels: Record<string, { cs: string; en: string }> = {
   [ids.event]: { cs: 'úmrtí 1850', en: 'the death of 1850' },
   [ids.name]: { cs: '„Joannes Nowak“', en: '“Joannes Nowak”' },
   [ids.dup]: { cs: 'Jan Novák (2)', en: 'Jan Novák (2)' },
+  [ids.event2]: { cs: 'úmrtí 1850 (2)', en: 'the death of 1850 (2)' },
 };
 const ctx: SummaryContext = { label: (ref, lang) => labels[ref]?.[lang] ?? ref };
 
@@ -88,7 +90,9 @@ const examples: OperationInput[] = [
   // What an undo says of the records it removes.
   { op: 'restoreRecord', table: 'name', id: ids.name, baseVersion: 1, values: null },
   { op: 'restoreRecord', table: 'event', id: ids.event, baseVersion: 2, values: null },
+  { op: 'mergeEvents', keepId: ids.event, mergeId: ids.event2, keepBaseVersion: 2, mergeBaseVersion: 1 },
 ];
+const mergeEventsExample = examples.at(-1)!;
 
 describe('links in Sources', () => {
   const source = (url: string) => ({ op: 'createSource', tempId: 'tmp:src', type: 'other', title: 'Online index', url });
@@ -192,6 +196,13 @@ describe('typed operations', () => {
     expect(checkOperations([examples[14]], { editor: true }).issues).toEqual([]);
     expect(checkOperations([examples[15]], { editor: true }).issues[0]!.code).toBe('not_allowed');
     expect(checkOperations([examples[15]], { editor: true, allowRestore: true }).issues).toEqual([]);
+  });
+
+  it('only Editors merge Events, without a Citation; an Event is never merged into itself', () => {
+    const refused = checkOperations([mergeEventsExample], { editor: false }).issues;
+    expect(refused.map((i) => [i.code, i.message])).toEqual([['not_allowed', 'operation 1: only Editors merge Events']]);
+    expect(checkOperations([mergeEventsExample], { editor: true }).issues).toEqual([]);
+    expect(Operation.safeParse({ ...mergeEventsExample, mergeId: ids.event }).success).toBe(false);
   });
 
   it('nobody submits setFamilyRoot: the Owner marks Family roots through their own route, which needs no Citation', () => {
