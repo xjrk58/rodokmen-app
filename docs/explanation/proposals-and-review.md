@@ -14,7 +14,7 @@ Agents are the strongest case. An assistant can read registers tirelessly and pr
 
 A Proposal carries everything one finding implies, and is accepted or rejected whole. A baptism entry, for example, is the child, the Event, the parents' and godparents' Roles, the Family link, and the Citation of the register page. Taking only half of that would leave the Tree in a state nobody found.
 
-Every Proposal needs evidence: at least one Citation of a Source, such as a register entry, a document or a Family account, with a transcription. An Editor can then check the claim against the page rather than against the author's memory. An Editor's merge or undo states no new fact, so it needs no Citation; it is logged like any other Proposal. Nor does a correction of a Citation's note: the note says where and how the entry was read, such as the evidence class of a register entry, not what the entry says. A change to the Citation's transcription, page, day or confidence changes what the evidence claims, so it needs a Citation of its own.
+Every Proposal needs evidence: at least one Citation of a Source, such as a register entry, a document or a Family account, with a transcription. An Editor can then check the claim against the page rather than against the author's memory. An Editor's merge or undo states no new fact, so it needs no Citation; it is logged like any other Proposal. That holds for a merge of two Events too: a date or Place it fills in was already on the merged Event, with the Citations that move along. Nor does a correction of a Citation's note: the note says where and how the entry was read, such as the evidence class of a register entry, not what the entry says. A change to the Citation's transcription, page, day or confidence changes what the evidence claims, so it needs a Citation of its own.
 
 An Editor may correct a Proposal before accepting it, for example a misread year. The history keeps both parts: what the author proposed, and what the Editor changed.
 
@@ -38,6 +38,8 @@ Every accepted Proposal is kept, with each record it touched before and after (A
 
 Merging two records of the same Person works the same way: the merged Person is marked as merged into the kept one rather than deleted, so old links still lead somewhere and the merge can be undone.
 
+A merged Event, by contrast, is deleted. Keeping it as a redirect would mean leaving it out of every list of Events: on person and family pages, the map, Places, Exports, the relation to the family. The log already says where it went, so its old address still leads to the Event that remains, and an undo brings it back from its logged snapshot. A merge of Events refuses to choose between facts: when the two disagree on the date, the Place or who was the child or the partners, the Editor first corrects one of them, with its evidence. Otherwise the Tree would take a value without the Citation that gives it.
+
 The one exception to the append-only log is erasure, still to be built: when a Living relative asks to be removed, the Owner erases them from the log as well. A relative's wish to be forgotten outweighs a complete audit trail ([Privacy](privacy.md)).
 
 ## Import batches
@@ -52,4 +54,4 @@ Research leads from the Vault link Persons and Places that exist only once the b
 
 ## Where the rules are
 
-Who may accept, reject, merge and undo, who may accept a whole Import batch, that every Proposal carries evidence (merges, undos, Research notes, Labels and Citations' notes state no fact, so need none), how conflicts are detected and when an undo is blocked are pure rules in `shared/src/rules.ts`, proved with LemmaScript ([verification](../verification.md)). The requirements are in the OpenSpec change `add-proposals-and-review`.
+Who may accept, reject, merge and undo, who may accept a whole Import batch, that every Proposal carries evidence (merges, undos, Research notes, Labels and Citations' notes state no fact, so need none), when two Events may be merged and what the kept one holds (`shared/src/event-merge.ts`), how conflicts are detected and when an undo is blocked are pure rules in `shared/src/rules.ts`, proved with LemmaScript ([verification](../verification.md)). The requirements are in the OpenSpec change `add-proposals-and-review`.

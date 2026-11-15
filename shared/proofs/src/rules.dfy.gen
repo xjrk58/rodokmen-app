@@ -97,6 +97,24 @@ lemma mayDo_ensures(role: string, action: string)
 {
 }
 
+function isEditorOnlyOperation(op: string): bool
+{
+  ((op == "mergePersons") || (op == "mergeEvents"))
+}
+
+function mayUseOperation(editor: bool, op: string): bool
+{
+  (editor || !(isEditorOnlyOperation(op)))
+}
+
+lemma mayUseOperation_ensures(editor: bool, op: string)
+  ensures (!(editor) ==> (op == "mergeEvents") ==> !(mayUseOperation(editor, op)))
+  ensures (!(editor) ==> (op == "mergePersons") ==> !(mayUseOperation(editor, op)))
+  ensures (editor ==> mayUseOperation(editor, op))
+  ensures (mayUseOperation(editor, op) == (editor || !(isEditorOnlyOperation(op))))
+{
+}
+
 function fixedWindow(windowStart: int, count: int, limit: int, windowMs: int, now: int): WindowDecision
   requires (limit > 0)
 {
@@ -134,10 +152,11 @@ function isCitationNoteOnly(o: EvidenceOperation): bool
 function isFactFreeOperation(o: EvidenceOperation): bool
 {
   var op := o.op;
-  (((((((op == "mergePersons") || (op == "restoreRecord")) || (op == "setFamilyRoot")) || (op == "setNotes")) || (op == "addLabel")) || (op == "removeLabel")) || isCitationNoteOnly(o))
+  ((((((((op == "mergePersons") || (op == "mergeEvents")) || (op == "restoreRecord")) || (op == "setFamilyRoot")) || (op == "setNotes")) || (op == "addLabel")) || (op == "removeLabel")) || isCitationNoteOnly(o))
 }
 
 lemma isFactFreeOperation_ensures(o: EvidenceOperation)
+  ensures (((o.op == "mergePersons") || (o.op == "mergeEvents")) ==> isFactFreeOperation(o))
   ensures ((o.op == "setField") ==> (o.record == "citation") ==> (isFactFreeOperation(o) == ((|o.fields| == 1) && (o.fields[0] == "note"))))
   ensures ((o.op == "setField") ==> (o.record != "citation") ==> !(isFactFreeOperation(o)))
 {
@@ -204,6 +223,7 @@ method satisfiesEvidenceRule(ops: seq<EvidenceOperation>) returns (res: bool)
   ensures ((exists i: nat :: ((i < |ops|) && isCitationOperation(ops[i]))) ==> res)
   ensures ((forall i: nat :: ((i < |ops|) ==> !(isCitationOperation(ops[i])))) ==> (exists i: nat :: ((i < |ops|) && !(isFactFreeOperation(ops[i])))) ==> !(res))
   ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> isFactFreeOperation(ops[i]))) ==> res)
+  ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> (ops[i].op == "mergeEvents"))) ==> res)
   ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> (((ops[i].op == "setNotes") || (ops[i].op == "addLabel")) || (ops[i].op == "removeLabel")))) ==> res)
   ensures ((|ops| > 0) ==> (forall i: nat :: ((i < |ops|) ==> ((((ops[i].op == "setField") && (ops[i].record == "citation")) && (|ops[i].fields| == 1)) && (ops[i].fields[0] == "note")))) ==> res)
   ensures ((forall i: nat :: ((i < |ops|) ==> !(isCitationOperation(ops[i])))) ==> (exists i: nat :: ((((i < |ops|) && (ops[i].op == "setField")) && (ops[i].record == "citation")) && exists j: nat :: ((j < |ops[i].fields|) && (ops[i].fields[j] != "note")))) ==> !(res))

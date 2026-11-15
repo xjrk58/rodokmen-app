@@ -282,7 +282,7 @@ export function marriageEvent(ctx: MapContext, p: PlannedProposal, note: VaultNo
   const own = `event:marriage:${pair}:vault:${note.id}:${m.index}`;
   const key = sourceId !== null ? `event:marriage:${pair}:${sourceId}` : shared ? `event:marriage:${pair}:vault:${shared.first.id}:${shared.index}` : own;
   // Before #149 the second spouse's note gave the marriage an Event of its own: a Tree imported then has both.
-  if (shared?.second === note) ctx.b.mergedMarriages.push({ key, earlierKey: own, paths: [shared.first.path, note.path] });
+  if (shared?.second === note) ctx.b.mergedMarriages.push({ key, earlierKey: own, paths: [shared.first.path, note.path], personKey: person });
   const { date, description } = eventDate(ctx, note, m.date, `marriages.${m.index}.date`);
   ctx.b.create(p, key, 'event', {
     op: 'createEvent',

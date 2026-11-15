@@ -35,6 +35,7 @@ this page with `node scripts/verification-trace.mjs`.
 | exports: Living people are reduced in every Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportedPersonLinks` | shared/src/leads.ts | nothing beyond the trusted base |
 | exports: No images in any Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportLinks` | shared/src/export.ts | nothing beyond the trusted base |
 | exports: No images in any Export | openspec/changes/add-exports-and-erasure/specs/exports/spec.md | `exportRecord` | shared/src/export.ts | nothing beyond the trusted base |
+| family-view: Merge duplicate Events from the person page | openspec/changes/add-event-merge/specs/family-view/spec.md | `mergeOffer` | shared/src/event-merge.ts | nothing beyond the trusted base |
 | kinship: Half, step, adoptive and foster kinship | openspec/changes/add-kinship/specs/kinship/spec.md | `termCs` | shared/src/kinship-terms/cs.ts | see below |
 | kinship: Half, step, adoptive and foster kinship | openspec/changes/add-kinship/specs/kinship/spec.md | `termEn` | shared/src/kinship-terms/en.ts | see below |
 | kinship: Half, step, adoptive and foster kinship | openspec/changes/add-kinship/specs/kinship/spec.md | `isHalf` | shared/src/kinship.ts | nothing beyond the trusted base |
@@ -60,10 +61,15 @@ this page with `node scripts/verification-trace.mjs`.
 | research-leads: Gap finder suggests leads | openspec/changes/add-research-leads/specs/research-leads/spec.md | `suggestGaps` | shared/src/gaps.ts | nothing beyond the trusted base |
 | research-leads: Leads need no review | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | research-leads: What was searched is recorded | openspec/changes/add-research-leads/specs/research-leads/spec.md | `mayHaveStatus` | shared/src/leads.ts | nothing beyond the trusted base |
+| review: A merged Event fills the gaps of the kept one | openspec/changes/add-event-merge/specs/review/spec.md | `mergeEventFacts` | shared/src/event-merge.ts | nothing beyond the trusted base |
 | review: Accept a whole Import batch | openspec/changes/add-vault-import/specs/review/spec.md | `mayDo` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Conflicts are resolved by the Editor | openspec/changes/add-proposals-and-review/specs/review/spec.md | `detectConflict` | shared/src/rules.ts | see below |
 | review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
+| review: Contributors never accept or merge | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayUseOperation` | shared/src/rules.ts | nothing beyond the trusted base |
 | review: Decide on the whole Proposal | openspec/changes/add-proposals-and-review/specs/review/spec.md | `mayDecide` | shared/src/rules.ts | nothing beyond the trusted base |
+| review: Merging duplicate Events | openspec/changes/add-event-merge/specs/review/spec.md | `mergeEventFacts` | shared/src/event-merge.ts | nothing beyond the trusted base |
+| review: Merging duplicate Events | openspec/changes/add-event-merge/specs/review/spec.md | `mayUseOperation` | shared/src/rules.ts | nothing beyond the trusted base |
+| review: Merging Events refuses disagreeing facts | openspec/changes/add-event-merge/specs/review/spec.md | `mergeEventFacts` | shared/src/event-merge.ts | nothing beyond the trusted base |
 | scan-reading: Names are matched, not duplicated | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `ranksAbove` | shared/src/matching.ts | nothing beyond the trusted base |
 | scan-reading: Names are matched, not duplicated | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `scoreCandidate` | shared/src/matching.ts | nothing beyond the trusted base |
 | scan-reading: The machine's reading is marked and modest | openspec/changes/add-scan-reading/specs/scan-reading/spec.md | `capConfidence` | shared/src/reading.ts | nothing beyond the trusted base |
@@ -163,6 +169,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 - shared/src/charts.ts: `ymdKey`, `goesOn`, `isReached`, `mayLeave`, `leaves`, `stepFits`, `cardsUpTo`, `sumUpTo`, `ancestorIn`, `leftOutBelow`, `leftOutUpTo`
 - shared/src/edtf.ts: `isLeapYear`, `daysInMonth`, `isValidDay`, `dayNumber`, `addMonths`, `addDays`
 - shared/src/erasure.ts: `onlyTheirs`, `leftWithNothing`, `mentionsAny`
+- shared/src/event-merge.ts: `isPrincipalRole`, `hasRole`, `coveredBy`, `agreeOn`, `playsTwoParts`, `rolesAgree`, `agree`, `known`, `joined`, `whereKnown`, `whereAgrees`, `keepsFirst`
 - shared/src/export.ts: `isMediaLink`, `hasMedia`, `citationView`, `citationsView`, `hasLivingRole`, `eventView`, `eventsView`, `namesView`, `isLivingRelation`, `livingRelations`
 - shared/src/gaps.ts: `gapKey`, `maxInt`, `minInt`, `isBirthGap`, `isParentsGap`, `isMarriageGap`, `fits`, `anyFits`, `hasSuggestion`, `gapSuggestions`, `isRealGap`
 - shared/src/house-chart.ts: `marriedLater`, `bounds`, `isChildOf`, `isChildBefore`, `sharePartner`, `linked`
@@ -174,7 +181,7 @@ Also proved, with no requirement of their own; the traced functions rely on thei
 - shared/src/presumed-death.ts: `anchorBound`, `endsAt`, `isStep`, `checkChain`
 - shared/src/reading.ts: `copyToSend`
 - shared/src/relation.ts: `isConfirming`, `isStrongLink`, `mayFollow`, `isSupported`, `reachFrom`
-- shared/src/rules.ts: `isOwnerAction`, `isCitationOperation`, `isCitationNoteOnly`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
+- shared/src/rules.ts: `isOwnerAction`, `isEditorOnlyOperation`, `isCitationOperation`, `isCitationNoteOnly`, `isFactFreeOperation`, `sameRecord`, `isDeletion`, `leavesDependent`, `blocksUndo`, `isLogged`, `isLeftBehind`, `isBlocking`, `isBlockingProposal`, `leavesUnlogged`, `hasProposal`, `leftBehind`, `loggedBlockers`, `newestFirst`
 
 ## Proof additions
 
@@ -265,6 +272,18 @@ Where a proof covers less than its requirement, exactly what it does and does no
   (server/src/vault-import/map-presumed.ts: the latest days of EDTF dates, the marriages of either spouse's note, fathers
   and mothers), and that the cutoff is the day 125 years before the run; shared/test/presumed-death.test.ts and
   server/test/vault-import-mapping.test.ts test those.
+- **Merging Events** (`mergeEventFacts`, `mergeOffer`, shared/src/event-merge.ts; `mayUseOperation`, shared/src/rules.ts;
+  review "Merging duplicate Events", "A merged Event fills the gaps of the kept one" and "Merging Events refuses
+  disagreeing facts"; family-view "Merge duplicate Events from the person page"). Proved, for any two Events and their
+  Roles: the merge is refused exactly when they differ in type, in type detail, date or Place or House known on both
+  sides, in who plays a principal Role (child, father, mother, deceased, partner: neither Event's Persons in it all among
+  the other's), in one Person playing two of those Roles, or when the joined description or notes exceed the limits it
+  is given; without a refusal the kept Event keeps every value it knows and takes the merged Event's where it knows
+  none, so nothing the merged Event knows is lost; the person page offers only Events of one type with the Person in the
+  same Role that merge without a refusal, suggesting the one with more Citations, else the older; and only Editors use
+  `mergePersons` and `mergeEvents`. Not proved: that the server reads the Events, Roles, Citation counts and creation
+  times it passes in, the limits (4,000 and 50,000 characters, the database's), and applying the merge (moving Roles and
+  Citation links, removing twins, deleting the merged Event); server/test/event-merge.test.ts tests those.
 - **The gap finder** (`suggestGaps`, shared/src/gaps.ts; research-leads "Gap finder suggests leads"). Proved, for any
   Persons, marriages, registers, decided keys and margin: every suggestion is a real gap of its kind (a Relative with no
   birth or baptism Citation; a Relative with unknown parents and a known Parish and years; a Relative's marriage with
@@ -469,14 +488,14 @@ Found with lemmascript 0.6.5. Keep verified code clear of these shapes, and chec
   when a proof chains several.
 
 Checked for the swapped comparison: in every `//@ verify` function of shared/src/charts.ts, shared/src/edtf.ts,
-shared/src/erasure.ts, shared/src/export.ts, shared/src/gaps.ts, shared/src/house-chart.ts, shared/src/kinship.ts,
-shared/src/kinship-terms/cs.ts, shared/src/kinship-terms/en.ts, shared/src/leads.ts, shared/src/living.ts,
-shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts and
-shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
+shared/src/erasure.ts, shared/src/event-merge.ts, shared/src/export.ts, shared/src/gaps.ts, shared/src/house-chart.ts,
+shared/src/kinship.ts, shared/src/kinship-terms/cs.ts, shared/src/kinship-terms/en.ts, shared/src/leads.ts,
+shared/src/living.ts, shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts
+and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification
 (optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of charts.ts, house-chart.ts,
 relation.ts, gaps.ts, export.ts, presumed-death.ts and kinship.ts are not compared at all or compare two plain integers,
-emitted in their order; charts.ts, erasure.ts, export.ts, gaps.ts, house-chart.ts, kinship.ts, kinship-terms/cs.ts,
-kinship-terms/en.ts, leads.ts, matching.ts, presumed-death.ts and reading.ts have no optionals at all: unknown years,
-days, houses, partners, Places and Sources are a flag and 0, -1, or the empty string, a Person without a chain has an
-empty one, and kinship marks "nobody", "no line" and "no degree" with -1 or 0), and the generated `.dfy.gen` was read
-for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.
+emitted in their order; charts.ts, erasure.ts, event-merge.ts, export.ts, gaps.ts, house-chart.ts, kinship.ts,
+kinship-terms/cs.ts, kinship-terms/en.ts, leads.ts, matching.ts, presumed-death.ts and reading.ts have no optionals at
+all: unknown years, days, houses, partners, Places, Sources, dates and texts are a flag and 0, -1, or the empty string, a
+Person without a chain has an empty one, and kinship marks "nobody", "no line" and "no degree" with -1 or 0), and the
+generated `.dfy.gen` was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.

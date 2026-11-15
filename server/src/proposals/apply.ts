@@ -1,4 +1,4 @@
-import { isTempId, type Operation } from '@rodokmen/shared';
+import { EVENT_DESCRIPTION_MAX, isTempId, mergeEventFacts, NOTES_MAX, type EventFacts, type EventRole, type Operation } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import { v7 as uuidv7 } from 'uuid';
 import { ApiProblem } from '../auth/problem.js';
@@ -82,6 +82,81 @@ async function merge(ctx: Ctx, position: number, op: Extract<Operation, { op: 'm
     await rows.update('person', p.id, { merged_into_id: keep });
   }
   await rows.update('person', gone, { merged_into_id: keep });
+}
+
+/** What a merge of Events reads of an Event row: '' where it has nothing. */
+function eventFacts(row: Record<string, unknown>): EventFacts {
+  const text = (column: string) => {
+    const v = row[column];
+    return typeof v === 'string' ? v : '';
+  };
+  return {
+    type: text('type'),
+    typeDetail: text('type_detail'),
+    date: text('date'),
+    placeId: text('place_id'),
+    houseId: text('house_id'),
+    description: text('description'),
+    notes: text('notes'),
+  };
+}
+
+/** The facts two Events disagree on, refusing the merge (review spec, "Merging Events refuses disagreeing facts"). */
+export class MergeConflictProblem extends ApiProblem {
+  constructor(
+    position: number,
+    readonly facts: string[],
+  ) {
+    super(409, 'merge_conflict', `Operation ${position + 1}: the two Events disagree on ${facts.join(', ')}. Correct one Event first, then merge.`, {
+      facts: facts.join(','),
+    });
+  }
+}
+
+/**
+ * Merges one Event into another (review spec, "Merging duplicate Events"): the rule in
+ * shared/src/event-merge.ts decides whether they agree and what the kept Event holds. Twins (a
+ * Role or Citation the kept Event has already) are removed, the rest moves; the merged Event is
+ * removed last, so an undo, which replays the log backwards, brings it back first.
+ */
+async function mergeEvents(ctx: Ctx, position: number, op: Op<'mergeEvents'>) {
+  const { db, rows } = ctx;
+  const keep = await checkBase(ctx, position, 'event', op.keepId, op.keepBaseVersion, 'the Event to keep');
+  const gone = await checkBase(ctx, position, 'event', op.mergeId, op.mergeBaseVersion, 'the Event to merge');
+  const rolesOf = (eventId: string) =>
+    db.selectFrom('event_role').select(['id', 'person_id', 'role']).where('event_id', '=', eventId).orderBy('sort_order').orderBy('id').forUpdate().execute();
+  const keepRoles = await rolesOf(op.keepId);
+  const goneRoles = await rolesOf(op.mergeId);
+  const asRoles = (list: typeof keepRoles): EventRole[] => list.map((r) => ({ personId: r.person_id, role: r.role }));
+  const found = mergeEventFacts(eventFacts(keep), eventFacts(gone), asRoles(keepRoles), asRoles(goneRoles), EVENT_DESCRIPTION_MAX, NOTES_MAX);
+  if (found.conflicts.length > 0) throw new MergeConflictProblem(position, found.conflicts);
+
+  let order = await nextSort(db, 'event_role', 'event_id', op.keepId);
+  for (const r of goneRoles) {
+    if (keepRoles.some((k) => k.person_id === r.person_id && k.role === r.role)) await rows.remove('event_role', r.id);
+    else await rows.update('event_role', r.id, { event_id: op.keepId, sort_order: order++ });
+  }
+  const citationsOf = (eventId: string) =>
+    db.selectFrom('event_citation').select(['id', 'citation_id']).where('event_id', '=', eventId).orderBy('id').execute();
+  const keepCitations = new Set((await citationsOf(op.keepId)).map((c) => c.citation_id));
+  for (const c of await citationsOf(op.mergeId)) {
+    if (keepCitations.has(c.citation_id)) await rows.remove('event_citation', c.id);
+    else await rows.update('event_citation', c.id, { event_id: op.keepId });
+  }
+  const before = eventFacts(keep);
+  const after = found.kept;
+  const orNull = (v: string) => (v === '' ? null : v);
+  const set: Record<string, unknown> = {};
+  if (after.typeDetail !== before.typeDetail) set.typeDetail = orNull(after.typeDetail);
+  if (after.date !== before.date) set.date = orNull(after.date);
+  if (after.placeId !== before.placeId) set.placeId = orNull(after.placeId);
+  if (after.houseId !== before.houseId) set.houseId = orNull(after.houseId);
+  if (after.description !== before.description) set.description = orNull(after.description);
+  if (after.notes !== before.notes) set.notes = orNull(after.notes);
+  // The kept Event takes in the other, so its version goes up even when no field of its own changes:
+  // a Proposal written against it before shows as a conflict, and the merge is in its history.
+  await rows.update('event', op.keepId, { ...setFieldColumns(set), updated_at: sql`now()` });
+  await rows.remove('event', op.mergeId);
 }
 
 async function createPerson(ctx: Ctx, op: Op<'createPerson'>) {
@@ -298,6 +373,8 @@ function applyOne(ctx: Ctx, position: number, op: Operation): Promise<void> {
       return setField(ctx, position, op);
     case 'mergePersons':
       return merge(ctx, position, op);
+    case 'mergeEvents':
+      return mergeEvents(ctx, position, op);
     case 'restoreRecord':
       return restoreRecord(ctx, position, op);
     case 'setFamilyRoot':

@@ -14,3 +14,4 @@ src/house-chart.ts 60 --isolate-assertions
 src/kinship.ts 60 --isolate-assertions
 src/kinship-terms/cs.ts
 src/kinship-terms/en.ts
+src/event-merge.ts

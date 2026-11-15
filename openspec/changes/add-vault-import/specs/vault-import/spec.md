@@ -169,7 +169,7 @@ The importer SHALL keep a map from Vault ids to Tree ids. A second run SHALL sub
 
 #### Scenario: Marriage imported twice
 - **WHEN** an earlier import gave a marriage both spouses record without a Source note one Event per spouse, and the Owner runs the importer again
-- **THEN** the second spouse's Citation is attached to the first Event, no Event is created or removed, and the report lists both Events for the Owner
+- **THEN** the second spouse's Citation is attached to the first Event, no Event is created or removed, and the report lists both Events for the Owner until the Owner has merged them in the app (`add-event-merge`)
 
 ### Requirement: Re-runs change only what an earlier run wrote
 A record an earlier run wrote and a newer importer writes otherwise, such as a lead's reason an earlier importer cut short, SHALL be changed by a later run only while it holds exactly what that run wrote. Otherwise the record SHALL stay as it is, and the report SHALL list it for the Owner.

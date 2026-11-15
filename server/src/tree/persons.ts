@@ -15,6 +15,7 @@ import type { ImageStorage } from '../storage/images.js';
 import type { Clock } from '../clock.js';
 import { containsPattern, compareEarliestDays, eventSummaries, personSummaries } from './summaries.js';
 import { citationSummariesFor } from './sources.js';
+import { mergeableEvents } from './merged-events.js';
 
 export interface TreeDeps {
   db: Db;
@@ -272,6 +273,7 @@ export async function getPerson(deps: TreeDeps, id: string): Promise<PersonDetai
       event: events.get(r.event_id)!,
       citations: eventCitations.get(r.event_id) ?? [],
     })),
+    mergeableEvents: await mergeableEvents(db, roles, new Map(eventIds.map((e) => [e, eventCitations.get(e)?.length ?? 0]))),
     familiesAsPartner: asPartner.map((f) => {
       const other = f.partner1_id === id ? f.partner2_id : f.partner1_id;
       return {

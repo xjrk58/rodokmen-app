@@ -140,8 +140,16 @@ hand if you want it.
 
 An import made before #149 gave a marriage both spouses record without a Source note two Events, one from each
 spouse's note. The next run attaches the second note's Citation to the first Event, and the report lists each such
-pair under **Marriage Events imported twice**, with the Event to keep and the other one. The app cannot merge two
-Events yet (#154), so leave the other one for now: it does no harm, as the partner link rests on both.
+pair under **Marriage Events imported twice**, with the Event to keep, the other one and a person page. The importer
+cannot merge them itself, so merge each pair in the app:
+
+1. Accept the importer's batch first, so that the Event to keep has the Citations of both notes.
+2. Open the person page the report links, and choose **Same Event? Merge…** under the marriage.
+3. Keep the Event the app suggests: the one whose Citations name both notes. Add a note if you like, and choose
+   **Merge**.
+
+The next run lists only the pairs still to merge. If you kept the other Event by mistake, the report lists the pair
+under **Marriage Events merged the other way round**: undo the merge in the Person's history, then merge again.
 
 ## Afterwards
 

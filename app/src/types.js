@@ -116,6 +116,7 @@
 /** @typedef {import('../../shared/src/schemas/kinship.js').KinshipStep} KinshipStep */
 /** @typedef {import('../../shared/src/schemas/kinship.js').KinshipTerm} KinshipTerm */
 /** @typedef {import('../../shared/src/schemas/api.js').EventSummary} EventSummary */
+/** @typedef {import('../../shared/src/schemas/api.js').EventDetail} EventDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').CitationSummary} CitationSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').CitationDetail} CitationDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').Hourglass} Hourglass */

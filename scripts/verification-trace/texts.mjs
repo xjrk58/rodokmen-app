@@ -37,17 +37,17 @@ export const KNOWN_ISSUES = [
 // What was checked by hand for the unsound shape above (KNOWN_ISSUES[0]); recheck when adding a proof.
 export const SWAP_CHECK = [
   'Checked for the swapped comparison: in every `//@ verify` function of shared/src/charts.ts, shared/src/edtf.ts,',
-  'shared/src/erasure.ts, shared/src/export.ts, shared/src/gaps.ts, shared/src/house-chart.ts, shared/src/kinship.ts,',
-  'shared/src/kinship-terms/cs.ts, shared/src/kinship-terms/en.ts, shared/src/leads.ts, shared/src/living.ts,',
-  'shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts and',
-  'shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
+  'shared/src/erasure.ts, shared/src/event-merge.ts, shared/src/export.ts, shared/src/gaps.ts, shared/src/house-chart.ts,',
+  'shared/src/kinship.ts, shared/src/kinship-terms/cs.ts, shared/src/kinship-terms/en.ts, shared/src/leads.ts,',
+  'shared/src/living.ts, shared/src/matching.ts, shared/src/presumed-death.ts, shared/src/reading.ts, shared/src/relation.ts',
+  'and shared/src/rules.ts, no narrowed optional is an operand of `<`, `<=`, `>` or `>=`, in code or in a specification',
   '(optionals occur only in `===` and `!==`, where order does not matter; the `!` index reads of charts.ts, house-chart.ts,',
   'relation.ts, gaps.ts, export.ts, presumed-death.ts and kinship.ts are not compared at all or compare two plain integers,',
-  'emitted in their order; charts.ts, erasure.ts, export.ts, gaps.ts, house-chart.ts, kinship.ts, kinship-terms/cs.ts,',
-  'kinship-terms/en.ts, leads.ts, matching.ts, presumed-death.ts and reading.ts have no optionals at all: unknown years,',
-  'days, houses, partners, Places and Sources are a flag and 0, -1, or the empty string, a Person without a chain has an',
-  'empty one, and kinship marks "nobody", "no line" and "no degree" with -1 or 0), and the generated `.dfy.gen` was read',
-  'for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
+  'emitted in their order; charts.ts, erasure.ts, event-merge.ts, export.ts, gaps.ts, house-chart.ts, kinship.ts,',
+  'kinship-terms/cs.ts, kinship-terms/en.ts, leads.ts, matching.ts, presumed-death.ts and reading.ts have no optionals at',
+  'all: unknown years, days, houses, partners, Places, Sources, dates and texts are a flag and 0, -1, or the empty string, a',
+  'Person without a chain has an empty one, and kinship marks "nobody", "no line" and "no degree" with -1 or 0), and the',
+  'generated `.dfy.gen` was read for it. Recheck this, and read the `.dfy.gen`, whenever a proof is added or changed.',
 ];
 
 // Exactly what a proof covers where that is less than its requirement, written by hand: update it with the proof.
@@ -125,6 +125,18 @@ export const SCOPES = [
   (server/src/vault-import/map-presumed.ts: the latest days of EDTF dates, the marriages of either spouse's note, fathers
   and mothers), and that the cutoff is the day 125 years before the run; shared/test/presumed-death.test.ts and
   server/test/vault-import-mapping.test.ts test those.`,
+  `**Merging Events** (\`mergeEventFacts\`, \`mergeOffer\`, shared/src/event-merge.ts; \`mayUseOperation\`, shared/src/rules.ts;
+  review "Merging duplicate Events", "A merged Event fills the gaps of the kept one" and "Merging Events refuses
+  disagreeing facts"; family-view "Merge duplicate Events from the person page"). Proved, for any two Events and their
+  Roles: the merge is refused exactly when they differ in type, in type detail, date or Place or House known on both
+  sides, in who plays a principal Role (child, father, mother, deceased, partner: neither Event's Persons in it all among
+  the other's), in one Person playing two of those Roles, or when the joined description or notes exceed the limits it
+  is given; without a refusal the kept Event keeps every value it knows and takes the merged Event's where it knows
+  none, so nothing the merged Event knows is lost; the person page offers only Events of one type with the Person in the
+  same Role that merge without a refusal, suggesting the one with more Citations, else the older; and only Editors use
+  \`mergePersons\` and \`mergeEvents\`. Not proved: that the server reads the Events, Roles, Citation counts and creation
+  times it passes in, the limits (4,000 and 50,000 characters, the database's), and applying the merge (moving Roles and
+  Citation links, removing twins, deleting the merged Event); server/test/event-merge.test.ts tests those.`,
   `**The gap finder** (\`suggestGaps\`, shared/src/gaps.ts; research-leads "Gap finder suggests leads"). Proved, for any
   Persons, marriages, registers, decided keys and margin: every suggestion is a real gap of its kind (a Relative with no
   birth or baptism Citation; a Relative with unknown parents and a known Parish and years; a Relative's marriage with

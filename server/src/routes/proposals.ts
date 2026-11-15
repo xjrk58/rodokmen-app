@@ -9,6 +9,7 @@ import {
   IdParams,
   ImageLinkQuery,
   MergeBody,
+  MergeRefused,
   NotificationSettings,
   ProposalList,
   ProposalListQuery,
@@ -28,9 +29,11 @@ import { z } from 'zod';
 import { ApiProblem } from '../auth/problem.js';
 import { familyRootList, setFamilyRoot } from '../proposals/family-roots.js';
 import { recordHistory, undoPreview, undoProposal } from '../proposals/history.js';
-import { acceptProposal, assertCanSee, getProposalRow, mergePersons, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
+import { mergeEvents, mergePersons } from '../proposals/merges.js';
+import { acceptProposal, assertCanSee, getProposalRow, rejectProposal, submitProposal, type ProposalDeps } from '../proposals/service.js';
 import { canReview, proposalViews } from '../proposals/views.js';
 import { imageLink } from '../storage/images.js';
+import { eventMergedInto } from '../tree/merged-events.js';
 import { completeUpload, createUpload, whenGone } from './uploads.js';
 
 /** Reads and Proposals: Members and Agents, Agents within their hourly limits. */
@@ -177,6 +180,24 @@ export async function proposalRoutes(fastify: FastifyInstance, deps: ProposalDep
       response: { 200: ProposalView, 400: ApiError, 404: ApiError, 409: ApiError, ...editorOnly },
     },
     handler: async (req) => mergePersons(deps, req.member!, req.params.id, req.body),
+  });
+
+  app.post('/api/events/:id/merge', {
+    config: { action: 'merge' },
+    schema: {
+      tags: ['Review'],
+      summary:
+        'Merge another Event of the same type into this one: the Roles and Citations this one lacks move here, its unknown date, Place or House and type detail are filled, the description and research notes are added, and the other Event is deleted; refused with merge_conflict when the two disagree on a fact (Editors only)',
+      params: IdParams,
+      body: MergeBody,
+      response: { 200: ProposalView, 400: ApiError, 404: ApiError, 409: MergeRefused, ...editorOnly },
+    },
+    handler: async (req) => {
+      // An Event merged away answers 409 event_merged from the merge itself; one never in the Tree, 404.
+      const exists = await db.selectFrom('event').select('id').where('id', '=', req.params.id).executeTakeFirst();
+      if (!exists && !(await eventMergedInto(db, req.params.id))) throw new ApiProblem(404, 'not_found', 'No Event with this id.');
+      return mergeEvents(deps, req.member!, req.params.id, req.body);
+    },
   });
 
   // ---------------------------------------------------------------- Family roots

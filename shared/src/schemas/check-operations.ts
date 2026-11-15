@@ -3,9 +3,9 @@
  * against its schema, temporary ids defined once and before use with the right kind, base
  * versions present, who may use which operation, and the evidence rule.
  */
-import { satisfiesEvidenceRule, type EvidenceOperation } from '../rules.js';
+import { mayUseOperation, satisfiesEvidenceRule, type EvidenceOperation } from '../rules.js';
 import { isPlaceOrNoteOperation, placeReferencesOf } from './place-operations.js';
-import { EDITOR_ONLY_OPERATIONS, Operation, OPERATION_NAMES, type OperationName, type SettableRecord } from './proposals.js';
+import { Operation, OPERATION_NAMES, type OperationName, type SettableRecord } from './proposals.js';
 import { isNewRef, isTempId } from './refs.js';
 import { serverOnly, type CheckOptions } from './server-operations.js';
 
@@ -135,8 +135,8 @@ const tempIdOf = (op: Operation): string | undefined => ('tempId' in op ? op.tem
 function checkOne(op: Operation, position: number, options: CheckOptions, temps: Map<string, TempKind>): ProposalIssue[] {
   const refused = serverOnly(op.op, options);
   if (refused) return [{ code: 'not_allowed', position, message: `operation ${position + 1}: ${refused}` }];
-  if (EDITOR_ONLY_OPERATIONS.includes(op.op) && !options.editor)
-    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge Persons` }];
+  if (!mayUseOperation(options.editor, op.op))
+    return [{ code: 'not_allowed', position, message: `operation ${position + 1}: only Editors merge ${op.op === 'mergeEvents' ? 'Events' : 'Persons'}` }];
   const issues: ProposalIssue[] = [];
   for (const r of referencesOf(op)) {
     if (!isTempId(r.ref)) continue;

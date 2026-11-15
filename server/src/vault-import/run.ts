@@ -283,6 +283,44 @@ async function checkPresumed(r: Run): Promise<void> {
   }
 }
 
+const EventId = z.object({ id: z.string() });
+
+/** Where an Event's id leads now: to itself, to the Event it was merged into (the API redirects), or nowhere (null). */
+async function eventNow(client: Client, id: string): Promise<string | null> {
+  try {
+    return EventId.parse(await client.get(`/api/events/${id}`)).id;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+/**
+ * Marriages an earlier importer gave two Events (#149). The importer cannot merge them: a merge of
+ * Events is an Editor's (#154), and it runs as an Agent. So it lists each pair while both Events
+ * are in the Tree, with the second spouse's person page, where the app offers the merge. A pair
+ * merged into the Event later runs refer to is done; one merged the other way round is listed
+ * apart, as later runs would refer to an Event that is gone.
+ */
+async function duplicateMarriages(r: Run): Promise<void> {
+  const origin = r.options.url.replace(/\/+$/, '');
+  for (const m of r.plan.mergedMarriages) {
+    if (!imported(r.state, m.key) || !imported(r.state, m.earlierKey)) continue;
+    const keep = r.state.map.get(m.key)?.recordId ?? null;
+    const other = r.state.map.get(m.earlierKey)?.recordId ?? null;
+    const personId = r.state.map.get(m.personKey)?.recordId ?? null;
+    const entry = { paths: m.paths, keep, other, page: personId ? `${origin}/#people/${personId}` : null, otherWay: false };
+    if (keep && other) {
+      if ((await eventNow(r.client, keep)) !== keep) {
+        r.summary.duplicateMarriages.push({ ...entry, otherWay: true });
+        continue;
+      }
+      if ((await eventNow(r.client, other)) !== other) continue;
+    }
+    r.summary.duplicateMarriages.push(entry);
+  }
+}
+
 /** A record as the API returns it: its version, and the fields an update reads. */
 const Current = z.looseObject({ version: z.number().int() });
 
@@ -434,11 +472,8 @@ export async function runImport(options: ImportOptions): Promise<ImportResult> {
     const before = p.path ? state.map.get(`note:${p.path}`) : undefined;
     if (p.path && before && before.noteHash !== p.hash) summary.changed.notUpdated.push(p.path);
   }
-  // Marriages an earlier importer gave two Events (#149): both are in the Tree, and stay there.
-  for (const m of plan.mergedMarriages)
-    if (imported(state, m.key) && imported(state, m.earlierKey))
-      summary.duplicateMarriages.push({ paths: m.paths, keep: state.map.get(m.key)?.recordId ?? null, other: state.map.get(m.earlierKey)?.recordId ?? null });
   const r: Run = { options, client, vault, plan, state, summary, batch: null };
+  await duplicateMarriages(r);
   await checkPresumed(r);
   await proposals(r);
   await updates(r);

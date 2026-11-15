@@ -21,8 +21,12 @@ export interface RunSummary {
   leads: { created: number; waiting: number; unchanged: number; updated: number; notUpdated: string[] };
   /** Notes changed since the run that imported them. */
   changed: { updated: number; notUpdated: string[] };
-  /** Marriages an earlier importer gave two Events (#149), with the record ids of the Event to keep and of the other (null while pending). */
-  duplicateMarriages: Array<{ paths: [string, string]; keep: string | null; other: string | null }>;
+  /**
+   * Marriages an earlier importer gave two Events (#149) that are still two, with the record ids of
+   * the Event to keep and of the other (null while pending), and the person page to merge them from
+   * (#154); `otherWay` when the Event to keep was merged into the other, which later runs cannot follow.
+   */
+  duplicateMarriages: Array<{ paths: [string, string]; keep: string | null; other: string | null; page: string | null; otherWay: boolean }>;
   /**
    * Records an earlier importer wrote otherwise, by what they wait for (plan.updates): the fields
    * the Tree has no place for, added to research notes and register entries' Citation notes that
@@ -194,20 +198,37 @@ function presumedLeftOut(run: RunSummary): string[] {
   ];
 }
 
-/** Marriages an earlier importer gave two Events (#149): both stay in the Tree. */
+/** Marriages an earlier importer gave two Events (#149) and the Owner has not merged yet, or merged the other way round (#154). */
 function duplicateMarriages(run: RunSummary): string[] {
-  if (!run.duplicateMarriages.length) return [];
-  return [
-    `## Marriage Events imported twice (${run.duplicateMarriages.length})`,
-    '',
-    'An importer before #149 gave a marriage both spouses record without a Source note one Event in each spouse’s',
-    'Proposal. The first Event now carries both notes’ Citations; the other stays, as no Proposal can remove an Event (#154).',
-    '',
-    ...run.duplicateMarriages.map(
-      (d) => `- ${d.paths[0]} and ${d.paths[1]}: keep Event ${d.keep ?? '(pending)'}; the other is Event ${d.other ?? '(pending)'}`,
-    ),
-    '',
-  ];
+  const twice = run.duplicateMarriages.filter((d) => !d.otherWay);
+  const otherWay = run.duplicateMarriages.filter((d) => d.otherWay);
+  const lines: string[] = [];
+  if (twice.length)
+    lines.push(
+      `## Marriage Events imported twice (${twice.length})`,
+      '',
+      'An importer before #149 gave a marriage both spouses record without a Source note one Event in each spouse’s',
+      'Proposal. The Event to keep carries both notes’ Citations. Merge the other into it in the app (#154): open the',
+      'person page, choose “Same Event? Merge…” under the marriage, and keep the Event the app suggests, the one named',
+      'here, as later runs refer to it. A merged pair is no longer listed.',
+      '',
+      ...twice.map(
+        (d) =>
+          `- ${d.paths[0]} and ${d.paths[1]}: keep Event ${d.keep ?? '(pending)'}; the other is Event ${d.other ?? '(pending)'}${d.page ? `; merge on ${d.page}` : ''}`,
+      ),
+      '',
+    );
+  if (otherWay.length)
+    lines.push(
+      `## Marriage Events merged the other way round (${otherWay.length})`,
+      '',
+      'The Event later runs refer to was merged into the other one, so a later fix to these marriages would fail. Undo',
+      'the merge in the Person’s history, then merge again keeping the Event named here.',
+      '',
+      ...otherWay.map((d) => `- ${d.paths[0]} and ${d.paths[1]}: keep Event ${d.keep}${d.page ? `; history on ${d.page}` : ''}`),
+      '',
+    );
+  return lines;
 }
 
 /** The report as Markdown: counts first, then every issue with the note it was found in. */
