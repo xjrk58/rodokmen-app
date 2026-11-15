@@ -10,7 +10,7 @@ Kinship needs your own Person: the Person who is you in the Tree, linked to your
 2. Under the name, the section **How you are related** ("Jak jste příbuzní") gives the term ("praděd", "second cousin"), the line and degree ("direct line, 3rd degree"), and the common ancestors, each a link to their page.
 3. If the term reads **possibly** ("možná") with a "?", a link on the way has no Citation of normal or higher confidence. Open the path to see which link is weak, and add the evidence in a Proposal to take the mark away.
 
-In search results and the People list, each Person's term follows the life years. In the tree, the strip above the boxes gives the Focus Person's kinship to you; tap it to open their page at the section. Your own Person reads "you" ("vy").
+In search results and the People list, each Person's term follows the life years. In the tree, the strip above the boxes gives the Focus Person's kinship to you; tap it to open their page at the section. On a Chart, switch on **Kinship to me** in its options to see the term on every card ([Make a Chart](make-a-chart.md#show-your-kinship-on-the-cards)). Your own Person reads "you" ("vy").
 
 ## List every path
 
