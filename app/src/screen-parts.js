@@ -1,10 +1,11 @@
 // Pieces the family screens share: loading cache first, the "as of" label, error lines,
-// a Person's name with life years and marks, and a debounced value.
+// a Person's name with life years, marks and kinship, and a debounced value.
 
 import { ApiError, messageOf } from './api.js';
 import { isGone, loadThrough } from './cache.js';
 import { lifeYears } from './hourglass-layout.js';
 import { language, t } from './i18n.js';
+import { shortKinship } from './kinship.js';
 import { relationOf } from './relation.js';
 import { html, useEffect, useState } from './ui.js';
 
@@ -120,12 +121,17 @@ export function personMarks(person) {
 export const Marks = ({ marks }) => marks.map((m) => html` <span class=${`mark ${m.kind}`} data-testid="mark" data-mark=${m.kind}>${m.text}</span>`);
 
 /**
- * A Person's name, life years and marks on one line.
+ * A Person's name, life years, marks and kinship to the reader's own Person on one line. The
+ * kinship is cut with an ellipsis on a narrow screen and stays whole in the text a screen reader reads.
  * @param {{ person: PersonSummary, href?: string }} props
  */
 export function PersonLine({ person, href }) {
   const years = lifeYears(person);
   const marks = personMarks(person);
+  const kin = shortKinship(person);
   const name = href ? html`<a href=${href} class="person-name">${person.displayName}</a>` : html`<span class="person-name">${person.displayName}</span>`;
-  return html`<span class="person-line"> ${name}${years ? html` <span class="years">${years}</span>` : null} <${Marks} marks=${marks} /> </span>`;
+  return html`<span class="person-line">
+    ${name}${years ? html` <span class="years">${years}</span>` : null}
+    <${Marks} marks=${marks} />${kin ? html` <span class="kinship-short" data-testid="kinship-short" title=${kin}>${kin}</span>` : null}
+  </span>`;
 }

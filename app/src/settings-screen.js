@@ -14,6 +14,7 @@ import { MemberEmail } from './settings-email-change.js';
 import { InvitationShare } from './settings-invitation.js';
 import { ScanReadingSection } from './settings-scan-reading.js';
 import { Status, useAction, useLoad } from './settings-parts.js';
+import { MemberRequest, MyRequest } from './person-request.js';
 import { html, useEffect, useState } from './ui.js';
 import { APP_VERSION } from './version.js';
 import { registerPasskey } from './webauthn.js';
@@ -198,6 +199,7 @@ function MemberRow({ member, me, onChange }) {
             </button>`
       }
     </div>
+    ${member.personRequest ? html`<${MemberRequest} member=${member} onChange=${onChange} />` : null}
     <div class="member-person small" data-testid="member-person">
       ${t('settings.ownPerson')}:
       ${member.person ? html`<${PersonLine} person=${member.person} href=${`#people/${member.person.id}`} />` : html`<span class="muted">${t('settings.notLinked')}</span>`}
@@ -332,6 +334,7 @@ export function SettingsScreen({ me, chooseLanguage, signOut, refreshMe }) {
       <h2>${t('settings.account')}</h2>
       <p><strong>${me.displayName}</strong> <span class="muted">${me.email}</span></p>
       <p class="muted small">${t('settings.yourRole', { role: t(`settings.role.${me.role}`) })}</p>
+      <${MyRequest} me=${me} refreshMe=${refreshMe} />
       <button type="button" class="button" data-testid="sign-out" onClick=${() => void run(signOut)}>${t('settings.signOut')}</button>
       <${Status} text=${text} error=${error} />
     </section>

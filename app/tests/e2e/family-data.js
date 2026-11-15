@@ -55,7 +55,7 @@ export const PEOPLE = [
 ];
 
 /** @type {Array<[number, number | null, number | null, Array<[number, ChildLinkType]>]>} id, partner 1, partner 2, children */
-const FAMILIES = [
+export const FAMILIES = [
   [100, 27, null, [[26, 'birth']]],
   [101, 26, null, [[8, 'birth']]],
   [102, 8, 9, [[1, 'birth']]],
@@ -250,7 +250,7 @@ export function summary(n) {
 }
 
 /** Weak child links (family, child): no Citation of normal or higher confidence. */
-const WEAK_CHILD_LINKS = [
+export const WEAK_CHILD_LINKS = [
   [100, 26],
   [101, 8],
   [110, 25],

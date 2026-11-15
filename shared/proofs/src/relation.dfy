@@ -20,6 +20,22 @@ function isStrongLink(link: FamilyLink): bool
   (exists c :: c in link.confidences && isConfirming(c))
 }
 
+lemma isStrongLink_ensures(link: FamilyLink)
+  ensures (isStrongLink(link) == exists j: nat :: ((j < |link.confidences|) && (((link.confidences[j] == "normal") || (link.confidences[j] == "high")) || (link.confidences[j] == "very_high"))))
+{
+  // Proof addition: a Citation in the list is the one at some index.
+  if isStrongLink(link) {
+    var c :| c in link.confidences && isConfirming(c);
+    var j: nat :| j < |link.confidences| && link.confidences[j] == c;
+  } else {
+    forall j: nat | j < |link.confidences|
+      ensures !isConfirming(link.confidences[j])
+    {
+      assert link.confidences[j] in link.confidences;
+    }
+  }
+}
+
 function mayFollow(link: FamilyLink, strongOnly: bool): bool
 {
   (!(strongOnly) || isStrongLink(link))

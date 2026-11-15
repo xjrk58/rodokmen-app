@@ -1171,6 +1171,280 @@
           "caption"
         ]
       },
+      "KinshipTermTextInput": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "m",
+                  "f",
+                  "n"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "gender"
+        ],
+        "description": "A kinship term as written, nominative and alone, with its grammatical gender"
+      },
+      "KinshipTermInput": {
+        "type": "object",
+        "properties": {
+          "cs": {
+            "$ref": "#/components/schemas/KinshipTermTextInput"
+          },
+          "en": {
+            "$ref": "#/components/schemas/KinshipTermTextInput"
+          }
+        },
+        "required": [
+          "cs",
+          "en"
+        ],
+        "additionalProperties": false,
+        "description": "The kinship term in every Interface language"
+      },
+      "KinshipKindInput": {
+        "type": "string",
+        "enum": [
+          "self",
+          "partner",
+          "birth",
+          "marriage",
+          "stepSibling",
+          "coParentInLaw",
+          "foster"
+        ],
+        "description": "The kind of path: the reader, a partner, by birth (adoption included), by marriage, a step-sibling, a co-parent-in-law, or a foster pair"
+      },
+      "KinshipLineInput": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "direct",
+              "collateral"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The line of kinship as the Czech civil code counts it (§ 772, and § 774 for kinship by marriage); null for the kinds with no degree"
+      },
+      "KinshipStepInput": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "description": "The next Person on the path",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "link": {
+            "type": "string",
+            "enum": [
+              "parent",
+              "child",
+              "partner"
+            ],
+            "description": "The next Person is a parent, a child or a partner of the one before"
+          },
+          "linkType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChildLinkTypeInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of the child link; null for a partner link"
+          },
+          "weak": {
+            "type": "boolean",
+            "description": "The link has no Citation of normal or higher confidence"
+          },
+          "recordId": {
+            "description": "The Family of a partner link, the child link of a parent or child link",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "term": {
+            "description": "The next Person as the one before names them: otec, syn, manželka, pěstoun …",
+            "$ref": "#/components/schemas/KinshipTermInput"
+          }
+        },
+        "required": [
+          "person",
+          "link",
+          "linkType",
+          "weak",
+          "recordId",
+          "term"
+        ]
+      },
+      "KinshipPathInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/KinshipKindInput"
+          },
+          "line": {
+            "$ref": "#/components/schemas/KinshipLineInput"
+          },
+          "degree": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The degree as the Czech civil code counts it: births between the two, or of the kin married into; null for the kinds with none"
+          },
+          "up": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Generations up from the reader to the common ancestors (of the part by birth)"
+          },
+          "down": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Generations down from the common ancestors to the Person (of the part by birth)"
+          },
+          "half": {
+            "type": "boolean",
+            "description": "Half kinship: one common ancestor reached through two couples"
+          },
+          "adoptive": {
+            "type": "boolean",
+            "description": "An adoptive child link on the way"
+          },
+          "possible": {
+            "type": "boolean",
+            "description": "A link on the way has no Citation of normal or higher confidence"
+          },
+          "commonAncestors": {
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "One Person, the two partners of one Family, or none"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipStepInput"
+            },
+            "description": "From the reader to the Person, each step to the next Person"
+          },
+          "term": {
+            "$ref": "#/components/schemas/KinshipTermInput"
+          }
+        },
+        "required": [
+          "kind",
+          "line",
+          "degree",
+          "up",
+          "down",
+          "half",
+          "adoptive",
+          "possible",
+          "commonAncestors",
+          "steps",
+          "term"
+        ]
+      },
+      "KinshipConnectionInput": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipStepInput"
+            },
+            "description": "The shortest chain of any Family links, from the reader to the Person"
+          },
+          "marriages": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "How many partner links the chain holds"
+          }
+        },
+        "required": [
+          "steps",
+          "marriages"
+        ],
+        "description": "With no kinship, how the two are connected"
+      },
+      "KinshipShortInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/KinshipKindInput"
+          },
+          "term": {
+            "$ref": "#/components/schemas/KinshipTermInput"
+          },
+          "possible": {
+            "type": "boolean"
+          },
+          "line": {
+            "$ref": "#/components/schemas/KinshipLineInput"
+          },
+          "degree": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "others": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "How many other paths were found"
+          },
+          "more": {
+            "type": "boolean",
+            "description": "A limit cut the search: there may be more paths"
+          }
+        },
+        "required": [
+          "kind",
+          "term",
+          "possible",
+          "line",
+          "degree",
+          "others",
+          "more"
+        ],
+        "description": "The Person's closest kinship to the signed-in Member's own Person"
+      },
       "RelationToFamilyInput": {
         "type": "string",
         "enum": [
@@ -1226,6 +1500,17 @@
           "familyRoot": {
             "type": "boolean",
             "description": "The Owner marked this Person as a Family root"
+          },
+          "kinship": {
+            "description": "How this Person is related to the signed-in Member's own Person (search, the person page and the hourglass); null with no kinship, absent when the Member has no own Person",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KinshipShortInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -3578,6 +3863,38 @@
           "downloadExport"
         ]
       },
+      "PersonRequestInput": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "description": "The Person the Member says is them; a merged Person shows as the one kept",
+            "$ref": "#/components/schemas/PersonSummaryInput"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "When the Member asked"
+          }
+        },
+        "required": [
+          "person",
+          "at"
+        ]
+      },
+      "PersonRequestBodyInput": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "description": "The Person who is you in the Tree",
+            "$ref": "#/components/schemas/IdInput"
+          }
+        },
+        "required": [
+          "personId"
+        ],
+        "description": "Ask the Owner to link your account to this Person"
+      },
       "MeInput": {
         "type": "object",
         "properties": {
@@ -3622,6 +3939,23 @@
             ],
             "description": "The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)"
           },
+          "personRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRequestInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This Member asked the Owner to link this Person, and the Owner has not decided yet"
+          },
+          "openPersonRequests": {
+            "description": "For the Owner: how many Members wait for the Owner to link them to their own Person",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
           "familyRoots": {
             "type": "array",
             "items": {
@@ -3640,6 +3974,7 @@
           "permissions",
           "passkeyCount",
           "person",
+          "personRequest",
           "familyRoots"
         ]
       },
@@ -3715,6 +4050,17 @@
               "string",
               "null"
             ]
+          },
+          "personRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRequestInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person this Member asked to be linked to, waiting for the Owner to confirm or refuse"
           }
         },
         "required": [
@@ -3728,7 +4074,8 @@
           "createdAt",
           "lastSeenAt",
           "person",
-          "pendingEmail"
+          "pendingEmail",
+          "personRequest"
         ]
       },
       "MemberListInput": {
@@ -9883,6 +10230,91 @@
           "history"
         ]
       },
+      "KinshipInput": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "The starting Person: the caller’s own Person, or the one named",
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "to": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "asOf": {
+            "type": "object",
+            "properties": {
+              "logEntryId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/IdInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The newest accepted change of the Tree the answer comes from; null before the first"
+              },
+              "at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "logEntryId",
+              "at"
+            ],
+            "description": "The state of the Tree the answer was computed from"
+          },
+          "paths": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipPathInput"
+            },
+            "description": "Every path, the closest first, in the fixed order; at most 100"
+          },
+          "more": {
+            "type": "boolean",
+            "description": "A limit cut the search: there may be more paths"
+          },
+          "connection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KinshipConnectionInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With no path, the shortest chain of Family links; null with a path or with no chain at all"
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummaryInput"
+            },
+            "description": "Every Person the paths and the connection name, as the tree shows them"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "asOf",
+          "paths",
+          "more",
+          "connection",
+          "persons"
+        ],
+        "description": "How one Person is related to another, worked out from the Family links by fixed rules"
+      },
       "SheetVariantInput": {
         "type": "string",
         "enum": [
@@ -12101,6 +12533,285 @@
         ],
         "additionalProperties": false
       },
+      "KinshipTermText": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "gender": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "m",
+                  "f",
+                  "n"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "text",
+          "gender"
+        ],
+        "additionalProperties": false,
+        "description": "A kinship term as written, nominative and alone, with its grammatical gender"
+      },
+      "KinshipTerm": {
+        "type": "object",
+        "properties": {
+          "cs": {
+            "$ref": "#/components/schemas/KinshipTermText"
+          },
+          "en": {
+            "$ref": "#/components/schemas/KinshipTermText"
+          }
+        },
+        "required": [
+          "cs",
+          "en"
+        ],
+        "additionalProperties": false,
+        "description": "The kinship term in every Interface language"
+      },
+      "KinshipKind": {
+        "type": "string",
+        "enum": [
+          "self",
+          "partner",
+          "birth",
+          "marriage",
+          "stepSibling",
+          "coParentInLaw",
+          "foster"
+        ],
+        "description": "The kind of path: the reader, a partner, by birth (adoption included), by marriage, a step-sibling, a co-parent-in-law, or a foster pair"
+      },
+      "KinshipLine": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "direct",
+              "collateral"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "The line of kinship as the Czech civil code counts it (§ 772, and § 774 for kinship by marriage); null for the kinds with no degree"
+      },
+      "KinshipStep": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "description": "The next Person on the path",
+            "$ref": "#/components/schemas/Id"
+          },
+          "link": {
+            "type": "string",
+            "enum": [
+              "parent",
+              "child",
+              "partner"
+            ],
+            "description": "The next Person is a parent, a child or a partner of the one before"
+          },
+          "linkType": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChildLinkType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of the child link; null for a partner link"
+          },
+          "weak": {
+            "type": "boolean",
+            "description": "The link has no Citation of normal or higher confidence"
+          },
+          "recordId": {
+            "description": "The Family of a partner link, the child link of a parent or child link",
+            "$ref": "#/components/schemas/Id"
+          },
+          "term": {
+            "description": "The next Person as the one before names them: otec, syn, manželka, pěstoun …",
+            "$ref": "#/components/schemas/KinshipTerm"
+          }
+        },
+        "required": [
+          "person",
+          "link",
+          "linkType",
+          "weak",
+          "recordId",
+          "term"
+        ],
+        "additionalProperties": false
+      },
+      "KinshipPath": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/KinshipKind"
+          },
+          "line": {
+            "$ref": "#/components/schemas/KinshipLine"
+          },
+          "degree": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The degree as the Czech civil code counts it: births between the two, or of the kin married into; null for the kinds with none"
+          },
+          "up": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Generations up from the reader to the common ancestors (of the part by birth)"
+          },
+          "down": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Generations down from the common ancestors to the Person (of the part by birth)"
+          },
+          "half": {
+            "type": "boolean",
+            "description": "Half kinship: one common ancestor reached through two couples"
+          },
+          "adoptive": {
+            "type": "boolean",
+            "description": "An adoptive child link on the way"
+          },
+          "possible": {
+            "type": "boolean",
+            "description": "A link on the way has no Citation of normal or higher confidence"
+          },
+          "commonAncestors": {
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "One Person, the two partners of one Family, or none"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipStep"
+            },
+            "description": "From the reader to the Person, each step to the next Person"
+          },
+          "term": {
+            "$ref": "#/components/schemas/KinshipTerm"
+          }
+        },
+        "required": [
+          "kind",
+          "line",
+          "degree",
+          "up",
+          "down",
+          "half",
+          "adoptive",
+          "possible",
+          "commonAncestors",
+          "steps",
+          "term"
+        ],
+        "additionalProperties": false
+      },
+      "KinshipConnection": {
+        "type": "object",
+        "properties": {
+          "steps": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipStep"
+            },
+            "description": "The shortest chain of any Family links, from the reader to the Person"
+          },
+          "marriages": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "How many partner links the chain holds"
+          }
+        },
+        "required": [
+          "steps",
+          "marriages"
+        ],
+        "additionalProperties": false,
+        "description": "With no kinship, how the two are connected"
+      },
+      "KinshipShort": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/KinshipKind"
+          },
+          "term": {
+            "$ref": "#/components/schemas/KinshipTerm"
+          },
+          "possible": {
+            "type": "boolean"
+          },
+          "line": {
+            "$ref": "#/components/schemas/KinshipLine"
+          },
+          "degree": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "others": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "How many other paths were found"
+          },
+          "more": {
+            "type": "boolean",
+            "description": "A limit cut the search: there may be more paths"
+          }
+        },
+        "required": [
+          "kind",
+          "term",
+          "possible",
+          "line",
+          "degree",
+          "others",
+          "more"
+        ],
+        "additionalProperties": false,
+        "description": "The Person's closest kinship to the signed-in Member's own Person"
+      },
       "RelationToFamily": {
         "type": "string",
         "enum": [
@@ -12156,6 +12867,17 @@
           "familyRoot": {
             "type": "boolean",
             "description": "The Owner marked this Person as a Family root"
+          },
+          "kinship": {
+            "description": "How this Person is related to the signed-in Member's own Person (search, the person page and the hourglass); null with no kinship, absent when the Member has no own Person",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KinshipShort"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -14565,6 +15287,40 @@
         ],
         "additionalProperties": false
       },
+      "PersonRequest": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "description": "The Person the Member says is them; a merged Person shows as the one kept",
+            "$ref": "#/components/schemas/PersonSummary"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+            "description": "When the Member asked"
+          }
+        },
+        "required": [
+          "person",
+          "at"
+        ],
+        "additionalProperties": false
+      },
+      "PersonRequestBody": {
+        "type": "object",
+        "properties": {
+          "personId": {
+            "description": "The Person who is you in the Tree",
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "personId"
+        ],
+        "additionalProperties": false,
+        "description": "Ask the Owner to link your account to this Person"
+      },
       "Me": {
         "type": "object",
         "properties": {
@@ -14609,6 +15365,23 @@
             ],
             "description": "The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)"
           },
+          "personRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "This Member asked the Owner to link this Person, and the Owner has not decided yet"
+          },
+          "openPersonRequests": {
+            "description": "For the Owner: how many Members wait for the Owner to link them to their own Person",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
           "familyRoots": {
             "type": "array",
             "items": {
@@ -14627,6 +15400,7 @@
           "permissions",
           "passkeyCount",
           "person",
+          "personRequest",
           "familyRoots"
         ],
         "additionalProperties": false
@@ -14704,6 +15478,17 @@
               "string",
               "null"
             ]
+          },
+          "personRequest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PersonRequest"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Person this Member asked to be linked to, waiting for the Owner to confirm or refuse"
           }
         },
         "required": [
@@ -14717,7 +15502,8 @@
           "createdAt",
           "lastSeenAt",
           "person",
-          "pendingEmail"
+          "pendingEmail",
+          "personRequest"
         ],
         "additionalProperties": false
       },
@@ -21104,6 +21890,93 @@
         ],
         "additionalProperties": false
       },
+      "Kinship": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "description": "The starting Person: the caller’s own Person, or the one named",
+            "$ref": "#/components/schemas/Id"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "asOf": {
+            "type": "object",
+            "properties": {
+              "logEntryId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The newest accepted change of the Tree the answer comes from; null before the first"
+              },
+              "at": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "logEntryId",
+              "at"
+            ],
+            "additionalProperties": false,
+            "description": "The state of the Tree the answer was computed from"
+          },
+          "paths": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KinshipPath"
+            },
+            "description": "Every path, the closest first, in the fixed order; at most 100"
+          },
+          "more": {
+            "type": "boolean",
+            "description": "A limit cut the search: there may be more paths"
+          },
+          "connection": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KinshipConnection"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "With no path, the shortest chain of Family links; null with a path or with no chain at all"
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonSummary"
+            },
+            "description": "Every Person the paths and the connection name, as the tree shows them"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "asOf",
+          "paths",
+          "more",
+          "connection",
+          "persons"
+        ],
+        "additionalProperties": false,
+        "description": "How one Person is related to another, worked out from the Family links by fixed rules"
+      },
       "SheetVariant": {
         "type": "string",
         "enum": [
@@ -22411,6 +23284,87 @@
             }
           },
           "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimited"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/persons/{id}/kinship": {
+      "get": {
+        "summary": "How this Person is related to the caller's own Person, or to the starting Person named with from (an Agent must name one): every path in a fixed order, the closest first, with line, degree, marks and terms in every Interface language",
+        "tags": [
+          "Persons"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "query",
+            "name": "from",
+            "required": false
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Kinship"
+                }
+              }
+            }
+          },
+          "308": {
+            "description": "Location: the same route for the Person this one was merged into"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
             "description": "Default Response",
             "content": {
               "application/json": {
@@ -27804,6 +28758,174 @@
         "responses": {
           "204": {
             "description": "Default Response"
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/person-request": {
+      "put": {
+        "summary": "Ask the Owner to link your account to the Person who is you in the Tree (\"This is me\"). A new request replaces the old",
+        "tags": [
+          "Account"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonRequestBodyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Withdraw your request to be linked to a Person",
+        "tags": [
+          "Account"
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/members/{id}/person-request": {
+      "delete": {
+        "summary": "Refuse a Member's request to be linked to a Person (Owner only). To confirm it, link the Member to that Person",
+        "tags": [
+          "Members"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "in": "path",
+            "name": "id",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Default Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberView"
+                }
+              }
+            }
           },
           "401": {
             "description": "Default Response",

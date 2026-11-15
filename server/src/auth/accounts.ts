@@ -316,7 +316,42 @@ export async function linkPerson(deps: AccountDeps, targetId: string, personId: 
     kept = await keptPerson(deps.db, personId);
     if (kept === null) throw new ApiProblem(404, 'person_not_found', 'No Person with this id.');
   }
-  return deps.db.updateTable('account').set({ person_id: kept }).where('id', '=', targetId).returningAll().executeTakeFirstOrThrow();
+  // Linking answers the Member's request, whichever Person it names.
+  const answered = kept === null ? {} : { person_request_id: null, person_request_at: null };
+  return deps.db
+    .updateTable('account')
+    .set({ person_id: kept, ...answered })
+    .where('id', '=', targetId)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+/**
+ * A Member asks the Owner to link their account to a Person (family-tree spec, "Asking to be
+ * linked to one's own Person"). A new request replaces the old; a Member already linked asks the
+ * Owner instead. A Person merged into another is asked for as the kept one.
+ */
+export async function requestPerson(deps: AccountDeps, member: Account, personId: string): Promise<Account> {
+  if (member.person_id !== null) throw new ApiProblem(409, 'already_linked', 'Your account is already linked to a Person. Ask the Owner to change it.');
+  const kept = await keptPerson(deps.db, personId);
+  if (kept === null) throw new ApiProblem(404, 'person_not_found', 'No Person with this id.');
+  return deps.db
+    .updateTable('account')
+    .set({ person_request_id: kept, person_request_at: deps.clock.now() })
+    .where('id', '=', member.id)
+    .returningAll()
+    .executeTakeFirstOrThrow();
+}
+
+/** Withdraws a Member's request (their own), or refuses it (the Owner, for any Member). */
+export async function clearPersonRequest(deps: AccountDeps, accountId: string): Promise<Account> {
+  await loadMember(deps.db, accountId);
+  return deps.db
+    .updateTable('account')
+    .set({ person_request_id: null, person_request_at: null })
+    .where('id', '=', accountId)
+    .returningAll()
+    .executeTakeFirstOrThrow();
 }
 
 /** The Person a Person id stands for now: itself, or the one it was merged into; null when there is none. */

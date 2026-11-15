@@ -11,3 +11,6 @@ src/erasure.ts
 src/presumed-death.ts
 src/charts.ts 60 --isolate-assertions
 src/house-chart.ts 60 --isolate-assertions
+src/kinship.ts 60 --isolate-assertions
+src/kinship-terms/cs.ts
+src/kinship-terms/en.ts

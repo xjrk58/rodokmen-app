@@ -1,4 +1,4 @@
-import { isStrongLink, relationsOf, RELATIONS, type FamilyLinkById, type Relation } from '@rodokmen/shared';
+import { isStrongLink, relationsOf, RELATIONS, type ChildLinkType, type FamilyLinkById, type Relation } from '@rodokmen/shared';
 import { sql } from 'kysely';
 import type { Db } from '../db/db.js';
 
@@ -15,11 +15,15 @@ import type { Db } from '../db/db.js';
  * or mother (the baptism or birth). Other Roles, such as godparents and witnesses, link nobody.
  */
 
-/** A Family link with its Citations' confidences, and the record it comes from. */
+/** A Family link with its Citations' confidences, and the records it comes from. */
 export interface FamilyLinkRow extends FamilyLinkById {
   kind: 'partner' | 'parent';
   /** The Family of a partner link, the child link (family_child) of a parent link. */
   recordId: string;
+  /** The Family of either kind of link (kinship reads it, server/src/tree/kinship.ts). */
+  familyId: string;
+  /** The type of the child link of a parent link; null for a partner link. */
+  linkType: ChildLinkType | null;
 }
 
 /**
@@ -39,8 +43,8 @@ export async function familyLinks(db: Db, only?: { familyIds: readonly string[];
     left join citation c on c.id = ec.citation_id
     where f.partner1_id is not null and f.partner2_id is not null ${families}
     group by f.id`.execute(db);
-  const parents = await sql<{ record_id: string; a: string; b: string; confidences: string[] }>`
-    select fc.id as record_id, p.parent as a, fc.child_id as b,
+  const parents = await sql<{ record_id: string; family_id: string; link_type: ChildLinkType; a: string; b: string; confidences: string[] }>`
+    select fc.id as record_id, fc.family_id, fc.link_type, p.parent as a, fc.child_id as b,
       coalesce(array_agg(distinct c.confidence) filter (where c.confidence is not null), '{}') as confidences
     from family_child fc
     join family f on f.id = fc.family_id
@@ -50,10 +54,26 @@ export async function familyLinks(db: Db, only?: { familyIds: readonly string[];
     left join event_citation ec on ec.event_id = rp.event_id
     left join citation c on c.id = ec.citation_id
     where p.parent is not null ${childLinks}
-    group by fc.id, p.parent, fc.child_id`.execute(db);
+    group by fc.id, fc.family_id, fc.link_type, p.parent, fc.child_id`.execute(db);
   return [
-    ...partners.rows.map((r) => ({ kind: 'partner' as const, recordId: r.record_id, a: r.a, b: r.b, confidences: r.confidences })),
-    ...parents.rows.map((r) => ({ kind: 'parent' as const, recordId: r.record_id, a: r.a, b: r.b, confidences: r.confidences })),
+    ...partners.rows.map((r) => ({
+      kind: 'partner' as const,
+      recordId: r.record_id,
+      familyId: r.record_id,
+      linkType: null,
+      a: r.a,
+      b: r.b,
+      confidences: r.confidences,
+    })),
+    ...parents.rows.map((r) => ({
+      kind: 'parent' as const,
+      recordId: r.record_id,
+      familyId: r.family_id,
+      linkType: r.link_type,
+      a: r.a,
+      b: r.b,
+      confidences: r.confidences,
+    })),
   ];
 }
 

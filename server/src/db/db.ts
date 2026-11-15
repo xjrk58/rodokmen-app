@@ -17,6 +17,7 @@ import * as m0013 from './migrations/0013_import_batches.js';
 import * as m0014 from './migrations/0014_scan_reading.js';
 import * as m0015 from './migrations/0015_exports_and_erasure.js';
 import * as m0016 from './migrations/0016_email_change.js';
+import * as m0017 from './migrations/0017_person_request.js';
 import { messageOf, stringField } from '../errors.js';
 import type { Database } from './types.js';
 
@@ -93,6 +94,7 @@ export const MIGRATIONS: Record<string, Migration> = {
   '0014_scan_reading': m0014,
   '0015_exports_and_erasure': m0015,
   '0016_email_change': m0016,
+  '0017_person_request': m0017,
 };
 
 const provider: MigrationProvider = { getMigrations: async () => MIGRATIONS };

@@ -1,0 +1,349 @@
+{
+  "from": "019b76da-c832-7a3f-b362-226e089c121d",
+  "to": "019b76da-c7bb-7661-8e2f-eeb5985f96cd",
+  "asOf": {
+    "logEntryId": null,
+    "at": null
+  },
+  "paths": [
+    {
+      "kind": "birth",
+      "line": "collateral",
+      "degree": 4,
+      "up": 3,
+      "down": 1,
+      "half": false,
+      "adoptive": false,
+      "possible": false,
+      "commonAncestors": [
+        "019b76da-c787-704e-be87-55110db61649",
+        "019b76da-c789-7834-a5bc-bdd93f721a4e"
+      ],
+      "steps": [
+        {
+          "person": "019b76da-c80a-788a-8641-ec5123408de7",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c834-72e0-829d-f9515a5db90d",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c7b9-7b44-bdb8-1d809acbc779",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c80e-7a61-a3bd-bd6f54896b3b",
+          "term": {
+            "cs": {
+              "text": "matka",
+              "gender": "f"
+            },
+            "en": {
+              "text": "mother",
+              "gender": "f"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c787-704e-be87-55110db61649",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c7bd-7324-abe7-0cb57c6da91e",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c7bb-7661-8e2f-eeb5985f96cd",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c7c5-7ead-8512-413dac69cc30",
+          "term": {
+            "cs": {
+              "text": "dcera",
+              "gender": "f"
+            },
+            "en": {
+              "text": "daughter",
+              "gender": "f"
+            }
+          }
+        }
+      ],
+      "term": {
+        "cs": {
+          "text": "prateta",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-aunt",
+          "gender": "f"
+        }
+      }
+    },
+    {
+      "kind": "marriage",
+      "line": "collateral",
+      "degree": 4,
+      "up": 3,
+      "down": 1,
+      "half": false,
+      "adoptive": false,
+      "possible": false,
+      "commonAncestors": [
+        "019b76da-c783-7640-b315-c8b2ac1445b5",
+        "019b76da-c785-7b09-bb8c-97073e709794"
+      ],
+      "steps": [
+        {
+          "person": "019b76da-c80a-788a-8641-ec5123408de7",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c834-72e0-829d-f9515a5db90d",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c79b-71ea-8ac9-7e375287b601",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c80e-7a61-a3bd-bd6f54896b3b",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c783-7640-b315-c8b2ac1445b5",
+          "link": "parent",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c7a1-77c8-9bc6-eb267622fb26",
+          "term": {
+            "cs": {
+              "text": "otec",
+              "gender": "m"
+            },
+            "en": {
+              "text": "father",
+              "gender": "m"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c79d-7ac0-9f75-392c5adecffd",
+          "link": "child",
+          "linkType": "birth",
+          "weak": false,
+          "recordId": "019b76da-c7a9-73c7-a3cc-2f8c340aed77",
+          "term": {
+            "cs": {
+              "text": "syn",
+              "gender": "m"
+            },
+            "en": {
+              "text": "son",
+              "gender": "m"
+            }
+          }
+        },
+        {
+          "person": "019b76da-c7bb-7661-8e2f-eeb5985f96cd",
+          "link": "partner",
+          "linkType": null,
+          "weak": false,
+          "recordId": "019b76da-c802-7680-8979-fdcb953ee6ab",
+          "term": {
+            "cs": {
+              "text": "manželka",
+              "gender": "f"
+            },
+            "en": {
+              "text": "wife",
+              "gender": "f"
+            }
+          }
+        }
+      ],
+      "term": {
+        "cs": {
+          "text": "sešvagřená",
+          "gender": "f"
+        },
+        "en": {
+          "text": "related by marriage",
+          "gender": "f"
+        }
+      }
+    }
+  ],
+  "more": false,
+  "connection": null,
+  "persons": [
+    {
+      "id": "019b76da-c783-7640-b315-c8b2ac1445b5",
+      "version": 1,
+      "sex": "male",
+      "given": "Ignác",
+      "surname": "Javorník",
+      "displayName": "Ignác Javorník",
+      "living": false,
+      "birth": null,
+      "death": "1891-02-03",
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c785-7b09-bb8c-97073e709794",
+      "version": 1,
+      "sex": "female",
+      "given": "Kristina",
+      "surname": "Ostrovská",
+      "displayName": "Kristina Ostrovská",
+      "living": false,
+      "birth": null,
+      "death": "1856-12-01",
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c787-704e-be87-55110db61649",
+      "version": 1,
+      "sex": "male",
+      "given": "Hynek",
+      "surname": "Ostrovský",
+      "displayName": "Hynek Ostrovský",
+      "living": false,
+      "birth": null,
+      "death": "1880-11-20",
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c789-7834-a5bc-bdd93f721a4e",
+      "version": 1,
+      "sex": "female",
+      "given": "Johana",
+      "surname": "Javorníková",
+      "displayName": "Johana Javorníková",
+      "living": false,
+      "birth": null,
+      "death": "1886-04-02",
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c79b-71ea-8ac9-7e375287b601",
+      "version": 1,
+      "sex": "male",
+      "given": "Bartoloměj",
+      "surname": "Javorník",
+      "displayName": "Bartoloměj Javorník",
+      "living": false,
+      "birth": "1845-11-02",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c79d-7ac0-9f75-392c5adecffd",
+      "version": 1,
+      "sex": "male",
+      "given": "Cyril",
+      "surname": "Javorník",
+      "displayName": "Cyril Javorník",
+      "living": false,
+      "birth": "1848-03-09",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c7b9-7b44-bdb8-1d809acbc779",
+      "version": 1,
+      "sex": "female",
+      "given": "Hedvika",
+      "surname": "Ostrovská",
+      "displayName": "Hedvika Ostrovská",
+      "living": false,
+      "birth": "1849-04-14",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c7bb-7661-8e2f-eeb5985f96cd",
+      "version": 1,
+      "sex": "female",
+      "given": "Irena",
+      "surname": "Ostrovská",
+      "displayName": "Irena Ostrovská",
+      "living": false,
+      "birth": "1851-08-30",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c80a-788a-8641-ec5123408de7",
+      "version": 1,
+      "sex": "male",
+      "given": "Karel",
+      "surname": "Javorník",
+      "displayName": "Karel Javorník",
+      "living": false,
+      "birth": "1872-10-04",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c832-7a3f-b362-226e089c121d",
+      "version": 1,
+      "sex": "male",
+      "given": "Norbert",
+      "surname": "Javorník",
+      "displayName": "Norbert Javorník",
+      "living": false,
+      "birth": "1898-09-12",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    }
+  ]
+}

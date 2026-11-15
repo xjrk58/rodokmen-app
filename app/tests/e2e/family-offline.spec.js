@@ -3,6 +3,7 @@
 // against its own server, which the test then stops (airplane mode).
 import { member, mockFamilyApi } from './family-api.js';
 import { P } from './family-data.js';
+import { KINSHIP_READER } from './kinship-api.js';
 import { APP_DIR } from './data.js';
 import { expect, test } from './fixtures.js';
 import { serve, waitForServiceWorker } from './sw-helpers.js';
@@ -46,4 +47,33 @@ test('reading room without signal: a person page viewed yesterday opens offline 
   // A page never viewed says that it needs a connection.
   await page.goto(`${server.url}#people/${P.antonin}`);
   await expect(page.getByTestId('screen-error')).toHaveText('No connection. Only what this device saved earlier can be shown.');
+});
+
+test('kinship offline (add-kinship task 7.6): a page viewed yesterday shows yesterday’s kinship with its "as of"; an unviewed one none, and no kinship error', async ({
+  page,
+  context,
+}) => {
+  await mockFamilyApi(context, { me: member('contributor', { person: KINSHIP_READER }) });
+  const server = await serve(APP_DIR);
+  try {
+    await page.clock.setFixedTime(new Date('2026-10-29T14:05:00+01:00'));
+    await page.goto(server.url);
+    await expect(page.locator('body')).toHaveAttribute('data-ready', 'true');
+    await waitForServiceWorker(page);
+    await page.goto(`${server.url}#people/${P.jan}`);
+    await expect(page.getByTestId('kinship-term')).toHaveText('great-grandfather');
+  } finally {
+    await server.close();
+  }
+  await context.unrouteAll({ behavior: 'ignoreErrors' });
+  await context.route('**/*', (route) => route.abort('internetdisconnected'));
+  await context.setOffline(true);
+  await page.clock.setFixedTime(new Date('2026-10-30T09:30:00+01:00'));
+  await page.goto('about:blank');
+  await page.goto(`${server.url}#people/${P.jan}`);
+  await expect(page.getByTestId('kinship-term')).toHaveText('great-grandfather');
+  await expect(page.getByTestId('as-of')).toHaveText('As of Oct 29, 2026, 2:05 PM (saved on this device)');
+  await page.goto(`${server.url}#people/${P.antonin}`);
+  await expect(page.getByTestId('screen-error')).toBeVisible();
+  await expect(page.getByTestId('kinship')).toHaveCount(0);
 });

@@ -9,6 +9,7 @@ import {
   EventDetail,
   FamilyDetail,
   HouseDetail,
+  Kinship,
   ParishDetail,
   Pedigree,
   PersonDetail,
@@ -65,6 +66,7 @@ describe('MCP tools on the fixture Tree', () => {
       'get_ancestors',
       'get_chart',
       'get_descendants',
+      'get_kinship',
       'get_reading',
       'get_record',
       'list_leads',
@@ -173,6 +175,36 @@ describe('MCP tools on the fixture Tree', () => {
     expect(viaTool.line.at(-1)).toBe(L.proband);
     // The Agent gets the screen variant: no Sheet option exists in the tool.
     expect(viaTool.sheet).toBeNull();
+  });
+
+  it('how two Persons are related: every path in order, the closest first, with common ancestors, line, degree, marks and terms', async () => {
+    const K = generateFixture().landmarks.kinship;
+    const k = Kinship.parse(await json('get_kinship', { fromPersonId: K.norbert, toPersonId: K.radka }));
+    expect(k.paths.map((p) => [p.kind, p.degree, p.term.cs.text, p.term.en.text])).toEqual([
+      ['partner', null, 'manželka', 'wife'],
+      ['birth', 6, 'sestřenice z 2. kolena', 'second cousin'],
+    ]);
+    expect(k.paths[1]!.commonAncestors).toHaveLength(2);
+    // No Member's own Person: the answer names the Persons asked for and those on the way only.
+    expect(k.from).toBe(K.norbert);
+  });
+
+  it('same answer as the app, and the tool counts as one read request', async () => {
+    const K = generateFixture().landmarks.kinship;
+    const w = world();
+    const reads = async () =>
+      (await w.t.db.selectFrom('agent_rate_window').select('count').where('account_id', '=', w.agent.id).where('kind', '=', 'read').executeTakeFirst())
+        ?.count ?? 0;
+    const before = await reads();
+    const viaTool = Kinship.parse(await json('get_kinship', { fromPersonId: K.norbert, toPersonId: K.matous }));
+    expect(await reads()).toBe(before + 1);
+    const viaApp = await w.as('editor', 'GET', `/api/persons/${K.matous}/kinship?from=${K.norbert}`);
+    expect(viaApp.statusCode).toBe(200);
+    expect(viaTool).toEqual(Kinship.parse(viaApp.json()));
+  });
+
+  it('get_kinship needs both Persons', async () => {
+    expect((await tool('get_kinship', { toPersonId: generateFixture().landmarks.kinship.radka })).error).not.toBeNull();
   });
 
   it('assistant submits a finding: a baptism Proposal with its Citation appears in the review queue labelled with the Agent’s name', async () => {
