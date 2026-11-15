@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
-import { buildKinshipGraph } from '@rodokmen/shared';
+import { buildKinshipGraph, DescendantChart } from '@rodokmen/shared';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Account } from '../src/db/types.js';
 import { generatedKinshipTree } from '../src/fixture/kinship-generated.js';
@@ -9,10 +9,11 @@ import { createTestDatabase, type TestDatabase } from './db.js';
 import { createMember, ensureOwner, makeApp, signIn, type TestApp } from './helpers.js';
 
 // Times kinship through the real routes on the generated Trees (add-kinship, "Performance"): the
-// rebuild of the link copy, a person page's full answer, a search page of 50 and an hourglass,
-// each a whole request with its database queries. Runs only with KINSHIP_TIMINGS set to a file,
-// which gets the figures; the measurements of the PR come from it. CI does not run it: timings
-// depend on the machine, and the units are what the other tests assert.
+// rebuild of the link copy, a person page's full answer, a search page of 50, an hourglass and,
+// for task 8.1, the largest Descendant chart of 8 generations with and without kinship=1, each a
+// whole request with its database queries. Runs only with KINSHIP_TIMINGS set to a file, which
+// gets the figures; the measurements of the PR come from it. CI does not run it: timings depend
+// on the machine, and the units are what the other tests assert.
 const OUT = process.env.KINSHIP_TIMINGS;
 const SURNAME = 'Vygenerovaný';
 
@@ -81,6 +82,18 @@ for (const shape of ['sparse', 'dense'] as const) {
       return { median: Math.round(ms[Math.floor(ms.length / 2)]! * 10) / 10, max: Math.round(ms[ms.length - 1]! * 10) / 10 };
     };
 
+    const chartTimes = async () => {
+      let start = data.persons[0]!.id;
+      let cards = 0;
+      for (const p of data.persons.slice(0, 12)) {
+        const res = await a.app.inject({ method: 'GET', url: `/api/charts/descendants?person=${p.id}&generations=8`, headers: { cookie } });
+        const n = DescendantChart.parse(res.json()).cards;
+        if (n > cards) [start, cards] = [p.id, n];
+      }
+      const url = `/api/charts/descendants?person=${start}&generations=8`;
+      return { chartCards: cards, chart: await time(url, 10), chartWithKinship: await time(`${url}&kinship=1`, 10) };
+    };
+
     it('measures', async () => {
       const rebuild: number[] = [];
       for (let i = 0; i < 3; i++) {
@@ -99,6 +112,8 @@ for (const shape of ['sparse', 'dense'] as const) {
         personPage: await time('/api/persons/{i}', 20),
         searchPage: await time(`/api/persons?q=${encodeURIComponent(SURNAME)}&limit=50`, 10),
         hourglass: await time('/api/persons/{i}/hourglass?up=3&down=2', 10),
+        // add-kinship task 8.1: the largest Descendant chart of 8 generations from the oldest generation, with and without kinship.
+        ...(await chartTimes()),
       };
       const previous: unknown = existsSync(OUT!) ? JSON.parse(readFileSync(OUT!, 'utf8')) : [];
       const earlier: unknown[] = Array.isArray(previous) ? previous : [];

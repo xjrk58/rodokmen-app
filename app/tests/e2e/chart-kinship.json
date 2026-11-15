@@ -1,0 +1,586 @@
+{
+  "0192f0c4-7a1e-7c3b-9d2a-000000000013": {
+    "0192f0c4-7a1e-7c3b-9d2a-000000000001": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "praděd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "great-grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000002": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "prababička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": true,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000003": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "prababička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000004": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "děd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": true,
+      "line": "direct",
+      "degree": 2,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000005": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "polorodá prateta",
+          "gender": "f"
+        },
+        "en": {
+          "text": "half-great-aunt",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 4,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000006": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "polorodý prastrýc",
+          "gender": "m"
+        },
+        "en": {
+          "text": "half-great-uncle",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 4,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000007": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "děd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 2,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000008": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "prastrýc (přes osvojení)",
+          "gender": "m"
+        },
+        "en": {
+          "text": "great-uncle (through adoption)",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 4,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000009": null,
+    "0192f0c4-7a1e-7c3b-9d2a-000000000010": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "babička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": true,
+      "line": "direct",
+      "degree": 2,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000011": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "otec",
+          "gender": "m"
+        },
+        "en": {
+          "text": "father",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 1,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000012": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "matka",
+          "gender": "f"
+        },
+        "en": {
+          "text": "mother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 1,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000013": {
+      "kind": "self",
+      "term": {
+        "cs": {
+          "text": "vy",
+          "gender": "m"
+        },
+        "en": {
+          "text": "you",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": null,
+      "degree": null,
+      "others": 0,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000014": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "syn",
+          "gender": "m"
+        },
+        "en": {
+          "text": "son",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 1,
+      "others": 0,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000015": null,
+    "0192f0c4-7a1e-7c3b-9d2a-000000000016": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "babička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 2,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000017": {
+      "kind": "partner",
+      "term": {
+        "cs": {
+          "text": "manželka",
+          "gender": "f"
+        },
+        "en": {
+          "text": "wife",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": null,
+      "degree": null,
+      "others": 0,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000018": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "syn",
+          "gender": "m"
+        },
+        "en": {
+          "text": "son",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 1,
+      "others": 0,
+      "more": false
+    }
+  },
+  "0192f0c4-7a1e-7c3b-9d2a-000000000014": {
+    "0192f0c4-7a1e-7c3b-9d2a-000000000001": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "prapraděd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "great-great-grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 4,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000002": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "praprababička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-great-grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": true,
+      "line": "direct",
+      "degree": 4,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000003": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "praprababička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-great-grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 4,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000004": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "praděd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "great-grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": true,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000005": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "polorodá praprateta",
+          "gender": "f"
+        },
+        "en": {
+          "text": "half-great-great-aunt",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 5,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000006": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "polorodý praprastrýc",
+          "gender": "m"
+        },
+        "en": {
+          "text": "half-great-great-uncle",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 5,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000007": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "praděd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "great-grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000008": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "praprastrýc (přes osvojení)",
+          "gender": "m"
+        },
+        "en": {
+          "text": "great-great-uncle (through adoption)",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 5,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000009": null,
+    "0192f0c4-7a1e-7c3b-9d2a-000000000010": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "prababička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": true,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000011": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "děd",
+          "gender": "m"
+        },
+        "en": {
+          "text": "grandfather",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 2,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000012": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "babička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 2,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000013": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "otec",
+          "gender": "m"
+        },
+        "en": {
+          "text": "father",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 1,
+      "others": 0,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000014": {
+      "kind": "self",
+      "term": {
+        "cs": {
+          "text": "vy",
+          "gender": "m"
+        },
+        "en": {
+          "text": "you",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": null,
+      "degree": null,
+      "others": 0,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000015": null,
+    "0192f0c4-7a1e-7c3b-9d2a-000000000016": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "prababička",
+          "gender": "f"
+        },
+        "en": {
+          "text": "great-grandmother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 3,
+      "others": 1,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000017": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "matka",
+          "gender": "f"
+        },
+        "en": {
+          "text": "mother",
+          "gender": "f"
+        }
+      },
+      "possible": false,
+      "line": "direct",
+      "degree": 1,
+      "others": 0,
+      "more": false
+    },
+    "0192f0c4-7a1e-7c3b-9d2a-000000000018": {
+      "kind": "birth",
+      "term": {
+        "cs": {
+          "text": "bratr",
+          "gender": "m"
+        },
+        "en": {
+          "text": "brother",
+          "gender": "m"
+        }
+      },
+      "possible": false,
+      "line": "collateral",
+      "degree": 2,
+      "others": 0,
+      "more": false
+    }
+  }
+}

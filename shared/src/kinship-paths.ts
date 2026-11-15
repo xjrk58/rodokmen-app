@@ -26,6 +26,7 @@ import {
 } from './kinship.js';
 import { ChainSet, chainOf, onChain, otherPartner, type ChainNode, type KinshipGraph } from './kinship-graph.js';
 import { SHAPE_BIRTH, SHAPE_KIN_PARTNER, SHAPE_PARTNER_KIN, SHAPE_SELF } from './kinship-terms/shapes.js';
+import type { KinshipShort } from './schemas/kinship.js';
 import {
   connectionOf,
   coupleOf,
@@ -334,4 +335,15 @@ export function kinshipShort(s: KinshipSearch, to: number): { first: KinshipPath
   const r = kinshipPaths(s, to, SHORT_BOUND);
   if (r.paths.length === 0) return null;
   return { first: r.paths[0]!, others: r.paths.length - 1, more: r.more, units: r.units };
+}
+
+/**
+ * The short form as Person summaries and Chart cards carry it (`KinshipShort`): the first path's
+ * kind, term, mark, line and degree, and how many others; null with no kinship.
+ */
+export function kinshipShortForm(s: KinshipSearch, to: number): KinshipShort | null {
+  const r = kinshipShort(s, to);
+  if (r === null) return null;
+  const { first } = r;
+  return { kind: first.kind, term: first.term, possible: first.possible, line: first.line, degree: first.degree, others: r.others, more: r.more };
 }

@@ -11,6 +11,7 @@
 import { z } from 'zod';
 import { RelationToFamily } from './api.js';
 import { Id, IsoDay } from './common.js';
+import { KinshipShort } from './kinship.js';
 import { ChildLinkType, Sex } from './tree.js';
 
 // ---------------------------------------------------------------- queries
@@ -24,6 +25,18 @@ export const SheetVariant = z.enum(['reduced', 'nameless']).meta({
 
 const QueryBool = z.enum(['true', 'false']);
 
+/** Kinship on the cards (tree-charts spec, "Kinship on Chart cards"): the screen variant only. */
+const KinshipOption = z
+  .literal('1')
+  .optional()
+  .describe("1: each Person of the screen variant carries the short form of their kinship to the caller's own Person; refused with sheet");
+
+/** A Sheet never shows kinship: the two options together are refused (400). */
+function noKinshipOnSheet(q: { sheet?: unknown; kinship?: unknown }, ctx: z.RefinementCtx) {
+  if (q.sheet !== undefined && q.kinship !== undefined)
+    ctx.addIssue({ code: 'custom', message: 'kinship: a Sheet never shows kinship; leave out sheet or kinship', path: ['kinship'] });
+}
+
 /** The options of a Descendant chart (tree-charts spec, "Descendant chart", "Direct line"). */
 export const DescendantChartQuery = z
   .object({
@@ -33,11 +46,13 @@ export const DescendantChartQuery = z
     form: z.enum(['tree', 'line']).default('tree').describe('tree: every branch; line: the Direct line down the centre'),
     line: Id.optional().describe('The end of the Direct line, a descendant of the start; needed for form=line'),
     sheet: SheetVariant.optional(),
+    kinship: KinshipOption,
   })
   .superRefine((q, ctx) => {
     if ((q.person === undefined) === (q.family === undefined)) ctx.addIssue({ code: 'custom', message: 'give either person or family', path: ['person'] });
     if (q.form === 'line' && q.line === undefined)
       ctx.addIssue({ code: 'custom', message: 'form=line needs line, the end of the Direct line', path: ['line'] });
+    noKinshipOnSheet(q, ctx);
   });
 
 /** The options of a House chart (tree-charts spec, "House chart", "Size of a Chart"). */
@@ -47,8 +62,10 @@ export const HouseChartQuery = z
     to: z.coerce.number().int().min(1).max(9999).optional().describe('Only rows whose period could reach this year or earlier'),
     unrelated: QueryBool.default('false').describe('true: also the rows of Unrelated people'),
     sheet: SheetVariant.optional(),
+    kinship: KinshipOption,
   })
-  .refine((q) => q.from === undefined || q.to === undefined || q.from <= q.to, { message: 'the period ends before it starts', path: ['to'] });
+  .refine((q) => q.from === undefined || q.to === undefined || q.from <= q.to, { message: 'the period ends before it starts', path: ['to'] })
+  .superRefine(noKinshipOnSheet);
 
 // ---------------------------------------------------------------- the model: cards
 
@@ -65,7 +82,11 @@ export const ChartFact = z
   })
   .meta({ id: 'ChartFact' });
 
-/** A Person's card: what the Tree records, and the marks (tree-charts spec, "What a card shows", "Marks on cards"). */
+/**
+ * A Person's card: what the Tree records, and the marks (tree-charts spec, "What a card shows",
+ * "Marks on cards"). This is a card as a Sheet holds it, and nothing more: strict, so that a
+ * Sheet with any other field, kinship above all, fails its schema and is never sent.
+ */
 export const ChartPerson = z
   .object({
     id: Id,
@@ -83,7 +104,18 @@ export const ChartPerson = z
     reduced: z.boolean().describe('On a Sheet: reduced as in an Export (name, sex, relationships and birth year only)'),
     nameless: z.boolean().describe('On a Sheet without names: a Living person shown only as living'),
   })
-  .meta({ id: 'ChartPerson' });
+  .strict()
+  .meta({ id: 'ChartPerson', description: 'A card as a Sheet holds it: never kinship' });
+
+/** A card on screen: with kinship=1, also the Person's kinship to the caller's own Person (tree-charts spec, "Kinship on Chart cards"). */
+export const ScreenChartPerson = z
+  .object({
+    ...ChartPerson.shape,
+    kinship: KinshipShort.nullable()
+      .optional()
+      .describe("With kinship=1 and an own Person: the Person's closest kinship to the caller's own Person; null with no kinship; absent otherwise"),
+  })
+  .meta({ id: 'ScreenChartPerson', description: 'A card of the screen variant' });
 
 export const ChartChild = z
   .object({
@@ -117,14 +149,20 @@ export const ChartAsOf = z
   })
   .meta({ id: 'ChartAsOf' });
 
-const ChartBase = {
-  sheet: SheetVariant.nullable().describe('null: the screen variant'),
+/**
+ * What both kinds of Chart hold, in one of two variants: the screen's, whose cards may carry
+ * kinship, or a Sheet's, whose cards never do (tree-charts spec, "Kinship on Chart cards").
+ */
+const chartBase = <S extends z.ZodType, P extends typeof ChartPerson | typeof ScreenChartPerson>(sheet: S, person: P) => ({
+  sheet,
   asOf: ChartAsOf,
   livingOn: IsoDay.describe('The day the Living rule was applied'),
-  persons: z.array(ChartPerson).describe('Every Person on the Chart, by id'),
+  persons: z.array(person).describe('Every Person on the Chart, by id'),
   families: z.array(ChartFamily).describe('Every Family on the Chart, by id'),
   sources: z.array(ChartSource).describe('The Sources cited for the facts shown, by title in code units, then by id'),
-};
+});
+const screenBase = chartBase(z.null().describe('null: the screen variant'), ScreenChartPerson);
+const sheetBase = chartBase(SheetVariant, ChartPerson);
 
 // ---------------------------------------------------------------- Descendant chart
 
@@ -170,22 +208,24 @@ export const LineRow = z
   })
   .meta({ id: 'LineRow' });
 
-export const DescendantChart = z
-  .object({
-    kind: z.literal('descendants'),
-    form: z.enum(['tree', 'line']),
-    start: z.object({ personId: Id.nullable(), familyId: Id.nullable() }).describe('The start as understood: a merged Person is followed to the kept one'),
-    generations: z.number().int().describe('Generations asked for (tree form)'),
-    shown: z.number().int().describe('Whole generations shown: fewer than asked when the Chart would hold more than 500 Person cards'),
-    leftOut: z.number().int().min(0).describe('Descendants left out in all'),
-    cards: z.number().int().min(0).describe('Person cards on the Chart: descendants, partners and pointer cards'),
-    line: z.array(Id).describe('The Direct line from the start to its end, empty without one'),
-    lineBeyond: z.boolean().describe('The Direct line goes deeper than the tree form shows'),
-    nodes: z.array(DescendantNode).describe("Tree form: the descendants in the Chart's order, depth first; the first is the start"),
-    rows: z.array(LineRow).describe('Line form: one row per generation of the Direct line'),
-    ...ChartBase,
-  })
-  .meta({ id: 'DescendantChart' });
+const descendantFields = {
+  kind: z.literal('descendants'),
+  form: z.enum(['tree', 'line']),
+  start: z.object({ personId: Id.nullable(), familyId: Id.nullable() }).describe('The start as understood: a merged Person is followed to the kept one'),
+  generations: z.number().int().describe('Generations asked for (tree form)'),
+  shown: z.number().int().describe('Whole generations shown: fewer than asked when the Chart would hold more than 500 Person cards'),
+  leftOut: z.number().int().min(0).describe('Descendants left out in all'),
+  cards: z.number().int().min(0).describe('Person cards on the Chart: descendants, partners and pointer cards'),
+  line: z.array(Id).describe('The Direct line from the start to its end, empty without one'),
+  lineBeyond: z.boolean().describe('The Direct line goes deeper than the tree form shows'),
+  nodes: z.array(DescendantNode).describe("Tree form: the descendants in the Chart's order, depth first; the first is the start"),
+  rows: z.array(LineRow).describe('Line form: one row per generation of the Direct line'),
+};
+
+export const DescendantChartScreen = z.object({ ...descendantFields, ...screenBase }).meta({ id: 'DescendantChartScreen' });
+export const DescendantChartSheet = z.object({ ...descendantFields, ...sheetBase }).meta({ id: 'DescendantChartSheet' });
+/** A Descendant chart: the screen variant, or a Sheet's, told apart by `sheet`. */
+export const DescendantChart = z.discriminatedUnion('sheet', [DescendantChartScreen, DescendantChartSheet]).meta({ id: 'DescendantChart' });
 
 // ---------------------------------------------------------------- House chart
 
@@ -217,32 +257,35 @@ export const HouseRow = z
   })
   .meta({ id: 'HouseRow' });
 
-export const HouseChart = z
-  .object({
-    kind: z.literal('house'),
-    house: z.object({
-      id: Id,
-      placeId: Id,
-      place: z.string().nullable(),
-      numbers: z.array(z.object({ number: z.string(), from: z.string().nullable(), to: z.string().nullable() })).describe('House numbers with their periods'),
-    }),
-    from: z.number().int().nullable(),
-    to: z.number().int().nullable(),
-    unrelated: z.boolean(),
-    firstYear: z.number().int().nullable().describe('The first year of the dated rows, for choosing a period'),
-    lastYear: z.number().int().nullable(),
-    total: z.number().int().describe('Rows in the period, before the limit of 80'),
-    hiddenUnrelated: z.number().int().describe('Rows of Unrelated people left out'),
-    needsPeriod: z.boolean().describe('More than 80 rows: choose a period (from, to); rows is then empty'),
-    rows: z.array(HouseRow).describe('In order: by the earliest day of their Events at the House, undated rows last, then by key'),
-    ...ChartBase,
-  })
-  .meta({ id: 'HouseChart' });
+const houseFields = {
+  kind: z.literal('house'),
+  house: z.object({
+    id: Id,
+    placeId: Id,
+    place: z.string().nullable(),
+    numbers: z.array(z.object({ number: z.string(), from: z.string().nullable(), to: z.string().nullable() })).describe('House numbers with their periods'),
+  }),
+  from: z.number().int().nullable(),
+  to: z.number().int().nullable(),
+  unrelated: z.boolean(),
+  firstYear: z.number().int().nullable().describe('The first year of the dated rows, for choosing a period'),
+  lastYear: z.number().int().nullable(),
+  total: z.number().int().describe('Rows in the period, before the limit of 80'),
+  hiddenUnrelated: z.number().int().describe('Rows of Unrelated people left out'),
+  needsPeriod: z.boolean().describe('More than 80 rows: choose a period (from, to); rows is then empty'),
+  rows: z.array(HouseRow).describe('In order: by the earliest day of their Events at the House, undated rows last, then by key'),
+};
+
+export const HouseChartScreen = z.object({ ...houseFields, ...screenBase }).meta({ id: 'HouseChartScreen' });
+export const HouseChartSheet = z.object({ ...houseFields, ...sheetBase }).meta({ id: 'HouseChartSheet' });
+/** A House chart: the screen variant, or a Sheet's, told apart by `sheet`. */
+export const HouseChart = z.discriminatedUnion('sheet', [HouseChartScreen, HouseChartSheet]).meta({ id: 'HouseChart' });
 
 export type DescendantChartQuery = z.infer<typeof DescendantChartQuery>;
 export type HouseChartQuery = z.infer<typeof HouseChartQuery>;
 export type ChartFact = z.infer<typeof ChartFact>;
 export type ChartPerson = z.infer<typeof ChartPerson>;
+export type ScreenChartPerson = z.infer<typeof ScreenChartPerson>;
 export type ChartChild = z.infer<typeof ChartChild>;
 export type ChartFamily = z.infer<typeof ChartFamily>;
 export type ChartSource = z.infer<typeof ChartSource>;

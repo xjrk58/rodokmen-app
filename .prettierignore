@@ -27,3 +27,5 @@ docs/architecture/generated/
 
 # The mocked kinship answers, written by app/tests/unit/kinship-answers.test.mjs and compared byte for byte.
 app/tests/e2e/family-kinship.json
+# The mocked kinship on Chart cards, written by app/tests/unit/chart-kinship.test.mjs and compared byte for byte.
+app/tests/e2e/chart-kinship.json

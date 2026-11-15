@@ -175,6 +175,10 @@ describe('MCP tools on the fixture Tree', () => {
     expect(viaTool.line.at(-1)).toBe(L.proband);
     // The Agent gets the screen variant: no Sheet option exists in the tool.
     expect(viaTool.sheet).toBeNull();
+    // Kinship on the cards (add-kinship task 8.1): the tool never asks for it, and has no option for it.
+    expect(JSON.stringify(viaTool)).not.toMatch(/kinship/);
+    const { tools } = await client.listTools();
+    expect(JSON.stringify(tools.find((t) => t.name === 'get_chart')!.inputSchema)).not.toMatch(/kinship/);
   });
 
   it('how two Persons are related: every path in order, the closest first, with common ancestors, line, degree, marks and terms', async () => {

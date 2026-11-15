@@ -88,6 +88,13 @@ export const SCOPES = [
   are known and the death day falls before the day 15 years after the birth day ("Died young", "Not certain"); born on 29
   February, that is 1 March in a year without one. Not proved: that the shell passes the earliest day of the birth (else
   the baptism) and the latest day of the death (else the burial); shared/test/charts.test.ts tests the days.`,
+  `**Kinship on Chart cards** (\`chartShowsKinship\`, shared/src/chart-kinship.ts; tree-charts "Kinship on Chart cards").
+  Proved: the cards carry kinship exactly when the variant is the screen's, the Member asked for it and the caller has an
+  own Person; never on a Sheet, whatever was asked ("Printing"). Not proved: that the server passes the variant, the
+  option and the own Person it found (server/src/charts/service.ts), and the short forms themselves, which are the
+  proved rules of kinship through the unproved \`kinshipShort\`; the refusal of \`sheet\` with \`kinship\` (400), the Sheet
+  variant's schema without a kinship field, and the Sheet writer's refusal of a model with one are tested in
+  server/test/charts.test.ts, shared/test/chart-schemas.test.ts and app/tests/unit/chart-sheet.test.mjs.`,
   `**Living people on a Sheet** (\`sheetPerson\`, shared/src/export.ts; tree-charts "Living people on a Sheet"). Proved,
   for any record: a Living person keeps the given name and surname of their primary Name, their sex, relationships and
   birth year, and nothing else: no Event (so no exact date, Place or House), Source or image ("Living grandchild": born in

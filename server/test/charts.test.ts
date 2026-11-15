@@ -4,7 +4,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DescendantChart, HouseChart } from '@rodokmen/shared';
+import { DescendantChart, DescendantChartScreen, HouseChart, Kinship } from '@rodokmen/shared';
 import { Kysely, PostgresDialect } from 'kysely';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -36,6 +36,8 @@ describe('Chart routes on the fixture Tree', () => {
   let a: TestApp;
   let contributor: string;
   let owner: string;
+  /** A Member whose own Person is the proband, a descendant of the founders. */
+  let linked: string;
   const get = (url: string, cookie = contributor) => a.app.inject({ method: 'GET', url, headers: { cookie } });
   const descendants = async (query: string, cookie = contributor) => {
     const res = await get(`/api/charts/descendants?${query}`, cookie);
@@ -56,6 +58,9 @@ describe('Chart routes on the fixture Tree', () => {
     a = await makeApp(t, { clock: new TestClock(new Date('2026-11-14T09:00:00Z')) });
     owner = await signIn(t.db, a.clock, await ensureOwner(t.db));
     contributor = await signIn(t.db, a.clock, await createMember(t.db, 'contributor'));
+    const own = await createMember(t.db, 'editor');
+    await t.db.updateTable('account').set({ person_id: L.proband }).where('id', '=', own.id).execute();
+    linked = await signIn(t.db, a.clock, own);
   });
   afterAll(async () => {
     await a?.app.close();
@@ -189,5 +194,77 @@ describe('Chart routes on the fixture Tree', () => {
     } finally {
       await counted.destroy();
     }
+  });
+
+  describe('kinship on the cards (add-kinship task 8.1; tree-charts spec, "Kinship on Chart cards")', () => {
+    const strip = <T extends { persons: object[] }>(m: T) => ({
+      ...m,
+      persons: m.persons.map((p) => Object.fromEntries(Object.entries(p).filter(([k]) => k !== 'kinship'))),
+    });
+    const has = (m: { persons: object[] }) => m.persons.filter((p) => 'kinship' in p).length;
+    const queries = [`person=${L.founder}&generations=8`, `person=${L.founder}&form=line&line=${L.proband}`, `family=${L.janFirstFamily}&generations=3`];
+
+    it('"Switched on": kinship=1 gives every card its short form and changes nothing else in the model', async () => {
+      for (const q of queries) {
+        const plain = await descendants(q, linked);
+        const kin = await descendants(`${q}&kinship=1`, linked);
+        expect(has(plain), q).toBe(0);
+        expect(has(kin), q).toBe(kin.persons.length);
+        expect(strip(kin), q).toEqual(plain);
+      }
+      const plainHouse = await house('unrelated=true', linked);
+      const kinHouse = await house('unrelated=true&kinship=1', linked);
+      expect(has(kinHouse)).toBe(kinHouse.persons.length);
+      expect(strip(kinHouse)).toEqual(plainHouse);
+    });
+
+    it('"Same everywhere": each card names the first path of the full answer, and the own Person is "self"', async () => {
+      const res = await get(`/api/charts/descendants?person=${L.founder}&generations=8&kinship=1`, linked);
+      const model = DescendantChartScreen.parse(res.json());
+      expect(model.persons.find((p) => p.id === L.proband)?.kinship).toMatchObject({ kind: 'self' });
+      const related = model.persons.filter((p) => p.kinship);
+      expect(related.length).toBeGreaterThan(20);
+      for (const p of related.slice(0, 12)) {
+        const res = await get(`/api/persons/${p.id}/kinship`, linked);
+        expect(res.statusCode, res.body).toBe(200);
+        const full = Kinship.parse(res.json());
+        const first = full.paths[0]!;
+        expect(p.kinship, p.id).toEqual({
+          kind: first.kind,
+          term: first.term,
+          possible: first.possible,
+          line: first.line,
+          degree: first.degree,
+          others: full.paths.length - 1,
+          more: full.more,
+        });
+      }
+      // The founder is an ancestor of the proband in the direct line.
+      expect(model.persons.find((p) => p.id === L.founder)?.kinship).toMatchObject({ kind: 'birth', line: 'direct' });
+    });
+
+    it('"Printing": kinship=1 with sheet is 400 on both routes, and a Sheet is the same bytes for every Member, with no kinship', async () => {
+      for (const sheet of ['reduced', 'nameless']) {
+        for (const url of [`/api/charts/descendants?person=${L.founder}&sheet=${sheet}&kinship=1`, `/api/charts/house/${L.houseA}?sheet=${sheet}&kinship=1`]) {
+          const res = await get(url, linked);
+          expect(res.statusCode, url).toBe(400);
+          expect(errorOf(res).message, url).toMatch(/kinship/);
+        }
+        const forLinked = await get(`/api/charts/descendants?person=${L.founder}&generations=8&sheet=${sheet}`, linked);
+        const forUnlinked = await get(`/api/charts/descendants?person=${L.founder}&generations=8&sheet=${sheet}`, contributor);
+        expect(forLinked.statusCode).toBe(200);
+        expect(forLinked.body).toBe(forUnlinked.body);
+        expect(forLinked.body).not.toMatch(/kinship/);
+      }
+    });
+
+    it('adds nothing for a caller with no own Person', async () => {
+      for (const q of queries) {
+        const kin = await descendants(`${q}&kinship=1`);
+        expect(has(kin), q).toBe(0);
+        expect(kin, q).toEqual(await descendants(q));
+      }
+      expect(await house('kinship=1', owner)).toEqual(await house('', owner));
+    });
   });
 });

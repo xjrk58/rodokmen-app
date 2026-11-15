@@ -3,10 +3,12 @@
 // term in every Interface language, so the app holds no kinship rules and builds no term from
 // words. This module is the one place the app reads kinship, as relation.js reads the relation to
 // the family: the full answer of a person page, cached as "kinship:<id>", and the short form that
-// Person summaries carry.
+// Person summaries carry. A Chart's cards carry the same short form and say it through the same
+// words (src/kinship-text.js), with the Chart's labels.
 
 import { api } from './api.js';
 import { language, t } from './i18n.js';
+import { kinshipWords } from './kinship-text.js';
 
 /** @typedef {import('./types.js').Kinship} Kinship */
 /** @typedef {import('./types.js').KinshipShort} KinshipShort */
@@ -36,14 +38,11 @@ export const termText = (term) => term[language()].text;
 
 /**
  * The kinship of a path or a short form, as the app says it: the reader's own Person as "vy",
- * a possible path with "možná" (through an i18n key, never by joining words).
+ * a possible path with "možná" (through an i18n key, never by joining words), in the reader's
+ * Interface language. The cards of a Chart say it the same way (src/kinship-text.js).
  * @param {{ kind: string, term: KinshipTerm, possible: boolean }} k
  */
-export function kinshipText(k) {
-  if (k.kind === 'self') return t('kinship.you');
-  const term = termText(k.term);
-  return k.possible ? t('kinship.possibly', { term }) : term;
-}
+export const kinshipText = (k) => kinshipWords(k, t, language());
 
 /**
  * The line and degree as the civil code counts them, kinship by marriage marked; empty for the

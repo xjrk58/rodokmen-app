@@ -73,13 +73,13 @@ Errors are JSON:
 
 `GET /api/persons/{id}/kinship` says how the Person is related to the caller's own Person, or to the Person named with `?from=` (an Agent must name one). The answer (`Kinship`) holds every path, the closest first in the fixed order, at most 100: each with its `kind`, `line` and `degree` as the Czech civil code counts them, `up` and `down`, the marks `half`, `adoptive` and `possible`, its `commonAncestors`, every `step` (the next Person, the link to a parent, child or partner, its link type, whether it is weak, the Family or child link, and the `term` the Person before names them by, such as otec or manželka), and its `term` in every Interface language. `more` says a limit cut the search; with no path, `connection` gives the shortest chain of Family links and its number of marriages. `persons` holds every Person named, as the tree shows them, and `asOf` the newest accepted change the answer comes from. The terms and degrees: [Kinship terms and degrees](kinship-terms.md).
 
-For a Member with an own Person, the Person summaries of `GET /api/persons`, `GET /api/persons/{id}` (its Families) and `…/hourglass` carry `kinship`: the closest path's term, `possible`, `line`, `degree`, how many `others`, and `more`; null with no kinship. The field is absent for a Member with no own Person and for an Agent. A merged Person answers 308 to its route, as the other Person routes do.
+For a Member with an own Person, the Person summaries of `GET /api/persons`, `GET /api/persons/{id}` (its Families) and `…/hourglass` carry `kinship`: the closest path's term, `possible`, `line`, `degree`, how many `others`, and `more`; null with no kinship. So do the cards of a Chart asked for with `kinship=1` ([Charts](#charts)). The field is absent for a Member with no own Person and for an Agent. A merged Person answers 308 to its route, as the other Person routes do.
 
 Linking a Member to their own Person: the Member asks with `PUT /api/me/person-request` (`personId`; a new request replaces the old) and withdraws with `DELETE /api/me/person-request`; `me.personRequest` shows the open request, and the Owner's `me.openPersonRequests` how many Members wait. The Owner sees each request in `personRequest` of `GET /api/members`, confirms it with `PUT /api/members/{id}/person`, which clears it, or refuses it with `DELETE /api/members/{id}/person-request`.
 
 ## Charts
 
-Both routes answer the Chart model: who is in a Chart, in what order, with which facts and marks, as data with no coordinates and no words in any language (`DescendantChart` and `HouseChart` in `server/openapi.json`). The app lays it out and draws it ([Charts](../explanation/charts.md)). Both need the action `read`, so every Member and Agent may ask, and an Agent's call counts as one read request.
+Both routes answer the Chart model: who is in a Chart, in what order, with which facts and marks, as data with no coordinates and no words in any language (`DescendantChart` and `HouseChart` in `server/openapi.json`, each the screen variant or a Sheet's, told apart by `sheet`). The app lays it out and draws it ([Charts](../explanation/charts.md)). Both need the action `read`, so every Member and Agent may ask, and an Agent's call counts as one read request.
 
 `GET /api/charts/descendants` takes:
 
@@ -91,15 +91,17 @@ Both routes answer the Chart model: who is in a Chart, in what order, with which
 | `form`        | `tree` (every branch) or `line` (the Direct line)           | `tree`  |
 | `line`        | the end of the Direct line, a descendant; needed for `line` |         |
 | `sheet`       | `reduced` or `nameless`; absent for the screen              |         |
+| `kinship`     | `1`: kinship on the cards of the screen variant             |         |
 
-`GET /api/charts/house/{id}` takes `from` and `to` (years: only rows whose period could reach them), `unrelated` (`true` to show the rows of Unrelated people, default `false`) and `sheet`.
+`GET /api/charts/house/{id}` takes `from` and `to` (years: only rows whose period could reach them), `unrelated` (`true` to show the rows of Unrelated people, default `false`), `sheet` and `kinship`.
 
 Limits and answers:
 
 - A Descendant chart holds at most 500 Person cards (descendants, partners and pointer cards). With more, it keeps as many whole generations as fit, at least 2 (`shown`), and each Person of the last one carries `leftOut`, the descendants left out below them. The Direct line goes at most 12 generations down; `lineBeyond` says it goes deeper than the tree form shows.
 - A House chart shows at most 80 rows. With more in the period asked, `needsPeriod` is `true`, `rows` is empty, and `firstYear` and `lastYear` give the years to choose from.
-- With `sheet`, the model is a Sheet's: every Person an Export reduces keeps only name, sex, relationships and birth year, no fact a Living person took part in is shown, and `nameless` leaves their names and birth years off as well. It is the same for every caller.
-- 400 for both `person` and `family`, neither, `generations` outside 2 to 8, or `form=line` without `line`; 404 for an unknown start or House; 422 naming `line` when its end does not descend from the start.
+- With `sheet`, the model is a Sheet's: every Person an Export reduces keeps only name, sex, relationships and birth year, no fact a Living person took part in is shown, and `nameless` leaves their names and birth years off as well. It is the same for every caller, and its cards have no `kinship` field.
+- With `kinship=1` and a caller with an own Person, each Person of the screen variant carries `kinship`, the short form a Person summary carries ([Kinship](#kinship)): `null` with no kinship. For a caller with no own Person, and for every Agent, the field is absent. Nothing else in the model changes. `get_chart` never asks for it.
+- 400 for both `person` and `family`, neither, `generations` outside 2 to 8, `form=line` without `line`, or `kinship` with `sheet`; 404 for an unknown start or House; 422 naming `line` when its end does not descend from the start.
 - Each Chart is gathered in at most 24 queries, whatever its size.
 
 ## Invitations

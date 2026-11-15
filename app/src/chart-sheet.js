@@ -247,6 +247,7 @@ function wrap(metrics, s, width) {
  * @param {{ model: ChartModel, layout: ChartLayout, metrics: FontMetrics, labels: ChartLabels, title: string, size: { w: number, h: number }, scale?: number, number?: number, of?: number, fontCss?: string }} o
  */
 export function sheet(h, o) {
+  sheetOnly(o.model);
   const { size, layout, metrics, labels, model } = o;
   const area = contentArea(size);
   const scale = o.scale ?? fitScale(layout, area);
@@ -287,12 +288,26 @@ export function naturalSize(layout) {
   return { w: Math.max(2100, layout.width + side), h: layout.height + side + SHEET.header + SHEET.footer };
 }
 
-/** A model that is not a Sheet's carries Living people unreduced, so no file is written from it. */
+/**
+ * A model that is not a Sheet's carries Living people unreduced, and may carry kinship, so no
+ * Sheet, print or file is made from it.
+ */
 export class NotASheet extends Error {
-  constructor() {
-    super('A Sheet is drawn only from the Sheet variant of a Chart (sheet=reduced or sheet=nameless).');
+  constructor(message = 'A Sheet is drawn only from the Sheet variant of a Chart (sheet=reduced or sheet=nameless).') {
+    super(message);
     this.name = 'NotASheet';
   }
+}
+
+/**
+ * Refuses a model that may not become a Sheet: the screen variant, and any model whose cards
+ * carry kinship, which a Sheet never shows (tree-charts spec, "Kinship on Chart cards"). Print,
+ * the SVG file and the PNG all pass here.
+ * @param {ChartModel} model
+ */
+function sheetOnly(model) {
+  if (model.sheet === null) throw new NotASheet();
+  if (model.persons.some((p) => 'kinship' in p)) throw new NotASheet('A Sheet never shows kinship: this model carries it.');
 }
 
 /**
@@ -300,7 +315,7 @@ export class NotASheet extends Error {
  * @param {{ model: ChartModel, layout: ChartLayout, metrics: FontMetrics, labels: ChartLabels, title: string, fontCss: string }} o
  */
 export function sheetFile(o) {
-  if (o.model.sheet === null) throw new NotASheet();
+  sheetOnly(o.model);
   const size = naturalSize(o.layout);
   return `<?xml version="1.0" encoding="UTF-8"?>\n${renderSvg(sheet(/** @type {H} */ (stringH), { ...o, size, scale: 1 }))}\n`;
 }

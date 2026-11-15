@@ -2,16 +2,17 @@ import {
   buildKinshipGraph,
   KinshipSearch,
   kinshipPaths,
-  kinshipShort,
+  kinshipShortForm,
   type Kinship,
   type KinshipData,
   type KinshipGraph,
   type KinshipShort,
-  type PersonSummary,
 } from '@rodokmen/shared';
 import { sql } from 'kysely';
+import { keptPerson } from '../auth/accounts.js';
 import type { Clock } from '../clock.js';
 import type { Db } from '../db/db.js';
+import type { Account } from '../db/types.js';
 import { familyLinks } from './relation.js';
 import { personSummaries } from './summaries.js';
 
@@ -126,12 +127,19 @@ export async function kinshipBetween(deps: { db: Db; clock: Clock }, fromId: str
   return { from: fromId, to: toId, asOf: copy.asOf, paths: r.paths, more: r.more, connection: r.connection, persons };
 }
 
+/** The caller's own Person (kinship spec): a Member's linked Person, a merged one counting as the kept; an Agent has none. */
+export async function ownPerson(db: Db, member: Account | null): Promise<string | null> {
+  if (!member || member.role === 'agent' || !member.person_id) return null;
+  return keptPerson(db, member.person_id);
+}
+
 /**
- * Fills the short form of kinship on Person summaries for a reader with an own Person
- * (`fromId`): the first path's term and marks, and how many others. A Person with no kinship
- * gets null. The reader's chains are computed once for all of them.
+ * Fills the short form of kinship on Person summaries, or on the cards of a Chart's screen
+ * variant, for a reader with an own Person (`fromId`): the first path's term and marks, and how
+ * many others. A Person with no kinship gets null. The reader's chains are computed once for
+ * all of them.
  */
-export async function fillKinship(db: Db, fromId: string, summaries: readonly PersonSummary[]): Promise<void> {
+export async function fillKinship(db: Db, fromId: string, summaries: ReadonlyArray<{ id: string; kinship?: KinshipShort | null }>): Promise<void> {
   if (summaries.length === 0) return;
   const copy = await linkCopy(db);
   const from = copy.graph.index.get(fromId);
@@ -141,11 +149,7 @@ export async function fillKinship(db: Db, fromId: string, summaries: readonly Pe
   for (const summary of summaries) {
     if (!known.has(summary.id)) {
       const to = copy.graph.index.get(summary.id);
-      const s = to === undefined ? null : kinshipShort(search, to);
-      known.set(
-        summary.id,
-        s && { kind: s.first.kind, term: s.first.term, possible: s.first.possible, line: s.first.line, degree: s.first.degree, others: s.others, more: s.more },
-      );
+      known.set(summary.id, to === undefined ? null : kinshipShortForm(search, to));
     }
     summary.kinship = known.get(summary.id) ?? null;
   }

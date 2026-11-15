@@ -138,8 +138,10 @@ export function cardText(metrics, labels, p, box, extra = {}) {
     if (p.born) factLine(p.born.type === 'baptism' ? 'baptism' : 'birth', labels.fact(p.born));
     if (p.died) factLine(p.died.type === 'burial' ? 'burial' : 'death', labels.fact(p.died));
   }
-  // The marks line at the foot of the card.
+  // The marks line at the foot of the card: on screen with kinship switched on, the kinship first.
   const marks = [];
+  const kinship = labels.kinship(p);
+  if (kinship) marks.push(kinship);
   if (p.living) marks.push(labels.t('chart.mark.living'));
   // The mark is text; the legend lists it all the same (a symbol with no drawing).
   if (p.living) symbols.push({ kind: 'living', x: box.x, y: box.y });

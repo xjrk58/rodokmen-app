@@ -7,6 +7,7 @@ import { gatherDescendants, gatherHouse } from '../src/charts/gather.js';
 import { createDb, migrateToLatest, type Db } from '../src/db/db.js';
 import type { FixtureModel } from '../src/fixture/generate.js';
 import { loadFixture } from '../src/fixture/load.js';
+import { fillKinship } from '../src/tree/kinship.js';
 import { databaseUrl } from './global-setup.js';
 import { TestClock } from './helpers.js';
 
@@ -226,6 +227,12 @@ describe.skipIf(!RUN)('Charts at the size of the production Tree', () => {
       );
       if (out && round === 0) writeFileSync(join(out, 'scale-descendants.json'), JSON.stringify(sheet.value));
       const deepest = made.value.nodes.filter((x) => !x.pointer).sort((a, b) => b.generation - a.generation)[0]!;
+      // add-kinship task 8.1: kinship on every card for the deepest descendant as the reader (the link copy is built in round 0).
+      if (made.value.sheet === null) {
+        const persons = made.value.persons;
+        const kinship = await timed(() => fillKinship(db, deepest.personId, persons));
+        console.log(`Kinship on ${persons.length} cards: ${kinship.ms} ms${round === 0 ? ' (with the link copy built)' : ''}`);
+      }
       const lineRows = await timed(() => gatherDescendants(deps, { personId: biggest.f }, 12));
       const line = await timed(() =>
         descendantChart(lineRows.value, { start: { personId: biggest.f }, generations: 4, form: 'line', line: deepest.personId, sheet: null }),
