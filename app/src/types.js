@@ -110,6 +110,11 @@
 /** @typedef {{ items: AgentView[] }} AgentList */
 /** @typedef {{ agent: AgentView, token: IssuedAgentToken }} CreatedAgent */
 /** @typedef {import('../../shared/src/schemas/api.js').PersonSummary} PersonSummary */
+/** @typedef {import('../../shared/src/schemas/kinship-api.js').Kinship} Kinship */
+/** @typedef {import('../../shared/src/schemas/kinship.js').KinshipShort} KinshipShort */
+/** @typedef {import('../../shared/src/schemas/kinship.js').KinshipPath} KinshipPath */
+/** @typedef {import('../../shared/src/schemas/kinship.js').KinshipStep} KinshipStep */
+/** @typedef {import('../../shared/src/schemas/kinship.js').KinshipTerm} KinshipTerm */
 /** @typedef {import('../../shared/src/schemas/api.js').EventSummary} EventSummary */
 /** @typedef {import('../../shared/src/schemas/api.js').EventDetail} EventDetail */
 /** @typedef {import('../../shared/src/schemas/api.js').CitationSummary} CitationSummary */

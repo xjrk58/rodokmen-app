@@ -109,6 +109,7 @@ export function me(role) {
     },
     passkeyCount: 1,
     person: null,
+    personRequest: null,
     familyRoots: [],
   };
 }

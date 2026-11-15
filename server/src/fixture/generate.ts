@@ -22,6 +22,12 @@
  * - A large family for the Chart's size limit: the Zástěra founders (1770) and three children in every
  *   Family down to generation 6, every descendant before it married, about 600 Persons with undated
  *   Families and Events without a Place: more than 500 cards in 6 generations, 242 in the first 5.
+ * - The Javorník family in Vrbice for kinship (add-kinship task 4.1), added last so that nothing
+ *   above changes: Norbert married his second cousin Radka; his grandfather Bartoloměj and Cyril
+ *   married the sisters Hedvika and Irena, so their sons Karel and Matouš are double first
+ *   cousins; Felix is Bartoloměj's half-brother by Ignác's second wife Eliška, and his father
+ *   link has only a Citation of low confidence; Silvestr is Ignác's stepchild (a step child
+ *   link), Teodor the foster child of Ignác and Kristina; Viktor, born 1932, is Living.
  *
  * The generator is deterministic: the same seed always gives the same records and ids.
  */
@@ -111,6 +117,30 @@ export interface Landmarks {
   lodgerFamily: string;
   /** The founder of the large family (more than 500 cards in 6 generations). */
   largeFounder: string;
+  /** The Javorník family for kinship (see the header). */
+  kinship: KinshipLandmarks;
+}
+
+export interface KinshipLandmarks {
+  ignac: string;
+  kristina: string;
+  eliska: string;
+  bartolomej: string;
+  cyril: string;
+  dorota: string;
+  felix: string;
+  silvestr: string;
+  teodor: string;
+  hedvika: string;
+  irena: string;
+  karel: string;
+  matous: string;
+  pavla: string;
+  norbert: string;
+  radka: string;
+  viktor: string;
+  /** The Event, cited with low confidence only, that links Felix to his father Ignác. */
+  felixFatherEvent: string;
 }
 
 // ---------------------------------------------------------------- deterministic helpers
@@ -1168,6 +1198,7 @@ export function generateFixture(seed = 267): FixtureModel {
 
   houseASuccession(b, { jan, ludmila, famJan2, houseA, vrbice: vrbiceHouses[0]!, kamenec: kamenecHouses[0]!, child, wed });
   largeFamily(b);
+  javornikFamily(b, vrbice, vrbiceHouses[2]!);
   return b.m;
 }
 
@@ -1262,4 +1293,141 @@ function largeFamily(b: Builder): void {
     }
     couples = gen < 6 ? next : [];
   }
+}
+
+const JAVORNIK = s('Javorník', 'Javorníková', 'Jawornik', 'Jawornikowa');
+const OSTROVSKY = s('Ostrovský', 'Ostrovská', 'Ostrowsky', 'Ostrowska');
+
+/** The Javorník family for kinship (see the header), all in Vrbice; added last so the records above stay as they are. */
+function javornikFamily(b: Builder, place: string, home: string): void {
+  const at = { placeId: place };
+  const firstCitation = b.m.citations.length;
+  const given = (cs: string, la: string, de: string) => ({ cs, la, de });
+  const person = (sex: 'male' | 'female', g: { cs: string; la: string; de: string }, surname: Surname, generation: number, year: number) =>
+    b.person(sex, g, surname, generation, year);
+  const marry = (h: PersonInfo, w: PersonInfo, date: string) => {
+    const f = b.family(h, w);
+    b.marriedName(w, h);
+    b.marry(h, w, date, at);
+    return f;
+  };
+  const born = (familyId: string, child: PersonInfo, father: PersonInfo | null, mother: PersonInfo | null, date: string) => {
+    b.childLink(familyId, child);
+    b.baptise(child, father, mother, at, date);
+  };
+
+  const ignac = person('male', given('Ignác', 'Ignatius', 'Ignaz'), JAVORNIK, 1, 1820);
+  const kristina = person('female', given('Kristina', 'Christina', 'Christine'), OSTROVSKY, 1, 1823);
+  const hynek = person('male', given('Hynek', 'Ignatius', 'Hynek'), OSTROVSKY, 1, 1822);
+  const johana = person('female', FEMALE[11]!, JAVORNIK, 1, 1825);
+  const fIgnac = marry(ignac, kristina, '1844-02-06');
+  const fHynek = marry(hynek, johana, '1847-01-19');
+  const bartolomej = person('male', MALE[14]!, JAVORNIK, 2, 1845);
+  const cyril = person('male', given('Cyril', 'Cyrillus', 'Cyrill'), JAVORNIK, 2, 1848);
+  const dorota = person('female', FEMALE[7]!, JAVORNIK, 2, 1850);
+  born(fIgnac, bartolomej, ignac, kristina, '1845-11-02');
+  born(fIgnac, cyril, ignac, kristina, '1848-03-09');
+  born(fIgnac, dorota, ignac, kristina, '1850-06-27');
+  const hedvika = person('female', given('Hedvika', 'Hedwigis', 'Hedwig'), OSTROVSKY, 2, 1849);
+  const irena = person('female', given('Irena', 'Irene', 'Irene'), OSTROVSKY, 2, 1851);
+  born(fHynek, hedvika, hynek, johana, '1849-04-14');
+  born(fHynek, irena, hynek, johana, '1851-08-30');
+  // A foster child of Ignác and Kristina: no kinship to their grandchildren.
+  const teodor = person('male', given('Teodor', 'Theodorus', 'Theodor'), OSTROVSKY, 2, 1855);
+  b.childLink(fIgnac, teodor, 'foster');
+  // Kristina dies; Ignác marries Eliška, a widow with a son, Silvestr.
+  b.die(kristina, '1856-12-01', at);
+  const eliska = person('female', FEMALE[4]!, OSTROVSKY, 1, 1830);
+  const fEliska0 = b.family(null, eliska);
+  const silvestr = person('male', given('Silvestr', 'Silvester', 'Silvester'), OSTROVSKY, 2, 1852);
+  born(fEliska0, silvestr, null, eliska, '1852-12-31');
+  const fIgnac2 = marry(ignac, eliska, '1858-05-11');
+  b.childLink(fIgnac2, silvestr, 'step');
+  // Felix: his baptism names only his mother; the father is named in a later note, cited with low confidence.
+  const felix = person('male', given('Felix', 'Felix', 'Felix'), JAVORNIK, 2, 1860);
+  born(fIgnac2, felix, null, eliska, '1860-01-14');
+  const felixFatherEvent = b.event('birth', '1860', at, [
+    [felix, 'child'],
+    [ignac, 'father'],
+  ]);
+  const weak = b.cite(
+    felixFatherEvent,
+    b.registerSource(b.parishAt(place, 1860), 'N', 1860),
+    null,
+    'Ignác named as father in a later margin note, hard to read (invented).',
+    'low',
+  );
+  // Two brothers marry two sisters: their sons are double first cousins.
+  const fBartolomej = marry(bartolomej, hedvika, '1871-02-07');
+  const fCyril = marry(cyril, irena, '1873-01-28');
+  const karel = person('male', MALE[6]!, JAVORNIK, 3, 1872);
+  const matous = person('male', given('Matouš', 'Matthaeus', 'Matthäus'), JAVORNIK, 3, 1874);
+  born(fBartolomej, karel, bartolomej, hedvika, '1872-10-04');
+  born(fCyril, matous, cyril, irena, '1874-05-22');
+  // Dorota's granddaughter Radka marries Karel's son Norbert: second cousins who married.
+  const fDorota = b.family(null, dorota);
+  const pavla = person('female', FEMALE[13]!, JAVORNIK, 3, 1876);
+  born(fDorota, pavla, null, dorota, '1876-07-08');
+  const fPavla = b.family(null, pavla);
+  const radka = person('female', given('Radka', 'Radka', 'Radka'), JAVORNIK, 4, 1900);
+  born(fPavla, radka, null, pavla, '1900-03-03');
+  const fKarel = b.family(karel, null);
+  const norbert = person('male', given('Norbert', 'Norbertus', 'Norbert'), JAVORNIK, 4, 1898);
+  born(fKarel, norbert, karel, null, '1898-09-12');
+  const fNorbert = marry(norbert, radka, '1924-06-14');
+  // Their son, born 1932 and with no recorded death: a Living person.
+  const viktor = person('male', given('Viktor', 'Victor', 'Viktor'), JAVORNIK, 5, 1932);
+  born(fNorbert, viktor, norbert, radka, '1932-02-20');
+  // Those whose own birth is not recorded have died, so the Living rule does not keep them Living.
+  const deaths: Array<[PersonInfo, string]> = [
+    [ignac, '1891-02-03'],
+    [hynek, '1880-11-20'],
+    [johana, '1886-04-02'],
+    [eliska, '1899-08-16'],
+  ];
+  for (const [p, date] of deaths) b.die(p, date, at);
+  for (const p of [
+    ignac,
+    kristina,
+    hynek,
+    johana,
+    eliska,
+    bartolomej,
+    cyril,
+    dorota,
+    hedvika,
+    irena,
+    teodor,
+    silvestr,
+    felix,
+    karel,
+    matous,
+    pavla,
+    radka,
+    norbert,
+    viktor,
+  ])
+    p.home = home;
+  // Every register entry of the family is read clearly, but the one note about Felix's father.
+  for (const c of b.m.citations.slice(firstCitation)) if (c.id !== weak) c.confidence = 'high';
+  b.m.landmarks.kinship = {
+    ignac: ignac.id,
+    kristina: kristina.id,
+    eliska: eliska.id,
+    bartolomej: bartolomej.id,
+    cyril: cyril.id,
+    dorota: dorota.id,
+    felix: felix.id,
+    silvestr: silvestr.id,
+    teodor: teodor.id,
+    hedvika: hedvika.id,
+    irena: irena.id,
+    karel: karel.id,
+    matous: matous.id,
+    pavla: pavla.id,
+    norbert: norbert.id,
+    radka: radka.id,
+    viktor: viktor.id,
+    felixFatherEvent,
+  };
 }

@@ -1,9 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { McpServer } from '@modelcontextprotocol/server';
 import {
-  CloseLeadBody,
-  CreateLeadBody,
-  LeadStatus,
   Operation,
   OPERATIONS_VERSION,
   ProposalStatus,
@@ -12,12 +9,12 @@ import {
   ReadingView,
   readingOperations,
   RELATIONS,
-  SearchRecordBody,
   unchosenPersons,
-  UpdateLeadBody,
 } from '@rodokmen/shared';
 import { z } from 'zod';
 import { ApiCallError, type Api } from './api.js';
+import { registerLeadTools } from './lead-tools.js';
+import { call, Id, Paging, readOnly } from './tool-parts.js';
 
 /**
  * The Rodokmen MCP server (agent-access spec, "MCP server" and "Agents write Research leads"): an
@@ -33,14 +30,9 @@ const INSTRUCTIONS = `Rodokmen is a private family tree of the Czech lands. You 
 A Proposal bundles everything one finding changes (for example a baptism entry: the child, the Event, the Roles, and the Citation of the register page), and needs at least one Citation as evidence. Editors review every Proposal; it changes the Tree only when accepted.
 Search before you propose, and refer to existing Persons, Places and Sources by id instead of creating duplicates. Only Editors merge records: when you find a Person or an Event in the Tree twice, say so in a Research lead instead of proposing it again. Dates are EDTF (1801-03-12, 1801~, 1801/1803). A Name has a type (birth, married, nickname or other) and, apart, the language it is written in as a BCP 47 tag (cs, la, de, pl …), or null when not known: a Latin form from a register is type other with language la.
 Research leads are the family's plans: a question, where to look and what came of it. They state no fact, so you write them directly, without review. Before searching a register, list the leads of the Person or Place: a search record shows what was already looked at. Record every search you make, including one that found nothing; a lead closes as not found only with a search record. A Proposal may name the leads it answers (answersLeads): accepting it marks them found.
+To say how two Persons are related, get_kinship works it out from the Family links; you have no own Person, so name both.
 Your Agent is limited to 60 Proposals and 1,000 other requests per hour; a refused request says when to try again.
 When the Owner has switched scan reading on, read_scan has the server read register scans (sent to Anthropic's API) into entries; check them, choose for every read person an existing Person or "new", and propose_reading submits them, marked "read by AI".`;
-
-const Id = z.uuid();
-const Paging = {
-  limit: z.number().int().min(1).max(200).optional().describe('At most this many results (default 50)'),
-  offset: z.number().int().min(0).optional().describe('Skip this many results, for the next page'),
-};
 
 /** Records that can be read by id, and the API route of each. */
 const RECORD_KINDS = ['person', 'family', 'event', 'place', 'house', 'parish', 'estate', 'source', 'citation', 'lead'] as const;
@@ -56,25 +48,6 @@ const RECORDS: Record<(typeof RECORD_KINDS)[number], string> = {
   citation: 'citations',
   lead: 'leads',
 };
-
-function describeError(e: ApiCallError): string {
-  if (e.status === 401) return 'The Agent token was refused: it is not valid, was revoked, or the Agent was disabled. Ask the Owner for a new token.';
-  if (e.status === 429) return `${e.message}${e.retryAt ? ` (retry after ${e.retryAt})` : ''}`;
-  return `The API refused the request (${e.status}${e.code ? ` ${e.code}` : ''}): ${e.message}`;
-}
-
-/** One API call as a tool result: its JSON answer, or an error the assistant can read. */
-async function call(fn: () => Promise<unknown>) {
-  try {
-    const result = await fn();
-    return { content: [{ type: 'text' as const, text: JSON.stringify(result) }] };
-  } catch (error) {
-    const text = error instanceof ApiCallError ? describeError(error) : 'The Rodokmen API could not be reached. Try again later.';
-    return { isError: true, content: [{ type: 'text' as const, text }] };
-  }
-}
-
-const readOnly = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
 
 /** How long read_scan waits for a reading, and how often it looks. */
 export const READING_WAIT_MS = 5 * 60_000;
@@ -214,6 +187,21 @@ export function createRodokmenServer(api: Api): McpServer {
           ? api.get(`/api/charts/house/${houseId ?? ''}`, { from, to, unrelated: unrelated === undefined ? undefined : String(unrelated) })
           : api.get('/api/charts/descendants', { person: personId, family: familyId, generations, form, line }),
       ),
+  );
+
+  server.registerTool(
+    'get_kinship',
+    {
+      title: 'How two Persons are related',
+      description:
+        'How the second Person is related to the first, worked out from the Family links by fixed rules: every path between them, the closest first, each with its common ancestors, every Person on the way, the line and degree as the Czech civil code counts them, whether it is half, through adoption or only possible (a link without a confirming Citation), and the kinship term in Czech and English. Name both Persons.',
+      inputSchema: z.object({
+        fromPersonId: Id.describe('The Person the kinship is relative to'),
+        toPersonId: Id.describe('The Person whose kinship to the first you want'),
+      }),
+      annotations: readOnly,
+    },
+    async ({ fromPersonId, toPersonId }) => call(() => api.get(`/api/persons/${toPersonId}/kinship`, { from: fromPersonId })),
   );
 
   server.registerTool(
@@ -366,76 +354,4 @@ export function createRodokmenServer(api: Api): McpServer {
 
   registerLeadTools(server, api);
   return server;
-}
-
-const writes = { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
-
-/** Research leads (research-leads spec): the Agent lists, writes, updates and closes them, and records its searches. */
-function registerLeadTools(server: McpServer, api: Api): void {
-  server.registerTool(
-    'list_leads',
-    {
-      title: 'List Research leads',
-      description:
-        'Research leads: written next steps of the research, with their search records. Filter by status, Person, Place, archive or who is working on them. Look here before searching a register: a search record says what was already looked at, by whom and with what result.',
-      inputSchema: z.object({
-        status: z.array(LeadStatus).min(1).optional().describe('Only leads with these statuses, such as ["open", "in_progress"]'),
-        personId: Id.optional().describe('Only leads about this Person'),
-        placeId: Id.optional().describe('Only leads about this Place'),
-        archive: z.string().min(1).max(400).optional().describe('Only leads to look in this archive'),
-        assigneeId: Id.optional().describe('Only leads this Member or Agent is working on'),
-        ...Paging,
-      }),
-      annotations: readOnly,
-    },
-    async ({ status, ...args }) => call(() => api.get('/api/leads', { ...args, ...(status ? { status: [...new Set(status)].join(',') } : {}) })),
-  );
-
-  server.registerTool(
-    'create_lead',
-    {
-      title: 'Write a Research lead',
-      description:
-        'Write a Research lead: a question and its reason, where to look (archive, register Source, years, pages) and the Persons and Places it concerns. It is written at once, without review, under your name. Searches already made may come with it; a lead may start closed as not found only with the search that found nothing.',
-      inputSchema: CreateLeadBody,
-      annotations: writes,
-    },
-    async (body) => call(() => api.post('/api/leads', body)),
-  );
-
-  server.registerTool(
-    'update_lead',
-    {
-      title: 'Change a Research lead',
-      description:
-        'Change fields of a Research lead (its question, where to look, the Persons and Places, who works on it, its status), naming the version you read; a lead changed since is refused, so read it again. Not found needs a search record (close_lead does both at once).',
-      inputSchema: z.object({ leadId: Id, ...UpdateLeadBody.shape }),
-      annotations: writes,
-    },
-    async ({ leadId, ...body }) => call(() => api.patch(`/api/leads/${leadId}`, body)),
-  );
-
-  server.registerTool(
-    'add_search_record',
-    {
-      title: 'Record a search',
-      description:
-        'Record one search made on a lead: the register Source or the archive, the years and pages looked at, when (EDTF, today when left out), who looked (you when left out) and what was found, including nothing.',
-      inputSchema: z.object({ leadId: Id, search: SearchRecordBody }),
-      annotations: writes,
-    },
-    async ({ leadId, search }) => call(() => api.post(`/api/leads/${leadId}/searches`, search)),
-  );
-
-  server.registerTool(
-    'close_lead',
-    {
-      title: 'Close a Research lead',
-      description:
-        'Close a lead as found or not found, with the outcome and the search that closes it, naming the version you read. Not found needs at least one search record: give the search here, or record it first. A fact you found still goes in a Proposal that names the lead (submit_proposal, answersLeads).',
-      inputSchema: z.object({ leadId: Id, ...CloseLeadBody.shape }),
-      annotations: writes,
-    },
-    async ({ leadId, ...body }) => call(() => api.post(`/api/leads/${leadId}/close`, body)),
-  );
 }

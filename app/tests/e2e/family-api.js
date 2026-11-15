@@ -2,6 +2,7 @@
 // "Family here" from the invented Tree in family-data.js, as the server would.
 
 import { detail, EVENTS, eventSummary, hourglass, ID, numberOf, PEOPLE, placeRef, summary } from './family-data.js';
+import { kinshipReply, withKinship } from './kinship-api.js';
 
 /** @typedef {import('../../src/types.js').MapEventsResult} MapEventsResult */
 /** @typedef {import('../../src/types.js').PlaceEvents} PlaceEvents */
@@ -150,6 +151,7 @@ export function member(role, o = {}) {
     },
     passkeyCount: 1,
     person: o.person ? withRelations(summary(o.person), o.roots ?? []) : null,
+    personRequest: null,
     familyRoots: (o.roots ?? []).map(ID),
   };
 }
@@ -176,6 +178,7 @@ export async function mockFamilyApi(target, o) {
       /^GET persons\/([0-9a-f-]+)\/hourglass$/,
       (m, url) => ({ json: hourglassFor(m[1], Number(url.searchParams.get('up')), Number(url.searchParams.get('down'))) }),
     ],
+    [/^GET persons\/([0-9a-f-]+)\/kinship$/, (m) => kinshipReply(o.me, m[1])],
     [/^GET persons\/([0-9a-f-]+)$/, (m) => ({ json: detail(numberOf(m[1])) })],
     [
       /^GET persons$/,
@@ -216,7 +219,8 @@ export async function mockFamilyApi(target, o) {
         const m = pattern.exec(key);
         if (!m) continue;
         const reply = await handler(m, url, body);
-        return route.fulfill({ status: reply.status ?? 200, json: withRelations(reply.json ?? null, roots()) }).catch(() => undefined);
+        const json = withKinship(withRelations(reply.json ?? null, roots()), o.me);
+        return route.fulfill({ status: reply.status ?? 200, json }).catch(() => undefined);
       }
       return route.fulfill({ status: 404, json: { code: 'not_found', message: `No mock for ${key}` } }).catch(() => undefined);
     },

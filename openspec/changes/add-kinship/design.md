@@ -82,8 +82,8 @@ Alternatives considered: a bidirectional breadth-first search over all Family li
 
 `kinshipDegree` and `kinshipLine` in `shared/src/kinship.ts`:
 
-- **By birth** (civil code § 771): the direct line when `up` or `down` is 0, else collateral. The degree is `up + down`, the number of births, one per child link. An adoptive link counts as a birth: Czech law gives adoption the effect of kinship. The docs task cites the section after checking the current text of the civil code.
-- **By marriage** (§ 772): the line and degree of the part by birth, the kin married into.
+- **By birth** (civil code §§ 771 to 773): the direct line when `up` or `down` is 0, else collateral. The degree is `up + down`, the number of births, one per child link. An adoptive link counts as a birth: Czech law gives adoption the effect of kinship. The docs task cites the section after checking the current text of the civil code.
+- **By marriage** (§ 774): the line and degree of the part by birth, the kin married into.
 - **None** for `self`, `partner`, `stepSibling`, `coParentInLaw` and `foster`, and for a connection.
 
 German law counts degrees the same way (BGB § 1589). English-speaking readers know another count, so the English and German texts say "degree (Czech law)", and the reference page explains it. The degree is shown in every language because the Owner asked for the degree as Czech law has it.
@@ -137,7 +137,7 @@ Alternatives considered: i18n keys in the app per word, with the rules in app Ja
 
 ### Evidence
 
-Each link on a path carries its confidences. `isPossiblePath` is true when one of them is not strong (`isStrongLink`), the partner step of kinship by marriage included. This is the rule of the Possible relative, applied to one path. The closest path is chosen by degree first, and evidence only breaks ties (Open Questions, 1).
+Each link on a path carries its confidences. `isPossiblePath` is true when one of them is not strong (`isStrongLink`), the partner step of kinship by marriage included. This is the rule of the Possible relative, applied to one path. The closest path is chosen by degree first, and evidence only breaks ties: the closest path comes first even when it is only "possibly" (the Owner, 2026-11-14, Open Questions 1).
 
 ### Order
 
@@ -147,7 +147,7 @@ Each link on a path carries its confidences. `isPossiblePath` is true when one o
 
 - **Person page**: a section "Jak jste příbuzní" ("How you are related") under the name. It holds the term (with "možná" and the "?" mark when possible), the line and degree ("linie přímá, 3. stupeň"; "švagrovství, linie vedlejší, 2. stupeň"), the common ancestors with links, and "a 2 další cesty" ("and 2 more paths"), which opens the list. The page asks `GET /api/persons/{id}/kinship` alongside the Person and caches the answer as `kinship:<id>`, so it shows offline with the page's "as of".
 - **Search results and the people list**: the term after the life years, one line, cut with an ellipsis, in full in the accessible name.
-- **The tree**: a strip above the tree with the Focus Person's term, line and degree, which opens the person page at the section. Each box's accessible name gains the term. A visible line in each box is left to the Owner (Open Questions, 7).
+- **The tree**: a strip above the tree with the Focus Person's term, line and degree, which opens the person page at the section. Each box's accessible name gains the term. The boxes show no visible line and keep their size (the Owner, 2026-11-14, Open Questions 7).
 - **Charts** (once #126 is built): a switch "Příbuzenství ke mně" ("Kinship to me") on the Chart screen, off by default and remembered on the device. With it on, the app asks for the screen variant with `kinship=1`, its Persons carry the short form, and each card shows the term on one line. The option is new on both Chart routes, is refused with `sheet` (400), and adds nothing for a caller with no own Person. It stays out of the Chart's address, because the switch belongs to the device and the terms to the reader, so a shared link opens the same Chart with each Member's own kinship. `get_chart` never sends it, so an Agent's model stays what `add-tree-charts` says. Offline, a Chart shows kinship only if it was cached with it. The Sheet variant's schema has no kinship field, and the SVG builder refuses a model with one, as it refuses an unreduced model.
 - **The Member's own Person** reads "vy" ("you") in lists and in the tree.
 - **No own Person**: the section shows the prompt, with "Toto jsem já" ("This is me") for a Member, or a link to Settings for the Owner. Lists and the tree show nothing.
@@ -201,9 +201,21 @@ Each rule is a pure function proved with `lsc check`, naming its requirement wit
 
 Not proved: that `kinshipPaths` lists every path within the limits (the naive-search test covers it), the server's gathering and its cache key, and the app's display.
 
+## Implementation notes
+
+Recorded when the change was built (PR #176), where the code differs from the text above:
+
+- **The answer** also holds `persons` (the summaries of everyone its paths name, as the tree shows them), and each step a `term`: the next Person as the one before names them (otec, syn, manželka), so the app writes the steps without rules of its own. The short form also holds the path's `kind`, so the reader's own Person reads "vy". The Owner's `me` holds `openPersonRequests`, the count on the Settings tab.
+- **The error code** is `no_own_person`, in the API's snake_case like its other codes.
+- **The work bound**: the paths of the closest degree are always listed whole, up to the 200,000 units of a full answer, also for a Person in a list; the 5,000 units of the short form apply after that degree. So the short form always names the first path of the full answer, and one Person of a list can cost up to 200,000 units on an adversarial pedigree. A search also stops once whole degrees hold 100 paths.
+- **Couples**: a Family with one known partner is a couple of its own, so children of two such Families are half-siblings. Paths through the same Persons by other links are one path, the confirmed one kept.
+- **Evidence**: `isStrongLink` got a contract over its parameter alone, which proves, so `isPossiblePath` calls it across files and the shell passes no strong flags.
+- **Civil code**: kinship § 771, lines § 772, degree § 773, kinship by marriage § 774 (zákon č. 89/2012 Sb. as in force in 2026).
+- **Determinism**: the ESLint block is written by this change and covers `shared/src/kinship*.ts` and `shared/src/kinship-terms/`; `add-tree-charts` adds its modules to it.
+
 ## Risks / Trade-offs
 
-- [Czech usage differs by region and age ("koleno", ujec, strýna)] → One table per language, in the reference page, and the Owner's answers to Open Questions 2 to 4 before implementation.
+- [Czech usage differs by region and age ("koleno", ujec, strýna)] → One table per language, in the reference page. The Owner chose the modern strýc and teta on both sides, "z n. kolena", and "pra" up to three times (Open Questions 2 to 4).
 - [Pedigree collapse makes paths explode] → The work bound, the limit of 100 paths, and the closest path computed apart from the listing.
 - [Many links have no Citation yet, so much kinship reads "possibly"] → The same rule as the Possible relative. The mark is small, and it goes as soon as the evidence is added.
 - [A Family with no recorded marriage] → Its partners are named partner, not husband or wife, but its in-laws are named and counted as by marriage. In the registers a missing marriage is usually a gap in the research, not a couple who never married. The reference page says so.
@@ -221,14 +233,14 @@ One migration (the next free number) adds `account.person_request_id` and `accou
 
 ## Open Questions
 
-Points for the Owner. The specs and tasks follow the planned answer. An answer marked "changes the spec" would change the requirement named, before implementation starts.
+None are open. The Owner answered all nine on 2026-11-14, each as planned, so the specs and tasks stand as written:
 
-1. **Closest path on weak evidence**: show the closest path first even when it is only "possibly" (planned), or a confirmed path first even when it is farther? Changes the spec, "Paths in a fixed order".
-2. **Uncles and aunts in Czech**: the modern strýc and teta on both sides (planned), or the older strýc (father's brother) and ujec (mother's brother), with strýna and ujčina for their wives?
-3. **"Koleno"**: a parent's first cousin is "strýc z 2. kolena", a cousin's child "synovec z 2. kolena", and a second cousin "bratranec z 2. kolena" (planned). Is that how the family says it?
-4. **Long Czech terms**: "pra" written out up to three times (praprapraděd), then "předek v 6. pokolení" (planned), or another form, such as "4× praděd"?
-5. **By marriage and by birth**: ranked together by degree, so a brother-in-law (2nd degree) comes before a third cousin (8th) (planned), or every kinship by birth first? Changes the spec, "Paths in a fixed order".
-6. **Asking to be linked**: "This is me" with the Owner confirming in Settings (planned), or only a prompt to ask the Owner outside the app? Should a request also email the Owner (planned: no, a count on the Settings tab)? Changes the spec, "Asking to be linked to one's own Person".
-7. **Tree boxes**: kinship in the strip above the tree and in each box's accessible name (planned), or also a visible line in every box, which makes the boxes taller?
-8. **Charts**: kinship on cards on screen behind a switch, off by default, and never on a Sheet (planned)?
-9. **Step-siblings and svat or svatka**: named (planned), or shown only as connected through a marriage?
+1. **Closest path on weak evidence**: the closest path comes first even when it is only "possibly". Evidence only breaks ties at the same degree ("Paths in a fixed order").
+2. **Uncles and aunts in Czech**: the modern strýc and teta on both sides. No ujec, strýna or ujčina.
+3. **"Koleno"**: a parent's first cousin is "strýc z 2. kolena", a cousin's child "synovec z 2. kolena", and a second cousin "bratranec z 2. kolena".
+4. **Long Czech terms**: "pra" written out up to three times (praprapraděd), then "předek v 6. pokolení".
+5. **By marriage and by birth**: ranked together by degree, so a brother-in-law (2nd degree) comes before a third cousin (8th).
+6. **Asking to be linked**: "This is me", confirmed by the Owner in Settings. A request sends no email; the Owner sees a count on the Settings tab.
+7. **Tree boxes**: kinship in the strip above the tree and in each box's accessible name, with no visible line in the boxes, which keep their size.
+8. **Charts**: kinship on Chart cards on screen behind a switch, off by default, and never on a Sheet.
+9. **Step-siblings and svat or svatka**: named.

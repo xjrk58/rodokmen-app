@@ -20,6 +20,11 @@ function isStrongLink(link: FamilyLink): bool
   (exists c :: c in link.confidences && isConfirming(c))
 }
 
+lemma isStrongLink_ensures(link: FamilyLink)
+  ensures (isStrongLink(link) == exists j: nat :: ((j < |link.confidences|) && (((link.confidences[j] == "normal") || (link.confidences[j] == "high")) || (link.confidences[j] == "very_high"))))
+{
+}
+
 function mayFollow(link: FamilyLink, strongOnly: bool): bool
 {
   (!(strongOnly) || isStrongLink(link))

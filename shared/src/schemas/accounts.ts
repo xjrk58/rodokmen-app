@@ -78,6 +78,18 @@ export const Permissions = z
 export const DisplayName = z.string().trim().min(1).max(100);
 export const Email = z.email().max(320);
 
+/** A Member's request to be linked to a Person, waiting for the Owner (kinship spec, family-tree "Asking to be linked to one's own Person"). */
+export const PersonRequest = z
+  .object({
+    person: PersonSummary.describe('The Person the Member says is them; a merged Person shows as the one kept'),
+    at: z.iso.datetime().describe('When the Member asked'),
+  })
+  .meta({ id: 'PersonRequest' });
+
+export const PersonRequestBody = z
+  .object({ personId: Id.describe('The Person who is you in the Tree') })
+  .meta({ id: 'PersonRequestBody', description: 'Ask the Owner to link your account to this Person' });
+
 export const Me = z
   .object({
     id: Id,
@@ -89,6 +101,8 @@ export const Me = z
     permissions: Permissions,
     passkeyCount: z.number().int(),
     person: PersonSummary.nullable().describe('The Person who is this Member in the Tree, linked by the Owner; shown to this Member alone (and to the Owner)'),
+    personRequest: PersonRequest.nullable().describe('This Member asked the Owner to link this Person, and the Owner has not decided yet'),
+    openPersonRequests: z.number().int().min(0).optional().describe('For the Owner: how many Members wait for the Owner to link them to their own Person'),
     familyRoots: z
       .array(Id)
       .describe('The Family roots the Owner marked, the first marked first. Empty until the first one: until then the relation to the family says nothing'),
@@ -118,6 +132,7 @@ export const MemberView = z
       .describe(
         'A new address the Owner gave this Member, waiting until the link sent to it is confirmed; until then sign-in links go to `email`. Null when none waits',
       ),
+    personRequest: PersonRequest.nullable().describe('The Person this Member asked to be linked to, waiting for the Owner to confirm or refuse'),
   })
   .meta({ id: 'MemberView' });
 
@@ -324,6 +339,7 @@ export type AgentTokenView = z.infer<typeof AgentTokenView>;
 export type IssuedAgentToken = z.infer<typeof IssuedAgentToken>;
 export type Me = z.infer<typeof Me>;
 export type MemberView = z.infer<typeof MemberView>;
+export type PersonRequest = z.infer<typeof PersonRequest>;
 export type UpdateMeBody = z.infer<typeof UpdateMeBody>;
 export type SessionView = z.infer<typeof SessionView>;
 export type InvitationView = z.infer<typeof InvitationView>;

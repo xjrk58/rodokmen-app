@@ -20,6 +20,7 @@
     "openapi": "tsx --conditions=@rodokmen/source src/cli.ts openapi write",
     "openapi:check": "tsx --conditions=@rodokmen/source src/cli.ts openapi check",
     "bench:scan": "tsx --conditions=@rodokmen/source scripts/scan-benchmark/run.ts",
+    "bench:kinship": "tsx --conditions=@rodokmen/source scripts/kinship-benchmark.ts",
     "heic:memory": "tsx --conditions=@rodokmen/source scripts/heic-memory.ts"
   },
   "dependencies": {

@@ -29,6 +29,7 @@ const memberView = (n, name, role) => ({
   lastSeenAt: null,
   person: null,
   pendingEmail: null,
+  personRequest: null,
 });
 
 /**

@@ -1,0 +1,150 @@
+{
+  "from": "019b76da-c832-7a3f-b362-226e089c121d",
+  "to": "019b76da-c7cd-7cfd-9ffd-9c584840f85a",
+  "asOf": {
+    "logEntryId": null,
+    "at": null
+  },
+  "paths": [],
+  "more": false,
+  "connection": {
+    "steps": [
+      {
+        "person": "019b76da-c80a-788a-8641-ec5123408de7",
+        "link": "parent",
+        "linkType": "birth",
+        "weak": false,
+        "recordId": "019b76da-c834-72e0-829d-f9515a5db90d",
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
+      },
+      {
+        "person": "019b76da-c79b-71ea-8ac9-7e375287b601",
+        "link": "parent",
+        "linkType": "birth",
+        "weak": false,
+        "recordId": "019b76da-c80e-7a61-a3bd-bd6f54896b3b",
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
+      },
+      {
+        "person": "019b76da-c783-7640-b315-c8b2ac1445b5",
+        "link": "parent",
+        "linkType": "birth",
+        "weak": false,
+        "recordId": "019b76da-c7a1-77c8-9bc6-eb267622fb26",
+        "term": {
+          "cs": {
+            "text": "otec",
+            "gender": "m"
+          },
+          "en": {
+            "text": "father",
+            "gender": "m"
+          }
+        }
+      },
+      {
+        "person": "019b76da-c7cd-7cfd-9ffd-9c584840f85a",
+        "link": "child",
+        "linkType": "foster",
+        "weak": true,
+        "recordId": "019b76da-c7cf-70aa-9cde-3c06e0b38e3e",
+        "term": {
+          "cs": {
+            "text": "svěřený syn",
+            "gender": "m"
+          },
+          "en": {
+            "text": "foster son",
+            "gender": "m"
+          }
+        }
+      }
+    ],
+    "marriages": 0
+  },
+  "persons": [
+    {
+      "id": "019b76da-c783-7640-b315-c8b2ac1445b5",
+      "version": 1,
+      "sex": "male",
+      "given": "Ignác",
+      "surname": "Javorník",
+      "displayName": "Ignác Javorník",
+      "living": false,
+      "birth": null,
+      "death": "1891-02-03",
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c79b-71ea-8ac9-7e375287b601",
+      "version": 1,
+      "sex": "male",
+      "given": "Bartoloměj",
+      "surname": "Javorník",
+      "displayName": "Bartoloměj Javorník",
+      "living": false,
+      "birth": "1845-11-02",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c7cd-7cfd-9ffd-9c584840f85a",
+      "version": 1,
+      "sex": "male",
+      "given": "Teodor",
+      "surname": "Ostrovský",
+      "displayName": "Teodor Ostrovský",
+      "living": true,
+      "birth": null,
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c80a-788a-8641-ec5123408de7",
+      "version": 1,
+      "sex": "male",
+      "given": "Karel",
+      "surname": "Javorník",
+      "displayName": "Karel Javorník",
+      "living": false,
+      "birth": "1872-10-04",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    },
+    {
+      "id": "019b76da-c832-7a3f-b362-226e089c121d",
+      "version": 1,
+      "sex": "male",
+      "given": "Norbert",
+      "surname": "Javorník",
+      "displayName": "Norbert Javorník",
+      "living": false,
+      "birth": "1898-09-12",
+      "death": null,
+      "relation": "unrelated",
+      "familyRoot": false
+    }
+  ]
+}

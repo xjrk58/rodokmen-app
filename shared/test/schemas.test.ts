@@ -21,6 +21,9 @@ import {
   RoleRecord,
   SourceRecord,
   Period,
+  Kinship,
+  KinshipShort,
+  PersonSummary,
 } from '../src/index.js';
 
 let n = 0;
@@ -288,5 +291,71 @@ describe('image metadata', () => {
     bad(ImageMetadata, image({ kind: 'portrait', citationId: null }), /at least one Person/);
     bad(ImageMetadata, image({ byteSize: 25 * 1024 * 1024 + 1 }));
     bad(ImageMetadata, image({ contentType: 'image/gif' }));
+  });
+});
+
+describe('kinship (kinship spec, "Kinship as data")', () => {
+  const kid = (n: number) => `0190a000-0000-7000-8000-${String(n).padStart(12, '0')}`;
+  const term = { cs: { text: 'sestřenice', gender: 'f' }, en: { text: 'first cousin', gender: 'f' } };
+  const summary = {
+    id: kid(2),
+    version: 1,
+    sex: 'female',
+    given: 'Marie',
+    surname: 'Nováková',
+    displayName: 'Marie Nováková',
+    living: false,
+    birth: '1885',
+    death: null,
+    relation: 'relative',
+    familyRoot: false,
+  };
+  const path = {
+    kind: 'birth',
+    line: 'collateral',
+    degree: 4,
+    up: 2,
+    down: 2,
+    half: false,
+    adoptive: false,
+    possible: false,
+    commonAncestors: [kid(3), kid(4)],
+    steps: [
+      {
+        person: kid(5),
+        link: 'parent',
+        linkType: 'birth',
+        weak: false,
+        recordId: kid(6),
+        term: { cs: { text: 'otec', gender: 'm' }, en: { text: 'father', gender: 'm' } },
+      },
+    ],
+    term,
+  };
+  const answer = {
+    from: kid(1),
+    to: kid(2),
+    asOf: { logEntryId: kid(7), at: '2026-11-14T10:00:00.000Z' },
+    paths: [path],
+    more: false,
+    connection: null,
+    persons: [summary],
+  };
+
+  it('a full answer and a connection parse', () => {
+    ok(Kinship, answer);
+    const connection = { steps: [{ ...path.steps[0]!, person: kid(2), link: 'partner', linkType: null, weak: true, recordId: kid(8) }], marriages: 1 };
+    ok(Kinship, { ...answer, paths: [], connection });
+  });
+
+  it('a term missing a language is refused', () => {
+    bad(Kinship, { ...answer, paths: [{ ...path, term: { cs: term.cs } }] });
+    bad(KinshipShort, { kind: 'birth', term: { en: term.en }, possible: false, line: 'collateral', degree: 4, others: 0, more: false });
+  });
+
+  it('a Person summary without kinship still parses, and one with the short form or null too', () => {
+    ok(PersonSummary, summary);
+    ok(PersonSummary, { ...summary, kinship: { kind: 'birth', term, possible: true, line: 'collateral', degree: 4, others: 1, more: false } });
+    ok(PersonSummary, { ...summary, kinship: null });
   });
 });

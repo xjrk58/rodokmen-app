@@ -2285,3 +2285,64 @@ pre.transcription {
     page: a4-portrait;
   }
 }
+
+/* Kinship (kinship spec): the section of a person page, the short form after the life years, the
+   strip above the tree, and the count of requests on the Owner's Settings tab. */
+.kinship .kinship-term {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.kinship-steps,
+.kinship-paths {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+.kinship-paths > li {
+  margin-top: 10px;
+}
+.kinship-steps li {
+  overflow-wrap: anywhere;
+}
+.person-line .kinship-short {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+.kinship-strip {
+  display: block;
+  margin: 0 12px 6px;
+  overflow: hidden;
+  color: var(--accent);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-decoration: none;
+}
+.kinship-strip-term {
+  font-weight: 600;
+}
+.person-request {
+  margin-top: 6px;
+}
+.tabbar-item {
+  position: relative;
+}
+.tab-count {
+  position: absolute;
+  top: 2px;
+  left: calc(50% + 6px);
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}

@@ -49,6 +49,7 @@ const memberView = (n, name, role) => ({
   disabled: false,
   createdAt: '2026-10-01T10:00:00.000Z',
   lastSeenAt: null,
+  personRequest: null,
   person: null,
   pendingEmail: null,
 });
@@ -369,6 +370,45 @@ test('the Owner changes a role, disables and enables a Member, and links a Membe
   const own = page.locator('[data-testid="member"][data-email="eliska@example.test"]');
   await expect(own.getByTestId('member-role')).toBeDisabled();
   await expect(own.getByTestId('member-disable')).toHaveCount(0);
+});
+
+test('requests to be linked: a count on the Settings tab; the Owner confirms one and refuses another (add-kinship task 7.5)', async ({ page }) => {
+  /** @type {MemberView} */
+  const karel = { ...memberView(901, 'Karel', 'contributor'), personRequest: { person: summary(13), at: '2026-11-14T10:00:00.000Z' } };
+  /** @type {MemberView} */
+  const ota = { ...memberView(902, 'Ota', 'contributor'), personRequest: { person: summary(16), at: '2026-11-14T11:00:00.000Z' } };
+  /** @type {string[]} */
+  const actions = [];
+  await mockFamilyApi(page, {
+    me: { ...member('owner'), openPersonRequests: 2 },
+    extra: {
+      'GET members': () => ({ json: { items: [memberView(900, 'Eliska', 'owner'), karel, ota] } }),
+      'GET invitations': () => ({ json: { items: [] } }),
+      'GET agents': () => ({ json: { items: [] } }),
+      [`PUT members/${ID(901)}/person`]: (_m, _u, body) => {
+        const id = /** @type {{ personId: string }} */ (body).personId;
+        Object.assign(karel, { person: summary(Number(id.slice(-12))), personRequest: null });
+        actions.push(`confirm ${id}`);
+        return { json: karel };
+      },
+      [`DELETE members/${ID(902)}/person-request`]: () => {
+        ota.personRequest = null;
+        actions.push('refuse');
+        return { json: ota };
+      },
+    },
+  });
+  await page.goto('./#settings');
+  await expect(page.getByTestId('settings-request-count')).toHaveText('2');
+  const row = (/** @type {string} */ email) => page.locator(`[data-testid="member"][data-email="${email}"]`);
+  await expect(row('karel@example.test').getByTestId('member-request')).toContainText('Karel Novák');
+  await row('karel@example.test').getByTestId('member-request-confirm').click();
+  await expect(row('karel@example.test').getByTestId('member-person')).toContainText('Karel Novák');
+  await expect(row('karel@example.test').getByTestId('member-request')).toHaveCount(0);
+  await row('ota@example.test').getByTestId('member-request-refuse').click();
+  await expect(row('ota@example.test').getByTestId('member-request')).toHaveCount(0);
+  await expect(row('ota@example.test').getByTestId('member-person')).toContainText('not linked');
+  expect(actions).toEqual([`confirm ${P.karel}`, 'refuse']);
 });
 
 test('signing out empties what this device kept and returns to the map', async ({ page }) => {

@@ -1,0 +1,789 @@
+self male: you
+self female: you
+self unknown: you
+birth up 0 down 1 male: son
+birth up 0 down 1 male adoptive: adopted son
+birth up 0 down 1 female: daughter
+birth up 0 down 1 female adoptive: adopted daughter
+birth up 0 down 1 unknown: child
+birth up 0 down 1 unknown adoptive: adopted child
+birth up 0 down 2 male: grandson
+birth up 0 down 2 male adoptive: grandson (through adoption)
+birth up 0 down 2 female: granddaughter
+birth up 0 down 2 female adoptive: granddaughter (through adoption)
+birth up 0 down 2 unknown: grandchild
+birth up 0 down 2 unknown adoptive: grandchild (through adoption)
+birth up 0 down 3 male: great-grandson
+birth up 0 down 3 male adoptive: great-grandson (through adoption)
+birth up 0 down 3 female: great-granddaughter
+birth up 0 down 3 female adoptive: great-granddaughter (through adoption)
+birth up 0 down 3 unknown: great-grandchild
+birth up 0 down 3 unknown adoptive: great-grandchild (through adoption)
+birth up 0 down 4 male: great-great-grandson
+birth up 0 down 4 male adoptive: great-great-grandson (through adoption)
+birth up 0 down 4 female: great-great-granddaughter
+birth up 0 down 4 female adoptive: great-great-granddaughter (through adoption)
+birth up 0 down 4 unknown: great-great-grandchild
+birth up 0 down 4 unknown adoptive: great-great-grandchild (through adoption)
+birth up 0 down 5 male: 3rd great-grandson
+birth up 0 down 5 male adoptive: 3rd great-grandson (through adoption)
+birth up 0 down 5 female: 3rd great-granddaughter
+birth up 0 down 5 female adoptive: 3rd great-granddaughter (through adoption)
+birth up 0 down 5 unknown: 3rd great-grandchild
+birth up 0 down 5 unknown adoptive: 3rd great-grandchild (through adoption)
+birth up 0 down 6 male: 4th great-grandson
+birth up 0 down 6 male adoptive: 4th great-grandson (through adoption)
+birth up 0 down 6 female: 4th great-granddaughter
+birth up 0 down 6 female adoptive: 4th great-granddaughter (through adoption)
+birth up 0 down 6 unknown: 4th great-grandchild
+birth up 0 down 6 unknown adoptive: 4th great-grandchild (through adoption)
+birth up 0 down 7 male: 5th great-grandson
+birth up 0 down 7 male adoptive: 5th great-grandson (through adoption)
+birth up 0 down 7 female: 5th great-granddaughter
+birth up 0 down 7 female adoptive: 5th great-granddaughter (through adoption)
+birth up 0 down 7 unknown: 5th great-grandchild
+birth up 0 down 7 unknown adoptive: 5th great-grandchild (through adoption)
+birth up 0 down 8 male: 6th great-grandson
+birth up 0 down 8 male adoptive: 6th great-grandson (through adoption)
+birth up 0 down 8 female: 6th great-granddaughter
+birth up 0 down 8 female adoptive: 6th great-granddaughter (through adoption)
+birth up 0 down 8 unknown: 6th great-grandchild
+birth up 0 down 8 unknown adoptive: 6th great-grandchild (through adoption)
+birth up 1 down 0 male: father
+birth up 1 down 0 male adoptive: adoptive father
+birth up 1 down 0 female: mother
+birth up 1 down 0 female adoptive: adoptive mother
+birth up 1 down 0 unknown: parent
+birth up 1 down 0 unknown adoptive: adoptive parent
+birth up 1 down 1 male: brother
+birth up 1 down 1 male half: half-brother
+birth up 1 down 1 male adoptive: brother (through adoption)
+birth up 1 down 1 female: sister
+birth up 1 down 1 female half: half-sister
+birth up 1 down 1 female adoptive: sister (through adoption)
+birth up 1 down 1 unknown: sibling
+birth up 1 down 1 unknown half: half-sibling
+birth up 1 down 1 unknown adoptive: sibling (through adoption)
+birth up 1 down 2 male: nephew
+birth up 1 down 2 male half: half-nephew
+birth up 1 down 2 male adoptive: nephew (through adoption)
+birth up 1 down 2 female: niece
+birth up 1 down 2 female half: half-niece
+birth up 1 down 2 female adoptive: niece (through adoption)
+birth up 1 down 2 unknown: niece or nephew
+birth up 1 down 2 unknown half: half-niece or half-nephew
+birth up 1 down 2 unknown adoptive: niece or nephew (through adoption)
+birth up 1 down 3 male: great-nephew
+birth up 1 down 3 male half: half-great-nephew
+birth up 1 down 3 male adoptive: great-nephew (through adoption)
+birth up 1 down 3 female: great-niece
+birth up 1 down 3 female half: half-great-niece
+birth up 1 down 3 female adoptive: great-niece (through adoption)
+birth up 1 down 3 unknown: great-niece or great-nephew
+birth up 1 down 3 unknown half: half-great-niece or half-great-nephew
+birth up 1 down 3 unknown adoptive: great-niece or great-nephew (through adoption)
+birth up 1 down 4 male: great-great-nephew
+birth up 1 down 4 male half: half-great-great-nephew
+birth up 1 down 4 male adoptive: great-great-nephew (through adoption)
+birth up 1 down 4 female: great-great-niece
+birth up 1 down 4 female half: half-great-great-niece
+birth up 1 down 4 female adoptive: great-great-niece (through adoption)
+birth up 1 down 4 unknown: great-great-niece or great-great-nephew
+birth up 1 down 4 unknown half: half-great-great-niece or half-great-great-nephew
+birth up 1 down 4 unknown adoptive: great-great-niece or great-great-nephew (through adoption)
+birth up 1 down 5 male: 3rd great-nephew
+birth up 1 down 5 male half: half-3rd great-nephew
+birth up 1 down 5 male adoptive: 3rd great-nephew (through adoption)
+birth up 1 down 5 female: 3rd great-niece
+birth up 1 down 5 female half: half-3rd great-niece
+birth up 1 down 5 female adoptive: 3rd great-niece (through adoption)
+birth up 1 down 5 unknown: 3rd great-niece or 3rd great-nephew
+birth up 1 down 5 unknown half: half-3rd great-niece or half-3rd great-nephew
+birth up 1 down 5 unknown adoptive: 3rd great-niece or 3rd great-nephew (through adoption)
+birth up 1 down 6 male: 4th great-nephew
+birth up 1 down 6 male half: half-4th great-nephew
+birth up 1 down 6 male adoptive: 4th great-nephew (through adoption)
+birth up 1 down 6 female: 4th great-niece
+birth up 1 down 6 female half: half-4th great-niece
+birth up 1 down 6 female adoptive: 4th great-niece (through adoption)
+birth up 1 down 6 unknown: 4th great-niece or 4th great-nephew
+birth up 1 down 6 unknown half: half-4th great-niece or half-4th great-nephew
+birth up 1 down 6 unknown adoptive: 4th great-niece or 4th great-nephew (through adoption)
+birth up 1 down 7 male: 5th great-nephew
+birth up 1 down 7 male half: half-5th great-nephew
+birth up 1 down 7 male adoptive: 5th great-nephew (through adoption)
+birth up 1 down 7 female: 5th great-niece
+birth up 1 down 7 female half: half-5th great-niece
+birth up 1 down 7 female adoptive: 5th great-niece (through adoption)
+birth up 1 down 7 unknown: 5th great-niece or 5th great-nephew
+birth up 1 down 7 unknown half: half-5th great-niece or half-5th great-nephew
+birth up 1 down 7 unknown adoptive: 5th great-niece or 5th great-nephew (through adoption)
+birth up 1 down 8 male: 6th great-nephew
+birth up 1 down 8 male half: half-6th great-nephew
+birth up 1 down 8 male adoptive: 6th great-nephew (through adoption)
+birth up 1 down 8 female: 6th great-niece
+birth up 1 down 8 female half: half-6th great-niece
+birth up 1 down 8 female adoptive: 6th great-niece (through adoption)
+birth up 1 down 8 unknown: 6th great-niece or 6th great-nephew
+birth up 1 down 8 unknown half: half-6th great-niece or half-6th great-nephew
+birth up 1 down 8 unknown adoptive: 6th great-niece or 6th great-nephew (through adoption)
+birth up 2 down 0 male: grandfather
+birth up 2 down 0 male adoptive: grandfather (through adoption)
+birth up 2 down 0 female: grandmother
+birth up 2 down 0 female adoptive: grandmother (through adoption)
+birth up 2 down 0 unknown: grandparent
+birth up 2 down 0 unknown adoptive: grandparent (through adoption)
+birth up 2 down 1 male: uncle
+birth up 2 down 1 male half: half-uncle
+birth up 2 down 1 male adoptive: uncle (through adoption)
+birth up 2 down 1 female: aunt
+birth up 2 down 1 female half: half-aunt
+birth up 2 down 1 female adoptive: aunt (through adoption)
+birth up 2 down 1 unknown: aunt or uncle
+birth up 2 down 1 unknown half: half-aunt or half-uncle
+birth up 2 down 1 unknown adoptive: aunt or uncle (through adoption)
+birth up 2 down 2 male: first cousin
+birth up 2 down 2 male half: half first cousin
+birth up 2 down 2 male adoptive: first cousin (through adoption)
+birth up 2 down 2 female: first cousin
+birth up 2 down 2 female half: half first cousin
+birth up 2 down 2 female adoptive: first cousin (through adoption)
+birth up 2 down 2 unknown: first cousin
+birth up 2 down 2 unknown half: half first cousin
+birth up 2 down 2 unknown adoptive: first cousin (through adoption)
+birth up 2 down 3 male: first cousin once removed
+birth up 2 down 3 male half: half first cousin once removed
+birth up 2 down 3 male adoptive: first cousin once removed (through adoption)
+birth up 2 down 3 female: first cousin once removed
+birth up 2 down 3 female half: half first cousin once removed
+birth up 2 down 3 female adoptive: first cousin once removed (through adoption)
+birth up 2 down 3 unknown: first cousin once removed
+birth up 2 down 3 unknown half: half first cousin once removed
+birth up 2 down 3 unknown adoptive: first cousin once removed (through adoption)
+birth up 2 down 4 male: first cousin twice removed
+birth up 2 down 4 male half: half first cousin twice removed
+birth up 2 down 4 male adoptive: first cousin twice removed (through adoption)
+birth up 2 down 4 female: first cousin twice removed
+birth up 2 down 4 female half: half first cousin twice removed
+birth up 2 down 4 female adoptive: first cousin twice removed (through adoption)
+birth up 2 down 4 unknown: first cousin twice removed
+birth up 2 down 4 unknown half: half first cousin twice removed
+birth up 2 down 4 unknown adoptive: first cousin twice removed (through adoption)
+birth up 2 down 5 male: first cousin 3 times removed
+birth up 2 down 5 male half: half first cousin 3 times removed
+birth up 2 down 5 male adoptive: first cousin 3 times removed (through adoption)
+birth up 2 down 5 female: first cousin 3 times removed
+birth up 2 down 5 female half: half first cousin 3 times removed
+birth up 2 down 5 female adoptive: first cousin 3 times removed (through adoption)
+birth up 2 down 5 unknown: first cousin 3 times removed
+birth up 2 down 5 unknown half: half first cousin 3 times removed
+birth up 2 down 5 unknown adoptive: first cousin 3 times removed (through adoption)
+birth up 2 down 6 male: first cousin 4 times removed
+birth up 2 down 6 male half: half first cousin 4 times removed
+birth up 2 down 6 male adoptive: first cousin 4 times removed (through adoption)
+birth up 2 down 6 female: first cousin 4 times removed
+birth up 2 down 6 female half: half first cousin 4 times removed
+birth up 2 down 6 female adoptive: first cousin 4 times removed (through adoption)
+birth up 2 down 6 unknown: first cousin 4 times removed
+birth up 2 down 6 unknown half: half first cousin 4 times removed
+birth up 2 down 6 unknown adoptive: first cousin 4 times removed (through adoption)
+birth up 2 down 7 male: first cousin 5 times removed
+birth up 2 down 7 male half: half first cousin 5 times removed
+birth up 2 down 7 male adoptive: first cousin 5 times removed (through adoption)
+birth up 2 down 7 female: first cousin 5 times removed
+birth up 2 down 7 female half: half first cousin 5 times removed
+birth up 2 down 7 female adoptive: first cousin 5 times removed (through adoption)
+birth up 2 down 7 unknown: first cousin 5 times removed
+birth up 2 down 7 unknown half: half first cousin 5 times removed
+birth up 2 down 7 unknown adoptive: first cousin 5 times removed (through adoption)
+birth up 2 down 8 male: first cousin 6 times removed
+birth up 2 down 8 male half: half first cousin 6 times removed
+birth up 2 down 8 male adoptive: first cousin 6 times removed (through adoption)
+birth up 2 down 8 female: first cousin 6 times removed
+birth up 2 down 8 female half: half first cousin 6 times removed
+birth up 2 down 8 female adoptive: first cousin 6 times removed (through adoption)
+birth up 2 down 8 unknown: first cousin 6 times removed
+birth up 2 down 8 unknown half: half first cousin 6 times removed
+birth up 2 down 8 unknown adoptive: first cousin 6 times removed (through adoption)
+birth up 3 down 0 male: great-grandfather
+birth up 3 down 0 male adoptive: great-grandfather (through adoption)
+birth up 3 down 0 female: great-grandmother
+birth up 3 down 0 female adoptive: great-grandmother (through adoption)
+birth up 3 down 0 unknown: great-grandparent
+birth up 3 down 0 unknown adoptive: great-grandparent (through adoption)
+birth up 3 down 1 male: great-uncle
+birth up 3 down 1 male half: half-great-uncle
+birth up 3 down 1 male adoptive: great-uncle (through adoption)
+birth up 3 down 1 female: great-aunt
+birth up 3 down 1 female half: half-great-aunt
+birth up 3 down 1 female adoptive: great-aunt (through adoption)
+birth up 3 down 1 unknown: great-aunt or great-uncle
+birth up 3 down 1 unknown half: half-great-aunt or half-great-uncle
+birth up 3 down 1 unknown adoptive: great-aunt or great-uncle (through adoption)
+birth up 3 down 2 male: first cousin once removed
+birth up 3 down 2 male half: half first cousin once removed
+birth up 3 down 2 male adoptive: first cousin once removed (through adoption)
+birth up 3 down 2 female: first cousin once removed
+birth up 3 down 2 female half: half first cousin once removed
+birth up 3 down 2 female adoptive: first cousin once removed (through adoption)
+birth up 3 down 2 unknown: first cousin once removed
+birth up 3 down 2 unknown half: half first cousin once removed
+birth up 3 down 2 unknown adoptive: first cousin once removed (through adoption)
+birth up 3 down 3 male: second cousin
+birth up 3 down 3 male half: half second cousin
+birth up 3 down 3 male adoptive: second cousin (through adoption)
+birth up 3 down 3 female: second cousin
+birth up 3 down 3 female half: half second cousin
+birth up 3 down 3 female adoptive: second cousin (through adoption)
+birth up 3 down 3 unknown: second cousin
+birth up 3 down 3 unknown half: half second cousin
+birth up 3 down 3 unknown adoptive: second cousin (through adoption)
+birth up 3 down 4 male: second cousin once removed
+birth up 3 down 4 male half: half second cousin once removed
+birth up 3 down 4 male adoptive: second cousin once removed (through adoption)
+birth up 3 down 4 female: second cousin once removed
+birth up 3 down 4 female half: half second cousin once removed
+birth up 3 down 4 female adoptive: second cousin once removed (through adoption)
+birth up 3 down 4 unknown: second cousin once removed
+birth up 3 down 4 unknown half: half second cousin once removed
+birth up 3 down 4 unknown adoptive: second cousin once removed (through adoption)
+birth up 3 down 5 male: second cousin twice removed
+birth up 3 down 5 male half: half second cousin twice removed
+birth up 3 down 5 male adoptive: second cousin twice removed (through adoption)
+birth up 3 down 5 female: second cousin twice removed
+birth up 3 down 5 female half: half second cousin twice removed
+birth up 3 down 5 female adoptive: second cousin twice removed (through adoption)
+birth up 3 down 5 unknown: second cousin twice removed
+birth up 3 down 5 unknown half: half second cousin twice removed
+birth up 3 down 5 unknown adoptive: second cousin twice removed (through adoption)
+birth up 3 down 6 male: second cousin 3 times removed
+birth up 3 down 6 male half: half second cousin 3 times removed
+birth up 3 down 6 male adoptive: second cousin 3 times removed (through adoption)
+birth up 3 down 6 female: second cousin 3 times removed
+birth up 3 down 6 female half: half second cousin 3 times removed
+birth up 3 down 6 female adoptive: second cousin 3 times removed (through adoption)
+birth up 3 down 6 unknown: second cousin 3 times removed
+birth up 3 down 6 unknown half: half second cousin 3 times removed
+birth up 3 down 6 unknown adoptive: second cousin 3 times removed (through adoption)
+birth up 3 down 7 male: second cousin 4 times removed
+birth up 3 down 7 male half: half second cousin 4 times removed
+birth up 3 down 7 male adoptive: second cousin 4 times removed (through adoption)
+birth up 3 down 7 female: second cousin 4 times removed
+birth up 3 down 7 female half: half second cousin 4 times removed
+birth up 3 down 7 female adoptive: second cousin 4 times removed (through adoption)
+birth up 3 down 7 unknown: second cousin 4 times removed
+birth up 3 down 7 unknown half: half second cousin 4 times removed
+birth up 3 down 7 unknown adoptive: second cousin 4 times removed (through adoption)
+birth up 3 down 8 male: second cousin 5 times removed
+birth up 3 down 8 male half: half second cousin 5 times removed
+birth up 3 down 8 male adoptive: second cousin 5 times removed (through adoption)
+birth up 3 down 8 female: second cousin 5 times removed
+birth up 3 down 8 female half: half second cousin 5 times removed
+birth up 3 down 8 female adoptive: second cousin 5 times removed (through adoption)
+birth up 3 down 8 unknown: second cousin 5 times removed
+birth up 3 down 8 unknown half: half second cousin 5 times removed
+birth up 3 down 8 unknown adoptive: second cousin 5 times removed (through adoption)
+birth up 4 down 0 male: great-great-grandfather
+birth up 4 down 0 male adoptive: great-great-grandfather (through adoption)
+birth up 4 down 0 female: great-great-grandmother
+birth up 4 down 0 female adoptive: great-great-grandmother (through adoption)
+birth up 4 down 0 unknown: great-great-grandparent
+birth up 4 down 0 unknown adoptive: great-great-grandparent (through adoption)
+birth up 4 down 1 male: great-great-uncle
+birth up 4 down 1 male half: half-great-great-uncle
+birth up 4 down 1 male adoptive: great-great-uncle (through adoption)
+birth up 4 down 1 female: great-great-aunt
+birth up 4 down 1 female half: half-great-great-aunt
+birth up 4 down 1 female adoptive: great-great-aunt (through adoption)
+birth up 4 down 1 unknown: great-great-aunt or great-great-uncle
+birth up 4 down 1 unknown half: half-great-great-aunt or half-great-great-uncle
+birth up 4 down 1 unknown adoptive: great-great-aunt or great-great-uncle (through adoption)
+birth up 4 down 2 male: first cousin twice removed
+birth up 4 down 2 male half: half first cousin twice removed
+birth up 4 down 2 male adoptive: first cousin twice removed (through adoption)
+birth up 4 down 2 female: first cousin twice removed
+birth up 4 down 2 female half: half first cousin twice removed
+birth up 4 down 2 female adoptive: first cousin twice removed (through adoption)
+birth up 4 down 2 unknown: first cousin twice removed
+birth up 4 down 2 unknown half: half first cousin twice removed
+birth up 4 down 2 unknown adoptive: first cousin twice removed (through adoption)
+birth up 4 down 3 male: second cousin once removed
+birth up 4 down 3 male half: half second cousin once removed
+birth up 4 down 3 male adoptive: second cousin once removed (through adoption)
+birth up 4 down 3 female: second cousin once removed
+birth up 4 down 3 female half: half second cousin once removed
+birth up 4 down 3 female adoptive: second cousin once removed (through adoption)
+birth up 4 down 3 unknown: second cousin once removed
+birth up 4 down 3 unknown half: half second cousin once removed
+birth up 4 down 3 unknown adoptive: second cousin once removed (through adoption)
+birth up 4 down 4 male: third cousin
+birth up 4 down 4 male half: half third cousin
+birth up 4 down 4 male adoptive: third cousin (through adoption)
+birth up 4 down 4 female: third cousin
+birth up 4 down 4 female half: half third cousin
+birth up 4 down 4 female adoptive: third cousin (through adoption)
+birth up 4 down 4 unknown: third cousin
+birth up 4 down 4 unknown half: half third cousin
+birth up 4 down 4 unknown adoptive: third cousin (through adoption)
+birth up 4 down 5 male: third cousin once removed
+birth up 4 down 5 male half: half third cousin once removed
+birth up 4 down 5 male adoptive: third cousin once removed (through adoption)
+birth up 4 down 5 female: third cousin once removed
+birth up 4 down 5 female half: half third cousin once removed
+birth up 4 down 5 female adoptive: third cousin once removed (through adoption)
+birth up 4 down 5 unknown: third cousin once removed
+birth up 4 down 5 unknown half: half third cousin once removed
+birth up 4 down 5 unknown adoptive: third cousin once removed (through adoption)
+birth up 4 down 6 male: third cousin twice removed
+birth up 4 down 6 male half: half third cousin twice removed
+birth up 4 down 6 male adoptive: third cousin twice removed (through adoption)
+birth up 4 down 6 female: third cousin twice removed
+birth up 4 down 6 female half: half third cousin twice removed
+birth up 4 down 6 female adoptive: third cousin twice removed (through adoption)
+birth up 4 down 6 unknown: third cousin twice removed
+birth up 4 down 6 unknown half: half third cousin twice removed
+birth up 4 down 6 unknown adoptive: third cousin twice removed (through adoption)
+birth up 4 down 7 male: third cousin 3 times removed
+birth up 4 down 7 male half: half third cousin 3 times removed
+birth up 4 down 7 male adoptive: third cousin 3 times removed (through adoption)
+birth up 4 down 7 female: third cousin 3 times removed
+birth up 4 down 7 female half: half third cousin 3 times removed
+birth up 4 down 7 female adoptive: third cousin 3 times removed (through adoption)
+birth up 4 down 7 unknown: third cousin 3 times removed
+birth up 4 down 7 unknown half: half third cousin 3 times removed
+birth up 4 down 7 unknown adoptive: third cousin 3 times removed (through adoption)
+birth up 4 down 8 male: third cousin 4 times removed
+birth up 4 down 8 male half: half third cousin 4 times removed
+birth up 4 down 8 male adoptive: third cousin 4 times removed (through adoption)
+birth up 4 down 8 female: third cousin 4 times removed
+birth up 4 down 8 female half: half third cousin 4 times removed
+birth up 4 down 8 female adoptive: third cousin 4 times removed (through adoption)
+birth up 4 down 8 unknown: third cousin 4 times removed
+birth up 4 down 8 unknown half: half third cousin 4 times removed
+birth up 4 down 8 unknown adoptive: third cousin 4 times removed (through adoption)
+birth up 5 down 0 male: 3rd great-grandfather
+birth up 5 down 0 male adoptive: 3rd great-grandfather (through adoption)
+birth up 5 down 0 female: 3rd great-grandmother
+birth up 5 down 0 female adoptive: 3rd great-grandmother (through adoption)
+birth up 5 down 0 unknown: 3rd great-grandparent
+birth up 5 down 0 unknown adoptive: 3rd great-grandparent (through adoption)
+birth up 5 down 1 male: 3rd great-uncle
+birth up 5 down 1 male half: half-3rd great-uncle
+birth up 5 down 1 male adoptive: 3rd great-uncle (through adoption)
+birth up 5 down 1 female: 3rd great-aunt
+birth up 5 down 1 female half: half-3rd great-aunt
+birth up 5 down 1 female adoptive: 3rd great-aunt (through adoption)
+birth up 5 down 1 unknown: 3rd great-aunt or 3rd great-uncle
+birth up 5 down 1 unknown half: half-3rd great-aunt or half-3rd great-uncle
+birth up 5 down 1 unknown adoptive: 3rd great-aunt or 3rd great-uncle (through adoption)
+birth up 5 down 2 male: first cousin 3 times removed
+birth up 5 down 2 male half: half first cousin 3 times removed
+birth up 5 down 2 male adoptive: first cousin 3 times removed (through adoption)
+birth up 5 down 2 female: first cousin 3 times removed
+birth up 5 down 2 female half: half first cousin 3 times removed
+birth up 5 down 2 female adoptive: first cousin 3 times removed (through adoption)
+birth up 5 down 2 unknown: first cousin 3 times removed
+birth up 5 down 2 unknown half: half first cousin 3 times removed
+birth up 5 down 2 unknown adoptive: first cousin 3 times removed (through adoption)
+birth up 5 down 3 male: second cousin twice removed
+birth up 5 down 3 male half: half second cousin twice removed
+birth up 5 down 3 male adoptive: second cousin twice removed (through adoption)
+birth up 5 down 3 female: second cousin twice removed
+birth up 5 down 3 female half: half second cousin twice removed
+birth up 5 down 3 female adoptive: second cousin twice removed (through adoption)
+birth up 5 down 3 unknown: second cousin twice removed
+birth up 5 down 3 unknown half: half second cousin twice removed
+birth up 5 down 3 unknown adoptive: second cousin twice removed (through adoption)
+birth up 5 down 4 male: third cousin once removed
+birth up 5 down 4 male half: half third cousin once removed
+birth up 5 down 4 male adoptive: third cousin once removed (through adoption)
+birth up 5 down 4 female: third cousin once removed
+birth up 5 down 4 female half: half third cousin once removed
+birth up 5 down 4 female adoptive: third cousin once removed (through adoption)
+birth up 5 down 4 unknown: third cousin once removed
+birth up 5 down 4 unknown half: half third cousin once removed
+birth up 5 down 4 unknown adoptive: third cousin once removed (through adoption)
+birth up 5 down 5 male: fourth cousin
+birth up 5 down 5 male half: half fourth cousin
+birth up 5 down 5 male adoptive: fourth cousin (through adoption)
+birth up 5 down 5 female: fourth cousin
+birth up 5 down 5 female half: half fourth cousin
+birth up 5 down 5 female adoptive: fourth cousin (through adoption)
+birth up 5 down 5 unknown: fourth cousin
+birth up 5 down 5 unknown half: half fourth cousin
+birth up 5 down 5 unknown adoptive: fourth cousin (through adoption)
+birth up 5 down 6 male: fourth cousin once removed
+birth up 5 down 6 male half: half fourth cousin once removed
+birth up 5 down 6 male adoptive: fourth cousin once removed (through adoption)
+birth up 5 down 6 female: fourth cousin once removed
+birth up 5 down 6 female half: half fourth cousin once removed
+birth up 5 down 6 female adoptive: fourth cousin once removed (through adoption)
+birth up 5 down 6 unknown: fourth cousin once removed
+birth up 5 down 6 unknown half: half fourth cousin once removed
+birth up 5 down 6 unknown adoptive: fourth cousin once removed (through adoption)
+birth up 5 down 7 male: fourth cousin twice removed
+birth up 5 down 7 male half: half fourth cousin twice removed
+birth up 5 down 7 male adoptive: fourth cousin twice removed (through adoption)
+birth up 5 down 7 female: fourth cousin twice removed
+birth up 5 down 7 female half: half fourth cousin twice removed
+birth up 5 down 7 female adoptive: fourth cousin twice removed (through adoption)
+birth up 5 down 7 unknown: fourth cousin twice removed
+birth up 5 down 7 unknown half: half fourth cousin twice removed
+birth up 5 down 7 unknown adoptive: fourth cousin twice removed (through adoption)
+birth up 5 down 8 male: fourth cousin 3 times removed
+birth up 5 down 8 male half: half fourth cousin 3 times removed
+birth up 5 down 8 male adoptive: fourth cousin 3 times removed (through adoption)
+birth up 5 down 8 female: fourth cousin 3 times removed
+birth up 5 down 8 female half: half fourth cousin 3 times removed
+birth up 5 down 8 female adoptive: fourth cousin 3 times removed (through adoption)
+birth up 5 down 8 unknown: fourth cousin 3 times removed
+birth up 5 down 8 unknown half: half fourth cousin 3 times removed
+birth up 5 down 8 unknown adoptive: fourth cousin 3 times removed (through adoption)
+birth up 6 down 0 male: 4th great-grandfather
+birth up 6 down 0 male adoptive: 4th great-grandfather (through adoption)
+birth up 6 down 0 female: 4th great-grandmother
+birth up 6 down 0 female adoptive: 4th great-grandmother (through adoption)
+birth up 6 down 0 unknown: 4th great-grandparent
+birth up 6 down 0 unknown adoptive: 4th great-grandparent (through adoption)
+birth up 6 down 1 male: 4th great-uncle
+birth up 6 down 1 male half: half-4th great-uncle
+birth up 6 down 1 male adoptive: 4th great-uncle (through adoption)
+birth up 6 down 1 female: 4th great-aunt
+birth up 6 down 1 female half: half-4th great-aunt
+birth up 6 down 1 female adoptive: 4th great-aunt (through adoption)
+birth up 6 down 1 unknown: 4th great-aunt or 4th great-uncle
+birth up 6 down 1 unknown half: half-4th great-aunt or half-4th great-uncle
+birth up 6 down 1 unknown adoptive: 4th great-aunt or 4th great-uncle (through adoption)
+birth up 6 down 2 male: first cousin 4 times removed
+birth up 6 down 2 male half: half first cousin 4 times removed
+birth up 6 down 2 male adoptive: first cousin 4 times removed (through adoption)
+birth up 6 down 2 female: first cousin 4 times removed
+birth up 6 down 2 female half: half first cousin 4 times removed
+birth up 6 down 2 female adoptive: first cousin 4 times removed (through adoption)
+birth up 6 down 2 unknown: first cousin 4 times removed
+birth up 6 down 2 unknown half: half first cousin 4 times removed
+birth up 6 down 2 unknown adoptive: first cousin 4 times removed (through adoption)
+birth up 6 down 3 male: second cousin 3 times removed
+birth up 6 down 3 male half: half second cousin 3 times removed
+birth up 6 down 3 male adoptive: second cousin 3 times removed (through adoption)
+birth up 6 down 3 female: second cousin 3 times removed
+birth up 6 down 3 female half: half second cousin 3 times removed
+birth up 6 down 3 female adoptive: second cousin 3 times removed (through adoption)
+birth up 6 down 3 unknown: second cousin 3 times removed
+birth up 6 down 3 unknown half: half second cousin 3 times removed
+birth up 6 down 3 unknown adoptive: second cousin 3 times removed (through adoption)
+birth up 6 down 4 male: third cousin twice removed
+birth up 6 down 4 male half: half third cousin twice removed
+birth up 6 down 4 male adoptive: third cousin twice removed (through adoption)
+birth up 6 down 4 female: third cousin twice removed
+birth up 6 down 4 female half: half third cousin twice removed
+birth up 6 down 4 female adoptive: third cousin twice removed (through adoption)
+birth up 6 down 4 unknown: third cousin twice removed
+birth up 6 down 4 unknown half: half third cousin twice removed
+birth up 6 down 4 unknown adoptive: third cousin twice removed (through adoption)
+birth up 6 down 5 male: fourth cousin once removed
+birth up 6 down 5 male half: half fourth cousin once removed
+birth up 6 down 5 male adoptive: fourth cousin once removed (through adoption)
+birth up 6 down 5 female: fourth cousin once removed
+birth up 6 down 5 female half: half fourth cousin once removed
+birth up 6 down 5 female adoptive: fourth cousin once removed (through adoption)
+birth up 6 down 5 unknown: fourth cousin once removed
+birth up 6 down 5 unknown half: half fourth cousin once removed
+birth up 6 down 5 unknown adoptive: fourth cousin once removed (through adoption)
+birth up 6 down 6 male: fifth cousin
+birth up 6 down 6 male half: half fifth cousin
+birth up 6 down 6 male adoptive: fifth cousin (through adoption)
+birth up 6 down 6 female: fifth cousin
+birth up 6 down 6 female half: half fifth cousin
+birth up 6 down 6 female adoptive: fifth cousin (through adoption)
+birth up 6 down 6 unknown: fifth cousin
+birth up 6 down 6 unknown half: half fifth cousin
+birth up 6 down 6 unknown adoptive: fifth cousin (through adoption)
+birth up 6 down 7 male: fifth cousin once removed
+birth up 6 down 7 male half: half fifth cousin once removed
+birth up 6 down 7 male adoptive: fifth cousin once removed (through adoption)
+birth up 6 down 7 female: fifth cousin once removed
+birth up 6 down 7 female half: half fifth cousin once removed
+birth up 6 down 7 female adoptive: fifth cousin once removed (through adoption)
+birth up 6 down 7 unknown: fifth cousin once removed
+birth up 6 down 7 unknown half: half fifth cousin once removed
+birth up 6 down 7 unknown adoptive: fifth cousin once removed (through adoption)
+birth up 6 down 8 male: fifth cousin twice removed
+birth up 6 down 8 male half: half fifth cousin twice removed
+birth up 6 down 8 male adoptive: fifth cousin twice removed (through adoption)
+birth up 6 down 8 female: fifth cousin twice removed
+birth up 6 down 8 female half: half fifth cousin twice removed
+birth up 6 down 8 female adoptive: fifth cousin twice removed (through adoption)
+birth up 6 down 8 unknown: fifth cousin twice removed
+birth up 6 down 8 unknown half: half fifth cousin twice removed
+birth up 6 down 8 unknown adoptive: fifth cousin twice removed (through adoption)
+birth up 7 down 0 male: 5th great-grandfather
+birth up 7 down 0 male adoptive: 5th great-grandfather (through adoption)
+birth up 7 down 0 female: 5th great-grandmother
+birth up 7 down 0 female adoptive: 5th great-grandmother (through adoption)
+birth up 7 down 0 unknown: 5th great-grandparent
+birth up 7 down 0 unknown adoptive: 5th great-grandparent (through adoption)
+birth up 7 down 1 male: 5th great-uncle
+birth up 7 down 1 male half: half-5th great-uncle
+birth up 7 down 1 male adoptive: 5th great-uncle (through adoption)
+birth up 7 down 1 female: 5th great-aunt
+birth up 7 down 1 female half: half-5th great-aunt
+birth up 7 down 1 female adoptive: 5th great-aunt (through adoption)
+birth up 7 down 1 unknown: 5th great-aunt or 5th great-uncle
+birth up 7 down 1 unknown half: half-5th great-aunt or half-5th great-uncle
+birth up 7 down 1 unknown adoptive: 5th great-aunt or 5th great-uncle (through adoption)
+birth up 7 down 2 male: first cousin 5 times removed
+birth up 7 down 2 male half: half first cousin 5 times removed
+birth up 7 down 2 male adoptive: first cousin 5 times removed (through adoption)
+birth up 7 down 2 female: first cousin 5 times removed
+birth up 7 down 2 female half: half first cousin 5 times removed
+birth up 7 down 2 female adoptive: first cousin 5 times removed (through adoption)
+birth up 7 down 2 unknown: first cousin 5 times removed
+birth up 7 down 2 unknown half: half first cousin 5 times removed
+birth up 7 down 2 unknown adoptive: first cousin 5 times removed (through adoption)
+birth up 7 down 3 male: second cousin 4 times removed
+birth up 7 down 3 male half: half second cousin 4 times removed
+birth up 7 down 3 male adoptive: second cousin 4 times removed (through adoption)
+birth up 7 down 3 female: second cousin 4 times removed
+birth up 7 down 3 female half: half second cousin 4 times removed
+birth up 7 down 3 female adoptive: second cousin 4 times removed (through adoption)
+birth up 7 down 3 unknown: second cousin 4 times removed
+birth up 7 down 3 unknown half: half second cousin 4 times removed
+birth up 7 down 3 unknown adoptive: second cousin 4 times removed (through adoption)
+birth up 7 down 4 male: third cousin 3 times removed
+birth up 7 down 4 male half: half third cousin 3 times removed
+birth up 7 down 4 male adoptive: third cousin 3 times removed (through adoption)
+birth up 7 down 4 female: third cousin 3 times removed
+birth up 7 down 4 female half: half third cousin 3 times removed
+birth up 7 down 4 female adoptive: third cousin 3 times removed (through adoption)
+birth up 7 down 4 unknown: third cousin 3 times removed
+birth up 7 down 4 unknown half: half third cousin 3 times removed
+birth up 7 down 4 unknown adoptive: third cousin 3 times removed (through adoption)
+birth up 7 down 5 male: fourth cousin twice removed
+birth up 7 down 5 male half: half fourth cousin twice removed
+birth up 7 down 5 male adoptive: fourth cousin twice removed (through adoption)
+birth up 7 down 5 female: fourth cousin twice removed
+birth up 7 down 5 female half: half fourth cousin twice removed
+birth up 7 down 5 female adoptive: fourth cousin twice removed (through adoption)
+birth up 7 down 5 unknown: fourth cousin twice removed
+birth up 7 down 5 unknown half: half fourth cousin twice removed
+birth up 7 down 5 unknown adoptive: fourth cousin twice removed (through adoption)
+birth up 7 down 6 male: fifth cousin once removed
+birth up 7 down 6 male half: half fifth cousin once removed
+birth up 7 down 6 male adoptive: fifth cousin once removed (through adoption)
+birth up 7 down 6 female: fifth cousin once removed
+birth up 7 down 6 female half: half fifth cousin once removed
+birth up 7 down 6 female adoptive: fifth cousin once removed (through adoption)
+birth up 7 down 6 unknown: fifth cousin once removed
+birth up 7 down 6 unknown half: half fifth cousin once removed
+birth up 7 down 6 unknown adoptive: fifth cousin once removed (through adoption)
+birth up 7 down 7 male: sixth cousin
+birth up 7 down 7 male half: half sixth cousin
+birth up 7 down 7 male adoptive: sixth cousin (through adoption)
+birth up 7 down 7 female: sixth cousin
+birth up 7 down 7 female half: half sixth cousin
+birth up 7 down 7 female adoptive: sixth cousin (through adoption)
+birth up 7 down 7 unknown: sixth cousin
+birth up 7 down 7 unknown half: half sixth cousin
+birth up 7 down 7 unknown adoptive: sixth cousin (through adoption)
+birth up 7 down 8 male: sixth cousin once removed
+birth up 7 down 8 male half: half sixth cousin once removed
+birth up 7 down 8 male adoptive: sixth cousin once removed (through adoption)
+birth up 7 down 8 female: sixth cousin once removed
+birth up 7 down 8 female half: half sixth cousin once removed
+birth up 7 down 8 female adoptive: sixth cousin once removed (through adoption)
+birth up 7 down 8 unknown: sixth cousin once removed
+birth up 7 down 8 unknown half: half sixth cousin once removed
+birth up 7 down 8 unknown adoptive: sixth cousin once removed (through adoption)
+birth up 8 down 0 male: 6th great-grandfather
+birth up 8 down 0 male adoptive: 6th great-grandfather (through adoption)
+birth up 8 down 0 female: 6th great-grandmother
+birth up 8 down 0 female adoptive: 6th great-grandmother (through adoption)
+birth up 8 down 0 unknown: 6th great-grandparent
+birth up 8 down 0 unknown adoptive: 6th great-grandparent (through adoption)
+birth up 8 down 1 male: 6th great-uncle
+birth up 8 down 1 male half: half-6th great-uncle
+birth up 8 down 1 male adoptive: 6th great-uncle (through adoption)
+birth up 8 down 1 female: 6th great-aunt
+birth up 8 down 1 female half: half-6th great-aunt
+birth up 8 down 1 female adoptive: 6th great-aunt (through adoption)
+birth up 8 down 1 unknown: 6th great-aunt or 6th great-uncle
+birth up 8 down 1 unknown half: half-6th great-aunt or half-6th great-uncle
+birth up 8 down 1 unknown adoptive: 6th great-aunt or 6th great-uncle (through adoption)
+birth up 8 down 2 male: first cousin 6 times removed
+birth up 8 down 2 male half: half first cousin 6 times removed
+birth up 8 down 2 male adoptive: first cousin 6 times removed (through adoption)
+birth up 8 down 2 female: first cousin 6 times removed
+birth up 8 down 2 female half: half first cousin 6 times removed
+birth up 8 down 2 female adoptive: first cousin 6 times removed (through adoption)
+birth up 8 down 2 unknown: first cousin 6 times removed
+birth up 8 down 2 unknown half: half first cousin 6 times removed
+birth up 8 down 2 unknown adoptive: first cousin 6 times removed (through adoption)
+birth up 8 down 3 male: second cousin 5 times removed
+birth up 8 down 3 male half: half second cousin 5 times removed
+birth up 8 down 3 male adoptive: second cousin 5 times removed (through adoption)
+birth up 8 down 3 female: second cousin 5 times removed
+birth up 8 down 3 female half: half second cousin 5 times removed
+birth up 8 down 3 female adoptive: second cousin 5 times removed (through adoption)
+birth up 8 down 3 unknown: second cousin 5 times removed
+birth up 8 down 3 unknown half: half second cousin 5 times removed
+birth up 8 down 3 unknown adoptive: second cousin 5 times removed (through adoption)
+birth up 8 down 4 male: third cousin 4 times removed
+birth up 8 down 4 male half: half third cousin 4 times removed
+birth up 8 down 4 male adoptive: third cousin 4 times removed (through adoption)
+birth up 8 down 4 female: third cousin 4 times removed
+birth up 8 down 4 female half: half third cousin 4 times removed
+birth up 8 down 4 female adoptive: third cousin 4 times removed (through adoption)
+birth up 8 down 4 unknown: third cousin 4 times removed
+birth up 8 down 4 unknown half: half third cousin 4 times removed
+birth up 8 down 4 unknown adoptive: third cousin 4 times removed (through adoption)
+birth up 8 down 5 male: fourth cousin 3 times removed
+birth up 8 down 5 male half: half fourth cousin 3 times removed
+birth up 8 down 5 male adoptive: fourth cousin 3 times removed (through adoption)
+birth up 8 down 5 female: fourth cousin 3 times removed
+birth up 8 down 5 female half: half fourth cousin 3 times removed
+birth up 8 down 5 female adoptive: fourth cousin 3 times removed (through adoption)
+birth up 8 down 5 unknown: fourth cousin 3 times removed
+birth up 8 down 5 unknown half: half fourth cousin 3 times removed
+birth up 8 down 5 unknown adoptive: fourth cousin 3 times removed (through adoption)
+birth up 8 down 6 male: fifth cousin twice removed
+birth up 8 down 6 male half: half fifth cousin twice removed
+birth up 8 down 6 male adoptive: fifth cousin twice removed (through adoption)
+birth up 8 down 6 female: fifth cousin twice removed
+birth up 8 down 6 female half: half fifth cousin twice removed
+birth up 8 down 6 female adoptive: fifth cousin twice removed (through adoption)
+birth up 8 down 6 unknown: fifth cousin twice removed
+birth up 8 down 6 unknown half: half fifth cousin twice removed
+birth up 8 down 6 unknown adoptive: fifth cousin twice removed (through adoption)
+birth up 8 down 7 male: sixth cousin once removed
+birth up 8 down 7 male half: half sixth cousin once removed
+birth up 8 down 7 male adoptive: sixth cousin once removed (through adoption)
+birth up 8 down 7 female: sixth cousin once removed
+birth up 8 down 7 female half: half sixth cousin once removed
+birth up 8 down 7 female adoptive: sixth cousin once removed (through adoption)
+birth up 8 down 7 unknown: sixth cousin once removed
+birth up 8 down 7 unknown half: half sixth cousin once removed
+birth up 8 down 7 unknown adoptive: sixth cousin once removed (through adoption)
+birth up 8 down 8 male: seventh cousin
+birth up 8 down 8 male half: half seventh cousin
+birth up 8 down 8 male adoptive: seventh cousin (through adoption)
+birth up 8 down 8 female: seventh cousin
+birth up 8 down 8 female half: half seventh cousin
+birth up 8 down 8 female adoptive: seventh cousin (through adoption)
+birth up 8 down 8 unknown: seventh cousin
+birth up 8 down 8 unknown half: half seventh cousin
+birth up 8 down 8 unknown adoptive: seventh cousin (through adoption)
+partner male married: husband
+partner male: partner
+partner female married: wife
+partner female: partner
+partner unknown married: spouse
+partner unknown: partner
+partner’s kin up 0 down 1 male: stepson
+partner’s kin up 0 down 1 female: stepdaughter
+partner’s kin up 0 down 1 unknown: stepchild
+partner’s kin up 0 down 2 male: related by marriage
+partner’s kin up 0 down 2 female: related by marriage
+partner’s kin up 0 down 2 unknown: related by marriage
+partner’s kin up 0 down 3 male: related by marriage
+partner’s kin up 0 down 3 female: related by marriage
+partner’s kin up 0 down 3 unknown: related by marriage
+partner’s kin up 1 down 0 male: father-in-law
+partner’s kin up 1 down 0 female: mother-in-law
+partner’s kin up 1 down 0 unknown: parent-in-law
+partner’s kin up 1 down 1 male: brother-in-law
+partner’s kin up 1 down 1 female: sister-in-law
+partner’s kin up 1 down 1 unknown: sibling-in-law
+partner’s kin up 1 down 2 male: related by marriage
+partner’s kin up 1 down 2 female: related by marriage
+partner’s kin up 1 down 2 unknown: related by marriage
+partner’s kin up 1 down 3 male: related by marriage
+partner’s kin up 1 down 3 female: related by marriage
+partner’s kin up 1 down 3 unknown: related by marriage
+partner’s kin up 2 down 0 male: related by marriage
+partner’s kin up 2 down 0 female: related by marriage
+partner’s kin up 2 down 0 unknown: related by marriage
+partner’s kin up 2 down 1 male: related by marriage
+partner’s kin up 2 down 1 female: related by marriage
+partner’s kin up 2 down 1 unknown: related by marriage
+partner’s kin up 2 down 2 male: related by marriage
+partner’s kin up 2 down 2 female: related by marriage
+partner’s kin up 2 down 2 unknown: related by marriage
+partner’s kin up 2 down 3 male: related by marriage
+partner’s kin up 2 down 3 female: related by marriage
+partner’s kin up 2 down 3 unknown: related by marriage
+partner’s kin up 3 down 0 male: related by marriage
+partner’s kin up 3 down 0 female: related by marriage
+partner’s kin up 3 down 0 unknown: related by marriage
+partner’s kin up 3 down 1 male: related by marriage
+partner’s kin up 3 down 1 female: related by marriage
+partner’s kin up 3 down 1 unknown: related by marriage
+partner’s kin up 3 down 2 male: related by marriage
+partner’s kin up 3 down 2 female: related by marriage
+partner’s kin up 3 down 2 unknown: related by marriage
+partner’s kin up 3 down 3 male: related by marriage
+partner’s kin up 3 down 3 female: related by marriage
+partner’s kin up 3 down 3 unknown: related by marriage
+partner’s kin up 1 down 1 male adoptive: brother-in-law (through adoption)
+partner’s kin up 1 down 1 female adoptive: sister-in-law (through adoption)
+partner’s kin up 1 down 1 unknown adoptive: sibling-in-law (through adoption)
+kin’s partner up 0 down 1 male: son-in-law
+kin’s partner up 0 down 1 female: daughter-in-law
+kin’s partner up 0 down 1 unknown: child-in-law
+kin’s partner up 0 down 2 male: related by marriage
+kin’s partner up 0 down 2 female: related by marriage
+kin’s partner up 0 down 2 unknown: related by marriage
+kin’s partner up 0 down 3 male: related by marriage
+kin’s partner up 0 down 3 female: related by marriage
+kin’s partner up 0 down 3 unknown: related by marriage
+kin’s partner up 1 down 0 male: stepfather
+kin’s partner up 1 down 0 female: stepmother
+kin’s partner up 1 down 0 unknown: step-parent
+kin’s partner up 1 down 1 male: brother-in-law
+kin’s partner up 1 down 1 female: sister-in-law
+kin’s partner up 1 down 1 unknown: sibling-in-law
+kin’s partner up 1 down 2 male: related by marriage
+kin’s partner up 1 down 2 female: related by marriage
+kin’s partner up 1 down 2 unknown: related by marriage
+kin’s partner up 1 down 3 male: related by marriage
+kin’s partner up 1 down 3 female: related by marriage
+kin’s partner up 1 down 3 unknown: related by marriage
+kin’s partner up 2 down 0 male: step-grandfather
+kin’s partner up 2 down 0 female: step-grandmother
+kin’s partner up 2 down 0 unknown: step-grandparent
+kin’s partner up 2 down 1 male: uncle by marriage
+kin’s partner up 2 down 1 female: aunt by marriage
+kin’s partner up 2 down 1 unknown: aunt by marriage or uncle by marriage
+kin’s partner up 2 down 2 male: related by marriage
+kin’s partner up 2 down 2 female: related by marriage
+kin’s partner up 2 down 2 unknown: related by marriage
+kin’s partner up 2 down 3 male: related by marriage
+kin’s partner up 2 down 3 female: related by marriage
+kin’s partner up 2 down 3 unknown: related by marriage
+kin’s partner up 3 down 0 male: related by marriage
+kin’s partner up 3 down 0 female: related by marriage
+kin’s partner up 3 down 0 unknown: related by marriage
+kin’s partner up 3 down 1 male: related by marriage
+kin’s partner up 3 down 1 female: related by marriage
+kin’s partner up 3 down 1 unknown: related by marriage
+kin’s partner up 3 down 2 male: related by marriage
+kin’s partner up 3 down 2 female: related by marriage
+kin’s partner up 3 down 2 unknown: related by marriage
+kin’s partner up 3 down 3 male: related by marriage
+kin’s partner up 3 down 3 female: related by marriage
+kin’s partner up 3 down 3 unknown: related by marriage
+kin’s partner up 1 down 1 male adoptive: brother-in-law (through adoption)
+kin’s partner up 1 down 1 female adoptive: sister-in-law (through adoption)
+kin’s partner up 1 down 1 unknown adoptive: sibling-in-law (through adoption)
+step-sibling male: stepbrother
+co-parent-in-law male: co-father-in-law
+foster parent male: foster father
+foster child male: foster son
+step-sibling female: stepsister
+co-parent-in-law female: co-mother-in-law
+foster parent female: foster mother
+foster child female: foster daughter
+step-sibling unknown: step-sibling
+co-parent-in-law unknown: co-parent-in-law
+foster parent unknown: foster parent
+foster child unknown: foster child

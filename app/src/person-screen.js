@@ -2,11 +2,13 @@
 // in with their Role, Place or House and date, the Families as partner and as child, and each
 // Citation with its confidence and images. It offers "Show in tree", the life path on the map,
 // "Propose a change" and the record's history, and to the Owner marking a Family root. Its Research
-// leads and suggested leads follow (research-leads spec, "Leads where people look"), and for the
+// leads and suggested leads follow (research-leads spec, "Leads where people look"), under the name
+// how the Person is related to the reader (kinship spec, src/kinship-section.js), and for the
 // Owner and a Living person, erasing them (erasure spec, src/erase-person.js). It renders
 // from the device first and refreshes when online, with "as of" when the copy shown is not fresh.
 
 import { getCitation, getPerson, setFamilyRoot } from './api.js';
+import { KinshipSection } from './kinship-section.js';
 import { EraseSection } from './erase-person.js';
 import { lifeYears } from './hourglass-layout.js';
 import { has, t } from './i18n.js';
@@ -227,6 +229,7 @@ export function PersonScreen({ id, cache, me = null, refreshMe }) {
     </header>
     <${AsOf} asOf=${loaded.asOf} />
     <${ErrorLine} error=${loaded.asOf ? null : loaded.error} />
+    <${KinshipSection} id=${person.id} me=${me} cache=${cache} refreshMe=${refreshMe} />
     ${
       person.labels.length
         ? html`<ul class="chips" data-testid="person-labels" aria-label=${t('person.labels')}>
