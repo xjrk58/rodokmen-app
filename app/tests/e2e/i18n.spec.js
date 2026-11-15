@@ -37,6 +37,31 @@ test.describe('English phone, first visit', () => {
   });
 });
 
+test.describe('Settings dialog', () => {
+  // A click outside closes it: natively with closedby="any", by hand where a browser lacks it (Safari).
+  /** @param {import('@playwright/test').Page} page */
+  const closesOnClickOutside = async (page) => {
+    await page.locator('#settings-button').click();
+    const dialog = page.locator('#settings');
+    await expect(dialog).toHaveAttribute('open', '');
+    await page.mouse.click(4, 4);
+    await expect(dialog).not.toHaveAttribute('open', '');
+  };
+
+  test('closes on a click outside, with closedby', async ({ page }) => {
+    await openApp(page);
+    expect(await page.evaluate(() => 'closedBy' in HTMLDialogElement.prototype)).toBe(true);
+    await closesOnClickOutside(page);
+  });
+
+  test('closes on a click outside where the browser has no closedby', async ({ page }) => {
+    await page.addInitScript(() => Reflect.deleteProperty(HTMLDialogElement.prototype, 'closedBy'));
+    await openApp(page);
+    expect(await page.evaluate(() => 'closedBy' in HTMLDialogElement.prototype)).toBe(false);
+    await closesOnClickOutside(page);
+  });
+});
+
 test.describe('Other browser language', () => {
   test.use({ locale: 'de-DE', language: null });
 

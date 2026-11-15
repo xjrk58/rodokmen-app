@@ -28,9 +28,13 @@ export class Settings {
       this.syncLanguage();
       dialog.showModal();
     });
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) dialog.close();
-    });
+    // closedby="any" closes it on a click outside; Safari doesn't know closedby yet, so there a click
+    // on the backdrop closes it by hand (Esc and the back gesture close it everywhere).
+    if (!('closedBy' in HTMLDialogElement.prototype)) {
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    }
     for (const radio of this.radios) {
       radio.addEventListener('change', () => {
         const lang = LANGUAGES.find((l) => l === radio.value);
