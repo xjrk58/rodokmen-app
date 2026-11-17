@@ -48,7 +48,11 @@ describe('notes and Labels in the app (Chromium, phone and desktop)', () => {
       // Notes and Labels state no fact: the form asks for no Citation.
       expect(await form.getByTestId('transcription').count()).toBe(0);
       await form.getByTestId('notes-text').fill(note);
+      // An Enter that confirms an input method's character adds no Label.
       await form.getByTestId('label-input').fill(label);
+      const chips = await form.getByTestId('label-chip').count();
+      await form.getByTestId('label-input').dispatchEvent('keydown', { key: 'Enter', isComposing: true });
+      expect(await form.getByTestId('label-chip').count()).toBe(chips);
       await form.getByTestId('label-add').click();
       await expect.poll(() => form.getByTestId('label-chip').allTextContents()).toContain(`${label}×`);
       await w.screenshot(page, `notes-form-${size}`);

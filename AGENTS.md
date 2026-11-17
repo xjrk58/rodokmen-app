@@ -64,6 +64,18 @@ The docs follow [Diátaxis](https://diataxis.fr), with [`docs/README.md`](docs/R
 - **Paths stay put** where CI, scripts or agents use them: `docs/verification.md`, `docs/architecture/`, `docs/adr/`, `GLOSSARY.md`, `AGENTS.md` and `openspec/`. The index links them.
 - `pnpm lint:docs` (part of `pnpm lint` and the lint workflow) fails on a broken relative link in any Markdown file, and on a page under `docs/` missing from the index.
 
+## Web platform guidance
+
+The app's HTML, CSS and client-side JavaScript follow current web platform practice, from Google Chrome's [Modern Web Guidance](https://github.com/GoogleChrome/modern-web-guidance) (Apache-2.0). The Owner adopted it on 2026-11-15.
+
+- **Before writing or changing app UI**, search for the matching guide and read it. Use a 2–5 word query for one capability, such as "light dismiss dialog":
+  `DISABLE_TELEMETRY=1 npx -y modern-web-guidance@1.0.0 search "<query>"`, then
+  `DISABLE_TELEMETRY=1 npx -y modern-web-guidance@1.0.0 retrieve "<id>"`.
+- **Always with `DISABLE_TELEMETRY=1` and the pinned version.** The search runs locally, but without that variable the tool sends usage data to Google, including the search text. Never put names or research text in a query. Raising the pinned version is its own small PR.
+- **Fit a guide to this app:** no bundler; a strict CSP (no inline scripts or styles); everything the app needs is precached by the service worker; phone first. A newer API needs its browser support checked, and a fallback or progressive enhancement where the guide gives one.
+- **Name the guides that shaped a change** in its PR description.
+- `legacy-scan` (`DISABLE_TELEMETRY=1 npx -y modern-web-guidance@1.0.0 legacy-scan app --json`) finds known legacy patterns. It covers about a fifth of the guides, and each finding has to be checked against its rubric, so it isn't one of the checks in `pnpm check`. Its first run, on 2026-11-15, found two patterns, both fixed: the Settings dialog's hand-made light dismiss, and an Enter that ignored input-method composition in the Labels field.
+
 ## Conventions
 
 - Use the terms in [`GLOSSARY.md`](GLOSSARY.md) exactly; decisions are in [`docs/adr/`](docs/adr/).

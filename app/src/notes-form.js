@@ -32,7 +32,9 @@ function labelEditor(form) {
     };
     add.addEventListener('click', addLabel);
     input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      // Not while an input method is composing: its Enter confirms a character.
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- Safari reports that Enter only as keyCode 229 (Modern Web Guidance, ime-safe-enter-submit)
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
         e.preventDefault();
         addLabel();
       }
