@@ -18,6 +18,15 @@ Open **Options** above the Chart.
 - **Direct line to**: your own Person and the Person in the middle of the tree come first, then every descendant in the Chart. The line is marked in the tree form. If it goes deeper than the Chart, a note offers to show it.
 - **Form**: **Direct line** draws the line down the centre, one couple per row, with their children listed under it and the married brothers and sisters beside it. It needs a Direct line first.
 
+## Show your kinship on the cards
+
+If your account is linked to your own Person ([See how you are related](see-how-you-are-related.md)), you can see on each card how its Person is related to you.
+
+1. Open **Options** above the Chart.
+2. Switch on **Kinship to me** (Czech: **Příbuzenství ke mně**). Each card shows the term at its foot, such as "děd", "strýc" or "sestřenice"; your own card says "vy" ("you"), and "možná" ("possibly") marks a kinship through a link with no confirming Citation.
+
+The device remembers the switch for every Chart until you switch it off. It is not part of the Chart's address, so a Member you send the address to sees their own kinship, or none. Printing and both downloads never show kinship.
+
 ## Open a branch
 
 A Person whose descendants the Chart leaves out has an arrow under their card. Tap the arrow, or press and hold the card, to open a Chart from that Person with the same options.
@@ -45,4 +54,4 @@ A Sheet, printed or downloaded, shows Living people reduced as in an Export. On 
 
 ## Keep a Chart for offline use
 
-Open a Chart once while online. It stays on the device, with its Sheet, so you can open and print it later without a connection; the line under the title says when it was loaded. To share a Chart with another Member, send them its address.
+Open a Chart once while online. It stays on the device, with its Sheet, so you can open and print it later without a connection; the line under the title says when it was loaded. A Chart kept without kinship opens without it, and says so, if you switch kinship on while offline. To share a Chart with another Member, send them its address.

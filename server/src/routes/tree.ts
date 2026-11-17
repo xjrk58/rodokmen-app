@@ -42,7 +42,7 @@ import type { Account } from '../db/types.js';
 import { imageLink } from '../storage/images.js';
 import { getEvent, getFamily, mapEvents, placeEvents } from '../tree/events.js';
 import { ancestors, descendants, hourglass } from '../tree/pedigree.js';
-import { fillKinship, kinshipBetween } from '../tree/kinship.js';
+import { fillKinship, kinshipBetween, ownPerson } from '../tree/kinship.js';
 import { getPerson, searchPersons, type TreeDeps } from '../tree/persons.js';
 import { findHousesByNumber, getEstate, getHouse, getParish, getPlace, searchPlaces } from '../tree/places.js';
 import { getCitation, getSource, searchSources } from '../tree/sources.js';
@@ -60,15 +60,9 @@ function found<T>(value: T | null, what: string): T {
 const mergedRedirect = { 308: z.null().describe('Location: the same route for the Person this one was merged into') };
 const mergedEventRedirect = { 308: z.null().describe('Location: the Event this one was merged into') };
 
-/** The caller's own Person (kinship spec): a Member's linked Person, a merged one counting as the kept; an Agent has none. */
-async function ownPerson(deps: TreeDeps, member: Account | null): Promise<string | null> {
-  if (!member || member.role === 'agent' || !member.person_id) return null;
-  return keptPerson(deps.db, member.person_id);
-}
-
 /** Fills the short form of kinship on these summaries for a Member with an own Person; for anyone else the field stays absent. */
 async function withKinship<T>(deps: TreeDeps, member: Account | null, value: T, summaries: (v: T) => PersonSummary[]): Promise<T> {
-  const own = await ownPerson(deps, member);
+  const own = await ownPerson(deps.db, member);
   if (own) await fillKinship(deps.db, own, summaries(value));
   return value;
 }
@@ -125,7 +119,7 @@ export async function treeRoutes(fastify: FastifyInstance, deps: TreeDeps) {
     handler: async (req) => {
       let from: string | null;
       if (req.query.from) from = found(await keptPerson(deps.db, req.query.from), 'Person');
-      else from = await ownPerson(deps, req.member);
+      else from = await ownPerson(deps.db, req.member);
       if (!from) throw new ApiProblem(422, 'no_own_person', 'Name the starting Person with ?from=: this account is linked to no Person of its own.');
       return found(await kinshipBetween(deps, from, req.params.id), 'Person');
     },

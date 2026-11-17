@@ -213,6 +213,15 @@ Recorded when the change was built (PR #176), where the code differs from the te
 - **Civil code**: kinship § 771, lines § 772, degree § 773, kinship by marriage § 774 (zákon č. 89/2012 Sb. as in force in 2026).
 - **Determinism**: the ESLint block is written by this change and covers `shared/src/kinship*.ts` and `shared/src/kinship-terms/`; `add-tree-charts` adds its modules to it.
 
+Recorded when group 8 was built (PR #181, once `add-tree-charts` was merged):
+
+- **The Sheet schema** is a variant of the Chart model. `DescendantChart` and `HouseChart` are each a screen variant (`sheet: null`, cards `ScreenChartPerson` with an optional `kinship`) or a Sheet's (cards `ChartPerson`, strict, with no kinship field), told apart by `sheet`. Their JSON is otherwise unchanged.
+- **A proved rule** decides when cards carry kinship: `chartShowsKinship` in `shared/src/chart-kinship.ts` (tree-charts "Kinship on Chart cards"). The design listed none for Charts.
+- **The Sheet writer** refuses a model with kinship, and the screen variant, in print as well as in the SVG and PNG files; before, only the files refused the screen variant.
+- **On the cards** the term is on the line at the foot, before the marks, and after the life years on a sibling card of the line form. The children lists of the line form and the House chart are lists of names, and show none.
+- **Offline**, the device keeps the kinship variant under the reader's own Person. When the variant asked for cannot be loaded, the other one kept is shown without kinship, and with kinship switched on the Chart says so.
+- **The work bound**: past the closest degree, a short form can cost more than 5,000 units, up to 7,750 on the dense generated Tree, because the chains built to check the next degree come on top. Search does the same. A Chart of 454 cards with kinship takes about 0.5 s on that Tree. Both are filed as #182 for the Owner to decide.
+
 ## Risks / Trade-offs
 
 - [Czech usage differs by region and age ("koleno", ujec, strýna)] → One table per language, in the reference page. The Owner chose the modern strýc and teta on both sides, "z n. kolena", and "pra" up to three times (Open Questions 2 to 4).

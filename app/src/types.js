@@ -124,6 +124,7 @@
 /** @typedef {import('../../shared/src/schemas/charts.js').HouseChart} HouseChart */
 /** @typedef {DescendantChart | HouseChart} ChartModel */
 /** @typedef {import('../../shared/src/schemas/charts.js').ChartPerson} ChartPerson */
+/** @typedef {import('../../shared/src/schemas/charts.js').ScreenChartPerson} ScreenChartPerson */
 /** @typedef {import('../../shared/src/schemas/charts.js').ChartFact} ChartFact */
 /** @typedef {import('../../shared/src/schemas/charts.js').ChartFamily} ChartFamily */
 /** @typedef {import('../../shared/src/schemas/charts.js').DescendantNode} DescendantNode */

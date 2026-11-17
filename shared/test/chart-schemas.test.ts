@@ -1,6 +1,21 @@
-// The queries of the Chart routes (tree-charts spec; design.md, "The Chart model and its routes").
+// The queries of the Chart routes (tree-charts spec; design.md, "The Chart model and its routes"),
+// and the two variants of the model: kinship on the screen's cards only (add-kinship task 8.1).
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { DescendantChartQuery, HouseChartQuery } from '../src/index.js';
+import {
+  DescendantChart,
+  DescendantChartQuery,
+  DescendantChartScreen,
+  DescendantChartSheet,
+  HouseChart,
+  HouseChartQuery,
+  HouseChartSheet,
+  type KinshipShort,
+} from '../src/index.js';
+
+const GOLDEN = join(dirname(fileURLToPath(import.meta.url)), 'golden', 'charts');
 
 const jan = '0192f0c4-7a1e-7c3b-9d2a-000000000001';
 const family = '0192f0c4-7a1e-7c3b-9d2a-000000000002';
@@ -51,5 +66,46 @@ describe('HouseChartQuery', () => {
 
   it('refuses a period that ends before it starts', () => {
     expect(HouseChartQuery.safeParse({ from: '1850', to: '1790' }).success).toBe(false);
+  });
+});
+
+describe('kinship on Chart cards (tree-charts spec, "Kinship on Chart cards")', () => {
+  const golden = (name: string): unknown => JSON.parse(readFileSync(join(GOLDEN, `${name}.json`), 'utf8'));
+  const kinship: KinshipShort = {
+    kind: 'birth',
+    term: { cs: { text: 'děd', gender: 'm' }, en: { text: 'grandfather', gender: 'm' } },
+    possible: false,
+    line: 'direct',
+    degree: 2,
+    others: 0,
+    more: false,
+  };
+
+  it('takes kinship=1 on the screen variant of both Charts, and refuses it with sheet', () => {
+    expect(DescendantChartQuery.parse({ person: jan, kinship: '1' })).toMatchObject({ kinship: '1' });
+    expect(HouseChartQuery.parse({ kinship: '1' })).toMatchObject({ kinship: '1' });
+    for (const sheet of ['reduced', 'nameless']) {
+      const d = DescendantChartQuery.safeParse({ person: jan, sheet, kinship: '1' });
+      expect(d.success, sheet).toBe(false);
+      expect(d.error?.issues[0]?.path).toEqual(['kinship']);
+      expect(HouseChartQuery.safeParse({ sheet, kinship: '1' }).success, sheet).toBe(false);
+    }
+    expect(DescendantChartQuery.safeParse({ person: jan, kinship: 'true' }).success).toBe(false);
+  });
+
+  it('has no kinship field in the Sheet variant: a Sheet with one fails its schema, the screen variant takes it', () => {
+    expect(Object.keys(DescendantChartSheet.shape.persons.element.shape)).not.toContain('kinship');
+    expect(Object.keys(HouseChartSheet.shape.persons.element.shape)).not.toContain('kinship');
+    expect(Object.keys(DescendantChartScreen.shape.persons.element.shape)).toContain('kinship');
+    for (const name of ['novak-tree-reduced', 'novak-tree-nameless']) {
+      const sheet = DescendantChart.parse(golden(name));
+      expect(sheet.sheet, name).not.toBeNull();
+      expect(DescendantChart.safeParse({ ...sheet, persons: sheet.persons.map((p) => ({ ...p, kinship })) }).success, name).toBe(false);
+    }
+    const house = HouseChart.parse(golden('house-a-sheet'));
+    expect(HouseChart.safeParse({ ...house, persons: house.persons.map((p) => ({ ...p, kinship: null })) }).success).toBe(false);
+    const screen = DescendantChart.parse(golden('novak-tree-4'));
+    const withKinship = DescendantChart.parse({ ...screen, persons: screen.persons.map((p) => ({ ...p, kinship })) });
+    expect(withKinship.persons[0]).toMatchObject({ kinship });
   });
 });

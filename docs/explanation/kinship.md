@@ -42,7 +42,7 @@ The search goes up to 12 generations from each of the two Persons and lists at m
 
 ## Computed on request, never stored
 
-Kinship is derived from the Family links on each request, so it cannot go stale. The server keeps one copy of the Tree's Family links in memory per state of the Tree (the newest accepted change and the newest erasure) and rebuilds it when the Tree changes. Nothing about kinship is stored, and none of it goes into an Export or onto a printed Sheet ([privacy](privacy.md)).
+Kinship is derived from the Family links on each request, so it cannot go stale. The server keeps one copy of the Tree's Family links in memory per state of the Tree (the newest accepted change and the newest erasure) and rebuilds it when the Tree changes. Nothing about kinship is stored, and none of it goes into an Export or onto a printed Sheet ([privacy](privacy.md); [why a Sheet never shows kinship](charts.md#why-a-sheet-never-shows-kinship)).
 
 ## Proved, within limits
 

@@ -10573,7 +10573,120 @@
           "diedYoung",
           "reduced",
           "nameless"
-        ]
+        ],
+        "additionalProperties": false,
+        "description": "A card as a Sheet holds it: never kinship"
+      },
+      "ScreenChartPersonInput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/IdInput"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/SexInput"
+          },
+          "given": {
+            "type": "string",
+            "description": "Given name of the primary Name; empty on a card without a name"
+          },
+          "surname": {
+            "type": "string",
+            "description": "Surname of the primary Name; empty on a card without a name"
+          },
+          "birthSurname": {
+            "description": "The surname of the birth Name, when the primary Name is a married name with another surname",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "living": {
+            "type": "boolean",
+            "description": "Living by the Living rule on livingOn"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/RelationToFamilyInput"
+          },
+          "familyRoot": {
+            "type": "boolean"
+          },
+          "born": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChartFactInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The birth, or else the baptism"
+          },
+          "died": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChartFactInput"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The death, or else the burial"
+          },
+          "birthYear": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The year of the earliest day the birth could be; null when unknown"
+          },
+          "diedYoung": {
+            "type": "boolean",
+            "description": "The dates show for certain that the Person died before their 15th birthday"
+          },
+          "reduced": {
+            "type": "boolean",
+            "description": "On a Sheet: reduced as in an Export (name, sex, relationships and birth year only)"
+          },
+          "nameless": {
+            "type": "boolean",
+            "description": "On a Sheet without names: a Living person shown only as living"
+          },
+          "kinship": {
+            "description": "With kinship=1 and an own Person: the Person's closest kinship to the caller's own Person; null with no kinship; absent otherwise",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KinshipShortInput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "sex",
+          "given",
+          "surname",
+          "birthSurname",
+          "living",
+          "relation",
+          "familyRoot",
+          "born",
+          "died",
+          "birthYear",
+          "diedYoung",
+          "reduced",
+          "nameless"
+        ],
+        "description": "A card of the screen variant"
       },
       "ChartChildInput": {
         "type": "object",
@@ -10905,7 +11018,7 @@
           "siblings"
         ]
       },
-      "DescendantChartInput": {
+      "DescendantChartScreenInput": {
         "type": "object",
         "properties": {
           "kind": {
@@ -10999,15 +11112,155 @@
             "description": "Line form: one row per generation of the Direct line"
           },
           "sheet": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SheetVariantInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "null",
             "description": "null: the screen variant"
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/ChartAsOfInput"
+          },
+          "livingOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "The day the Living rule was applied"
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScreenChartPersonInput"
+            },
+            "description": "Every Person on the Chart, by id"
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartFamilyInput"
+            },
+            "description": "Every Family on the Chart, by id"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartSourceInput"
+            },
+            "description": "The Sources cited for the facts shown, by title in code units, then by id"
+          }
+        },
+        "required": [
+          "kind",
+          "form",
+          "start",
+          "generations",
+          "shown",
+          "leftOut",
+          "cards",
+          "line",
+          "lineBeyond",
+          "nodes",
+          "rows",
+          "sheet",
+          "asOf",
+          "livingOn",
+          "persons",
+          "families",
+          "sources"
+        ]
+      },
+      "DescendantChartSheetInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "descendants"
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "tree",
+              "line"
+            ]
+          },
+          "start": {
+            "type": "object",
+            "properties": {
+              "personId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/IdInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "familyId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/IdInput"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "personId",
+              "familyId"
+            ],
+            "description": "The start as understood: a merged Person is followed to the kept one"
+          },
+          "generations": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Generations asked for (tree form)"
+          },
+          "shown": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Whole generations shown: fewer than asked when the Chart would hold more than 500 Person cards"
+          },
+          "leftOut": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Descendants left out in all"
+          },
+          "cards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Person cards on the Chart: descendants, partners and pointer cards"
+          },
+          "line": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IdInput"
+            },
+            "description": "The Direct line from the start to its end, empty without one"
+          },
+          "lineBeyond": {
+            "type": "boolean",
+            "description": "The Direct line goes deeper than the tree form shows"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DescendantNodeInput"
+            },
+            "description": "Tree form: the descendants in the Chart's order, depth first; the first is the start"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineRowInput"
+            },
+            "description": "Line form: one row per generation of the Direct line"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetVariantInput"
           },
           "asOf": {
             "$ref": "#/components/schemas/ChartAsOfInput"
@@ -11058,6 +11311,16 @@
           "persons",
           "families",
           "sources"
+        ]
+      },
+      "DescendantChartInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DescendantChartScreenInput"
+          },
+          {
+            "$ref": "#/components/schemas/DescendantChartSheetInput"
+          }
         ]
       },
       "HouseRowLinkInput": {
@@ -11243,7 +11506,7 @@
           "unrelated"
         ]
       },
-      "HouseChartInput": {
+      "HouseChartScreenInput": {
         "type": "object",
         "properties": {
           "kind": {
@@ -11378,15 +11641,196 @@
             "description": "In order: by the earliest day of their Events at the House, undated rows last, then by key"
           },
           "sheet": {
+            "type": "null",
+            "description": "null: the screen variant"
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/ChartAsOfInput"
+          },
+          "livingOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "The day the Living rule was applied"
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScreenChartPersonInput"
+            },
+            "description": "Every Person on the Chart, by id"
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartFamilyInput"
+            },
+            "description": "Every Family on the Chart, by id"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartSourceInput"
+            },
+            "description": "The Sources cited for the facts shown, by title in code units, then by id"
+          }
+        },
+        "required": [
+          "kind",
+          "house",
+          "from",
+          "to",
+          "unrelated",
+          "firstYear",
+          "lastYear",
+          "total",
+          "hiddenUnrelated",
+          "needsPeriod",
+          "rows",
+          "sheet",
+          "asOf",
+          "livingOn",
+          "persons",
+          "families",
+          "sources"
+        ]
+      },
+      "HouseChartSheetInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "house"
+          },
+          "house": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              "placeId": {
+                "$ref": "#/components/schemas/IdInput"
+              },
+              "place": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "numbers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "string"
+                    },
+                    "from": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "to": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "from",
+                    "to"
+                  ]
+                },
+                "description": "House numbers with their periods"
+              }
+            },
+            "required": [
+              "id",
+              "placeId",
+              "place",
+              "numbers"
+            ]
+          },
+          "from": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SheetVariantInput"
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unrelated": {
+            "type": "boolean"
+          },
+          "firstYear": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
               },
               {
                 "type": "null"
               }
             ],
-            "description": "null: the screen variant"
+            "description": "The first year of the dated rows, for choosing a period"
+          },
+          "lastYear": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Rows in the period, before the limit of 80"
+          },
+          "hiddenUnrelated": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Rows of Unrelated people left out"
+          },
+          "needsPeriod": {
+            "type": "boolean",
+            "description": "More than 80 rows: choose a period (from, to); rows is then empty"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HouseRowInput"
+            },
+            "description": "In order: by the earliest day of their Events at the House, undated rows last, then by key"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetVariantInput"
           },
           "asOf": {
             "$ref": "#/components/schemas/ChartAsOfInput"
@@ -11437,6 +11881,16 @@
           "persons",
           "families",
           "sources"
+        ]
+      },
+      "HouseChartInput": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HouseChartScreenInput"
+          },
+          {
+            "$ref": "#/components/schemas/HouseChartSheetInput"
+          }
         ]
       },
       "Id": {
@@ -22324,7 +22778,120 @@
           "reduced",
           "nameless"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "A card as a Sheet holds it: never kinship"
+      },
+      "ScreenChartPerson": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sex": {
+            "$ref": "#/components/schemas/Sex"
+          },
+          "given": {
+            "type": "string",
+            "description": "Given name of the primary Name; empty on a card without a name"
+          },
+          "surname": {
+            "type": "string",
+            "description": "Surname of the primary Name; empty on a card without a name"
+          },
+          "birthSurname": {
+            "description": "The surname of the birth Name, when the primary Name is a married name with another surname",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "living": {
+            "type": "boolean",
+            "description": "Living by the Living rule on livingOn"
+          },
+          "relation": {
+            "$ref": "#/components/schemas/RelationToFamily"
+          },
+          "familyRoot": {
+            "type": "boolean"
+          },
+          "born": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChartFact"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The birth, or else the baptism"
+          },
+          "died": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChartFact"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The death, or else the burial"
+          },
+          "birthYear": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The year of the earliest day the birth could be; null when unknown"
+          },
+          "diedYoung": {
+            "type": "boolean",
+            "description": "The dates show for certain that the Person died before their 15th birthday"
+          },
+          "reduced": {
+            "type": "boolean",
+            "description": "On a Sheet: reduced as in an Export (name, sex, relationships and birth year only)"
+          },
+          "nameless": {
+            "type": "boolean",
+            "description": "On a Sheet without names: a Living person shown only as living"
+          },
+          "kinship": {
+            "description": "With kinship=1 and an own Person: the Person's closest kinship to the caller's own Person; null with no kinship; absent otherwise",
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KinshipShort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "sex",
+          "given",
+          "surname",
+          "birthSurname",
+          "living",
+          "relation",
+          "familyRoot",
+          "born",
+          "died",
+          "birthYear",
+          "diedYoung",
+          "reduced",
+          "nameless"
+        ],
+        "additionalProperties": false,
+        "description": "A card of the screen variant"
       },
       "ChartChild": {
         "type": "object",
@@ -22665,7 +23232,7 @@
         ],
         "additionalProperties": false
       },
-      "DescendantChart": {
+      "DescendantChartScreen": {
         "type": "object",
         "properties": {
           "kind": {
@@ -22760,15 +23327,157 @@
             "description": "Line form: one row per generation of the Direct line"
           },
           "sheet": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SheetVariant"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "null",
             "description": "null: the screen variant"
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/ChartAsOf"
+          },
+          "livingOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "The day the Living rule was applied"
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScreenChartPerson"
+            },
+            "description": "Every Person on the Chart, by id"
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartFamily"
+            },
+            "description": "Every Family on the Chart, by id"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartSource"
+            },
+            "description": "The Sources cited for the facts shown, by title in code units, then by id"
+          }
+        },
+        "required": [
+          "kind",
+          "form",
+          "start",
+          "generations",
+          "shown",
+          "leftOut",
+          "cards",
+          "line",
+          "lineBeyond",
+          "nodes",
+          "rows",
+          "sheet",
+          "asOf",
+          "livingOn",
+          "persons",
+          "families",
+          "sources"
+        ],
+        "additionalProperties": false
+      },
+      "DescendantChartSheet": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "descendants"
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "tree",
+              "line"
+            ]
+          },
+          "start": {
+            "type": "object",
+            "properties": {
+              "personId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "familyId": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "personId",
+              "familyId"
+            ],
+            "additionalProperties": false,
+            "description": "The start as understood: a merged Person is followed to the kept one"
+          },
+          "generations": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Generations asked for (tree form)"
+          },
+          "shown": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Whole generations shown: fewer than asked when the Chart would hold more than 500 Person cards"
+          },
+          "leftOut": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Descendants left out in all"
+          },
+          "cards": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Person cards on the Chart: descendants, partners and pointer cards"
+          },
+          "line": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "The Direct line from the start to its end, empty without one"
+          },
+          "lineBeyond": {
+            "type": "boolean",
+            "description": "The Direct line goes deeper than the tree form shows"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DescendantNode"
+            },
+            "description": "Tree form: the descendants in the Chart's order, depth first; the first is the start"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LineRow"
+            },
+            "description": "Line form: one row per generation of the Direct line"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetVariant"
           },
           "asOf": {
             "$ref": "#/components/schemas/ChartAsOf"
@@ -22821,6 +23530,16 @@
           "sources"
         ],
         "additionalProperties": false
+      },
+      "DescendantChart": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DescendantChartScreen"
+          },
+          {
+            "$ref": "#/components/schemas/DescendantChartSheet"
+          }
+        ]
       },
       "HouseRowLink": {
         "type": "object",
@@ -23008,7 +23727,7 @@
         ],
         "additionalProperties": false
       },
-      "HouseChart": {
+      "HouseChartScreen": {
         "type": "object",
         "properties": {
           "kind": {
@@ -23145,15 +23864,199 @@
             "description": "In order: by the earliest day of their Events at the House, undated rows last, then by key"
           },
           "sheet": {
+            "type": "null",
+            "description": "null: the screen variant"
+          },
+          "asOf": {
+            "$ref": "#/components/schemas/ChartAsOf"
+          },
+          "livingOn": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$",
+            "description": "The day the Living rule was applied"
+          },
+          "persons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScreenChartPerson"
+            },
+            "description": "Every Person on the Chart, by id"
+          },
+          "families": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartFamily"
+            },
+            "description": "Every Family on the Chart, by id"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChartSource"
+            },
+            "description": "The Sources cited for the facts shown, by title in code units, then by id"
+          }
+        },
+        "required": [
+          "kind",
+          "house",
+          "from",
+          "to",
+          "unrelated",
+          "firstYear",
+          "lastYear",
+          "total",
+          "hiddenUnrelated",
+          "needsPeriod",
+          "rows",
+          "sheet",
+          "asOf",
+          "livingOn",
+          "persons",
+          "families",
+          "sources"
+        ],
+        "additionalProperties": false
+      },
+      "HouseChartSheet": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "house"
+          },
+          "house": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "placeId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "place": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "numbers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "number": {
+                      "type": "string"
+                    },
+                    "from": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "to": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "number",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "House numbers with their periods"
+              }
+            },
+            "required": [
+              "id",
+              "placeId",
+              "place",
+              "numbers"
+            ],
+            "additionalProperties": false
+          },
+          "from": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/SheetVariant"
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "to": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unrelated": {
+            "type": "boolean"
+          },
+          "firstYear": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
               },
               {
                 "type": "null"
               }
             ],
-            "description": "null: the screen variant"
+            "description": "The first year of the dated rows, for choosing a period"
+          },
+          "lastYear": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Rows in the period, before the limit of 80"
+          },
+          "hiddenUnrelated": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Rows of Unrelated people left out"
+          },
+          "needsPeriod": {
+            "type": "boolean",
+            "description": "More than 80 rows: choose a period (from, to); rows is then empty"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HouseRow"
+            },
+            "description": "In order: by the earliest day of their Events at the House, undated rows last, then by key"
+          },
+          "sheet": {
+            "$ref": "#/components/schemas/SheetVariant"
           },
           "asOf": {
             "$ref": "#/components/schemas/ChartAsOf"
@@ -23206,6 +24109,16 @@
           "sources"
         ],
         "additionalProperties": false
+      },
+      "HouseChart": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HouseChartScreen"
+          },
+          {
+            "$ref": "#/components/schemas/HouseChartSheet"
+          }
+        ]
       }
     }
   },
@@ -30340,6 +31253,18 @@
             "in": "query",
             "name": "sheet",
             "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            },
+            "in": "query",
+            "name": "kinship",
+            "required": false,
+            "description": "1: each Person of the screen variant carries the short form of their kinship to the caller's own Person; refused with sheet"
           }
         ],
         "responses": {
@@ -30456,6 +31381,18 @@
             "in": "query",
             "name": "sheet",
             "required": false
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "1"
+              ]
+            },
+            "in": "query",
+            "name": "kinship",
+            "required": false,
+            "description": "1: each Person of the screen variant carries the short form of their kinship to the caller's own Person; refused with sheet"
           },
           {
             "schema": {

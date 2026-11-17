@@ -34,7 +34,8 @@ The rules that decide content are proved with LemmaScript ([Proofs with LemmaScr
 - the cut to 500 cards, at whole generations, and the counts of descendants left out;
 - the "died young" mark, set only when the dates show it for certain;
 - which Roles place someone at a House, the rows' periods, and how a row is linked to an earlier one;
-- what a Sheet keeps of a Living person.
+- what a Sheet keeps of a Living person;
+- that only the screen's variant carries kinship, when the Member asked for it and has an own Person, and a Sheet never does.
 
 The layout, the drawing, printing and the downloads are not proved; golden files and tests cover them.
 
@@ -47,6 +48,16 @@ The Tree does not record who held a House, how it passed (inheritance, purchase,
 ## Why a Sheet is reduced
 
 On screen, a Chart shows the Tree as the tree does: Members see everything, Living people marked. A Sheet is made to be printed or sent, and may travel beyond the family. So every card on a Sheet is the Export view of its Person, by the same proved rule an Export uses ([Privacy](privacy.md#living-people-on-a-sheet)): a Living person keeps name, sex, relationships and birth year only, and no fact in which a Living person took part is shown, such as a marriage to a Living partner or a birth at a House. A Member can also leave Living people's names off; each is then a card that says only "living". The colophon names the Sources behind the facts the Sheet still shows, and the day the Living rule was applied.
+
+## Why a Sheet never shows kinship
+
+On screen, a Member linked to their own Person can switch on kinship, and each card then says how its Person is related to them ([Kinship](kinship.md)). A Sheet never does, for three reasons.
+
+- **Kinship belongs to the reader.** A Sheet is the same for every Member who prints it, and it is read by people who are not that Member: "strýc" on a printed page is wrong for everyone but the one who printed it. The switch is kept on the device and out of the Chart's address for the same reason, so a shared link shows each Member their own kinship.
+- **It would reveal the Member.** A Sheet may travel beyond the family. Kinship on it would say which Person the one who printed it is, and Rodokmen never tells anyone which Person a Member's account is linked to ([Privacy](privacy.md)).
+- **A Sheet stays the same.** The same Tree, options, language and day give the same Sheet, byte for byte. With kinship it would differ from Member to Member.
+
+So kinship is kept away from a Sheet at every step. The server adds it only to the screen's variant, which a Sheet is never drawn from, and refuses a request for a Sheet with kinship. The Sheet's model has no field for kinship, so a Sheet that carried it would fail its own schema. The app's Sheet writer, which makes the print and both downloads, refuses a model with kinship. Which variant may carry kinship is a proved rule ([Verification](../verification.md)).
 
 ## The fonts
 

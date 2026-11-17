@@ -4,6 +4,8 @@
 // locale (no Intl, no toLocale*String), so two devices write the same words. Names, Place names
 // and Source titles stay as the Tree records them.
 
+import { kinshipWords } from './kinship-text.js';
+
 /** @typedef {Record<string, string>} Strings */
 /** @typedef {import('./types.js').ChartPerson} ChartPerson */
 
@@ -40,8 +42,8 @@ export function dateParts(edtf) {
 
 /**
  * The labels of a Chart in one language.
- * @param {Strings} strings the chart.* texts (app/i18n/<lang>.json)
- * @param {string} lang
+ * @param {Strings} strings the chart.* and kinship.* texts (app/i18n/<lang>.json)
+ * @param {import('./i18n.js').Language} lang
  */
 export function chartLabels(strings, lang) {
   /**
@@ -111,7 +113,17 @@ export function chartLabels(strings, lang) {
   /** A count with the plural form of its language. @param {string} key @param {number} n */
   const count = (key, n) => t(`${key}.${pluralOf(lang, n)}`, { n });
 
-  return { lang, t, date, year, place, fact, name, lifeYears, count, houseNumber };
+  /**
+   * The kinship on a card of the screen variant (tree-charts spec, "Kinship on Chart cards"), as
+   * the person page says it; empty with none. A Sheet's cards never carry it.
+   * @param {import('./types.js').ScreenChartPerson | ChartPerson} p
+   */
+  const kinship = (p) => {
+    const k = 'kinship' in p ? p.kinship : null;
+    return k ? kinshipWords(k, t, lang) : '';
+  };
+
+  return { lang, t, date, year, place, fact, name, lifeYears, count, houseNumber, kinship };
 }
 
 /** @typedef {ReturnType<typeof chartLabels>} ChartLabels */

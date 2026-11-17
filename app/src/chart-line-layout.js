@@ -122,7 +122,9 @@ function siblingText(metrics, labels, persons, s, sib, at) {
   /** @type {import('./chart-cards.js').SymbolMark[]} */
   const symbols = [];
   if (sib) lines.push(textLine(metrics, 'semibold', SIZE.name, labels.name(sib), width, at.x + SMALL.w / 2, at.y + 40, 'middle'));
-  if (sib) lines.push(textLine(metrics, 'regular', SIZE.small, labels.lifeYears(sib), width, at.x + SMALL.w / 2, at.y + 64, 'middle'));
+  // Life years, and on screen with kinship switched on, the kinship after them on the same line.
+  const years = sib ? [labels.lifeYears(sib), labels.kinship(sib)].filter(Boolean).join(' · ') : '';
+  if (sib) lines.push(textLine(metrics, 'regular', SIZE.small, years, width, at.x + SMALL.w / 2, at.y + 64, 'middle'));
   let y = at.y + SMALL.head + 26;
   for (const f of s.families) {
     const partner = f.partnerId === null ? undefined : persons.get(f.partnerId);

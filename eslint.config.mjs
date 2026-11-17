@@ -56,6 +56,7 @@ const restricted = {
 const kinshipFiles = ['shared/src/kinship*.ts', 'shared/src/kinship-terms/**/*.ts'];
 const chartFiles = [
   'shared/src/charts.ts',
+  'shared/src/chart-kinship.ts',
   'shared/src/chart-rows.ts',
   'shared/src/charts-model.ts',
   'shared/src/house-chart.ts',

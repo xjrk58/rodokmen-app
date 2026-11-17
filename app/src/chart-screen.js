@@ -4,17 +4,19 @@
 // opens the person page; the mark under a Person whose descendants are left out, or a long press,
 // opens a Chart from them. The address holds the kind, start and options, so a link opens the
 // same Chart for another Member. Both variants are kept on the device: the screen's, and the
-// Sheet's for printing and downloads, so a Chart viewed before prints offline.
+// Sheet's for printing and downloads, so a Chart viewed before prints offline. With kinship
+// switched on (src/chart-options.js), the screen's variant carries the reader's kinship on its
+// cards; the Sheet's never does.
 
 import { api, ApiError } from './api.js';
 import { loadFontCss, loadMetrics } from './chart-fonts.js';
 import { layoutHouse } from './chart-house-layout.js';
 import { layoutLine } from './chart-line-layout.js';
+import { Options, rememberedKinship, rememberKinship } from './chart-options.js';
 import { paginate, paperSize } from './chart-pages.js';
 import { chartBody, naturalSize, sheet, sheetFile } from './chart-sheet.js';
 import { chartLabels, defaultTitle } from './chart-text.js';
 import { layoutTree } from './chart-tree-layout.js';
-import { rememberedFocus } from './focus.js';
 import { currentTexts, language, t } from './i18n.js';
 import { panZoomKey, useGestures, zoomAt } from './pan-zoom.js';
 import { chartAddress, chartQuery, personAddress } from './routes.js';
@@ -160,150 +162,6 @@ function ChartCanvas({ layout, onTap, onLongPress, viewKey }) {
   </div>`;
 }
 
-/**
- * The options of a Chart; each change is a new address.
- * @param {{ chart: ChartRoute, model: ChartModel | null, me: Me, title: string }} props
- */
-function Options({ chart, model, me, title }) {
-  const go = (/** @type {Partial<ChartRoute>} */ change) => (location.hash = chartAddress({ ...chart, ...change }));
-  const value = (/** @type {Event} */ e) => /** @type {HTMLInputElement | HTMLSelectElement} */ (e.currentTarget).value;
-  const [from, setFrom] = useState(chart.from === null ? '' : String(chart.from));
-  const [to, setTo] = useState(chart.to === null ? '' : String(chart.to));
-  const persons = model?.persons ?? [];
-  const nameOf = (/** @type {string} */ id) => {
-    const p = persons.find((x) => x.id === id);
-    return p ? `${p.given} ${p.surname}`.trim() : '';
-  };
-  const focus = rememberedFocus();
-  const own = me.person?.id ?? null;
-  const offered = [
-    own ? { id: own, label: t('chart.line.me', { name: nameOf(own) || me.person?.displayName || '…' }) } : null,
-    focus && focus !== own ? { id: focus, label: t('chart.line.focus', { name: nameOf(focus) || '…' }) } : null,
-  ].filter((o) => o !== null);
-  const descendants = model?.kind === 'descendants' ? model.nodes.filter((n) => !n.pointer && n.followed && n.generation > 1).map((n) => n.personId) : [];
-  return html`<details class="chart-options" data-testid="chart-options">
-    <summary>${t('chart.options')}</summary>
-    ${
-      chart.kind === 'descendants'
-        ? html`<div class="field-row">
-              <span>${t('chart.form')}</span>
-              <label
-                ><input type="radio" name="form" checked=${chart.form === 'tree'} data-testid="form-tree" onChange=${() => go({ form: 'tree' })} />
-                ${t('chart.form.tree')}</label
-              >
-              <label
-                ><input
-                  type="radio"
-                  name="form"
-                  checked=${chart.form === 'line'}
-                  disabled=${chart.line === null}
-                  data-testid="form-line"
-                  onChange=${() => go({ form: 'line' })}
-                />
-                ${t('chart.form.line')}</label
-              >
-            </div>
-            ${
-              chart.form === 'tree'
-                ? html`<div class="field-row" role="group" aria-label=${t('chart.generations')}>
-                    <span>${t('chart.generations')}</span>
-                    <button
-                      type="button"
-                      class="icon-button small"
-                      disabled=${chart.generations <= 2}
-                      data-testid="generations-less"
-                      onClick=${() => go({ generations: chart.generations - 1 })}
-                    >
-                      −
-                    </button>
-                    <output data-testid="generations-value">${chart.generations}</output>
-                    <button
-                      type="button"
-                      class="icon-button small"
-                      disabled=${chart.generations >= 8}
-                      data-testid="generations-more"
-                      onClick=${() => go({ generations: chart.generations + 1 })}
-                    >
-                      +
-                    </button>
-                  </div>`
-                : null
-            }
-            <label class="field"
-              >${t('chart.line')}
-              <select data-testid="line-picker" onChange=${(/** @type {Event} */ e) => go({ line: value(e) || null, form: value(e) ? chart.form : 'tree' })}>
-                <option value="" selected=${chart.line === null}>${t('chart.line.none')}</option>
-                ${offered.map((o) => html`<option value=${o.id} selected=${chart.line === o.id} data-testid="line-offered">${o.label}</option>`)}
-                ${descendants
-                  .filter((id) => !offered.some((o) => o.id === id))
-                  .map((id) => html`<option value=${id} selected=${chart.line === id}>${nameOf(id)}</option>`)}
-              </select></label
-            >`
-        : html`<label class="switch-row"
-              ><input type="checkbox" checked=${chart.unrelated} data-testid="chart-unrelated" onChange=${() => go({ unrelated: !chart.unrelated })} /><span
-                >${t('chart.unrelated')}</span
-              ></label
-            >
-            <div class="field-row">
-              <span>${t('chart.period')}</span>
-              <input
-                type="number"
-                inputmode="numeric"
-                aria-label=${t('chart.period.from')}
-                placeholder=${t('chart.period.from')}
-                value=${from}
-                data-testid="period-from"
-                onInput=${(/** @type {Event} */ e) => setFrom(value(e))}
-              />
-              <input
-                type="number"
-                inputmode="numeric"
-                aria-label=${t('chart.period.to')}
-                placeholder=${t('chart.period.to')}
-                value=${to}
-                data-testid="period-to"
-                onInput=${(/** @type {Event} */ e) => setTo(value(e))}
-              />
-              <button
-                type="button"
-                class="button"
-                data-testid="period-apply"
-                onClick=${() => go({ from: from ? Number(from) : null, to: to ? Number(to) : null })}
-              >
-                ${t('chart.period.apply')}
-              </button>
-            </div>`
-    }
-    <label class="field"
-      >${t('chart.title')}
-      <input
-        type="text"
-        maxlength="200"
-        value=${chart.title}
-        placeholder=${title}
-        data-testid="chart-title-input"
-        onChange=${(/** @type {Event} */ e) => go({ title: value(e).trim() })}
-    /></label>
-    <label class="field"
-      >${t('chart.paper')}
-      <select data-testid="paper" onChange=${(/** @type {Event} */ e) => go({ paper: /** @type {ChartRoute['paper']} */ (value(e)) })}>
-        ${['a3-landscape', 'a3-portrait', 'a4-landscape', 'a4-portrait'].map((p) => html`<option value=${p} selected=${chart.paper === p}>${t(`chart.paper.${p}`)}</option>`)}
-      </select></label
-    >
-    <div class="field-row">
-      <span>${t('chart.sheetLiving')}</span>
-      <label
-        ><input type="radio" name="living" checked=${chart.living === 'reduced'} data-testid="living-reduced" onChange=${() => go({ living: 'reduced' })} />
-        ${t('chart.sheetLiving.reduced')}</label
-      >
-      <label
-        ><input type="radio" name="living" checked=${chart.living === 'nameless'} data-testid="living-nameless" onChange=${() => go({ living: 'nameless' })} />
-        ${t('chart.sheetLiving.nameless')}</label
-      >
-    </div>
-  </details>`;
-}
-
 /** What the server said about a Chart, above it. @param {{ model: ChartModel, chart: ChartRoute, labels: import('./chart-text.js').ChartLabels }} props */
 function Notes({ model, chart, labels }) {
   if (model.kind === 'house') {
@@ -333,14 +191,46 @@ function Notes({ model, chart, labels }) {
   }`;
 }
 
+/** A model with no kinship on its cards. @param {ChartModel} m @returns {ChartModel} */
+const withoutKinship = (m) =>
+  /** @type {ChartModel} */ ({ ...m, persons: m.persons.map((p) => Object.fromEntries(Object.entries(p).filter(([k]) => k !== 'kinship'))) });
+
+/**
+ * The screen variant of a Chart, with kinship on its cards when the switch is on and the Member
+ * has an own Person. Kinship is the reader's, so the device keeps it under their own Person. When
+ * the variant asked for cannot be loaded, as offline, the other one kept on the device is shown,
+ * without kinship either way (`kinshipMissing` when kinship was asked for).
+ * @param {ChartRoute} chart
+ * @param {Me} me
+ * @param {boolean} switchedOn
+ * @param {boolean} cache
+ */
+function useScreenModel(chart, me, switchedOn, cache) {
+  const own = me.person?.id ?? null;
+  const plain = { query: chartQuery(chart, null), key: `chart:${chartQuery(chart, null)}` };
+  const kin = own === null ? null : { query: chartQuery(chart, 'kinship'), key: `chart:${chartQuery(chart, 'kinship')}|${own}` };
+  const first = switchedOn && kin ? kin : plain;
+  const second = first === plain ? kin : plain;
+  const load = (/** @type {string} */ q) => (/** @type {AbortSignal} */ signal) => /** @type {Promise<ChartModel>} */ (api(q, { signal }));
+  const asked = useCachedLoad(first.key, load(first.query), cache);
+  const failed = asked.data === null && asked.error !== null && !asked.loading;
+  const kept = useCachedLoad(failed && second ? second.key : null, load(second?.query ?? plain.query), cache);
+  // One model per load, so that the layout is not made again on every render.
+  const keptModel = /** @type {ChartModel | null} */ (kept.data);
+  const keptPlain = useMemo(() => (keptModel === null ? null : withoutKinship(keptModel)), [keptModel]);
+  if (!failed || keptPlain === null) return { ...asked, kinshipMissing: false };
+  return { ...kept, data: keptPlain, kinshipMissing: first === kin };
+}
+
 /**
  * @param {{ me: Me, chart: ChartRoute, cache: boolean }} props
  */
 export function ChartScreen({ me, chart, cache }) {
   const query = chartQuery(chart, null);
   const sheetQuery = chartQuery(chart, chart.living);
-  const loaded = useCachedLoad(`chart:${query}`, (signal) => /** @type {Promise<ChartModel>} */ (api(query, { signal })), cache);
-  // The Sheet's variant, loaded with the Chart so that it prints offline later.
+  const [kinship, setKinship] = useState(rememberedKinship);
+  const loaded = useScreenModel(chart, me, kinship, cache);
+  // The Sheet's variant, loaded with the Chart so that it prints offline later. It never carries kinship.
   const sheetLoaded = useCachedLoad(`chart-sheet:${sheetQuery}`, (signal) => /** @type {Promise<ChartModel>} */ (api(sheetQuery, { signal })), cache);
   const [metrics, setMetrics] = useState(/** @type {FontMetrics | null} */ (null));
   const [status, setStatus] = useState(/** @type {string | null} */ (null));
@@ -454,7 +344,18 @@ export function ChartScreen({ me, chart, cache }) {
     </header>
     <${ErrorLine} error=${loaded.error instanceof ApiError && loaded.error.status === 422 ? new Error(t('chart.notDescendant')) : loaded.error} />
     ${model ? html`<${Notes} model=${model} chart=${chart} labels=${labels} />` : null}
-    <${Options} chart=${chart} model=${model} me=${me} title=${title} />
+    <${Options}
+      chart=${chart}
+      model=${model}
+      me=${me}
+      title=${title}
+      kinship=${kinship}
+      onKinship=${(/** @type {boolean} */ on) => {
+        rememberKinship(on);
+        setKinship(on);
+      }}
+    />
+    ${loaded.kinshipMissing ? html`<p class="small muted" data-testid="chart-kinship-offline">${t('chart.kinship.offline')}</p>` : null}
     <div class="chart-actions">
       <button type="button" class="button primary" data-testid="chart-print" onClick=${() => ask('print')}>${t('chart.print')}</button>
       <button type="button" class="button" data-testid="chart-svg" onClick=${() => ask('svg')}>${t('chart.downloadSvg')}</button>

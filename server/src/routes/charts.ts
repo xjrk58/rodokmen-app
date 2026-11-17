@@ -26,7 +26,7 @@ export async function chartRoutes(fastify: FastifyInstance, deps: ChartDeps) {
         422: ApiError.describe('line: the end of the Direct line does not descend from the start within 12 generations'),
       },
     },
-    handler: async (req) => descendantChartFor(deps, req.query),
+    handler: async (req) => descendantChartFor(deps, req.query, req.member),
   });
 
   app.get('/api/charts/house/:id', {
@@ -37,6 +37,6 @@ export async function chartRoutes(fastify: FastifyInstance, deps: ChartDeps) {
       querystring: HouseChartQuery,
       response: { 200: HouseChart, ...answers },
     },
-    handler: async (req) => houseChartFor(deps, req.params.id, req.query),
+    handler: async (req) => houseChartFor(deps, req.params.id, req.query, req.member),
   });
 }
